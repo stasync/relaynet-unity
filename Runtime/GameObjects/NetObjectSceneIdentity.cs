@@ -37,7 +37,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         // Register scene object.
         // Initialize object if we on master client, so new clents will not initialize this objects, but will recieve updates.
         // TODO: fix situations when object can be not initialized.
-        Network.Realtime.RegisterSceneObject(this, Network.Realtime.IsMasterPlayer);
+        Network.Realtime.RegisterSceneObject(this);
     }
 
     public override void OnInitialze()

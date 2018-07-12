@@ -196,9 +196,26 @@ public class GSInstanceFactory : IGSInstanceFactory
         m_Objects.Add(
             sceneIdentity.SceneObjectId, 
             sceneIdentity.Identity);
+
+        if(m_Transport.MasterClientPeerId == m_Transport.LocalPeerId)
+            InitializeIdentity(
+                sceneIdentity.Identity,
+                sceneIdentity.PrefabId,
+                true,
+                sceneIdentity.SceneObjectId,
+                m_Transport.MasterPlayer,
+                m_Transport,
+                null);
     }
 
-    public GSInstanceIdentity InitializeIdentity(GSInstanceIdentity identity, string prefabId, bool isSceneObject, GSInstanceId instanceId, IGSRTPlayer owner, IGSTransport transport, RTData data)
+    GSInstanceIdentity InitializeIdentity(
+        GSInstanceIdentity identity, 
+        string prefabId, 
+        bool isSceneObject, 
+        GSInstanceId instanceId, 
+        IGSRTPlayer owner, 
+        IGSTransport transport, 
+        RTData data)
     {
         return ((IIdentity)identity).Initialze(
                     prefabId,
