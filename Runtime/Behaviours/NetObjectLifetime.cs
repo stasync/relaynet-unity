@@ -24,7 +24,7 @@ public class GSObjectLifetime : GSInstanceBehaviour
 
     protected override void SerializeDirtyChecked(GSWriter writer)
     {
-        writer.WriteFloat(CurrentLifetime);
+        writer.Write(CurrentLifetime);
     }
 
     protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)

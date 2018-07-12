@@ -60,8 +60,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
         AuthRpc(c_SetTransformRpcName,
             new GSWriter()
-                .WriteVector3(position)
-                .WriteQuaternion(rotation)
+                .Write(position)
+                .Write(rotation)
                 .AsData());
     }
 
@@ -163,7 +163,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
     protected override void SerializeDirtyChecked(GSWriter writer)
     {
-        writer.WriteVector3(transform.position);
-        writer.WriteQuaternion(transform.rotation);
+        writer.Write(transform.position);
+        writer.Write(transform.rotation);
     }
 }

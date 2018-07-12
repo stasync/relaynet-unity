@@ -149,8 +149,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             MessageCodes.ObjectOwnerChange,
             GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED,
             new GSWriter()
-                .WriteInt(InstanceId)
-                .WriteInt(m_Transport.LocalPeerId)
+                .Write(InstanceId)
+                .Write(m_Transport.LocalPeerId)
                 .AsData());
     }
 
@@ -183,9 +183,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return;
 
         var w = new GSWriter()
-            .WriteInt(InstanceId)
-            .WriteString(PrefabId)
-            .WriteBool(IsSceneObject);
+            .Write(InstanceId)
+            .Write(PrefabId)
+            .Write(IsSceneObject);
 
         foreach (var b in m_Observables)
             b.Serialize(w);
@@ -362,7 +362,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             MessageCodes.DestroyObject,
             GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED,
             new GSWriter()
-                .WriteInt(InstanceId)
+                .Write(InstanceId)
                 .AsData());
     }
 
