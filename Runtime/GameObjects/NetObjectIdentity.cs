@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using GameSparks.RT;
@@ -7,10 +8,62 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 {
+    class AuthRpcBuffer : IEnumerable<KeyValuePair<string, RTData>>
+    {
+        bool m_Dirty;
+        IDictionary<string, RTData> m_Buffer;
+
+        public AuthRpcBuffer()
+        {
+            m_Buffer = new Dictionary<string, RTData>();
+        }
+
+        public void AddOrUpdate(string rpcCode, RTData data)
+        {
+            if (m_Buffer.ContainsKey(rpcCode))
+                m_Buffer[rpcCode] = data;
+            else
+                m_Buffer.Add(rpcCode, data);
+
+            m_Dirty = true;
+        }
+
+        public void Serialize(GSWriter writer)
+        {
+            writer.Write(m_Dirty);
+            if (!m_Dirty)
+                return;
+
+            m_Dirty = false;
+            writer.WriteDictionary(m_Buffer, (k, w) => w.Write(k), (v, w) => w.Write(v));
+        }
+
+        public void Deserialize(GSReader reader)
+        {
+            var wasDirty = reader.ReadBool();
+            if (!wasDirty)
+                return;
+
+            m_Buffer = reader.ReadDictionary(r => r.ReadString(), r => r.ReadData());
+        }
+
+        public IEnumerator<KeyValuePair<string, RTData>> GetEnumerator()
+        {
+            return m_Buffer.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_Buffer.GetEnumerator();
+        }
+    }
+
     [SerializeField]
     private GameSparksRT.DeliveryIntent m_DeliveryIntent = GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED;
 
     public GSInstanceId InstanceId { get; private set; }
+
+    AuthRpcBuffer m_RpcBuffer = new AuthRpcBuffer();
 
     public bool IsMasterClient
     {
@@ -90,7 +143,13 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
          */
         if (!IsLocal && data != null)
+        {
             ((IIdentity)this).Deserialize(data, true, true); //Force true to allow deseriazation before object initialized.
+
+            //This must be called after deserialization done.
+            foreach (var kvp in m_RpcBuffer)
+                ((IRPCReciever)this).RecieveRpcWithoutAuthority(kvp.Key, kvp.Value);
+        }
 
         foreach (var o in m_Observables)
             o.OnInitialze();
@@ -187,6 +246,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             .Write(PrefabId)
             .Write(IsSceneObject);
 
+        m_RpcBuffer.Serialize(w);
+
         foreach (var b in m_Observables)
             b.Serialize(w);
 
@@ -227,6 +288,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         {
             //Scene object can be handled here
         }
+
+        //Buffered rpc
+        m_RpcBuffer.Deserialize(r);
 
         foreach (var b in m_Observables)
             b.Deserialize(r, firstTime);
@@ -276,6 +340,27 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         //Send ot others.
         m_Transport.RPC(RpcType.Auth, InstanceId, rpcCode, data, deliveryIntent);
+    }
+
+    /// <summary>
+    /// Same as AuthRPC, but buffered.
+    /// </summary>
+    public void AuthRpcBuffered(string rpcCode, RTData data)
+    {
+        if (!IsLocal)
+            throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
+
+        //Invoke handler locally.
+        InvokeRpcHandler(rpcCode, data);
+
+        //Send ot others.
+        m_Transport.RPC(RpcType.Auth, InstanceId, rpcCode, data, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED);
+
+        //Add rpc to buffer.
+        m_RpcBuffer.AddOrUpdate(rpcCode, data);
+
+        //Set dirty to serialize rpc buffer.
+        SetDirty();
     }
 
     /// <summary>
