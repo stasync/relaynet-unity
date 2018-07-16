@@ -4,10 +4,6 @@ using UnityEngine;
 [DisallowMultipleComponent, RequireComponent(typeof(GSInstanceIdentity))]
 public class GSSceneObjectIdentity : GSInstanceBehaviour
 {
-    [SerializeField]
-    string m_PrefabId;
-    public string PrefabId { get { return m_PrefabId; } }
-
     [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace)]
     int m_SceneObjectId;
     public int SceneObjectId { get { return m_SceneObjectId; } }

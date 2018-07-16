@@ -191,7 +191,10 @@ public class GSInstanceFactory : IGSInstanceFactory
     public void RegisterObject(GSSceneObjectIdentity sceneIdentity)
     {
         if (m_Objects.ContainsKey(sceneIdentity.SceneObjectId))
-            return;
+            throw new Exception(string.Format(
+                "Unable to register scene identity {0}: object with id {1} already registered", 
+                sceneIdentity.gameObject.name, 
+                sceneIdentity.SceneObjectId));
 
         m_Objects.Add(
             sceneIdentity.SceneObjectId, 
@@ -200,7 +203,7 @@ public class GSInstanceFactory : IGSInstanceFactory
         if(m_Transport.MasterClientPeerId == m_Transport.LocalPeerId)
             InitializeIdentity(
                 sceneIdentity.Identity,
-                sceneIdentity.PrefabId,
+                "SceneObject", //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
                 true,
                 sceneIdentity.SceneObjectId,
                 m_Transport.MasterPlayer,
