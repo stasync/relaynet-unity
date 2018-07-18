@@ -8,9 +8,10 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 {
-    class AuthRpcBuffer : IEnumerable<KeyValuePair<string, RTData>>
+    class AuthRpcBuffer : IRPCBuffer
     {
-        bool m_Dirty;
+        public bool IsDirty { get; private set; }
+
         IDictionary<string, RTData> m_Buffer;
 
         public AuthRpcBuffer()
@@ -18,27 +19,27 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             m_Buffer = new Dictionary<string, RTData>();
         }
 
-        public void AddOrUpdate(string rpcCode, RTData data)
+        void IRPCBuffer.AddOrUpdate(string rpcCode, RTData data)
         {
             if (m_Buffer.ContainsKey(rpcCode))
-                m_Buffer[rpcCode] = data;
-            else
-                m_Buffer.Add(rpcCode, data);
+                m_Buffer.Remove(rpcCode);
 
-            m_Dirty = true;
+            m_Buffer.Add(rpcCode, data);
+
+            IsDirty = true;
         }
 
-        public void Serialize(GSWriter writer)
+        void ISerializeable.Serialize(GSWriter writer)
         {
-            writer.Write(m_Dirty);
-            if (!m_Dirty)
+            writer.Write(IsDirty);
+            if (!IsDirty)
                 return;
 
-            m_Dirty = false;
+            IsDirty = false;
             writer.WriteDictionary(m_Buffer, (k, w) => w.Write(k), (v, w) => w.Write(v));
         }
 
-        public void Deserialize(GSReader reader)
+        void ISerializeable.Deserialize(GSReader reader, bool firstTime)
         {
             var wasDirty = reader.ReadBool();
             if (!wasDirty)
@@ -56,6 +57,11 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         {
             return m_Buffer.GetEnumerator();
         }
+
+        public void SetDirty()
+        {
+            IsDirty = true;
+        }
     }
 
     [SerializeField]
@@ -63,7 +69,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     public GSInstanceId InstanceId { get; private set; }
 
-    AuthRpcBuffer m_RpcBuffer = new AuthRpcBuffer();
+    IRPCBuffer m_RpcBuffer = new AuthRpcBuffer();
 
     public bool IsMasterClient
     {
@@ -87,7 +93,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     public bool IsDirty
     {
-        get { return m_Observables.Any(o => o.IsDirty); }
+        get { return m_Observables.Any(o => o.IsDirty) || m_RpcBuffer.IsDirty; }
     }
 
     /// <summary>
@@ -221,6 +227,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             return;
 
+        m_RpcBuffer.SetDirty();
+
         foreach (var o in m_Observables)
             o.SetDirty();
     }
@@ -290,7 +298,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         }
 
         //Buffered rpc
-        m_RpcBuffer.Deserialize(r);
+        m_RpcBuffer.Deserialize(r, firstTime);
 
         foreach (var b in m_Observables)
             b.Deserialize(r, firstTime);
@@ -330,13 +338,18 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void AuthRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED)
+    public void AuthRPC(
+        string rpcCode, 
+        RTData data, 
+        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, 
+        bool invokeLocaly = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
         //Invoke handler locally.
-        InvokeRpcHandler(rpcCode, data);
+        if(invokeLocaly)
+            InvokeRpcHandler(rpcCode, data);
 
         //Send ot others.
         m_Transport.RPC(RpcType.Auth, InstanceId, rpcCode, data, deliveryIntent);
@@ -356,11 +369,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         //Send ot others.
         m_Transport.RPC(RpcType.Auth, InstanceId, rpcCode, data, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED);
 
-        //Add rpc to buffer.
+        //Add rpc to buffer, rpc buffer becomes dirty after this.
         m_RpcBuffer.AddOrUpdate(rpcCode, data);
-
-        //Set dirty to serialize rpc buffer.
-        SetDirty();
     }
 
     /// <summary>
