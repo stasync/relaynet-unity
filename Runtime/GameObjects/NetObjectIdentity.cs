@@ -136,6 +136,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (Initialized)
             throw new Exception("Object already initialized");
 
+        if (owner == null)
+            throw new ArgumentNullException("owner");
+
         InstanceId = instanceId;
         Owner = owner;
         PrefabId = prefabId;
@@ -453,12 +456,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             throw new Exception("Trying to destroy remote object, this is not allowed");
 
-        m_Transport.SendDataToOthers(
-            MessageCodes.DestroyObject,
-            GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED,
-            new GSWriter()
-                .Write(InstanceId)
-                .AsData());
+        m_Transport.DestroyGameObject(InstanceId);
     }
 
     #if UNITY_EDITOR
