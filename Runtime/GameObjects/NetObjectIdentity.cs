@@ -360,17 +360,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     /// <summary>
     /// Same as AuthRPC, but buffered.
+    /// Only works via UNRELIABLE_SEQUENCED delivery.
     /// </summary>
-    public void AuthRpcBuffered(string rpcCode, RTData data)
+    public void AuthRpcBuffered(string rpcCode, RTData data, bool invokeLocaly = true)
     {
-        if (!IsLocal)
-            throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
-
-        //Invoke handler locally.
-        InvokeRpcHandler(rpcCode, data);
-
-        //Send ot others.
-        m_Transport.RPC(RpcType.Auth, InstanceId, rpcCode, data, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED);
+        //Call regular AuthRPC
+        AuthRPC(rpcCode, data, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, invokeLocaly);
 
         //Add rpc to buffer, rpc buffer becomes dirty after this.
         m_RpcBuffer.AddOrUpdate(rpcCode, data);
