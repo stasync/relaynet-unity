@@ -13,10 +13,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         public bool IsDirty { get; private set; }
 
         IDictionary<string, RTData> m_Buffer;
+        bool m_Recieved;
 
         public AuthRpcBuffer()
         {
             m_Buffer = new Dictionary<string, RTData>();
+            m_Recieved = false;
         }
 
         void IRPCBuffer.AddOrUpdate(string rpcCode, RTData data)
@@ -58,9 +60,25 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return m_Buffer.GetEnumerator();
         }
 
+        public void TryRecieve(Action<string, RTData> reciever)
+        {
+            if (m_Recieved)
+                return;
+
+            foreach (var kvp in m_Buffer)
+                reciever(kvp.Key, kvp.Value);
+
+            m_Recieved = true;
+        }
+
         public void SetDirty()
         {
             IsDirty = true;
+        }
+
+        public override string ToString()
+        {
+            return base.ToString();
         }
     }
 
@@ -152,13 +170,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
          */
         if (!IsLocal && data != null)
-        {
             ((IIdentity)this).Deserialize(data, true, true); //Force true to allow deseriazation before object initialized.
-
-            //This must be called after deserialization done.
-            foreach (var kvp in m_RpcBuffer)
-                ((IRPCReciever)this).RecieveRpcWithoutAuthority(kvp.Key, kvp.Value);
-        }
 
         foreach (var o in m_Observables)
             o.OnInitialze();
@@ -169,6 +181,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         Debug.LogWarning("New network object: Is Local: " + IsLocal + ", Owner: " + Owner);
         Initialized = true;
+
+        //Invokes buffered rpc, must be called after deserialization done.
+        //Only for remote objects.
+        if (!IsLocal)
+            m_RpcBuffer.TryRecieve(((IRPCReciever)this).RecieveRpcWithoutAuthority);
+
         return this;
     }
 
@@ -329,10 +347,11 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     /// <summary>
     /// Unregiter handler (Better to call in OnDisable).
+    /// For internal usage only. Use just RegisterRPCHandler in 'OnInit' method.
     /// </summary>
     /// <param name="rpcCode"></param>
     /// <param name="handler"></param>
-    public void UnregisterRPCHandler(string rpcCode, Action<RTData> handler)
+    void UnregisterRPCHandler(string rpcCode, Action<RTData> handler)
     {
         if (m_RPCHandlers.ContainsKey(rpcCode))
             m_RPCHandlers[rpcCode] -= handler;
@@ -434,6 +453,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     {
         if (m_RPCHandlers.ContainsKey(rpcCode))
             m_RPCHandlers[rpcCode].Invoke(data);
+        else
+            Debug.LogErrorFormat("Handler for RPC with code {0} doesn't registred on object {1}", rpcCode, gameObject.name);
     }
 
     void SendGameObject(RTData data)

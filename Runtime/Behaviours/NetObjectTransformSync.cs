@@ -35,16 +35,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     [SerializeField]
     bool m_SyncEnabled = true;
 
-    private void OnEnable()
-    {
-        Identity.RegisterRPCHandler(c_SetTransformRpcName, SetTransformRpcHandler);
-    }
-
-    private void OnDisable()
-    {
-        Identity.UnregisterRPCHandler(c_SetTransformRpcName, SetTransformRpcHandler);
-    }
-
     /// <summary>
     /// Set position and rotation and send to other clients.
     /// Do not use in every frame to update transform.
@@ -79,6 +69,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
     public override void OnInitialze()
     {
+        Identity.RegisterRPCHandler(c_SetTransformRpcName, SetTransformRpcHandler);
         ResetTemporaryData();
     }
 
