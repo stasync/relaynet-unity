@@ -157,7 +157,7 @@ public class GSInstanceFactory : IGSInstanceFactory
 
         var gameObject = Resources.Load(prefabId) as GameObject;
         if (gameObject == null)
-            throw new NullReferenceException();
+            throw new NullReferenceException("Object with prefab id " + prefabId + " not founded in resources");
 
         var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
         var identity = newGameObject.GetComponent<GSInstanceIdentity>();
