@@ -34,22 +34,22 @@ public class GSObjectLifetime : GSInstanceBehaviour
 
     private void FixedUpdate()
     {
-        if (IsSceneObject && Network.Realtime.IsMasterPlayer || IsLocal)
+        if (!IsLocal)
+            return;
+
+        if (CurrentLifetime > 0f)
         {
-            if (CurrentLifetime > 0f)
+            CurrentLifetime -= Time.fixedDeltaTime;
+
+            if (CurrentLifetime <= 0f)
             {
-                CurrentLifetime -= Time.fixedDeltaTime;
-
-                if (CurrentLifetime <= 0f)
-                {
-                    CurrentLifetime = 0f;
-                    m_onDestroy.Invoke();
-                    if (m_autoDestroy)
-                        DestroyViaNetwork();
-                }
-
-                SetDirty();
+                CurrentLifetime = 0f;
+                m_onDestroy.Invoke();
+                if (m_autoDestroy)
+                    DestroyViaNetwork();
             }
+
+            SetDirty();
         }
     }
 }
