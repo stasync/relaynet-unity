@@ -161,11 +161,12 @@ public class GSInstanceFactory : IGSInstanceFactory
 
         var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
         var identity = newGameObject.GetComponent<GSInstanceIdentity>();
+        var sceneIdentity = newGameObject.GetComponent<GSSceneObjectIdentity>();
 
-        if (identity == null || owner == null)
+        if (identity == null || owner == null || sceneIdentity != null)
         {
             UnityEngine.Object.Destroy(newGameObject);
-            throw new ArgumentNullException();
+            throw new InvalidOperationException();
         }
         
         m_Objects.Add(

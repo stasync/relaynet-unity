@@ -8,27 +8,6 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 {
-    [ContextMenu("Test buffer")]
-    void TestBuffer()
-    {
-        IRPCBuffer buffer = new AuthRpcBuffer();
-        buffer.AddOrUpdate("Test 0", new GSWriter().Write("TestString 0").Write(0));
-        buffer.AddOrUpdate("Test 1", new GSWriter().Write("TestString 1").Write(1));
-
-        Debug.LogWarning("Before serialize");
-        foreach (var kvp in buffer)
-            Debug.LogWarningFormat("Key {0} Value {1}", kvp.Key, kvp.Value);
-
-        var writer = new GSWriter();
-        buffer.Serialize(writer);
-
-        buffer = new AuthRpcBuffer();
-        buffer.Deserialize(new GSReader(writer), false);
-
-        Debug.LogWarning("After serialize");
-        foreach (var kvp in buffer)
-            Debug.LogWarningFormat("Key {0} Value {1}", kvp.Key, kvp.Value);
-    }
     class AuthRpcBuffer : IRPCBuffer
     {
         public bool IsDirty { get; private set; }
@@ -98,6 +77,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     [SerializeField]
     private GameSparksRT.DeliveryIntent m_DeliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE;
+
+    [SerializeField, Range(0.01f, 1f)]
+    float m_SendRate = 0.1f;
+    float m_NextSendEventTime;
 
     public GSInstanceId InstanceId { get; private set; }
 
@@ -191,7 +174,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         //Set object dirty, make sure it will send valid state after initialization. But it's not nesessary here.
         //Is local check inside this method.
-        SetDirty();
+        ForceSerialize();
 
         Debug.LogWarning("New network object: Is Local: " + IsLocal + ", Owner: " + Owner);
         Initialized = true;
@@ -212,7 +195,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             return;
 
-        SetDirty();
+        ForceSerialize();
     }
 
     /// <summary>
@@ -264,9 +247,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     void FixedUpdate()
     {
-        if (!IsLocal || !IsDirty)
+        if (Time.fixedUnscaledTime < m_NextSendEventTime || !IsLocal || !IsDirty)
             return;
 
+        TrySerialize();
+    }
+
+    void ForceSerialize()
+    {
+        SetDirty();
         TrySerialize();
     }
 
@@ -289,6 +278,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             b.Serialize(w);
 
         SendGameObject(w.AsData());
+
+        m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
     }
 
     /// <summary>
