@@ -47,4 +47,9 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
     {
     }
+
+    public static implicit operator GSInstanceIdentity(GSSceneObjectIdentity value)
+    {
+        return value.Identity;
+    }
 }

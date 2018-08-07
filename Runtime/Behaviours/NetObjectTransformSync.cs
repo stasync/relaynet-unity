@@ -9,8 +9,6 @@ using UnityEngine.Networking;
 [DisallowMultipleComponent]
 public sealed class GSTransformSync : GSInstanceBehaviour
 {
-    const string c_SetTransformRpcName = "SetTransform";
-
     [SerializeField, Range(0f, 1f)]
     float m_InterpolateMovement = 1f;
     [SerializeField, Range(0f, 1f)]
@@ -48,7 +46,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         if (!IsLocal)
             throw new Exception("Trying to set position and rotation of remote player object, this is not allowed.");
 
-        AuthRpc(c_SetTransformRpcName,
+        AuthRpc(RpcCode.SetTransform,
             new GSWriter()
                 .Write(position)
                 .Write(rotation)
@@ -69,7 +67,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
     public override void OnInitialze()
     {
-        Identity.RegisterRPCHandler(c_SetTransformRpcName, SetTransformRpcHandler);
+        Identity.RegisterRPCHandler(RpcCode.SetTransform, SetTransformRpcHandler);
         ResetTemporaryData();
     }
 
