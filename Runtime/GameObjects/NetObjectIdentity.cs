@@ -172,7 +172,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         foreach (var o in m_Observables)
             o.OnInitialze();
 
-        //Set object dirty, make sure it will send valid state after initialization. But it's not nesessary here.
+        //Make sure it will send valid state after initialization. But it's not nesessary here.
         //Is local check inside this method.
         ForceSerialize();
 
@@ -255,6 +255,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     void ForceSerialize()
     {
+        if (!IsLocal)
+            return;
+
         SetDirty();
         TrySerialize();
     }
