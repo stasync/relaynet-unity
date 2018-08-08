@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using GameSparks.RT;
+﻿using GameSparks.RT;
+using System;
 using UnityEngine;
-using UnityEngine.Networking;
 
 [DisallowMultipleComponent]
 public sealed class GSTransformSync : GSInstanceBehaviour
