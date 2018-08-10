@@ -9,7 +9,13 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     float m_InterpolateMovement = 1f;
     [SerializeField, Range(0f, 1f)]
     float m_InterpolateRotation = 1f;
-   
+
+    [SerializeField, Range(0.001f, 1f)]
+    float m_PositionThreshold = 0.025f;
+
+    [SerializeField, Range(0.001f, 1f)]
+    float m_RotationThreshold = 1f;
+
     Vector3 m_TargetPosition = Vector3.zero;
     Quaternion m_TargetRotation = Quaternion.identity;
 
@@ -80,7 +86,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     {
         if (IsLocal)
         {
-            if (!HasMoved(0.1f, 1f))
+            if (!HasMoved(m_PositionThreshold, m_RotationThreshold))
                 return;
             m_LastPosition = transform.position;
             m_LastRotation = transform.rotation;
@@ -134,15 +140,13 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
     protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
     {
-        if(firstTime)
+        m_TargetPosition = reader.ReadVector3();
+        m_TargetRotation = reader.ReadQuaternion();
+
+        if (firstTime)
         {
-            transform.position = reader.ReadVector3();
-            transform.rotation = reader.ReadQuaternion();
-        }
-        else
-        {
-            m_TargetPosition = reader.ReadVector3();
-            m_TargetRotation = reader.ReadQuaternion();
+            transform.position = m_TargetPosition;
+            transform.rotation = m_TargetRotation;
         }
     }
 
