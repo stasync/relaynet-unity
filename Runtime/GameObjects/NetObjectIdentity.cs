@@ -73,6 +73,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         {
             return base.ToString();
         }
+
+        public void Clear()
+        {
+            m_Buffer.Clear();
+            IsDirty = true;
+        }
     }
 
     [SerializeField]
@@ -416,6 +422,14 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             InvokeRpcHandler(rpcCode, data);
         else
             m_Transport.RPC(RpcType.Master, InstanceId, rpcCode, data, deliveryIntent);
+    }
+
+    /// <summary>
+    /// Clear current rpc buffer and sets buffer dirty.
+    /// </summary>
+    public void ClearRPCBuffer()
+    {
+        m_RpcBuffer.Clear();
     }
 
     /// <summary>
