@@ -103,9 +103,9 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+    public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, RTData additionalData)
     {
-        return CreateObjectInternal(owner, new GSInstanceId(owner.PeerId), prefabId, isSceneObject, position, rotation, null); //Null data is ok.
+        return CreateObjectInternal(owner, new GSInstanceId(owner.PeerId), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public class GSInstanceFactory : IGSInstanceFactory
 
         // Check if we dont have any created object with UID.
         if(!m_Objects.TryGetValue(instanceId, out identity))
-            return CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, Vector3.zero, Quaternion.identity, baseData);
+            return CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, Vector3.zero, Quaternion.identity, baseData, null);
 
         // Check if identity not initialized yet.
         // This is used for object, which placed in scene by default.
@@ -135,7 +135,8 @@ public class GSInstanceFactory : IGSInstanceFactory
                 instanceId,
                 owner,
                 m_Transport,
-                baseData);
+                baseData, 
+                null);
 
         return ((IIdentity)identity).Deserialize(baseData, false, false);        
     }
@@ -150,7 +151,15 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    GSInstanceIdentity CreateObjectInternal(IGSRTPlayer owner, GSInstanceId instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, RTData baseData)
+    GSInstanceIdentity CreateObjectInternal(
+        IGSRTPlayer owner, 
+        GSInstanceId instanceId, 
+        string prefabId, 
+        bool isSceneObject, 
+        Vector3 position, 
+        Quaternion rotation, 
+        RTData baseData, 
+        RTData additionalData)
     {
         if (m_Objects.ContainsKey(instanceId))
             throw new Exception("Object with id " + instanceId + " already created");
@@ -178,7 +187,8 @@ public class GSInstanceFactory : IGSInstanceFactory
                 instanceId, 
                 owner, 
                 m_Transport, 
-                baseData));
+                baseData, 
+                additionalData));
 
         return identity;
     }
@@ -209,6 +219,7 @@ public class GSInstanceFactory : IGSInstanceFactory
                 sceneIdentity.SceneObjectId,
                 m_Transport.MasterPlayer,
                 m_Transport,
+                null, 
                 null);
     }
 
@@ -219,7 +230,8 @@ public class GSInstanceFactory : IGSInstanceFactory
         GSInstanceId instanceId, 
         IGSRTPlayer owner, 
         IGSTransport transport, 
-        RTData data)
+        RTData data,
+        RTData additionalData)
     {
         return ((IIdentity)identity).Initialze(
                     prefabId,
@@ -227,7 +239,8 @@ public class GSInstanceFactory : IGSInstanceFactory
                     instanceId,
                     owner,
                     transport,
-                    data);
+                    data, 
+                    additionalData);
     }
 
     /// <summary>
@@ -259,7 +272,7 @@ public class GSInstanceFactory : IGSInstanceFactory
         var identity = FindObject(instanceId);
         return 
             identity == null ? 
-            CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, position, rotation, null) : 
+            CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, position, rotation, null, null) : 
             identity;
     }
 
