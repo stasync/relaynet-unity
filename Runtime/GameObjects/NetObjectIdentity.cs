@@ -120,7 +120,16 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Readonly owner reference
     /// </summary>
-    public IGSRTPlayer Owner { get; private set; }
+    IGSRTPlayer m_Owner;
+    public IGSRTPlayer Owner
+    {
+        get { return m_Owner; }
+        private set
+        {
+            m_Owner = value;
+            OnOwnerChanged();
+        }
+    }
 
     /// <summary>
     /// Readonly transport reference
@@ -219,6 +228,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         //Set object's owner and sync it.
         SetOwner(m_Transport.LocalPlayer);
+    }
+
+    /// <summary>
+    /// Object owner was changed.
+    /// </summary>
+    void OnOwnerChanged()
+    {
+        foreach (var b in m_Observables)
+            b.OnOwnerChanged();
     }
 
     /// <summary>
