@@ -169,14 +169,13 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (owner == null)
             throw new ArgumentNullException("owner");
 
+        m_Observables = gameObject.GetComponents<IGSInstanceObservable>();
+
         InstanceId = instanceId;
         Owner = owner;
         PrefabId = prefabId;
         IsSceneObject = isSceneObject;
         m_Transport = transport;
-
-        m_Observables = gameObject.GetComponents<IGSInstanceObservable>();
-
         /*
          * Skip deserialization if it calls on local object.
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
