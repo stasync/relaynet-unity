@@ -7,7 +7,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
 {
     #region STATIC
     public static GSInstanceId Invalid { get { return -1; } }
-    static IList<int> s_UnallocatedIds = new List<int>();
+    static IList<int> s_UnAllocatedIds = new List<int>();
     static int s_IdCounter = 0;
 
     /// <summary>
@@ -18,11 +18,11 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     public const int c_SceneObjectReservedIdSpace = 1000;
     public const int c_FirstValidId = 0;
 
-    public static void UnallocateId(GSInstanceId id)
+    public static void UnAllocateId(GSInstanceId id)
     {
-        if (s_UnallocatedIds.Contains(id))
+        if (s_UnAllocatedIds.Contains(id))
             throw new Exception("Trying to unallocate id, that already unallocated");
-        s_UnallocatedIds.Add(id);
+        s_UnAllocatedIds.Add(id);
     }
 
     /// <summary>
@@ -30,7 +30,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// </summary>
     public static void Reset()
     {
-        s_UnallocatedIds = new List<int>();
+        s_UnAllocatedIds = new List<int>();
         s_IdCounter = 0;
     }
 
@@ -51,10 +51,10 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     public GSInstanceId(GSPeerId peerId)
     {
         //Check unallocated id
-        if (s_UnallocatedIds.Any())
+        if (s_UnAllocatedIds.Any())
         {
-            m_InstanceId = s_UnallocatedIds.FirstOrDefault();
-            s_UnallocatedIds.Remove(m_InstanceId);
+            m_InstanceId = s_UnAllocatedIds.FirstOrDefault();
+            s_UnAllocatedIds.Remove(m_InstanceId);
         }
         //Allocate new id
         else

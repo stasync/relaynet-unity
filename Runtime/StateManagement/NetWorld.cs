@@ -43,20 +43,19 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="peerId"></param>
     public void DestroyPlayerObjects(GSPeerId peerId)
     {
-        var objects = m_Objects.Where(o => 
-            (o.Value == null || 
-            o.Value.Owner == null || 
-            o.Value.Owner.PeerId == peerId) && 
-            !o.Value.IsSceneObject).ToArray();//Copy to iterate
+        var objects = m_Objects.Where(o =>
+            o.Value == null ||
+            ((o.Value.Owner == null ||
+            o.Value.Owner.PeerId == peerId) && !o.Value.IsSceneObject)).ToArray();//Copy to iterate
 
         foreach (var o in objects)
         {
             var obj = m_Objects[o.Key];
-            if (obj == null)
-                continue;
-            UnityEngine.Object.Destroy(obj.gameObject);
+            if (obj != null)
+                UnityEngine.Object.Destroy(obj.gameObject);
             m_Objects.Remove(o.Key);
         }
+
     }
 
     /// <summary>
