@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using UnityEngine;
 
-[DisallowMultipleComponent, RequireComponent(typeof(GSInstanceIdentity))]
+[DisallowMultipleComponent]
 public class GSSceneObjectIdentity : GSInstanceBehaviour
 {
     [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace)]
