@@ -161,7 +161,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         GSInstanceId instanceId,
         IGSRTPlayer owner, 
         IGSTransport transport, 
-        RTData data, RTData additionalData)
+        RTData data,
+        RTData additionalData)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -230,7 +231,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return;
 
         //Set object's owner and sync it.
-        SetOwner(m_Transport.LocalPlayer);
+        OwnObejct();
     }
 
     /// <summary>
@@ -245,17 +246,27 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Ownership managmet, anyone can change scene object owner.
     /// </summary>
-    /// <param name="newOwner"></param>
-    public void SetOwner(IGSRTPlayer newOwner)
+    public void OwnObejct()
     {
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        Owner = newOwner;
+        SetOwner(m_Transport.LocalPlayer, true);
+    }
 
-        //If owner chanaged locally, send  changes to other players.
-        if (newOwner == m_Transport.LocalPlayer)
-            m_Transport.SetOwner(InstanceId);
+    /// <summary>
+    /// Ownershop update, called also from GSTransport
+    /// </summary>
+    /// <param name="owner"></param>
+    public void SetOwner(IGSRTPlayer owner, bool send = false)
+    {
+        if (owner == null)
+            throw new ArgumentNullException("owner");
+
+        Owner = owner;
+        //Send changes
+        if(send)
+            m_Transport.SetOwner(InstanceId, Owner.PeerId);
     }
 
     /// <summary>
