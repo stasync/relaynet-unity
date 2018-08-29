@@ -191,7 +191,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         foreach (var o in m_Observables)
             o.OnInitialze();
 
-        //Make sure it will send valid state after initialization. But it's not nesessary here.
+        //Make sure it will send valid state after initialization.
         //Is local check inside this method.
         ForceSerialize();
 
