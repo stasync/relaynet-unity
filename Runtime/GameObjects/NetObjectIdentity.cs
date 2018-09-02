@@ -36,21 +36,23 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         public bool IsDirty { get; private set; }
 
-        IDictionary<string, RTData> m_Buffer;
+        IList<BufferedRPCData> m_Buffer;
 
         public AuthRpcBuffer()
         {
-            m_Buffer = new Dictionary<string, RTData>();
+            m_Buffer = new List<BufferedRPCData>();
         }
 
-        /// TODO: implement BufferedRPCType (need to remove dictionary)
         void IRPCBuffer.AddOrUpdate(string rpcCode, RTData data, BufferedRPCType type)
         {
-            if (m_Buffer.ContainsKey(rpcCode))
-                m_Buffer.Remove(rpcCode);
+            if(type == BufferedRPCType.Replace)
+            {
+                var rpcData = m_Buffer.FirstOrDefault(d => d.Key == rpcCode);
+                if (rpcData != null)
+                    m_Buffer.Remove(rpcData);
+            }
 
-            m_Buffer.Add(rpcCode, data);
-
+            m_Buffer.Add(new BufferedRPCData(rpcCode, data));
             IsDirty = true;
         }
 
@@ -61,7 +63,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
                 return;
 
             IsDirty = false;
-            writer.WriteDictionary(m_Buffer, (k, w) => w.Write(k), (v, w) => w.Write(v));
+            writer.WriteCollection(m_Buffer, (v, w) => w.Write(v.Data));
         }
 
         void ISerializeable.Deserialize(GSReader reader, bool firstTime)
@@ -70,12 +72,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             if (!wasDirty)
                 return;
 
-            m_Buffer = reader.ReadDictionary(r => r.ReadString(), r => r.ReadData());
+            m_Buffer = reader.ReadCollection(r => new BufferedRPCData(r)).ToList();
         }
 
-        public IEnumerator<KeyValuePair<string, RTData>> GetEnumerator()
+        public IEnumerator<RTData> GetEnumerator()
         {
-            return m_Buffer.GetEnumerator();
+            return m_Buffer.Select(r => r.Data).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -85,8 +87,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         void IRPCBuffer.Recieve(Action<string, RTData> reciever)
         {
-            foreach (var kvp in m_Buffer)
-                reciever(kvp.Key, kvp.Value);
+            foreach (var rpc in m_Buffer)
+                reciever(rpc.Key, rpc.Data);
         }
 
         public void SetDirty()
@@ -96,7 +98,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         public override string ToString()
         {
-            return base.ToString();
+            return m_Buffer.ToString();
         }
 
         public void Clear()
@@ -107,7 +109,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     }
 
     [SerializeField]
-    private GameSparksRT.DeliveryIntent m_DeliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE;
+    GameSparksRT.DeliveryIntent m_DeliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE;
 
     [SerializeField, Range(0.01f, 1f)]
     float m_SendRate = 0.1f;
@@ -446,13 +448,17 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Same as AuthRPC, but buffered.
     /// Only works via UNRELIABLE_SEQUENCED delivery.
     /// </summary>
-    public void AuthRpcBuffered(string rpcCode, RTData data, bool invokeLocaly = true)
+    public void AuthRpcBuffered(
+        string rpcCode, 
+        RTData data, 
+        BufferedRPCType rpcType = BufferedRPCType.Replace,
+        bool invokeLocaly = true)
     {
         //Call regular AuthRPC
         AuthRPC(rpcCode, data, GameSparksRT.DeliveryIntent.RELIABLE, invokeLocaly);
 
         //Add rpc to buffer, rpc buffer becomes dirty after this.
-        m_RpcBuffer.AddOrUpdate(rpcCode, data, BufferedRPCType.Replace);
+        m_RpcBuffer.AddOrUpdate(rpcCode, data, rpcType);
     }
 
     /// <summary>
