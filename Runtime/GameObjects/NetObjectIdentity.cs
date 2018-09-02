@@ -5,11 +5,35 @@ using System.Linq;
 using GameSparks.RT;
 using UnityEngine;
 
+public enum BufferedRPCType
+{
+    Replace, 
+    Add,
+}
+
 [DisallowMultipleComponent]
 public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 {
     class AuthRpcBuffer : IRPCBuffer
     {
+        class BufferedRPCData
+        {
+            public BufferedRPCData(string key, RTData data)
+            {
+                Key = key;
+                Data = data;
+            }
+
+            public BufferedRPCData(GSReader reader)
+            {
+                Key = reader.ReadString();
+                Data = reader.ReadData();
+            }
+
+            public readonly string Key;
+            public readonly RTData Data;
+        }
+
         public bool IsDirty { get; private set; }
 
         IDictionary<string, RTData> m_Buffer;
@@ -19,7 +43,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             m_Buffer = new Dictionary<string, RTData>();
         }
 
-        void IRPCBuffer.AddOrUpdate(string rpcCode, RTData data)
+        /// TODO: implement BufferedRPCType (need to remove dictionary)
+        void IRPCBuffer.AddOrUpdate(string rpcCode, RTData data, BufferedRPCType type)
         {
             if (m_Buffer.ContainsKey(rpcCode))
                 m_Buffer.Remove(rpcCode);
@@ -255,7 +280,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     }
 
     /// <summary>
-    /// Ownershop update, called also from GSTransport
+    /// Change object owner.
     /// </summary>
     /// <param name="owner"></param>
     public void SetOwner(IGSRTPlayer owner, bool send = false)
@@ -427,7 +452,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         AuthRPC(rpcCode, data, GameSparksRT.DeliveryIntent.RELIABLE, invokeLocaly);
 
         //Add rpc to buffer, rpc buffer becomes dirty after this.
-        m_RpcBuffer.AddOrUpdate(rpcCode, data);
+        m_RpcBuffer.AddOrUpdate(rpcCode, data, BufferedRPCType.Replace);
     }
 
     /// <summary>
