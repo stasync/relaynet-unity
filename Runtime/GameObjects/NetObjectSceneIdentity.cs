@@ -8,23 +8,6 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     int m_SceneObjectId;
     public int SceneObjectId { get { return m_SceneObjectId; } }
 
-#if UNITY_EDITOR
-    private void OnValidate()
-    {
-        if (UnityEditor.EditorApplication.isPlaying)
-            return;
-
-        var objects = FindObjectsOfType<GSSceneObjectIdentity>()
-            .Where(o => o != this);
-
-        var objectWithThisId = objects.FirstOrDefault(o => o.m_SceneObjectId == m_SceneObjectId);
-        if (objectWithThisId == null)
-            return;
-
-        Debug.LogErrorFormat("{0} and {1} game objects has same scene id {2} ", gameObject.name, objectWithThisId, m_SceneObjectId);
-    }
-#endif
-
     /// <summary>
     /// We needs to register this object in object factory, if it placed in scene by default.
     /// </summary>
@@ -52,4 +35,31 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     {
         return value.Identity;
     }
+
+#if UNITY_EDITOR
+    [UnityEditor.MenuItem("GameSparks/Validate scene objects")]
+    static void ValidateSceneObjects()
+    {
+        if (UnityEditor.EditorApplication.isPlaying)
+        {
+            Debug.LogWarning("Unable to validate in play mode");
+            return;
+        }
+
+        var sceneObjects = FindObjectsOfType<GSSceneObjectIdentity>();
+
+        foreach (var obj in sceneObjects)
+        {
+            var objectWithSameId = sceneObjects
+                .Where(o => o != obj)
+                .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
+
+            if (objectWithSameId == null)
+                continue;
+
+            Debug.LogErrorFormat("{0} and {1} game objects has same scene id {2} ", obj.gameObject.name, objectWithSameId.gameObject.name, obj.m_SceneObjectId);
+        }
+        Debug.LogWarning("Validation finished");
+    }
+#endif
 }
