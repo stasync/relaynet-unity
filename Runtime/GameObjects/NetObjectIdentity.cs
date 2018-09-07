@@ -30,6 +30,13 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
                 Data = reader.ReadData();
             }
 
+            public GSWriter Serialize(GSWriter writer)
+            {
+                writer.Write(Key);
+                writer.Write(Data);
+                return writer;
+            }
+
             public readonly string Key;
             public readonly RTData Data;
         }
@@ -63,7 +70,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
                 return;
 
             IsDirty = false;
-            writer.WriteCollection(m_Buffer, (v, w) => w.Write(v.Data));
+            writer.WriteCollection(m_Buffer, (v, w) => v.Serialize(w));
         }
 
         void ISerializeable.Deserialize(GSReader reader, bool firstTime)
