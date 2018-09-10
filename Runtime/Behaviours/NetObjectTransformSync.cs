@@ -152,7 +152,10 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
     protected override void SerializeDirtyChecked(GSWriter writer)
     {
-        writer.Write(transform.position);
-        writer.Write(transform.rotation);
+        m_TargetPosition = transform.position;
+        m_TargetRotation = transform.rotation;
+
+        writer.Write(m_TargetPosition);
+        writer.Write(m_TargetRotation);
     }
 }

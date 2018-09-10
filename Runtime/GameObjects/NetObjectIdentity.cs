@@ -273,6 +273,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     void OnOwnerChanged()
     {
+        Debug.LogWarningFormat("{0} object with ID: {1} owner changed, now owner is {2}",
+            gameObject.name, InstanceId, Owner.ToString());
         foreach (var b in m_Observables)
             b.OnOwnerChanged();
     }
@@ -367,7 +369,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     GSInstanceIdentity IIdentity.Deserialize(RTData data, bool force, bool firstTime)
     {
         if (IsLocal)
-            throw new Exception("Trying to deserialize local player object, this is not allowed");
+        {
+            Debug.LogError("Trying to deserialize local player object, this is not allowed. Maybe owner was changed before");
+            return null;
+        }
 
         if (!Initialized && !force)
             return null;
