@@ -5,6 +5,11 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class GSAnimatorSync : GSInstanceBehaviour
 {
+    enum AnimatorTriggerAction
+    {
+        Set, Reset,
+    }
+
     public bool SyncEnabled
     {
         get { return m_SyncEnabled; }
@@ -24,29 +29,22 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     [SerializeField]
     Animator m_Animator;
 
-    int m_AnimationHash;
-    int m_TransitionHash;
     float m_NextSendEventTime;
 
     public override void OnInitialze()
     {
-        Identity.RegisterRPCHandler(RpcCode.SyncAnimatorParameters, SyncAnimatorParametersHandler);
+        Identity.RegisterRPCHandler(RpcCode.SyncAnimator, SyncAnimatorHandler);
+        Identity.RegisterRPCHandler(RpcCode.SyncAnimatorTriggers, SyncAnimatorTriggersHandler);
     }
 
-    void SyncAnimatorParametersHandler(RTData data)
+    void SyncAnimatorHandler(RTData data)
     {
         if (IsLocal)
             return;
 
-        var r = new GSReader(data);
-        var stateHash = r.ReadInt();
-        var normalizedTime = r.ReadFloat();
-        var parameters = new GSReader(r.ReadData());
-
-        if (stateHash != 0)
-            m_Animator.Play(stateHash, 0, normalizedTime);
-
-        ReadParameters(parameters);
+        var reader = new GSReader(data);
+        ReadParameters(reader);
+        ReadLayers(reader);
     }
 
     void FixedUpdate()
@@ -58,62 +56,102 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
             return;
         m_NextSendEventTime = Time.fixedUnscaledTime + m_MinSendRate;
 
-        int stateHash;
-        float normalizedTime;
-        if (!CheckAnimStateChanged(out stateHash, out normalizedTime))
+        var rpc = new GSWriter();
+        WriteParameters(rpc);
+        WriteLayers(rpc);
+
+        AuthRpc(RpcCode.SyncAnimator, rpc, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, false);
+    }
+
+    void ForEachLayer(Action<AnimatorStateInfo, float, int> processor)
+    {
+        for (var i = 0; i < m_Animator.layerCount; i++)
+            processor(
+                m_Animator.IsInTransition(i) ?
+                m_Animator.GetNextAnimatorStateInfo(i) :
+                m_Animator.GetCurrentAnimatorStateInfo(i), m_Animator.GetLayerWeight(i), i);
+    }
+
+    public void SetTrigger(string triggerName)
+    {
+        if (!IsLocal)
+            throw new InvalidOperationException("No authority");
+
+        AnimatorTrigger(Animator.StringToHash(triggerName), AnimatorTriggerAction.Set);
+    }
+
+    public void ResetTrigger(string triggerName)
+    {
+        if (!IsLocal)
+            throw new InvalidOperationException("No authority");
+
+        AnimatorTrigger(Animator.StringToHash(triggerName), AnimatorTriggerAction.Reset);
+    }
+
+    void AnimatorTrigger(int hash, AnimatorTriggerAction action)
+    {
+        DoTriggerAction(hash, action);
+
+        AuthRpc(
+            RpcCode.SyncAnimatorTriggers,
+            new GSWriter()
+                .Write(hash)
+                .Write((int)action), 
+            GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, 
+            false);
+    }
+
+    void SyncAnimatorTriggersHandler(RTData data)
+    {
+        if (IsLocal)
             return;
 
-        var rpc = new GSWriter();
-        WriteAnimatorState(rpc, stateHash, normalizedTime);
+        var r = new GSReader(data);
+        var hash = r.ReadInt();
+        var action = (AnimatorTriggerAction)r.ReadInt();
 
-        AuthRpc(RpcCode.SyncAnimatorParameters, rpc, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, false);
+        DoTriggerAction(hash, action);
     }
 
-    void WriteAnimatorState(GSWriter writer, int stateHash, float normalizedTime)
+    void DoTriggerAction(int hash, AnimatorTriggerAction action)
     {
-        writer
-            .Write(stateHash)
-            .Write(normalizedTime);
-
-        var parameters = new GSWriter();
-        WriteParameters(parameters);
-
-        writer.Write(parameters.AsData());
+        switch (action)
+        {
+            case AnimatorTriggerAction.Set:
+                m_Animator.SetTrigger(hash);
+                break;
+            case AnimatorTriggerAction.Reset:
+                m_Animator.ResetTrigger(hash);
+                break;
+        }
     }
 
-    bool CheckAnimStateChanged(out int stateHash, out float normalizedTime)
+    #region WRITE/READ
+    void WriteLayers(GSWriter writer)
     {
-        stateHash = 0;
-        normalizedTime = 0;
-
-        if (m_Animator.IsInTransition(0))
+        ForEachLayer((state, layerWeight, layerIndex) => 
         {
-            var tt = m_Animator.GetAnimatorTransitionInfo(0);
-            if (tt.fullPathHash != m_TransitionHash)
-            {
-                // first time in this transition
-                m_TransitionHash = tt.fullPathHash;
-                m_AnimationHash = 0;
-                return true;
-            }
-            return false;
-        }
+            writer
+                .Write(layerWeight)
+                .Write(state.fullPathHash)
+                .Write(state.normalizedTime);
+        });
+    }
 
-        var st = m_Animator.GetCurrentAnimatorStateInfo(0);
-        if (st.fullPathHash != m_AnimationHash)
+    void ReadLayers(GSReader reader)
+    {
+        ForEachLayer((state, layerWeight, layerIndex) =>
         {
-            // first time in this animation state
-            if (m_AnimationHash != 0)
-            {
-                // came from another animation directly - from Play()
-                stateHash = st.fullPathHash;
-                normalizedTime = st.normalizedTime;
-            }
-            m_TransitionHash = 0;
-            m_AnimationHash = st.fullPathHash;
-            return true;
-        }
-        return false;
+            var targetLayerWeight = reader.ReadFloat();
+            var targetStateHash = reader.ReadInt();
+            var targetStateNormalizedTime = reader.ReadFloat();
+
+            if (layerWeight != targetLayerWeight)
+                m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);
+
+            if(targetStateHash != 0 && state.fullPathHash != targetStateHash)
+                m_Animator.Play(targetStateHash, layerIndex, targetStateNormalizedTime);
+        });
     }
 
     void WriteParameters(GSWriter writer)
@@ -147,35 +185,13 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
                 m_Animator.SetBool(par.nameHash, reader.ReadBool());
         }
     }
-
+    #endregion
 
     protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
     {
-        var stateHash = reader.ReadInt();
-        var normalizedTime = reader.ReadFloat();
-        ReadParameters(reader);
-
-        if (firstTime)
-            m_Animator.Play(stateHash, 0, normalizedTime);
     }
 
     protected override void SerializeDirtyChecked(GSWriter writer)
     {
-        var stateHash = 0;
-        var normalizedTime = 0f;
-
-        if (m_Animator.IsInTransition(0))
-        {
-            var st = m_Animator.GetNextAnimatorStateInfo(0);
-            stateHash = st.fullPathHash;
-            normalizedTime = st.normalizedTime;
-        }
-        else
-        {
-            var st = m_Animator.GetCurrentAnimatorStateInfo(0);
-            stateHash = st.fullPathHash;
-            normalizedTime = st.normalizedTime;
-        }
-        WriteAnimatorState(writer, stateHash, normalizedTime);
     }
 }
