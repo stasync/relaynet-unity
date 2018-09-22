@@ -49,7 +49,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     void FixedUpdate()
     {
-        if (!m_SyncEnabled && IsLocal)
+        if (!m_SyncEnabled || !IsLocal)
             return;
 
         if (m_NextSendEventTime > Time.fixedUnscaledTime)
