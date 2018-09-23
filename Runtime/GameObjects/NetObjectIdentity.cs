@@ -370,8 +370,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     {
         if (IsLocal)
         {
-            Debug.LogError("Trying to deserialize local player object, this is not allowed. Maybe owner was changed before");
-            return null;
+            // TODO: Need to deserualized this data somehow, or change ownership changing pipeline.
+            Debug.LogError("Trying to deserialize local player object, this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was chaged bofore.");
+            return this;
         }
 
         if (!Initialized && !force)
