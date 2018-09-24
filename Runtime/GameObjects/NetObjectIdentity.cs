@@ -257,15 +257,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     public void OnDisconnected(GSPeerId peerId)
     {
         //Is object owned by disconnected player and a scene object, trying to change owner.
-        if (!IsSceneObject || peerId != Owner.PeerId)
-            return;
+        if (IsSceneObject && peerId == Owner.PeerId)
+        {
+            //Is local client becomes master client, set object's owner and sync it.
+            if (m_Transport.MasterClientPeerId == m_Transport.LocalPeerId)
+                OwnObejct();
+        }
 
-        //Is local client becomes master client.
-        if (m_Transport.MasterClientPeerId != m_Transport.LocalPeerId)
-            return;
-
-        //Set object's owner and sync it.
-        OwnObejct();
+        foreach (var b in m_Observables)
+            b.OnDisconnected(peerId);
     }
 
     /// <summary>
