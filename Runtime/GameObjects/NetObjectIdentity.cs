@@ -225,12 +225,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         foreach (var o in m_Observables)
             o.OnInitialze();
 
+        Debug.LogWarning("New network object: Is Local: " + IsLocal + ", Owner: " + Owner);
+        Initialized = true;
+
         //Make sure it will send valid state after initialization.
         //Is local check inside this method.
         ForceSerialize();
-
-        Debug.LogWarning("New network object: Is Local: " + IsLocal + ", Owner: " + Owner);
-        Initialized = true;
 
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
@@ -321,10 +321,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     void FixedUpdate()
     {
-        if (!IsLocal || !IsDirty || Time.fixedUnscaledTime < m_NextSendEventTime)
+        if (!IsLocal || !Initialized || !IsDirty || Time.fixedUnscaledTime < m_NextSendEventTime)
             return;
 
-        TrySerialize();
+        TrySerialize(m_DeliveryIntent);
     }
 
     void ForceSerialize()
@@ -333,16 +333,16 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return;
 
         SetDirty();
-        TrySerialize();
+        TrySerialize(GameSparksRT.DeliveryIntent.RELIABLE);
     }
 
-    void TrySerialize()
+    void TrySerialize(GameSparksRT.DeliveryIntent deliveryIntent)
     {
         if (!IsLocal)
             throw new Exception("Trying to serialize remote player object, this is not allowed");
 
         if (!Initialized)
-            return;
+            throw new Exception("Trying to serialize object that not initialized, this is not allowed");
 
         var w = new GSWriter()
             .Write(InstanceId)
@@ -354,7 +354,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         foreach (var b in m_Observables)
             b.Serialize(w);
 
-        SendGameObject(w.AsData());
+        SendGameObject(w.AsData(), deliveryIntent);
 
         m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
     }
@@ -549,14 +549,14 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             Debug.LogErrorFormat("Handler for RPC with code {0} doesn't registred on object {1}", rpcCode, gameObject.name);
     }
 
-    void SendGameObject(RTData data)
+    void SendGameObject(RTData data, GameSparksRT.DeliveryIntent deliveryIntent)
     {
         m_Transport.SendGameObjectToOthers(
             InstanceId, 
             PrefabId, 
             IsSceneObject,
-            data, 
-            m_DeliveryIntent);
+            data,
+            deliveryIntent);
     }
 
     public void DestroyViaNetwork()
