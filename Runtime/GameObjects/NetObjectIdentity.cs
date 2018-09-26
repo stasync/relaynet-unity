@@ -549,6 +549,11 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <returns></returns>
     string GetRPCCodeFromAction(Action<RTData> a)
     {
+        /// Anonymous delegate method name usually looks like '<Foo>m__0';
+        /// TODO: Mo 'beautiful' way to know is delegate is anonymous.
+        if (a.Method.Name.StartsWith("<"))
+            throw new InvalidOperationException("Unable to create RPC code with anonymous delegates");
+
         return a.Method.Name + a.Method.DeclaringType.Name;
     }
 

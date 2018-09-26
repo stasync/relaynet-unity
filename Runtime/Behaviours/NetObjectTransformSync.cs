@@ -48,7 +48,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         if (!IsLocal)
             throw new Exception("Trying to set position and rotation of remote player object, this is not allowed.");
 
-        AuthRpc(RpcCode.SetTransform,
+        AuthRPC(RpcCode.SetTransform,
             new GSWriter()
                 .Write(position)
                 .Write(rotation)
