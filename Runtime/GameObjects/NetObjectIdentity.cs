@@ -410,19 +410,28 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// RPC handlers.
     /// </summary>
-    private IDictionary<string, Action<RTData>> m_RPCHandlers = new Dictionary<string, Action<RTData>>();
+    IDictionary<string, Action<RTData>> m_RPCHandlers = new Dictionary<string, Action<RTData>>();
 
     /// <summary>
-    /// Register handler to recieve RPC (Better to call in OnEnable).
+    /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
+    /// </summary>
+    /// <param name="handler"></param>
+    public void RegisterRPCHandler(Action<RTData> handler)
+    {
+        RegisterRPCHandler(GetRPCCodeFromAction(handler), handler);
+    }
+    /// <summary>
+    /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
     /// </summary>
     /// <param name="rpcCode"></param>
     /// <param name="handler"></param>
     public void RegisterRPCHandler(string rpcCode, Action<RTData> handler)
     {
+        /// WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
         if (m_RPCHandlers.ContainsKey(rpcCode))
-            m_RPCHandlers[rpcCode] += handler;
-        else
-            m_RPCHandlers.Add(rpcCode, handler);
+            throw new InvalidOperationException(gameObject.name + " already contains handler for '" + rpcCode + "' rpc code");
+
+        m_RPCHandlers.Add(rpcCode, handler);
     }
 
     /// <summary>
@@ -431,10 +440,23 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     /// <param name="rpcCode"></param>
     /// <param name="handler"></param>
+    [Obsolete("Use just RegisterRPCHandler in 'OnInit' method.")]
     void UnregisterRPCHandler(string rpcCode, Action<RTData> handler)
     {
         if (m_RPCHandlers.ContainsKey(rpcCode))
             m_RPCHandlers[rpcCode] -= handler;
+    }
+
+    /// <summary>
+    /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
+    /// </summary>
+    public void AuthRPC(
+        Action<RTData> rpcHandlerMethod, 
+        RTData data,
+        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE,
+        bool invokeLocaly = true)
+    {
+        AuthRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
     }
 
     /// <summary>
@@ -461,7 +483,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Same as AuthRPC, but buffered.
     /// Only works via UNRELIABLE_SEQUENCED delivery.
     /// </summary>
-    public void AuthRpcBuffered(
+    public void AuthRPCBuffered(
         string rpcCode, 
         RTData data, 
         BufferedRPCType rpcType = BufferedRPCType.Replace,
@@ -472,6 +494,18 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         //Add rpc to buffer, rpc buffer becomes dirty after this.
         m_RpcBuffer.AddOrUpdate(rpcCode, data, rpcType);
+    }
+
+    /// <summary>
+    /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
+    /// IF we have authority, just invokes locally without sending data.
+    /// </summary>
+    public void NonAuthRPC(
+        Action<RTData> rpcHandlerMethod,
+        RTData data,
+        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
+    {
+        NonAuthRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent);
     }
 
     /// <summary>
@@ -506,6 +540,16 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     public void ClearRPCBuffer()
     {
         m_RpcBuffer.Clear();
+    }
+
+    /// <summary>
+    /// Converts action to RPC code.
+    /// </summary>
+    /// <param name="a"></param>
+    /// <returns></returns>
+    string GetRPCCodeFromAction(Action<RTData> a)
+    {
+        return a.Method.Name + a.Method.DeclaringType.Name;
     }
 
     /// <summary>
