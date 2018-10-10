@@ -163,7 +163,10 @@ public class GSInstanceFactory : IGSInstanceFactory
         if (m_Objects.ContainsKey(instanceId))
             throw new Exception("Object with id " + instanceId + " already created");
 
-        var gameObject = Resources.Load(prefabId) as GameObject;
+        var gameObject = UnityEngine
+            .ResourceManagment
+            .ResourceTracker.Current.Load(prefabId) as GameObject;
+
         if (gameObject == null)
             throw new NullReferenceException("Object with prefab id " + prefabId + " not founded in resources");
 
