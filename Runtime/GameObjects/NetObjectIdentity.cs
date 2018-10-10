@@ -491,6 +491,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     {
         AuthRPCBuffered(GetRPCCodeFromAction(rpcHandlerMethod), data, rpcType, invokeLocaly);
     }
+
     /// <summary>
     /// Same as AuthRPC, but buffered.
     /// Only works via UNRELIABLE_SEQUENCED delivery.
