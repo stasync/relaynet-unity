@@ -16,11 +16,16 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     [SerializeField, Range(0.001f, 1f)]
     float m_RotationThreshold = 1f;
 
+    [SerializeField]
+    bool m_Prediction = true;
+
     Vector3 m_TargetPosition = Vector3.zero;
     Quaternion m_TargetRotation = Quaternion.identity;
 
     Vector3 m_LastPosition = Vector3.zero;
     Quaternion m_LastRotation = Quaternion.identity;
+
+    Vector3 m_MovementDirection;
 
     public bool SyncEnabled
     {
@@ -80,6 +85,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
         m_LastPosition = transform.position;
         m_LastRotation = transform.rotation;
+
+        m_MovementDirection = transform.forward;
     }
 
     private void FixedUpdate()
@@ -126,8 +133,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             return false;
 
         // check if position has changed
-        var diff = (m_LastPosition - transform.position).sqrMagnitude;
-        if (diff > posDiff)
+        m_MovementDirection = transform.position - m_LastPosition;
+        if (m_MovementDirection.sqrMagnitude > posDiff)
             return true;
 
         // check if rotation has changed
@@ -142,6 +149,11 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     {
         m_TargetPosition = reader.ReadVector3();
         m_TargetRotation = reader.ReadQuaternion();
+        var remoteMovementDirection = reader.ReadVector3();
+        var remoteSessionTime = reader.ReadFloat();
+
+        if (m_Prediction)
+            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.SessionTime - remoteSessionTime);
 
         if (firstTime)
         {
@@ -157,5 +169,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
         writer.Write(m_TargetPosition);
         writer.Write(m_TargetRotation);
+        writer.Write(m_MovementDirection);
+        writer.Write(Network.Realtime.SessionTime);
     }
 }
