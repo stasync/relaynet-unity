@@ -19,6 +19,9 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     [SerializeField]
     bool m_Prediction = true;
 
+    [SerializeField, Range(0.1f, 2f)]
+    float m_PredictionMultipler = 1f;
+
     Vector3 m_TargetPosition = Vector3.zero;
     Quaternion m_TargetRotation = Quaternion.identity;
 
@@ -153,7 +156,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         var remoteSessionTime = reader.ReadFloat();
 
         if (m_Prediction)
-            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.SessionTime - remoteSessionTime);
+            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.SessionTime - remoteSessionTime) * m_PredictionMultipler;
 
         if (firstTime)
         {
