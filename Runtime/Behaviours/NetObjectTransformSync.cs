@@ -25,10 +25,11 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     Vector3 m_TargetPosition = Vector3.zero;
     Quaternion m_TargetRotation = Quaternion.identity;
 
+    Vector3 m_LastFramePosition = Vector3.zero;
     Vector3 m_LastPosition = Vector3.zero;
     Quaternion m_LastRotation = Quaternion.identity;
 
-    Vector3 m_MovementDirection;
+    Vector3 m_MovementDirection = Vector3.zero;
 
     public bool SyncEnabled
     {
@@ -89,13 +90,16 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         m_LastPosition = transform.position;
         m_LastRotation = transform.rotation;
 
-        m_MovementDirection = transform.forward;
+        m_MovementDirection = Vector3.zero;
     }
 
     private void FixedUpdate()
     {
         if (IsLocal)
         {
+            m_MovementDirection = transform.position - m_LastFramePosition;
+            m_LastFramePosition = transform.position;
+
             if (!HasMoved(m_PositionThreshold, m_RotationThreshold))
                 return;
             m_LastPosition = transform.position;
@@ -136,8 +140,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             return false;
 
         // check if position has changed
-        m_MovementDirection = transform.position - m_LastPosition;
-        if (m_MovementDirection.sqrMagnitude > posDiff)
+        var currentDirection = transform.position - m_LastPosition;
+        if (currentDirection.sqrMagnitude > posDiff)
             return true;
 
         // check if rotation has changed
@@ -155,14 +159,13 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         var remoteMovementDirection = reader.ReadVector3();
         var remoteSessionTime = reader.ReadFloat();
 
-        if (m_Prediction)
-            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.SessionTime - remoteSessionTime) * m_PredictionMultipler;
-
         if (firstTime)
         {
             transform.position = m_TargetPosition;
             transform.rotation = m_TargetRotation;
         }
+        else if (m_Prediction)
+            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.Time - remoteSessionTime) * m_PredictionMultipler;
     }
 
     protected override void SerializeDirtyChecked(GSWriter writer)
@@ -173,6 +176,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         writer.Write(m_TargetPosition);
         writer.Write(m_TargetRotation);
         writer.Write(m_MovementDirection);
-        writer.Write(Network.Realtime.SessionTime);
+        writer.Write(Network.Realtime.Time);
     }
 }

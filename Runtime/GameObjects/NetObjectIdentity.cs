@@ -18,7 +18,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     {
         class BufferedRPCData
         {
-            public BufferedRPCData(string key, RTData data)
+            public BufferedRPCData(int key, RTData data)
             {
                 Key = key;
                 Data = data;
@@ -26,7 +26,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
             public BufferedRPCData(GSReader reader)
             {
-                Key = reader.ReadString();
+                Key = reader.ReadInt();
                 Data = reader.ReadData();
             }
 
@@ -37,7 +37,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
                 return writer;
             }
 
-            public readonly string Key;
+            public readonly int Key;
             public readonly RTData Data;
         }
 
@@ -50,16 +50,16 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             m_Buffer = new List<BufferedRPCData>();
         }
 
-        void IRPCBuffer.AddOrUpdate(string rpcCode, RTData data, BufferedRPCType type)
+        void IRPCBuffer.AddOrUpdate(int hashCode, RTData data, BufferedRPCType type)
         {
             if(type == BufferedRPCType.Replace)
             {
-                var rpcData = m_Buffer.FirstOrDefault(d => d.Key == rpcCode);
+                var rpcData = m_Buffer.FirstOrDefault(d => d.Key == hashCode);
                 if (rpcData != null)
                     m_Buffer.Remove(rpcData);
             }
 
-            m_Buffer.Add(new BufferedRPCData(rpcCode, data));
+            m_Buffer.Add(new BufferedRPCData(hashCode, data));
             IsDirty = true;
         }
 
@@ -92,7 +92,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return m_Buffer.GetEnumerator();
         }
 
-        void IRPCBuffer.Recieve(Action<string, RTData> reciever)
+        void IRPCBuffer.Recieve(Action<int, RTData> reciever)
         {
             foreach (var rpc in m_Buffer)
                 reciever(rpc.Key, rpc.Data);
@@ -235,7 +235,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
         if (!IsLocal)
-            m_RpcBuffer.Recieve(((IRPCReciever)this).RecieveRpcWithoutAuthority);
+            m_RpcBuffer.Recieve(((IRPCReciever)this).RecieveRPCRemotely);
 
         return this;
     }
@@ -410,7 +410,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// RPC handlers.
     /// </summary>
-    IDictionary<string, Action<RTData>> m_RPCHandlers = new Dictionary<string, Action<RTData>>();
+    IDictionary<int, Action<RTData>> m_RPCHandlers = new Dictionary<int, Action<RTData>>();
 
     /// <summary>
     /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
@@ -427,11 +427,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="handler"></param>
     public void RegisterRPCHandler(string rpcCode, Action<RTData> handler)
     {
+        var hashCode = RPCNameToHash(rpcCode);
         /// WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
-        if (m_RPCHandlers.ContainsKey(rpcCode))
+        if (m_RPCHandlers.ContainsKey(hashCode))
             throw new InvalidOperationException(gameObject.name + " already contains handler for '" + rpcCode + "' rpc code");
 
-        m_RPCHandlers.Add(rpcCode, handler);
+        m_RPCHandlers.Add(hashCode, handler);
     }
 
     /// <summary>
@@ -443,26 +444,28 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     [Obsolete("Use just RegisterRPCHandler in 'OnInit' method.")]
     void UnregisterRPCHandler(string rpcCode, Action<RTData> handler)
     {
-        if (m_RPCHandlers.ContainsKey(rpcCode))
-            m_RPCHandlers[rpcCode] -= handler;
+        var hashCode = RPCNameToHash(rpcCode);
+
+        if (m_RPCHandlers.ContainsKey(hashCode))
+            m_RPCHandlers[hashCode] -= handler;
     }
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void AuthRPC(
+    public void OwnerToOthersRPC(
         Action<RTData> rpcHandlerMethod, 
         RTData data,
         GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE,
         bool invokeLocaly = true)
     {
-        AuthRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
+        OwnerToOthersRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
     }
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void AuthRPC(
+    public void OwnerToOthersRPC(
         string rpcCode, 
         RTData data, 
         GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE, 
@@ -471,54 +474,70 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
+        var hashCode = RPCNameToHash(rpcCode);
+        OwnerToOthersRPC(hashCode, data, deliveryIntent, invokeLocaly);
+    }
+
+    void OwnerToOthersRPC(
+        int hashCode,
+        RTData data,
+        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE,
+        bool invokeLocaly = true)
+    {
+        if (!IsLocal)
+            throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
+
         //Invoke handler locally.
-        if(invokeLocaly)
-            InvokeRpcHandler(rpcCode, data);
+        if (invokeLocaly)
+            InvokeRpcHandler(hashCode, data);
 
         //Send ot others.
-        m_Transport.RPC(RpcType.Auth, InstanceId, rpcCode, data, deliveryIntent);
+        m_Transport.RPC(RpcType.OwnerToOthers, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
     /// Same as AuthRPC, but buffered.
-    /// Only works via UNRELIABLE_SEQUENCED delivery.
+    /// Only works via RELIABLE delivery.
     /// </summary>
-    public void AuthRPCBuffered(
+    public void OwnerToOthersRPCBuffered(
         string rpcCode, 
         RTData data, 
         BufferedRPCType rpcType = BufferedRPCType.Replace,
         bool invokeLocaly = true)
     {
+        var hashCode = RPCNameToHash(rpcCode);
+
         //Call regular AuthRPC
-        AuthRPC(rpcCode, data, GameSparksRT.DeliveryIntent.RELIABLE, invokeLocaly);
+        OwnerToOthersRPC(hashCode, data, GameSparksRT.DeliveryIntent.RELIABLE, invokeLocaly);
 
         //Add rpc to buffer, rpc buffer becomes dirty after this.
-        m_RpcBuffer.AddOrUpdate(rpcCode, data, rpcType);
+        m_RpcBuffer.AddOrUpdate(hashCode, data, rpcType);
     }
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void NonAuthRPC(
+    public void ToOwnerRPC(
         Action<RTData> rpcHandlerMethod,
         RTData data,
         GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
     {
-        NonAuthRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent);
+        ToOwnerRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent);
     }
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void NonAuthRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
+    public void ToOwnerRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
     {
+        var hashCode = RPCNameToHash(rpcCode);
         //If we have authority on this object, don't need to send this kind of RPC.
         if (IsLocal)
-            InvokeRpcHandler(rpcCode, data);
+            InvokeRpcHandler(hashCode, data);
         else
-            m_Transport.RPC(RpcType.NonAuth, InstanceId, rpcCode, data, deliveryIntent);
+            m_Transport.RPC(RpcType.ToOwner, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -526,12 +545,14 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// It does not matter whether MASTER client is a owner of this object or not.
     /// IF we are master client, just invokes locally without sending data.
     /// </summary>
-    public void MasterRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
+    public void ToMasterRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
     {
-        if(IsMasterClient)
-            InvokeRpcHandler(rpcCode, data);
+        var hashCode = RPCNameToHash(rpcCode);
+
+        if (IsMasterClient)
+            InvokeRpcHandler(hashCode, data);
         else
-            m_Transport.RPC(RpcType.Master, InstanceId, rpcCode, data, deliveryIntent);
+            m_Transport.RPC(RpcType.ToMaster, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -557,45 +578,65 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         return a.Method.Name + a.Method.DeclaringType.Name;
     }
 
+    #region RPC_HASH
+    static Dictionary<string, int> s_RPCHashMap = new Dictionary<string, int>();
+
+    int RPCNameToHash(string s)
+    {
+        if (s == null)
+            return 0;
+
+        var hash = s.Length;
+        if (s_RPCHashMap.TryGetValue(s, out hash))
+            return hash;
+
+        for (var i = 0; i != s.Length; ++i)
+            hash = (hash << 5) - hash + s[i];
+
+        s_RPCHashMap.Add(s, hash);
+        return hash;
+    }
+    #endregion
+
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRpcWithoutAuthority(string rpcCode, RTData data)
+    void IRPCReciever.RecieveRPCRemotely(int hashCode, RTData data)
     {
         if (IsLocal)
             throw new Exception("Trying to recieve NO-AUTHORITY RPC on local object behaviour, this is not allowed");
 
-        InvokeRpcHandler(rpcCode, data);
+        InvokeRpcHandler(hashCode, data);
     }
 
     /// <summary>
     /// Recieve rpc on object with authority. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRpcWithAuthority(string rpcCode, RTData data)
+    void IRPCReciever.RecieveRPCLocaly(int hashCode, RTData data)
     {
         if (!IsLocal)
             throw new Exception("Trying to recieve AUTHORITY RPC on remote object behaviour, this is not allowed");
 
-        InvokeRpcHandler(rpcCode, data);
+        InvokeRpcHandler(hashCode, data);
     }
 
     /// <summary>
     /// Recieve rpc on master clent. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveMasterClientRpc(string rpcCode, RTData data)
+    void IRPCReciever.RecieveRPCOnMasterClient(int hashCode, RTData data)
     {
         if (!IsMasterClient)
             throw new Exception("Trying to recieve MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
 
-        InvokeRpcHandler(rpcCode, data);
+        InvokeRpcHandler(hashCode, data);
     }
 
-    void InvokeRpcHandler(string rpcCode, RTData data)
+    void InvokeRpcHandler(int hashCode, RTData data)
     {
-        if (m_RPCHandlers.ContainsKey(rpcCode))
-            m_RPCHandlers[rpcCode].Invoke(data);
+        if (m_RPCHandlers.ContainsKey(hashCode))
+            m_RPCHandlers[hashCode].Invoke(data);
         else
-            Debug.LogErrorFormat("Handler for RPC with code {0} doesn't registred on object {1}", rpcCode, gameObject.name);
+            Debug.LogErrorFormat("Handler for RPC with hash {0} doesn't registred on object {1}", hashCode, gameObject.name);
     }
 
     void SendGameObject(RTData data, GameSparksRT.DeliveryIntent deliveryIntent)
