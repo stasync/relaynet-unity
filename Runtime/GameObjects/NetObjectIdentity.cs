@@ -14,7 +14,7 @@ public enum BufferedRPCType
 [DisallowMultipleComponent]
 public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 {
-    class AuthRpcBuffer : IRPCBuffer
+    class DefaultRpcBuffer : IRPCBuffer
     {
         class BufferedRPCData
         {
@@ -45,7 +45,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         IList<BufferedRPCData> m_Buffer;
 
-        public AuthRpcBuffer()
+        public DefaultRpcBuffer()
         {
             m_Buffer = new List<BufferedRPCData>();
         }
@@ -124,7 +124,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     public GSInstanceId InstanceId { get; private set; }
 
-    IRPCBuffer m_RpcBuffer = new AuthRpcBuffer();
+    IRPCBuffer m_RpcBuffer = new DefaultRpcBuffer();
 
     public bool IsMasterClient
     {
