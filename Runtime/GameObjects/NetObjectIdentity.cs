@@ -500,6 +500,19 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Only works via RELIABLE delivery.
     /// </summary>
     public void OwnerToOthersRPCBuffered(
+        Action<RTData> rpcHandlerMethod,
+        RTData data,
+        BufferedRPCType rpcType = BufferedRPCType.Replace,
+        bool invokeLocaly = true)
+    {
+        OwnerToOthersRPCBuffered(GetRPCCodeFromAction(rpcHandlerMethod), data, rpcType, invokeLocaly);
+    }
+
+    /// <summary>
+    /// Same as AuthRPC, but buffered.
+    /// Only works via RELIABLE delivery.
+    /// </summary>
+    public void OwnerToOthersRPCBuffered(
         string rpcCode, 
         RTData data, 
         BufferedRPCType rpcType = BufferedRPCType.Replace,
