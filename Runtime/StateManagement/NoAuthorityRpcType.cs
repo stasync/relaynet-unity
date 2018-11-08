@@ -4,7 +4,7 @@
 /// </summary>
 public enum RpcType
 {
-    Auth = 0,
-    NonAuth = 1, 
-    Master = 2,
+    OwnerToOthers = 0,
+    ToOwner = 1, 
+    ToMaster = 2,
 }
