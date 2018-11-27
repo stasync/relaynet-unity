@@ -201,7 +201,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// This is not initialize object, so object will be invalid, untill first update happens.
     /// </summary>
     /// <param name="sceneIdentity"></param>
-    public void RegisterObject(GSSceneObjectIdentity sceneIdentity)
+    public void RegisterSceneObjectIdentity(GSSceneObjectIdentity sceneIdentity)
     {
         if (m_Objects.ContainsKey(sceneIdentity.SceneObjectId))
             throw new Exception(string.Format(

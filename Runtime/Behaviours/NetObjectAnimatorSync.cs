@@ -60,7 +60,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         WriteParameters(rpc);
         WriteLayers(rpc);
 
-        AuthRPC(RpcCode.SyncAnimator, rpc, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, false);
+        OwnerToOthersRPC(RpcCode.SyncAnimator, rpc, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, false);
     }
 
     void ForEachLayer(Action<AnimatorStateInfo, float, int> processor)
@@ -92,7 +92,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     {
         DoTriggerAction(hash, action);
 
-        AuthRPC(
+        OwnerToOthersRPC(
             RpcCode.SyncAnimatorTriggers,
             new GSWriter()
                 .Write(hash)
