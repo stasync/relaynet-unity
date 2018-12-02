@@ -146,6 +146,11 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         }
     }
 
+    public bool IsLocalPlayerTagObject
+    {
+        get { return m_Transport.LocalPlayer.TagObjectId == InstanceId; }
+    }
+
     public bool IsDirty
     {
         get { return m_Observables.Any(o => o.IsDirty) || m_RpcBuffer.IsDirty; }
@@ -686,6 +691,13 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     #endif
 
     #region HELPERS
+
+    public T GetBehaviour<T>() where T : GSInstanceBehaviour
+    {
+        // TODO: Make in cached;
+        return GetComponent<T>();
+    }
+
     static GSRealtime s_Realtime;
 
     [Locator.Initialized]
