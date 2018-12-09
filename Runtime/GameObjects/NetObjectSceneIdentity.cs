@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -50,9 +51,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
 
         foreach (var obj in sceneObjects)
         {
-            var objectWithSameId = sceneObjects
-                .Where(o => o != obj)
-                .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
+            var objectWithSameId = ObjectWithSameId(sceneObjects, obj);
 
             if (objectWithSameId == null)
                 continue;
@@ -60,6 +59,33 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
             Debug.LogErrorFormat("{0} and {1} game objects has same scene id {2} ", obj.gameObject.name, objectWithSameId.gameObject.name, obj.m_SceneObjectId);
         }
         Debug.LogWarning("Validation finished");
+    }
+
+    [UnityEditor.MenuItem("GameSparks/Fix scene objects")]
+    static void FixSceneObjects()
+    {
+        if (UnityEditor.EditorApplication.isPlaying)
+        {
+            Debug.LogWarning("Unable to validate in play mode");
+            return;
+        }
+
+        var sceneObjects = FindObjectsOfType<GSSceneObjectIdentity>();
+
+        foreach (var obj in sceneObjects)
+        {
+            while (ObjectWithSameId(sceneObjects, obj) != null)
+                obj.m_SceneObjectId = Random.Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace);
+            UnityEditor.EditorUtility.SetDirty(obj);
+        }
+        ValidateSceneObjects();
+    }
+
+    static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> c, GSSceneObjectIdentity obj)
+    {
+        return c
+                .Where(o => o != obj)
+                .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
     }
 #endif
 }
