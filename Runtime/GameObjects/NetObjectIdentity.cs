@@ -703,7 +703,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     [Locator.Initialized]
     static void Init(ILocator locator)
     {
-        s_Realtime = locator.Get<GSNetwork>().Realtime;
+        s_Realtime = locator.FirstOfType<GSNetwork>().Realtime;
     }
 
     public static GSInstanceIdentity Find(GSInstanceId instanceId)
