@@ -33,8 +33,8 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     public override void OnInitialze()
     {
-        Identity.RegisterRPCHandler(RpcCode.SyncAnimator, SyncAnimatorHandler);
-        Identity.RegisterRPCHandler(RpcCode.SyncAnimatorTriggers, SyncAnimatorTriggersHandler);
+        Identity.RegisterRPCHandler(SyncAnimatorHandler);
+        Identity.RegisterRPCHandler(SyncAnimatorTriggersHandler);
     }
 
     void SyncAnimatorHandler(RTData data)
@@ -60,7 +60,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         WriteParameters(rpc);
         WriteLayers(rpc);
 
-        OwnerToOthersRPC(RpcCode.SyncAnimator, rpc, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, false);
+        OwnerToOthersRPC(SyncAnimatorHandler, rpc, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, false);
     }
 
     void ForEachLayer(Action<AnimatorStateInfo, float, int> processor)
@@ -93,7 +93,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         DoTriggerAction(hash, action);
 
         OwnerToOthersRPC(
-            RpcCode.SyncAnimatorTriggers,
+            SyncAnimatorTriggersHandler,
             new GSWriter()
                 .Write(hash)
                 .Write((int)action), 
