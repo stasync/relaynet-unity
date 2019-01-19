@@ -691,7 +691,6 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     #endif
 
     #region HELPERS
-
     public T GetBehaviour<T>() where T : GSInstanceBehaviour
     {
         // TODO: Make in cached;
