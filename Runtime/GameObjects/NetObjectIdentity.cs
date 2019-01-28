@@ -593,7 +593,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (a.Method.Name.StartsWith("<"))
             throw new InvalidOperationException("Unable to create RPC code with anonymous delegates");
 
-        return a.Method.Name + a.Method.DeclaringType.Name;
+        return a.Method.Name + a.Method.DeclaringType.FullName;
     }
 
     #region RPC_HASH
