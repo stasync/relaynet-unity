@@ -74,9 +74,9 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
 
         foreach (var obj in sceneObjects)
         {
+            UnityEditor.Undo.RecordObject(obj, "Peek scene instance id");
             while (ObjectWithSameId(sceneObjects, obj) != null)
                 obj.m_SceneObjectId = Random.Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace);
-            UnityEditor.EditorUtility.SetDirty(obj);
         }
         ValidateSceneObjects();
     }
