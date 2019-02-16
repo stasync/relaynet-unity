@@ -1,12 +1,33 @@
-﻿using System.Collections;
+﻿using GameSparks.RT;
+using System;
 using System.Collections.Generic;
-using UnityEngine;
 
-public class GSRPC
+public sealed class GSRPCUtils
 {
-    /*static Dictionary<string, int> s_RPCHashMap = new Dictionary<string, int>();
+    GSRPCUtils() { }
+    /// <summary>
+    /// Converts action to RPC code.
+    /// </summary>
+    /// <param name="a"></param>
+    /// <returns></returns>
+    public static string ActionToString(Action<RTData> a)
+    {
+        /// Anonymous delegate method name usually looks like '<Foo>m__0';
+        /// TODO: Mo 'beautiful' way to know is delegate is anonymous.
+        if (a.Method.Name.StartsWith("<"))
+            throw new InvalidOperationException("Unable to create RPC code with anonymous delegates");
 
-    int RPCNameToHash(string s)
+        return string.Format("{0}.{1}", a.Method.DeclaringType.FullName, a.Method.Name);
+    }
+
+    static Dictionary<string, int> s_RPCHashMap = new Dictionary<string, int>();
+
+    /// <summary>
+    /// TODO: Make it private and not static;
+    /// </summary>
+    /// <param name="s"></param>
+    /// <returns></returns>
+    public static int NameToHash(string s)
     {
         if (s == null)
             return 0;
@@ -20,5 +41,5 @@ public class GSRPC
 
         s_RPCHashMap.Add(s, hash);
         return hash;
-    }*/
+    }
 }

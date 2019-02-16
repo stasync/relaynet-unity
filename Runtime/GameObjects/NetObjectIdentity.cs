@@ -423,36 +423,17 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="handler"></param>
     public void RegisterRPCHandler(Action<RTData> handler)
     {
-        RegisterRPCHandler(GetRPCCodeFromAction(handler), handler);
+        RegisterRPCHandler(GSRPCUtils.ActionToString(handler), handler);
     }
-    /// <summary>
-    /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
-    /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="handler"></param>
+
     public void RegisterRPCHandler(string rpcCode, Action<RTData> handler)
     {
-        var hashCode = RPCNameToHash(rpcCode);
+        var rpcHash = GSRPCUtils.NameToHash(rpcCode);
         /// WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
-        if (m_RPCHandlers.ContainsKey(hashCode))
+        if (m_RPCHandlers.ContainsKey(rpcHash))
             throw new InvalidOperationException(gameObject.name + " already contains handler for '" + rpcCode + "' rpc code");
 
-        m_RPCHandlers.Add(hashCode, handler);
-    }
-
-    /// <summary>
-    /// Unregiter handler (Better to call in OnDisable).
-    /// For internal usage only. Use just RegisterRPCHandler in 'OnInit' method.
-    /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="handler"></param>
-    [Obsolete("Use just RegisterRPCHandler in 'OnInit' method.")]
-    void UnregisterRPCHandler(string rpcCode, Action<RTData> handler)
-    {
-        var hashCode = RPCNameToHash(rpcCode);
-
-        if (m_RPCHandlers.ContainsKey(hashCode))
-            m_RPCHandlers[hashCode] -= handler;
+        m_RPCHandlers.Add(rpcHash, handler);
     }
 
     /// <summary>
@@ -464,7 +445,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE,
         bool invokeLocaly = true)
     {
-        OwnerToOthersRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
+        OwnerToOthersRPC(GSRPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
     }
 
     /// <summary>
@@ -479,7 +460,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
-        var hashCode = RPCNameToHash(rpcCode);
+        var hashCode = GSRPCUtils.NameToHash(rpcCode);
         OwnerToOthersRPC(hashCode, data, deliveryIntent, invokeLocaly);
     }
 
@@ -510,7 +491,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         BufferedRPCType rpcType = BufferedRPCType.Replace,
         bool invokeLocaly = true)
     {
-        OwnerToOthersRPCBuffered(GetRPCCodeFromAction(rpcHandlerMethod), data, rpcType, invokeLocaly);
+        OwnerToOthersRPCBuffered(GSRPCUtils.ActionToString(rpcHandlerMethod), data, rpcType, invokeLocaly);
     }
 
     /// <summary>
@@ -523,7 +504,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         BufferedRPCType rpcType = BufferedRPCType.Replace,
         bool invokeLocaly = true)
     {
-        var hashCode = RPCNameToHash(rpcCode);
+        var hashCode = GSRPCUtils.NameToHash(rpcCode);
 
         //Call regular AuthRPC
         OwnerToOthersRPC(hashCode, data, GameSparksRT.DeliveryIntent.RELIABLE, invokeLocaly);
@@ -541,7 +522,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         RTData data,
         GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
     {
-        ToOwnerRPC(GetRPCCodeFromAction(rpcHandlerMethod), data, deliveryIntent);
+        ToOwnerRPC(GSRPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent);
     }
 
     /// <summary>
@@ -550,7 +531,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     public void ToOwnerRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
     {
-        var hashCode = RPCNameToHash(rpcCode);
+        var hashCode = GSRPCUtils.NameToHash(rpcCode);
         //If we have authority on this object, don't need to send this kind of RPC.
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
@@ -565,7 +546,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     public void ToMasterRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
     {
-        var hashCode = RPCNameToHash(rpcCode);
+        var hashCode = GSRPCUtils.NameToHash(rpcCode);
 
         if (IsMasterClient)
             InvokeRpcHandler(hashCode, data);
@@ -580,41 +561,6 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     {
         m_RpcBuffer.Clear();
     }
-
-    /// <summary>
-    /// Converts action to RPC code.
-    /// </summary>
-    /// <param name="a"></param>
-    /// <returns></returns>
-    string GetRPCCodeFromAction(Action<RTData> a)
-    {
-        /// Anonymous delegate method name usually looks like '<Foo>m__0';
-        /// TODO: Mo 'beautiful' way to know is delegate is anonymous.
-        if (a.Method.Name.StartsWith("<"))
-            throw new InvalidOperationException("Unable to create RPC code with anonymous delegates");
-
-        return a.Method.Name + a.Method.DeclaringType.FullName;
-    }
-
-    #region RPC_HASH
-    static Dictionary<string, int> s_RPCHashMap = new Dictionary<string, int>();
-
-    int RPCNameToHash(string s)
-    {
-        if (s == null)
-            return 0;
-
-        var hash = s.Length;
-        if (s_RPCHashMap.TryGetValue(s, out hash))
-            return hash;
-
-        for (var i = 0; i != s.Length; ++i)
-            hash = (hash << 5) - hash + s[i];
-
-        s_RPCHashMap.Add(s, hash);
-        return hash;
-    }
-    #endregion
 
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
