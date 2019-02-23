@@ -206,16 +206,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (Initialized)
             throw new Exception("Object already initialized");
 
-        if (owner == null)
-            throw new ArgumentNullException("owner");
-
         m_Observables = gameObject.GetComponents<IGSInstanceObservable>();
+        m_Owner = owner ?? throw new ArgumentNullException("owner");
 
         InstanceId = instanceId;
-        Owner = owner;
         PrefabId = prefabId;
         IsSceneObject = isSceneObject;
         m_Transport = transport;
+
+        OnOwnerChanged();
         /*
          * Skip deserialization if it calls on local object.
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
@@ -301,10 +300,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="owner"></param>
     public void SetOwner(IGSRTPlayer owner, bool send = false)
     {
-        if (owner == null)
-            throw new ArgumentNullException("owner");
-
-        Owner = owner;
+        Owner = owner ?? throw new ArgumentNullException("owner");
         //Send changes
         if(send)
             m_Transport.SetOwner(InstanceId, Owner.PeerId);

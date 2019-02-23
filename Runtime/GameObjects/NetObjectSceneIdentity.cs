@@ -12,7 +12,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     /// <summary>
     /// We needs to register this object in object factory, if it placed in scene by default.
     /// </summary>
-    private void Awake()
+    void Awake()
     {
         // Register scene object.
         // Initialize object if we on master client, so new clents will not initialize this objects, but will recieve updates.
