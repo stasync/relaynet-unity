@@ -43,7 +43,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         public bool IsDirty { get; private set; }
 
-        IList<BufferedRPCData> m_Buffer;
+        List<BufferedRPCData> m_Buffer;
 
         public DefaultRpcBuffer()
         {
@@ -52,12 +52,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         void IRPCBuffer.AddOrUpdate(int hashCode, RTData data, BufferedRPCType type)
         {
-            if(type == BufferedRPCType.Replace)
-            {
-                var rpcData = m_Buffer.FirstOrDefault(d => d.Key == hashCode);
-                if (rpcData != null)
-                    m_Buffer.Remove(rpcData);
-            }
+            if (type == BufferedRPCType.Replace)
+                Remove(hashCode);
 
             m_Buffer.Add(new BufferedRPCData(hashCode, data));
             IsDirty = true;
@@ -96,6 +92,17 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         {
             foreach (var rpc in m_Buffer)
                 reciever(rpc.Key, rpc.Data);
+        }
+
+        void Remove(int hashCode)
+        {
+            m_Buffer.RemoveAll(d => d.Key == hashCode);
+            IsDirty = true;
+        }
+
+        void IRPCBuffer.Remove(int hashCode)
+        {
+            Remove(hashCode);
         }
 
         public void SetDirty()
@@ -214,7 +221,6 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         IsSceneObject = isSceneObject;
         m_Transport = transport;
 
-        OnOwnerChanged();
         /*
          * Skip deserialization if it calls on local object.
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
@@ -226,15 +232,23 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             foreach (var o in m_Observables)
                 o.OnCreatedWithAdditionalData(additionalData);
 
+        //Tell components abount object pre initialization;
         foreach (var o in m_Observables)
-            o.OnInitialze();
+            o.OnPreInitialize();
 
-        Debug.LogWarning("New network object: Is Local: " + IsLocal + ", Owner: " + Owner);
+        //Mark object as initialized;
         Initialized = true;
 
-        //Make sure it will send valid state after initialization.
+        //Forse obect to send itself after creation.
         //Is local check inside this method.
         ForceSerialize();
+
+        //Owner changed;
+        OnOwnerChanged();
+
+        //Tell components abount object was initialized;
+        foreach (var o in m_Observables)
+            o.OnPostInitialize();
 
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
@@ -334,10 +348,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return;
 
         SetDirty();
-        TrySerialize(GameSparksRT.DeliveryIntent.RELIABLE);
+        TrySerialize(GameSparksRT.DeliveryIntent.RELIABLE, true);
     }
 
-    void TrySerialize(GameSparksRT.DeliveryIntent deliveryIntent)
+    void TrySerialize(GameSparksRT.DeliveryIntent deliveryIntent, bool initializable = false)
     {
         if (!IsLocal)
             throw new Exception("Trying to serialize remote player object, this is not allowed");
@@ -355,7 +369,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         foreach (var b in m_Observables)
             b.Serialize(w);
 
-        SendGameObject(w.AsData(), deliveryIntent);
+        SendGameObject(w.AsData(), initializable, deliveryIntent);
 
         m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
     }
@@ -372,12 +386,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (IsLocal)
         {
             // TODO: Need to deserualized this data somehow, or change ownership changing pipeline.
-            Debug.LogError("Trying to deserialize local player object, this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was chaged bofore.");
+            Debug.LogErrorFormat("Trying to deserialize local player object {0}, this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was chaged bofore.", gameObject.name);
             return this;
         }
 
         if (!Initialized && !force)
+        {
+            Debug.LogWarningFormat("Trying to deserialize object {0} that is not initialized, this is not allowed. Use 'force' option to do this.", gameObject.name);
             return null;
+        }
 
         if (data == null)
             return this;
@@ -559,6 +576,20 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     }
 
     /// <summary>
+    /// Remove RPC from buffer
+    /// </summary>
+    /// <param name="rpcHandlerMethod"></param>
+    public void RemoveRPCFromBuffer(Action<RTData> rpcHandlerMethod)
+    {
+        RemoveRPCFromBuffer(GSRPCUtils.ActionToString(rpcHandlerMethod));
+    }
+
+    public void RemoveRPCFromBuffer(string rpcCode)
+    {
+        m_RpcBuffer.Remove(GSRPCUtils.NameToHash(rpcCode));
+    }
+
+    /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
     /// </summary>
     void IRPCReciever.RecieveRPCRemotely(int hashCode, RTData data)
@@ -599,13 +630,14 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             Debug.LogErrorFormat("Handler for RPC with hash {0} doesn't registred on object {1}", hashCode, gameObject.name);
     }
 
-    void SendGameObject(RTData data, GameSparksRT.DeliveryIntent deliveryIntent)
+    void SendGameObject(RTData data, bool initializable, GameSparksRT.DeliveryIntent deliveryIntent)
     {
         m_Transport.SendGameObjectToOthers(
             InstanceId, 
             PrefabId, 
             IsSceneObject,
             data,
+            initializable,
             deliveryIntent);
     }
 

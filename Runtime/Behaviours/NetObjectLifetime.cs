@@ -16,7 +16,7 @@ public class GSObjectLifetime : GSInstanceBehaviour
         SetDirty();
     }
 
-    public override void OnInitialze()
+    public override void OnPostInitialize()
     {
         if (IsSceneObject && Network.Realtime.IsMasterPlayer || IsLocal)
             CurrentLifetime = m_lifetime;

@@ -31,20 +31,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     float m_NextSendEventTime;
 
-    public override void OnInitialze()
+    public override void OnPostInitialize()
     {
-        Identity.RegisterRPCHandler(SyncAnimatorHandler);
         Identity.RegisterRPCHandler(SyncAnimatorTriggersHandler);
-    }
-
-    void SyncAnimatorHandler(RTData data)
-    {
-        if (IsLocal)
-            return;
-
-        var reader = new GSReader(data);
-        ReadParameters(reader);
-        ReadLayers(reader);
     }
 
     void FixedUpdate()
@@ -54,13 +43,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
         if (m_NextSendEventTime > Time.fixedUnscaledTime)
             return;
+
         m_NextSendEventTime = Time.fixedUnscaledTime + m_MinSendRate;
-
-        var rpc = new GSWriter();
-        WriteParameters(rpc);
-        WriteLayers(rpc);
-
-        OwnerToOthersRPC(SyncAnimatorHandler, rpc, GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, false);
+        SetDirty();
     }
 
     void ForEachLayer(Action<AnimatorStateInfo, float, int> processor)
@@ -189,9 +174,13 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
     {
+        ReadParameters(reader);
+        ReadLayers(reader);
     }
 
     protected override void SerializeDirtyChecked(GSWriter writer)
     {
+        WriteParameters(writer);
+        WriteLayers(writer);
     }
 }

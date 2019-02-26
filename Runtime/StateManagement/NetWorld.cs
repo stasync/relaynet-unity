@@ -82,10 +82,9 @@ public class GSInstanceFactory : IGSInstanceFactory
         if (!m_Objects.ContainsKey(instanceId))
             throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());
 
-        GSInstanceIdentity objectToDelete = null;
-        if (m_Objects.TryGetValue(instanceId, out objectToDelete))
+        if (m_Objects.TryGetValue(instanceId, out GSInstanceIdentity objectToDelete))
         {
-            if(objectToDelete.Owner.PeerId != peerId)
+            if (objectToDelete.Owner.PeerId != peerId)
                 throw new Exception("Owner exception: Remote peer id: " + peerId + " Local object peer id: " + objectToDelete.Owner.PeerId);
             UnityEngine.Object.Destroy(objectToDelete.gameObject);
         }
@@ -117,17 +116,17 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="prefabId"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateOrUpdateObject(GSInstanceId instanceId, IGSRTPlayer owner, string prefabId, bool isSceneObject, RTData baseData)
+    public GSInstanceIdentity CreateOrUpdateObject(GSInstanceId instanceId, bool initializable, IGSRTPlayer owner, string prefabId, bool isSceneObject, RTData baseData)
     {
-        GSInstanceIdentity identity = null;
-
         // Check if we dont have any created object with UID.
-        if(!m_Objects.TryGetValue(instanceId, out identity))
-            return CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, Vector3.zero, Quaternion.identity, baseData, null);
+        if (!m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity))
+            return initializable ?
+                CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, Vector3.zero, Quaternion.identity, baseData, null) : 
+                null;
 
         // Check if identity not initialized yet.
         // This is used for object, which placed in scene by default.
-        if (!identity.Initialized)
+        if (!identity.Initialized && initializable)
             ((IIdentity)identity).Initialze(
                 prefabId,
                 isSceneObject,
@@ -137,7 +136,9 @@ public class GSInstanceFactory : IGSInstanceFactory
                 baseData, 
                 null);
 
-        return ((IIdentity)identity).Deserialize(baseData, false, false);        
+        return identity.Initialized ? 
+            (identity as IIdentity).Deserialize(baseData, false, false) : 
+            null;    
     }
 
     /// <summary>
@@ -253,8 +254,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <returns></returns>
     public GSInstanceIdentity FindObject(GSInstanceId instanceId)
     {
-        GSInstanceIdentity identity = null;
-        return m_Objects.TryGetValue(instanceId, out identity) ? identity : null;
+        return m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity) ? identity : null;
     }
 
     /// <summary>

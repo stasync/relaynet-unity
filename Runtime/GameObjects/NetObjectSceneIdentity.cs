@@ -20,7 +20,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         Network.Realtime.RegisterSceneObject(this);
     }
 
-    public override void OnInitialze()
+    public override void OnPostInitialize()
     {
     }
 

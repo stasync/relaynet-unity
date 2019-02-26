@@ -76,7 +76,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         ResetTemporaryData();
     }
 
-    public override void OnInitialze()
+    public override void OnPostInitialize()
     {
         Identity.RegisterRPCHandler(SetTransformRpcHandler);
         ResetTemporaryData();

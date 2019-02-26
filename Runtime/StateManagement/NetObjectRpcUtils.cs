@@ -22,6 +22,15 @@ public sealed class GSRPCUtils
 
     static Dictionary<string, int> s_RPCHashMap = new Dictionary<string, int>();
 
+    public static string TryFindStringByHash(int hash)
+    {
+        foreach (var kvp in s_RPCHashMap)
+            if (kvp.Value == hash)
+                return kvp.Key;
+
+        return null;
+    }
+
     /// <summary>
     /// TODO: Make it private and not static;
     /// </summary>
