@@ -91,6 +91,16 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         return new GSInstanceId(value);
     }
 
+    public static bool operator ==(GSInstanceId value0, GSInstanceId value1)
+    {
+        return value0.m_InstanceId == value1.m_InstanceId;
+    }
+
+    public static bool operator !=(GSInstanceId value0, GSInstanceId value1)
+    {
+        return value0.m_InstanceId != value1.m_InstanceId;
+    }
+
     public override string ToString()
     {
         return m_InstanceId.ToString();

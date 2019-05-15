@@ -7,6 +7,8 @@ using UnityEngine;
 
 public class GSInstanceFactory : IGSInstanceFactory
 {
+    public event Action<GSInstanceIdentity> NewObjectInitialized = delegate { };
+
     IGSTransport m_Transport;
     IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
 
@@ -127,13 +129,14 @@ public class GSInstanceFactory : IGSInstanceFactory
         // Check if identity not initialized yet.
         // This is used for object, which placed in scene by default.
         if (!identity.Initialized && initializable)
-            ((IIdentity)identity).Initialze(
-                prefabId,
-                isSceneObject,
-                instanceId,
-                owner,
-                m_Transport,
-                baseData, 
+            InitializeIdentity(
+                identity, 
+                prefabId, 
+                isSceneObject, 
+                instanceId, 
+                owner, 
+                m_Transport, 
+                baseData,
                 null);
 
         return identity.Initialized ? 
@@ -236,7 +239,11 @@ public class GSInstanceFactory : IGSInstanceFactory
         RTData data,
         RTData additionalData)
     {
-        return ((IIdentity)identity).Initialze(
+        var initializable = identity as IIdentity;
+        if (initializable == null)
+            throw new InvalidCastException();
+
+        initializable.Initialze(
                     prefabId,
                     isSceneObject,
                     instanceId,
@@ -244,6 +251,9 @@ public class GSInstanceFactory : IGSInstanceFactory
                     transport,
                     data, 
                     additionalData);
+
+        NewObjectInitialized(identity);
+        return identity;
     }
 
     /// <summary>
@@ -276,6 +286,33 @@ public class GSInstanceFactory : IGSInstanceFactory
             identity == null ? 
             CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, position, rotation, null, null) : 
             identity;
+    }
+
+    /// <summary>
+    /// If some object doesn't exist yet, we can wait for it;
+    /// Similar to: <see cref="FindObjectOrCreateMock(IGSRTPlayer, GSInstanceId, string, bool, Vector3, Quaternion)"/>
+    /// But it doesn't create mock objects;
+    /// </summary>
+    /// <param name="instanceId"></param>
+    /// <param name="result"></param>
+    public void FindObjectOrWait(GSInstanceId instanceId, Action<GSInstanceIdentity> result)
+    {
+        var identity = FindObject(instanceId);
+        if(identity != null)
+        {
+            result(identity);
+            return;
+        }
+        NewObjectInitialized += OnNewObjectInitialized;
+
+        void OnNewObjectInitialized(GSInstanceIdentity o)
+        {
+            if (o == null || o.InstanceId != instanceId)
+                return;
+
+            result(o);
+            NewObjectInitialized -= OnNewObjectInitialized;
+        }
     }
 
     public IRPCReciever FindRpcReciever(GSInstanceId id)
