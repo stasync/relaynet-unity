@@ -241,7 +241,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         //Forse obect to send itself after creation.
         //Is local check inside this method.
-        ForceSerialize();
+        ForceSerializeIfLocal();
 
         //Owner changed;
         OnOwnerChanged();
@@ -266,7 +266,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             return;
 
-        ForceSerialize();
+        ForceSerializeIfLocal();
     }
 
     /// <summary>
@@ -342,7 +342,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         TrySerialize(m_DeliveryIntent);
     }
 
-    void ForceSerialize()
+    void ForceSerializeIfLocal()
     {
         if (!IsLocal)
             return;

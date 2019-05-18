@@ -22,6 +22,9 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     [SerializeField, Range(0.1f, 2f)]
     float m_PredictionMultipler = 1f;
 
+    [SerializeField]
+    bool m_UseLocalTranformation = false;
+
     Vector3 m_TargetPosition = Vector3.zero;
     Quaternion m_TargetRotation = Quaternion.identity;
 
@@ -44,6 +47,24 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     [SerializeField]
     bool m_SyncEnabled = true;
 
+    public Vector3 Position { get { return m_UseLocalTranformation ? transform.localPosition : transform.position; } }
+    public void SetPosition(Vector3 position)
+    {
+        if (m_UseLocalTranformation)
+            transform.localPosition = position;
+        else
+            transform.position = position;
+    }
+
+    public Quaternion Rotation { get { return m_UseLocalTranformation ? transform.localRotation : transform.rotation; } }
+    public void SetRotation(Quaternion rotation)
+    {
+        if (m_UseLocalTranformation)
+            transform.localRotation = rotation;
+        else
+            transform.rotation = rotation;
+    }
+
     /// <summary>
     /// Set position and rotation and send to other clients.
     /// Do not use in every frame to update transform.
@@ -64,7 +85,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
                 .AsData());
     }
 
-    private void SetTransformRpcHandler(RTData data)
+    void SetTransformRpcHandler(RTData data)
     {
         var reader = new GSReader(data);
         var pos = reader.ReadVector3();
@@ -82,70 +103,70 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         ResetTemporaryData();
     }
 
-    private void ResetTemporaryData()
+    void ResetTemporaryData()
     {
-        m_TargetPosition = transform.position;
-        m_TargetRotation = transform.rotation;
+        m_TargetPosition = Position;
+        m_TargetRotation = Rotation;
 
-        m_LastPosition = transform.position;
-        m_LastRotation = transform.rotation;
+        m_LastPosition = Position;
+        m_LastRotation = Rotation;
 
         m_MovementDirection = Vector3.zero;
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
         if (IsLocal)
         {
-            m_MovementDirection = transform.position - m_LastFramePosition;
-            m_LastFramePosition = transform.position;
+            m_MovementDirection = Position - m_LastFramePosition;
+            m_LastFramePosition = Position;
 
             if (!HasMoved(m_PositionThreshold, m_RotationThreshold))
                 return;
-            m_LastPosition = transform.position;
-            m_LastRotation = transform.rotation;
+            m_LastPosition = Position;
+            m_LastRotation = Rotation;
 
             SetDirty();
         }
         else
         {
             //Position interpolation
-            if (m_InterpolateMovement != 0f)
+            if (m_InterpolateMovement > Mathf.Epsilon)
             {
-                transform.position = Vector3.Lerp(
+                SetPosition(Vector3.Lerp(
                         transform.position,
                         m_TargetPosition,
-                        Time.fixedDeltaTime * m_InterpolateMovement * 10);
+                        Time.fixedDeltaTime * m_InterpolateMovement * 10));
             }
             else
-                transform.position = m_TargetPosition;
+                SetPosition(m_TargetPosition);
 
             //Rotation interpolation
-            if (m_InterpolateRotation != 0f)
+            if (m_InterpolateRotation > Mathf.Epsilon)
             {
-                transform.rotation = Quaternion.Slerp(
+                SetRotation(Quaternion.Slerp(
                         transform.rotation,
                         m_TargetRotation,
-                        Time.fixedDeltaTime * m_InterpolateRotation * 10);
+                        Time.fixedDeltaTime * m_InterpolateRotation * 10));
             }
             else
-                transform.rotation = m_TargetRotation;
+                SetRotation(m_TargetRotation);
         }
         
     }
 
-    private bool HasMoved(float posDiff, float rotDiff)
+    bool HasMoved(float posDiff, float rotDiff)
     {
         if (!SyncEnabled)
             return false;
 
         // check if position has changed
-        var currentDirection = transform.position - m_LastPosition;
+        var currentDirection = Position - m_LastPosition;
         if (currentDirection.sqrMagnitude > posDiff)
             return true;
 
         // check if rotation has changed
-        var angle = Quaternion.Angle(m_LastRotation, transform.rotation);
+        var angle = Quaternion.Angle(m_LastRotation, Rotation);
         if (angle > rotDiff)
             return true;
 
@@ -161,8 +182,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
         if (firstTime)
         {
-            transform.position = m_TargetPosition;
-            transform.rotation = m_TargetRotation;
+            SetPosition(m_TargetPosition);
+            SetRotation(m_TargetRotation);
         }
         else if (m_Prediction)
             m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.Time - remoteSessionTime) * m_PredictionMultipler;
@@ -170,8 +191,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
     protected override void SerializeDirtyChecked(GSWriter writer)
     {
-        m_TargetPosition = transform.position;
-        m_TargetRotation = transform.rotation;
+        m_TargetPosition = Position;
+        m_TargetRotation = Rotation;
 
         writer.Write(m_TargetPosition);
         writer.Write(m_TargetRotation);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
 {
@@ -109,5 +108,15 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     public bool Equals(GSInstanceId other)
     {
         return m_InstanceId.Equals(other.m_InstanceId);
+    }
+
+    public override bool Equals(object obj)
+    {
+        return base.Equals(obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return m_InstanceId.GetHashCode();
     }
 }
