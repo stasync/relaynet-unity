@@ -336,7 +336,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     void FixedUpdate()
     {
-        if (!IsLocal || !Initialized || !IsDirty || Time.fixedUnscaledTime < m_NextSendEventTime)
+        if (!IsLocal || !Initialized || Time.fixedUnscaledTime < m_NextSendEventTime || !IsDirty)
             return;
 
         TrySerialize(m_DeliveryIntent);
