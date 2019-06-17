@@ -11,11 +11,13 @@ public class GSInstanceFactory : IGSInstanceFactory
 
     IGSTransport m_Transport;
     IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
+    SimpleServiceProvider<ResourceTracker> m_ResourcesFactory;
 
     public GSInstanceFactory(IGSTransport transport)
     {
         m_Transport = transport;
         m_Objects = new Dictionary<GSInstanceId, GSInstanceIdentity>();
+        m_ResourcesFactory = new SimpleServiceProvider<ResourceTracker>();
     }
 
     /// <summary>
@@ -167,9 +169,7 @@ public class GSInstanceFactory : IGSInstanceFactory
         if (m_Objects.ContainsKey(instanceId))
             throw new Exception("Object with id " + instanceId + " already created");
 
-        var gameObject = UnityEngine
-            .ResourceManagment
-            .ResourceTracker.Current.Load(prefabId) as GameObject;
+        var gameObject = m_ResourcesFactory.Instance.Load<GameObject>(prefabId);
 
         if (gameObject == null)
             throw new NullReferenceException("Object with prefab id " + prefabId + " not founded in resources");
