@@ -11,13 +11,13 @@ public class GSInstanceFactory : IGSInstanceFactory
 
     IGSTransport m_Transport;
     IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
-    SimpleServiceProvider<ResourceTracker> m_ResourcesFactory;
+    ServiceProvider<ResourceTracker> m_ResourcesFactory;
 
     public GSInstanceFactory(IGSTransport transport)
     {
         m_Transport = transport;
         m_Objects = new Dictionary<GSInstanceId, GSInstanceIdentity>();
-        m_ResourcesFactory = new SimpleServiceProvider<ResourceTracker>();
+        m_ResourcesFactory = new ServiceProvider<ResourceTracker>();
     }
 
     /// <summary>
