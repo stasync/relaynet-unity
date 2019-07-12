@@ -9,11 +9,11 @@ public class GSInstanceFactory : IGSInstanceFactory
 {
     public event Action<GSInstanceIdentity> NewObjectInitialized = delegate { };
 
-    IGSTransport m_Transport;
+    INetwork m_Transport;
     IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
     ServiceProvider<ResourceTracker> m_ResourcesFactory;
 
-    public GSInstanceFactory(IGSTransport transport)
+    public GSInstanceFactory(INetwork transport)
     {
         m_Transport = transport;
         m_Objects = new Dictionary<GSInstanceId, GSInstanceIdentity>();
@@ -105,7 +105,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, RTData additionalData)
+    public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, byte[] additionalData)
     {
         return CreateObjectInternal(owner, new GSInstanceId(owner.PeerId), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
     }
@@ -120,7 +120,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="prefabId"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateOrUpdateObject(GSInstanceId instanceId, bool initializable, IGSRTPlayer owner, string prefabId, bool isSceneObject, RTData baseData)
+    public GSInstanceIdentity CreateOrUpdateObject(GSInstanceId instanceId, bool initializable, IGSRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
     {
         // Check if we dont have any created object with UID.
         if (!m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity))
@@ -163,8 +163,8 @@ public class GSInstanceFactory : IGSInstanceFactory
         bool isSceneObject, 
         Vector3 position, 
         Quaternion rotation, 
-        RTData baseData, 
-        RTData additionalData)
+        byte[] baseData,
+        byte[] additionalData)
     {
         if (m_Objects.ContainsKey(instanceId))
             throw new Exception("Object with id " + instanceId + " already created");
@@ -235,9 +235,9 @@ public class GSInstanceFactory : IGSInstanceFactory
         bool isSceneObject, 
         GSInstanceId instanceId, 
         IGSRTPlayer owner, 
-        IGSTransport transport, 
-        RTData data,
-        RTData additionalData)
+        INetwork transport,
+        byte[] data,
+        byte[] additionalData)
     {
         var initializable = identity as IIdentity;
         if (initializable == null)

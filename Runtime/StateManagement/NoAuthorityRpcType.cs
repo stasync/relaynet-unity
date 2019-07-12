@@ -2,7 +2,7 @@
 /// <summary>
 /// Rpc type.
 /// </summary>
-public enum RpcType
+public enum RpcType : byte
 {
     OwnerToOthers = 0,
     ToOwner = 1, 

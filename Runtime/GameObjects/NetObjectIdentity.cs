@@ -180,7 +180,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Readonly transport reference
     /// </summary>
-    IGSTransport m_Transport;
+    INetwork m_Transport;
 
     /// <summary>
     /// Object prefab id
@@ -206,7 +206,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         bool isSceneObject,
         GSInstanceId instanceId,
         IGSRTPlayer owner, 
-        IGSTransport transport, 
+        INetwork transport, 
         RTData data,
         RTData additionalData)
     {

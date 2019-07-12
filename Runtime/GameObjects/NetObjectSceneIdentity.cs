@@ -7,7 +7,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
 {
     [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace)]
     int m_SceneObjectId;
-    public int SceneObjectId { get { return m_SceneObjectId; } }
+    public uint SceneObjectId { get { return (uint)m_SceneObjectId; } }
 
     /// <summary>
     /// We needs to register this object in object factory, if it placed in scene by default.

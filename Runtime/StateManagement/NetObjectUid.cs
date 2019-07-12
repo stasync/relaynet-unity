@@ -5,17 +5,17 @@ using System.Linq;
 public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
 {
     #region STATIC
-    public static GSInstanceId Invalid { get { return -1; } }
-    static IList<int> s_UnAllocatedIds = new List<int>();
-    static int s_IdCounter = 0;
+    public static GSInstanceId Invalid { get { return uint.MaxValue; } }
+    static IList<uint> s_UnAllocatedIds = new List<uint>();
+    static uint s_IdCounter = 0;
 
     /// <summary>
     /// This id's for network objects that located in scene by default.
     /// If you create scene object in runtime, they use default peer-based id space.
     /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
     /// </summary>
-    public const int c_SceneObjectReservedIdSpace = 1000;
-    public const int c_FirstValidId = 0;
+    public const uint c_SceneObjectReservedIdSpace = 1000;
+    public const uint c_FirstValidId = 0;
 
     public static void UnAllocateId(GSInstanceId id)
     {
@@ -29,7 +29,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// </summary>
     public static void Reset()
     {
-        s_UnAllocatedIds = new List<int>();
+        s_UnAllocatedIds = new List<uint>();
         s_IdCounter = 0;
     }
 
@@ -41,7 +41,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         return PeerStartId(peerId) + s_IdCounter;
     }
 
-    private static int PeerStartId(GSPeerId peerId)
+    private static uint PeerStartId(GSPeerId peerId)
     {
         return c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
     }
@@ -64,28 +64,28 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// This private constructor in use for casting.
     /// </summary>
     /// <param name="instanceId"></param>
-    private GSInstanceId(int instanceId)
+    private GSInstanceId(uint instanceId)
     {
         m_InstanceId = instanceId;
     }
 
-    public bool IsValid { get { return m_InstanceId >= c_FirstValidId; } }
+    public bool IsValid { get { return m_InstanceId >= c_FirstValidId && m_InstanceId < Invalid; } }
 
     public bool IsSceneObjectSpaceId { get { return IsValid && m_InstanceId <= c_SceneObjectReservedIdSpace; } }
 
-    private int m_InstanceId;
+    private uint m_InstanceId;
 
     public int CompareTo(GSInstanceId other)
     {
         return m_InstanceId.CompareTo(other.m_InstanceId);
     }
 
-    public static implicit operator int(GSInstanceId value)
+    public static implicit operator uint(GSInstanceId value)
     {
         return value.m_InstanceId;
     }
 
-    public static implicit operator GSInstanceId(int value)
+    public static implicit operator GSInstanceId(uint value)
     {
         return new GSInstanceId(value);
     }
