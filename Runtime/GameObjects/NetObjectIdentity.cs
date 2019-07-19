@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using GameSparks.RT;
 using UnityEngine;
 
 public enum BufferedRPCType
@@ -18,27 +17,27 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     {
         class BufferedRPCData
         {
-            public BufferedRPCData(int key, RTData data)
+            public BufferedRPCData(int key, byte[] data)
             {
                 Key = key;
                 Data = data;
             }
 
-            public BufferedRPCData(GSReader reader)
+            public BufferedRPCData(NetReader reader)
             {
-                Key = reader.ReadInt();
-                Data = reader.ReadData();
+                Key = reader.ReadInt32();
+                Data = reader.ReadBytesAndSize();
             }
 
-            public GSWriter Serialize(GSWriter writer)
+            public NetWriter Serialize(NetWriter writer)
             {
                 writer.Write(Key);
-                writer.Write(Data);
+                writer.WriteBytesAndSize(Data);
                 return writer;
             }
 
             public readonly int Key;
-            public readonly RTData Data;
+            public readonly byte[] Data;
         }
 
         public bool IsDirty { get; private set; }
@@ -50,7 +49,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             m_Buffer = new List<BufferedRPCData>();
         }
 
-        void IRPCBuffer.AddOrUpdate(int hashCode, RTData data, BufferedRPCType type)
+        void IRPCBuffer.AddOrUpdate(int hashCode, byte[] data, BufferedRPCType type)
         {
             if (type == BufferedRPCType.Replace)
                 Remove(hashCode);
@@ -71,16 +70,18 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         void ISerializeable.Deserialize(GSReader reader, bool firstTime)
         {
-            var wasDirty = reader.ReadBool();
+            var wasDirty = reader.ReadBoolean();
             if (!wasDirty)
                 return;
 
             m_Buffer = reader.ReadCollection(r => new BufferedRPCData(r)).ToList();
         }
 
-        public IEnumerator<RTData> GetEnumerator()
+        public IEnumerator<byte[]> GetEnumerator()
         {
-            return m_Buffer.Select(r => r.Data).GetEnumerator();
+            return m_Buffer
+                .Select(r => r.Data)
+                .GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -88,7 +89,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return m_Buffer.GetEnumerator();
         }
 
-        void IRPCBuffer.Recieve(Action<int, RTData> reciever)
+        void IRPCBuffer.Recieve(Action<int, byte[]> reciever)
         {
             foreach (var rpc in m_Buffer)
                 reciever(rpc.Key, rpc.Data);
@@ -123,7 +124,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     }
 
     [SerializeField]
-    GameSparksRT.DeliveryIntent m_DeliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE;
+    DeliveryIntent m_DeliveryIntent = DeliveryIntent.Unreliable;
 
     [SerializeField, Range(0.01f, 1f)]
     float m_SendRate = 0.1f;
@@ -207,8 +208,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         GSInstanceId instanceId,
         IGSRTPlayer owner, 
         INetwork transport, 
-        RTData data,
-        RTData additionalData)
+        byte[] data,
+        byte[] additionalData)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -348,10 +349,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             return;
 
         SetDirty();
-        TrySerialize(GameSparksRT.DeliveryIntent.RELIABLE, true);
+        TrySerialize(DeliveryIntent.Reliable, true);
     }
 
-    void TrySerialize(GameSparksRT.DeliveryIntent deliveryIntent, bool initializable = false)
+    void TrySerialize(DeliveryIntent deliveryIntent, bool initializable = false)
     {
         if (!IsLocal)
             throw new Exception("Trying to serialize remote player object, this is not allowed");
@@ -369,7 +370,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         foreach (var b in m_Observables)
             b.Serialize(w);
 
-        SendGameObject(w.AsData(), initializable, deliveryIntent);
+        SendGameObject(w.AsArray(), initializable, deliveryIntent);
 
         m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
     }
@@ -381,7 +382,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="force"></param>
     /// <param name="firstTime"></param>
     /// <returns></returns>
-    GSInstanceIdentity IIdentity.Deserialize(RTData data, bool force, bool firstTime)
+    GSInstanceIdentity IIdentity.Deserialize(byte[] data, bool force, bool firstTime)
     {
         if (IsLocal)
         {
@@ -402,7 +403,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         var r = new GSReader(data);
 
         //Check instance id
-        var id = r.ReadInt();
+        var id = r.ReadInstanceId();
         if (id != InstanceId)
             throw new InvalidOperationException(string.Format("Object id is:{0}, but recieved id is {1}", InstanceId, id));
 
@@ -410,7 +411,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if(prefabId != PrefabId)
             throw new InvalidOperationException(string.Format("Object prefab id is:{0}, but recieved preafab id is {1}", PrefabId, prefabId));
 
-        var isSceneObject = r.ReadBool();
+        var isSceneObject = r.ReadBoolean();
         if (isSceneObject)
         {
             //Scene object can be handled here
@@ -428,18 +429,18 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// RPC handlers.
     /// </summary>
-    IDictionary<int, Action<RTData>> m_RPCHandlers = new Dictionary<int, Action<RTData>>();
+    IDictionary<int, Action<byte[]>> m_RPCHandlers = new Dictionary<int, Action<byte[]>>();
 
     /// <summary>
     /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
     /// </summary>
     /// <param name="handler"></param>
-    public void RegisterRPCHandler(Action<RTData> handler)
+    public void RegisterRPCHandler(Action<byte[]> handler)
     {
         RegisterRPCHandler(GSRPCUtils.ActionToString(handler), handler);
     }
 
-    public void RegisterRPCHandler(string rpcCode, Action<RTData> handler)
+    public void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
     {
         var rpcHash = GSRPCUtils.NameToHash(rpcCode);
         /// WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
@@ -453,9 +454,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
     public void OwnerToOthersRPC(
-        Action<RTData> rpcHandlerMethod, 
-        RTData data,
-        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE,
+        Action<byte[]> rpcHandlerMethod,
+        byte[] data,
+        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable,
         bool invokeLocaly = true)
     {
         OwnerToOthersRPC(GSRPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
@@ -465,9 +466,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
     public void OwnerToOthersRPC(
-        string rpcCode, 
-        RTData data, 
-        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE, 
+        string rpcCode,
+        byte[] data, 
+        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, 
         bool invokeLocaly = true)
     {
         if (!IsLocal)
@@ -479,8 +480,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     void OwnerToOthersRPC(
         int hashCode,
-        RTData data,
-        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE,
+        byte[] data,
+        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable,
         bool invokeLocaly = true)
     {
         if (!IsLocal)
@@ -499,8 +500,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Only works via RELIABLE delivery.
     /// </summary>
     public void OwnerToOthersRPCBuffered(
-        Action<RTData> rpcHandlerMethod,
-        RTData data,
+        Action<byte[]> rpcHandlerMethod,
+        byte[] data,
         BufferedRPCType rpcType = BufferedRPCType.Replace,
         bool invokeLocaly = true)
     {
@@ -512,15 +513,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Only works via RELIABLE delivery.
     /// </summary>
     public void OwnerToOthersRPCBuffered(
-        string rpcCode, 
-        RTData data, 
+        string rpcCode,
+        byte[] data, 
         BufferedRPCType rpcType = BufferedRPCType.Replace,
         bool invokeLocaly = true)
     {
         var hashCode = GSRPCUtils.NameToHash(rpcCode);
 
         //Call regular AuthRPC
-        OwnerToOthersRPC(hashCode, data, GameSparksRT.DeliveryIntent.RELIABLE, invokeLocaly);
+        OwnerToOthersRPC(hashCode, data, DeliveryIntent.Reliable, invokeLocaly);
 
         //Add rpc to buffer, rpc buffer becomes dirty after this.
         m_RpcBuffer.AddOrUpdate(hashCode, data, rpcType);
@@ -531,9 +532,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
     public void ToOwnerRPC(
-        Action<RTData> rpcHandlerMethod,
-        RTData data,
-        GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
+        Action<byte[]> rpcHandlerMethod,
+        byte[] data,
+        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
         ToOwnerRPC(GSRPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent);
     }
@@ -542,7 +543,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToOwnerRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
+    public void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
         var hashCode = GSRPCUtils.NameToHash(rpcCode);
         //If we have authority on this object, don't need to send this kind of RPC.
@@ -557,7 +558,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// It does not matter whether MASTER client is a owner of this object or not.
     /// IF we are master client, just invokes locally without sending data.
     /// </summary>
-    public void ToMasterRPC(string rpcCode, RTData data, GameSparksRT.DeliveryIntent deliveryIntent = GameSparksRT.DeliveryIntent.RELIABLE)
+    public void ToMasterRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
         var hashCode = GSRPCUtils.NameToHash(rpcCode);
 
@@ -579,7 +580,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
-    public void RemoveRPCFromBuffer(Action<RTData> rpcHandlerMethod)
+    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod)
     {
         RemoveRPCFromBuffer(GSRPCUtils.ActionToString(rpcHandlerMethod));
     }
@@ -592,7 +593,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCRemotely(int hashCode, RTData data)
+    void IRPCReciever.RecieveRPCRemotely(int hashCode, byte[] data)
     {
         if (IsLocal)
             throw new Exception("Trying to recieve NO-AUTHORITY RPC on local object behaviour, this is not allowed");
@@ -603,7 +604,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Recieve rpc on object with authority. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCLocaly(int hashCode, RTData data)
+    void IRPCReciever.RecieveRPCLocaly(int hashCode, byte[] data)
     {
         if (!IsLocal)
             throw new Exception("Trying to recieve AUTHORITY RPC on remote object behaviour, this is not allowed");
@@ -614,7 +615,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Recieve rpc on master clent. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCOnMasterClient(int hashCode, RTData data)
+    void IRPCReciever.RecieveRPCOnMasterClient(int hashCode, byte[] data)
     {
         if (!IsMasterClient)
             throw new Exception("Trying to recieve MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
@@ -622,7 +623,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         InvokeRpcHandler(hashCode, data);
     }
 
-    void InvokeRpcHandler(int hashCode, RTData data)
+    void InvokeRpcHandler(int hashCode, byte[] data)
     {
         if (m_RPCHandlers.ContainsKey(hashCode))
             m_RPCHandlers[hashCode].Invoke(data);
@@ -630,7 +631,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             Debug.LogErrorFormat("Handler for RPC with hash {0} doesn't registred on object {1}", hashCode, gameObject.name);
     }
 
-    void SendGameObject(RTData data, bool initializable, GameSparksRT.DeliveryIntent deliveryIntent)
+    void SendGameObject(byte[] data, bool initializable, DeliveryIntent deliveryIntent)
     {
         m_Transport.SendGameObjectToOthers(
             InstanceId, 

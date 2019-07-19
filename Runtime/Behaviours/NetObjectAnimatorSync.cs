@@ -81,19 +81,20 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
             SyncAnimatorTriggersHandler,
             new GSWriter()
                 .Write(hash)
-                .Write((int)action), 
-            GameSparksRT.DeliveryIntent.UNRELIABLE_SEQUENCED, 
+                .Write((int)action)
+                .AsArray(), 
+            DeliveryIntent.UnreliableSequenced, 
             false);
     }
 
-    void SyncAnimatorTriggersHandler(RTData data)
+    void SyncAnimatorTriggersHandler(byte[] data)
     {
         if (IsLocal)
             return;
 
         var r = new GSReader(data);
-        var hash = r.ReadInt();
-        var action = (AnimatorTriggerAction)r.ReadInt();
+        var hash = r.ReadInt32();
+        var action = (AnimatorTriggerAction)r.ReadInt32();
 
         DoTriggerAction(hash, action);
     }
@@ -127,9 +128,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     {
         ForEachLayer((state, layerWeight, layerIndex) =>
         {
-            var targetLayerWeight = reader.ReadFloat();
-            var targetStateHash = reader.ReadInt();
-            var targetStateNormalizedTime = reader.ReadFloat();
+            var targetLayerWeight = reader.ReadSingle();
+            var targetStateHash = reader.ReadInt32();
+            var targetStateNormalizedTime = reader.ReadSingle();
 
             if (layerWeight != targetLayerWeight)
                 m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);
@@ -161,13 +162,13 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         {
             var par = m_Animator.parameters[i];
             if (par.type == AnimatorControllerParameterType.Int)
-                m_Animator.SetInteger(par.nameHash, reader.ReadInt());
+                m_Animator.SetInteger(par.nameHash, reader.ReadInt32());
 
             if (par.type == AnimatorControllerParameterType.Float)
-                m_Animator.SetFloat(par.nameHash, reader.ReadFloat());
+                m_Animator.SetFloat(par.nameHash, reader.ReadSingle());
 
             if (par.type == AnimatorControllerParameterType.Bool)
-                m_Animator.SetBool(par.nameHash, reader.ReadBool());
+                m_Animator.SetBool(par.nameHash, reader.ReadBoolean());
         }
     }
     #endregion

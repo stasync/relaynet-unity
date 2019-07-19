@@ -29,7 +29,7 @@ public class GSObjectLifetime : GSInstanceBehaviour
 
     protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
     {
-        CurrentLifetime = reader.ReadFloat();
+        CurrentLifetime = reader.ReadSingle();
     }
 
     private void FixedUpdate()

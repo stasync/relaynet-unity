@@ -82,10 +82,10 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             new GSWriter()
                 .Write(position)
                 .Write(rotation)
-                .AsData());
+                .AsArray());
     }
 
-    void SetTransformRpcHandler(RTData data)
+    void SetTransformRpcHandler(byte[] data)
     {
         var reader = new GSReader(data);
         var pos = reader.ReadVector3();
@@ -178,7 +178,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         m_TargetPosition = reader.ReadVector3();
         m_TargetRotation = reader.ReadQuaternion();
         var remoteMovementDirection = reader.ReadVector3();
-        var remoteSessionTime = reader.ReadFloat();
+        var remoteSessionTime = reader.ReadSingle();
 
         if (firstTime)
         {

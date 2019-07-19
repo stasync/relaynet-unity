@@ -41,7 +41,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         return PeerStartId(peerId) + s_IdCounter;
     }
 
-    private static uint PeerStartId(GSPeerId peerId)
+    private static GSInstanceId PeerStartId(GSPeerId peerId)
     {
         return c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
     }

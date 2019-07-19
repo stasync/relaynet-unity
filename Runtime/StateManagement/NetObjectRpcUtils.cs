@@ -10,7 +10,7 @@ public sealed class GSRPCUtils
     /// </summary>
     /// <param name="a"></param>
     /// <returns></returns>
-    public static string ActionToString(Action<RTData> a)
+    public static string ActionToString(Action<byte[]> a)
     {
         /// Anonymous delegate method name usually looks like '<Foo>m__0';
         /// TODO: Mo 'beautiful' way to know is delegate is anonymous.

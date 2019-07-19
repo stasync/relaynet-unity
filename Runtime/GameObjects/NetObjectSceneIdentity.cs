@@ -5,7 +5,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class GSSceneObjectIdentity : GSInstanceBehaviour
 {
-    [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace)]
+    [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_FirstValidId + GSInstanceId.c_SceneObjectReservedIdSpace)]
     int m_SceneObjectId;
     public uint SceneObjectId { get { return (uint)m_SceneObjectId; } }
 
@@ -76,7 +76,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         {
             UnityEditor.Undo.RecordObject(obj, "Peek scene instance id");
             while (ObjectWithSameId(sceneObjects, obj) != null)
-                obj.m_SceneObjectId = Random.Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace);
+                obj.m_SceneObjectId = RandomExtended.Default.Int(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace);
         }
         ValidateSceneObjects();
     }
