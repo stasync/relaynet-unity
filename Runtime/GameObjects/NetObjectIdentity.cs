@@ -370,7 +370,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         foreach (var b in m_Observables)
             b.Serialize(w);
 
-        SendGameObject(w.AsArray(), initializable, deliveryIntent);
+        SendGameObject(w.ToArray(), initializable, deliveryIntent);
 
         m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
     }
