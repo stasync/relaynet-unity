@@ -47,7 +47,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
     [SerializeField]
     bool m_SyncEnabled = true;
 
-    public Vector3 Position { get { return m_UseLocalTranformation ? transform.localPosition : transform.position; } }
+    public Vector3 Position => m_UseLocalTranformation ? transform.localPosition : transform.position;
     public void SetPosition(Vector3 position)
     {
         if (m_UseLocalTranformation)
@@ -56,7 +56,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             transform.position = position;
     }
 
-    public Quaternion Rotation { get { return m_UseLocalTranformation ? transform.localRotation : transform.rotation; } }
+    public Quaternion Rotation => m_UseLocalTranformation ? transform.localRotation : transform.rotation;
     public void SetRotation(Quaternion rotation)
     {
         if (m_UseLocalTranformation)
@@ -82,7 +82,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             new GSWriter()
                 .Write(position)
                 .Write(rotation)
-                .AsArray());
+                .ToArray());
     }
 
     void SetTransformRpcHandler(byte[] data)

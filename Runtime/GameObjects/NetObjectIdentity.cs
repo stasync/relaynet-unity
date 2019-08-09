@@ -571,24 +571,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Clear current rpc buffer and sets buffer dirty.
     /// </summary>
-    public void ClearRPCBuffer()
-    {
-        m_RpcBuffer.Clear();
-    }
+    public void ClearRPCBuffer() => m_RpcBuffer.Clear();
 
     /// <summary>
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
-    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod)
-    {
-        RemoveRPCFromBuffer(GSRPCUtils.ActionToString(rpcHandlerMethod));
-    }
+    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => RemoveRPCFromBuffer(GSRPCUtils.ActionToString(rpcHandlerMethod));
 
-    public void RemoveRPCFromBuffer(string rpcCode)
-    {
-        m_RpcBuffer.Remove(GSRPCUtils.NameToHash(rpcCode));
-    }
+    public void RemoveRPCFromBuffer(string rpcCode) => m_RpcBuffer.Remove(GSRPCUtils.NameToHash(rpcCode));
 
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
