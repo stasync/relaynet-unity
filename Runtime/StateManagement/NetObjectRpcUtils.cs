@@ -1,10 +1,9 @@
-﻿using GameSparks.RT;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-public sealed class GSRPCUtils
+public sealed class RPCUtils
 {
-    GSRPCUtils() { }
+    RPCUtils() { }
     /// <summary>
     /// Converts action to RPC code.
     /// </summary>

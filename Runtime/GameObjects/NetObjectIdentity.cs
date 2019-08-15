@@ -262,7 +262,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Other client connected and loaded game scene, set all component as dirty to send valid object state to other clients.
     /// </summary>
-    public void OnBecomesReady(GSPeerId peerId)
+    public void OnBecomesReady(ConnectionUID peerId)
     {
         if (!IsLocal)
             return;
@@ -273,13 +273,13 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
     /// </summary>
-    public void OnDisconnected(GSPeerId peerId)
+    public void OnDisconnected(ConnectionUID peerId)
     {
         //Is object owned by disconnected player and a scene object, trying to change owner.
-        if (IsSceneObject && peerId == Owner.PeerId)
+        if (IsSceneObject && peerId == Owner.ConnectionUID)
         {
             //Is local client becomes master client, set object's owner and sync it.
-            if (m_Transport.MasterClientPeerId == m_Transport.LocalPeerId)
+            if (m_Transport.MasterClientConnection == m_Transport.LocalPeerId)
                 OwnObejct();
         }
 
@@ -318,7 +318,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         Owner = owner ?? throw new ArgumentNullException("owner");
         //Send changes
         if(send)
-            m_Transport.SetOwner(InstanceId, Owner.PeerId);
+            m_Transport.SetOwner(InstanceId, Owner.ConnectionUID);
     }
 
     /// <summary>
@@ -435,14 +435,11 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
     /// </summary>
     /// <param name="handler"></param>
-    public void RegisterRPCHandler(Action<byte[]> handler)
-    {
-        RegisterRPCHandler(GSRPCUtils.ActionToString(handler), handler);
-    }
+    public void RegisterRPCHandler(Action<byte[]> handler) => RegisterRPCHandler(RPCUtils.ActionToString(handler), handler);
 
     public void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
     {
-        var rpcHash = GSRPCUtils.NameToHash(rpcCode);
+        var rpcHash = RPCUtils.NameToHash(rpcCode);
         /// WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
         if (m_RPCHandlers.ContainsKey(rpcHash))
             throw new InvalidOperationException(gameObject.name + " already contains handler for '" + rpcCode + "' rpc code");
@@ -459,7 +456,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         DeliveryIntent deliveryIntent = DeliveryIntent.Reliable,
         bool invokeLocaly = true)
     {
-        OwnerToOthersRPC(GSRPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
+        OwnerToOthersRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
     }
 
     /// <summary>
@@ -474,7 +471,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
-        var hashCode = GSRPCUtils.NameToHash(rpcCode);
+        var hashCode = RPCUtils.NameToHash(rpcCode);
         OwnerToOthersRPC(hashCode, data, deliveryIntent, invokeLocaly);
     }
 
@@ -505,7 +502,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         BufferedRPCType rpcType = BufferedRPCType.Replace,
         bool invokeLocaly = true)
     {
-        OwnerToOthersRPCBuffered(GSRPCUtils.ActionToString(rpcHandlerMethod), data, rpcType, invokeLocaly);
+        OwnerToOthersRPCBuffered(RPCUtils.ActionToString(rpcHandlerMethod), data, rpcType, invokeLocaly);
     }
 
     /// <summary>
@@ -518,7 +515,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         BufferedRPCType rpcType = BufferedRPCType.Replace,
         bool invokeLocaly = true)
     {
-        var hashCode = GSRPCUtils.NameToHash(rpcCode);
+        var hashCode = RPCUtils.NameToHash(rpcCode);
 
         //Call regular AuthRPC
         OwnerToOthersRPC(hashCode, data, DeliveryIntent.Reliable, invokeLocaly);
@@ -536,7 +533,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         byte[] data,
         DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
-        ToOwnerRPC(GSRPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent);
+        ToOwnerRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent);
     }
 
     /// <summary>
@@ -545,7 +542,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     public void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
-        var hashCode = GSRPCUtils.NameToHash(rpcCode);
+        var hashCode = RPCUtils.NameToHash(rpcCode);
         //If we have authority on this object, don't need to send this kind of RPC.
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
@@ -560,7 +557,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     public void ToMasterRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
-        var hashCode = GSRPCUtils.NameToHash(rpcCode);
+        var hashCode = RPCUtils.NameToHash(rpcCode);
 
         if (IsMasterClient)
             InvokeRpcHandler(hashCode, data);
@@ -577,9 +574,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
-    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => RemoveRPCFromBuffer(GSRPCUtils.ActionToString(rpcHandlerMethod));
+    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => RemoveRPCFromBuffer(RPCUtils.ActionToString(rpcHandlerMethod));
 
-    public void RemoveRPCFromBuffer(string rpcCode) => m_RpcBuffer.Remove(GSRPCUtils.NameToHash(rpcCode));
+    public void RemoveRPCFromBuffer(string rpcCode) => m_RpcBuffer.Remove(RPCUtils.NameToHash(rpcCode));
 
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).

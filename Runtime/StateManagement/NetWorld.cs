@@ -23,7 +23,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// Someone connected and loaded game scene.
     /// </summary>
     /// <param name="peerId"></param>
-    public void OnBecomesReady(GSPeerId peerId)
+    public void OnBecomesReady(ConnectionUID peerId)
     {
         foreach (var o in m_Objects.Values.Where(o => o != null))
             o.OnBecomesReady(peerId);
@@ -33,7 +33,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// Someone disconnected.
     /// </summary>
     /// <param name="peerId"></param>
-    public void OnDisconnect(GSPeerId peerId)
+    public void OnDisconnect(ConnectionUID peerId)
     {
         DestroyPlayerObjects(peerId);
         foreach (var o in m_Objects.Values.Where(o => o != null))
@@ -44,12 +44,12 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// Removes all ojects (except scene objects), owned by disconnected player, cleanup null references.
     /// </summary>
     /// <param name="peerId"></param>
-    public void DestroyPlayerObjects(GSPeerId peerId)
+    public void DestroyPlayerObjects(ConnectionUID peerId)
     {
         var objects = m_Objects.Where(o =>
             o.Value == null ||
             ((o.Value.Owner == null ||
-            o.Value.Owner.PeerId == peerId) && !o.Value.IsSceneObject)).ToArray();//Copy to iterate
+            o.Value.Owner.ConnectionUID == peerId) && !o.Value.IsSceneObject)).ToArray();//Copy to iterate
 
         foreach (var o in objects)
         {
@@ -80,15 +80,15 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// </summary>
     /// <param name="peerId"></param>
     /// <param name="instanceId"></param>
-    public void DestroyObject(GSPeerId peerId, GSInstanceId instanceId)
+    public void DestroyObject(ConnectionUID peerId, GSInstanceId instanceId)
     {
         if (!m_Objects.ContainsKey(instanceId))
             throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());
 
         if (m_Objects.TryGetValue(instanceId, out GSInstanceIdentity objectToDelete))
         {
-            if (objectToDelete.Owner.PeerId != peerId)
-                throw new Exception("Owner exception: Remote peer id: " + peerId + " Local object peer id: " + objectToDelete.Owner.PeerId);
+            if (objectToDelete.Owner.ConnectionUID != peerId)
+                throw new Exception("Owner exception: Remote peer id: " + peerId + " Local object peer id: " + objectToDelete.Owner.ConnectionUID);
             UnityEngine.Object.Destroy(objectToDelete.gameObject);
         }
         m_Objects.Remove(instanceId);
@@ -106,7 +106,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <returns></returns>
     public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, byte[] additionalData)
     {
-        return CreateObjectInternal(owner, new GSInstanceId(owner.PeerId), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
+        return CreateObjectInternal(owner, new GSInstanceId(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
     }
 
     /// <summary>
@@ -216,7 +216,7 @@ public class GSInstanceFactory : IGSInstanceFactory
             sceneIdentity.SceneObjectId, 
             sceneIdentity.Identity);
 
-        if(m_Transport.MasterClientPeerId == m_Transport.LocalPeerId)
+        if(m_Transport.MasterClientConnection == m_Transport.LocalPeerId)
             InitializeIdentity(
                 sceneIdentity.Identity,
                 "SceneObject", //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
