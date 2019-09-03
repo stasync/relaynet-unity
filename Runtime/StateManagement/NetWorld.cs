@@ -8,13 +8,13 @@ public class GSInstanceFactory : IGSInstanceFactory
 {
     public event Action<GSInstanceIdentity> NewObjectInitialized = delegate { };
 
-    INetwork m_Transport;
+    INetwork m_InternalNetwork;
     IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
     ServiceProvider<ResourceTracker> m_ResourcesFactory;
 
-    public GSInstanceFactory(INetwork transport)
+    public GSInstanceFactory(INetwork network)
     {
-        m_Transport = transport;
+        m_InternalNetwork = network;
         m_Objects = new Dictionary<GSInstanceId, GSInstanceIdentity>();
         m_ResourcesFactory = new ServiceProvider<ResourceTracker>();
     }
@@ -136,7 +136,7 @@ public class GSInstanceFactory : IGSInstanceFactory
                 isSceneObject, 
                 instanceId, 
                 owner, 
-                m_Transport, 
+                m_InternalNetwork, 
                 baseData,
                 null);
 
@@ -191,7 +191,7 @@ public class GSInstanceFactory : IGSInstanceFactory
                 isSceneObject,
                 instanceId, 
                 owner, 
-                m_Transport, 
+                m_InternalNetwork, 
                 baseData, 
                 additionalData));
 
@@ -216,14 +216,14 @@ public class GSInstanceFactory : IGSInstanceFactory
             sceneIdentity.SceneObjectId, 
             sceneIdentity.Identity);
 
-        if(m_Transport.MasterClientConnection == m_Transport.LocalPeerId)
+        if(m_InternalNetwork.MasterClientConnection == m_InternalNetwork.LocalConnection)
             InitializeIdentity(
                 sceneIdentity.Identity,
                 "SceneObject", //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
                 true,
                 sceneIdentity.SceneObjectId,
-                m_Transport.MasterPlayer,
-                m_Transport,
+                m_InternalNetwork.MasterPlayer,
+                m_InternalNetwork,
                 null, 
                 null);
     }
@@ -314,18 +314,9 @@ public class GSInstanceFactory : IGSInstanceFactory
         }
     }
 
-    public IRPCReciever FindRpcReciever(GSInstanceId id)
-    {
-        return FindObject(id);
-    }
+    public IRPCReciever FindRpcReciever(GSInstanceId id) => FindObject(id);
 
-    public IEnumerator<GSInstanceIdentity> GetEnumerator()
-    {
-        return m_Objects.Values.GetEnumerator();
-    }
+    public IEnumerator<GSInstanceIdentity> GetEnumerator() => m_Objects.Values.GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return m_Objects.Values.GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => m_Objects.Values.GetEnumerator();
 }

@@ -134,35 +134,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     IRPCBuffer m_RpcBuffer = new DefaultRpcBuffer();
 
-    public bool IsMasterClient
-    {
-        get
-        {
-            return
-                m_Transport != null && 
-                m_Transport.MasterPlayer == Owner;
-        }
-    }
-
-    public bool IsLocal
-    {
-        get
-        {
-            return 
-                m_Transport != null &&
-                m_Transport.LocalPlayer == Owner;
-        }
-    }
-
-    public bool IsLocalPlayerTagObject
-    {
-        get { return m_Transport.LocalPlayer.TagObjectId == InstanceId; }
-    }
-
-    public bool IsDirty
-    {
-        get { return m_Observables.Any(o => o.IsDirty) || m_RpcBuffer.IsDirty; }
-    }
+    public bool IsMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
+    public bool IsLocal => m_InternalNetwork != null && m_InternalNetwork.LocalPlayer == Owner;
+    public bool IsLocalPlayerTagObject => m_InternalNetwork.LocalPlayer.TagObjectId == InstanceId;
+    public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_RpcBuffer.IsDirty;
 
     /// <summary>
     /// Readonly owner reference
@@ -181,7 +156,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Readonly transport reference
     /// </summary>
-    INetwork m_Transport;
+    INetwork m_InternalNetwork;
 
     /// <summary>
     /// Object prefab id
@@ -199,7 +174,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="prefabId"></param>
     /// <param name="instanceId"></param>
     /// <param name="owner"></param>
-    /// <param name="transport"></param>
+    /// <param name="network"></param>
     /// <param name="data"></param>
     /// <returns></returns>
     GSInstanceIdentity IIdentity.Initialze(
@@ -207,7 +182,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         bool isSceneObject,
         GSInstanceId instanceId,
         IGSRTPlayer owner, 
-        INetwork transport, 
+        INetwork network, 
         byte[] data,
         byte[] additionalData)
     {
@@ -220,7 +195,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         InstanceId = instanceId;
         PrefabId = prefabId;
         IsSceneObject = isSceneObject;
-        m_Transport = transport;
+        m_InternalNetwork = network;
 
         /*
          * Skip deserialization if it calls on local object.
@@ -279,7 +254,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (IsSceneObject && peerId == Owner.ConnectionUID)
         {
             //Is local client becomes master client, set object's owner and sync it.
-            if (m_Transport.MasterClientConnection == m_Transport.LocalPeerId)
+            if (m_InternalNetwork.MasterClientConnection == m_InternalNetwork.LocalConnection)
                 OwnObejct();
         }
 
@@ -306,7 +281,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        SetOwner(m_Transport.LocalPlayer, true);
+        SetOwner(m_InternalNetwork.LocalPlayer, true);
     }
 
     /// <summary>
@@ -318,7 +293,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         Owner = owner ?? throw new ArgumentNullException("owner");
         //Send changes
         if(send)
-            m_Transport.SetOwner(InstanceId, Owner.ConnectionUID);
+            m_InternalNetwork.SetOwner(InstanceId, Owner.ConnectionUID);
     }
 
     /// <summary>
@@ -489,7 +464,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             InvokeRpcHandler(hashCode, data);
 
         //Send ot others.
-        m_Transport.RPC(RpcType.OwnerToOthers, InstanceId, hashCode, data, deliveryIntent);
+        m_InternalNetwork.RPC(RpcType.OwnerToOthers, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -547,7 +522,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
         else
-            m_Transport.RPC(RpcType.ToOwner, InstanceId, hashCode, data, deliveryIntent);
+            m_InternalNetwork.RPC(RpcType.ToOwner, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -562,7 +537,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (IsMasterClient)
             InvokeRpcHandler(hashCode, data);
         else
-            m_Transport.RPC(RpcType.ToMaster, InstanceId, hashCode, data, deliveryIntent);
+            m_InternalNetwork.RPC(RpcType.ToMaster, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -621,7 +596,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     void SendGameObject(byte[] data, bool initializable, DeliveryIntent deliveryIntent)
     {
-        m_Transport.SendGameObjectToOthers(
+        m_InternalNetwork.SendGameObjectToOthers(
             InstanceId, 
             PrefabId, 
             IsSceneObject,
@@ -635,7 +610,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             throw new Exception("Trying to destroy remote object, this is not allowed");
 
-        m_Transport.DestroyGameObject(InstanceId);
+        m_InternalNetwork.DestroyGameObject(InstanceId);
     }
 
     #if UNITY_EDITOR
