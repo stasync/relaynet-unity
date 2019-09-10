@@ -12,11 +12,11 @@ public sealed class RPCUtils
     public static string ActionToString(Action<byte[]> a)
     {
         /// Anonymous delegate method name usually looks like '<Foo>m__0';
-        /// TODO: Mo 'beautiful' way to know is delegate is anonymous.
+        /// TODO: More 'beautiful' way to know is delegate is anonymous.
         if (a.Method.Name.StartsWith("<"))
             throw new InvalidOperationException("Unable to create RPC code with anonymous delegates");
 
-        return string.Format("{0}.{1}", a.Method.DeclaringType.FullName, a.Method.Name);
+        return $"{a.Method.DeclaringType.FullName}.{a.Method.Name}";
     }
 
     static Dictionary<string, int> s_RPCHashMap = new Dictionary<string, int>();
