@@ -181,8 +181,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
             if (transform.parent != null)
             {
-                m_TargetPosition = reader.ReadVector3();
-                m_TargetRotation = reader.ReadQuaternion();
+                m_TargetPosition = localPosition;
+                m_TargetRotation = localRotation;
             }
         }
 
