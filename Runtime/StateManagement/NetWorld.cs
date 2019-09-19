@@ -216,7 +216,7 @@ public class GSInstanceFactory : IGSInstanceFactory
             sceneIdentity.SceneObjectId, 
             sceneIdentity.Identity);
 
-        if(m_InternalNetwork.MasterClientConnection == m_InternalNetwork.LocalConnection)
+        if(m_InternalNetwork.IsMasterClient)
             InitializeIdentity(
                 sceneIdentity.Identity,
                 "SceneObject", //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.

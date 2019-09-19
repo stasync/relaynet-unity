@@ -32,13 +32,10 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     {
     }
 
-    public static implicit operator GSInstanceIdentity(GSSceneObjectIdentity value)
-    {
-        return value.Identity;
-    }
+    public static implicit operator GSInstanceIdentity(GSSceneObjectIdentity value) => value.Identity;
 
 #if UNITY_EDITOR
-    [UnityEditor.MenuItem("GameSparks/Validate scene objects")]
+    [UnityEditor.MenuItem("Network/Validate scene objects")]
     static void ValidateSceneObjects()
     {
         if (UnityEditor.EditorApplication.isPlaying)
@@ -61,7 +58,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         Debug.LogWarning("Validation finished");
     }
 
-    [UnityEditor.MenuItem("GameSparks/Fix scene objects")]
+    [UnityEditor.MenuItem("Network/Fix scene objects")]
     static void FixSceneObjects()
     {
         if (UnityEditor.EditorApplication.isPlaying)
@@ -81,11 +78,8 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         ValidateSceneObjects();
     }
 
-    static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> c, GSSceneObjectIdentity obj)
-    {
-        return c
+    static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> c, GSSceneObjectIdentity obj) => c
                 .Where(o => o != obj)
                 .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
-    }
 #endif
 }

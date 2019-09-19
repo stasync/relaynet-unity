@@ -33,7 +33,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         s_IdCounter = 0;
     }
 
-    private static GSInstanceId AllocateNewId(ConnectionUID peerId)
+    static GSInstanceId AllocateNewId(ConnectionUID peerId)
     {
         //Increment internal id
         s_IdCounter++;
@@ -41,10 +41,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         return PeerStartId(peerId) + s_IdCounter;
     }
 
-    private static GSInstanceId PeerStartId(ConnectionUID peerId)
-    {
-        return c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
-    }
+    static GSInstanceId PeerStartId(ConnectionUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
     #endregion
 
     public GSInstanceId(ConnectionUID peerId)
@@ -69,9 +66,9 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         m_InstanceId = instanceId;
     }
 
-    public bool IsValid { get { return m_InstanceId >= c_FirstValidId && m_InstanceId < Invalid; } }
+    public bool IsValid => m_InstanceId >= c_FirstValidId && m_InstanceId < Invalid;
 
-    public bool IsSceneObjectSpaceId { get { return IsValid && m_InstanceId <= c_SceneObjectReservedIdSpace; } }
+    public bool IsSceneObjectSpaceId => IsValid && m_InstanceId <= c_SceneObjectReservedIdSpace;
 
     private uint m_InstanceId;
 

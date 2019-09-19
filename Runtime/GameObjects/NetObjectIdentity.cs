@@ -254,7 +254,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (IsSceneObject && peerId == Owner.ConnectionUID)
         {
             //Is local client becomes master client, set object's owner and sync it.
-            if (m_InternalNetwork.MasterClientConnection == m_InternalNetwork.LocalConnection)
+            if (m_InternalNetwork.IsMasterClient)
                 OwnObejct();
         }
 
