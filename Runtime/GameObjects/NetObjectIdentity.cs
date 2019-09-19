@@ -134,7 +134,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     IRPCBuffer m_RpcBuffer = new DefaultRpcBuffer();
 
-    public bool IsMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
+    public bool IsOwnerByMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
     public bool IsLocal => m_InternalNetwork != null && m_InternalNetwork.LocalPlayer == Owner;
     public bool IsLocalPlayerTagObject => m_InternalNetwork.LocalPlayer.TagObjectId == InstanceId;
     public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_RpcBuffer.IsDirty;
@@ -278,6 +278,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     public void OwnObejct()
     {
+        if (!Initialized)
+            throw new Exception("You can manage owners only for initialized objects");
+
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
@@ -290,6 +293,9 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="owner"></param>
     public void SetOwner(IGSRTPlayer owner, bool send = false)
     {
+        if (!Initialized)
+            throw new Exception("You can manage owners only for initialized objects");
+
         Owner = owner ?? throw new ArgumentNullException("owner");
         //Send changes
         if(send)
@@ -534,7 +540,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
 
-        if (IsMasterClient)
+        if (IsOwnerByMasterClient)
             InvokeRpcHandler(hashCode, data);
         else
             m_InternalNetwork.RPC(RpcType.ToMaster, InstanceId, hashCode, data, deliveryIntent);
@@ -580,7 +586,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     void IRPCReciever.RecieveRPCOnMasterClient(int hashCode, byte[] data)
     {
-        if (!IsMasterClient)
+        if (!IsOwnerByMasterClient)
             throw new Exception("Trying to recieve MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
 
         InvokeRpcHandler(hashCode, data);

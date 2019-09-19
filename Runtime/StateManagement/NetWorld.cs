@@ -204,19 +204,22 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// This is not initialize object, so object will be invalid, untill first update happens.
     /// </summary>
     /// <param name="sceneIdentity"></param>
-    public void RegisterSceneObjectIdentity(GSSceneObjectIdentity sceneIdentity)
+    public void TryRegisterOrInitializeSceneObjectIdentity(GSSceneObjectIdentity sceneIdentity)
     {
         if (m_Objects.ContainsKey(sceneIdentity.SceneObjectId))
-            throw new Exception(string.Format(
-                "Unable to register scene identity {0}: object with id {1} already registered", 
-                sceneIdentity.gameObject.name, 
-                sceneIdentity.SceneObjectId));
+        {
+#if NETWORK_DEBUG
+            Debug.LogErrorFormat("Trying to register scene identity {0}: but object with id {1} already registered",
+                sceneIdentity.gameObject.name,
+                sceneIdentity.SceneObjectId);
+#endif
+        }
+        else
+            m_Objects.Add(
+                sceneIdentity.SceneObjectId, 
+                sceneIdentity.Identity);
 
-        m_Objects.Add(
-            sceneIdentity.SceneObjectId, 
-            sceneIdentity.Identity);
-
-        if(m_InternalNetwork.IsMasterClient)
+        if(!sceneIdentity.Identity.Initialized && m_InternalNetwork.IsMasterClient)
             InitializeIdentity(
                 sceneIdentity.Identity,
                 "SceneObject", //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.

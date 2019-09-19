@@ -7,7 +7,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
 {
     [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_FirstValidId + GSInstanceId.c_SceneObjectReservedIdSpace)]
     int m_SceneObjectId;
-    public uint SceneObjectId { get { return (uint)m_SceneObjectId; } }
+    public GSInstanceId SceneObjectId => (uint)m_SceneObjectId;
 
     /// <summary>
     /// We needs to register this object in object factory, if it placed in scene by default.
@@ -17,7 +17,16 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         // Register scene object.
         // Initialize object if we on master client, so new clents will not initialize this objects, but will recieve updates.
         // TODO: fix situations when object can be not initialized.
-        Network.Realtime.RegisterSceneObject(this);
+        Network.Realtime.TryRegisterOrInitializeSceneObject(this);
+    }
+
+    public override void OnDisconnected(ConnectionUID peedId)
+    {
+        base.OnDisconnected(peedId);
+        if (Identity.Initialized || !Network.Realtime.IsMasterPlayer)
+            return;
+
+        Network.Realtime.TryRegisterOrInitializeSceneObject(this);
     }
 
     public override void OnPostInitialize()
