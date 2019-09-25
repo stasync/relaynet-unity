@@ -641,22 +641,12 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         return GetComponent<T>();
     }
 
-    static GSRealtime s_Realtime;
+    static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
 
-    [Locator.Initialized]
-    static void Init(ILocator locator)
-    {
-        s_Realtime = locator.FirstOfType<GSNetwork>().Realtime;
-    }
+    public static GSInstanceIdentity Find(GSInstanceId instanceId) => 
+        s_NetworkProvider.Instance.Realtime.FindNetworkObject(instanceId);
 
-    public static GSInstanceIdentity Find(GSInstanceId instanceId)
-    {
-        return s_Realtime.FindNetworkObject(instanceId);
-    }
-
-    public static T Find<T>(GSInstanceId instanceId) where T : GSInstanceBehaviour
-    {
-        return s_Realtime.FindNetworkObject<T>(instanceId);
-    }
+    public static T Find<T>(GSInstanceId instanceId) where T : GSInstanceBehaviour => 
+        s_NetworkProvider.Instance.Realtime.FindNetworkObject<T>(instanceId);
     #endregion
 }
