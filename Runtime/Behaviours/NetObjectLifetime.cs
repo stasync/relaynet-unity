@@ -22,12 +22,12 @@ public class GSObjectLifetime : GSInstanceBehaviour
             CurrentLifetime = m_lifetime;
     }
 
-    protected override void SerializeDirtyChecked(GSWriter writer)
+    protected override void SerializeDirtyChecked(NetWriter writer)
     {
         writer.Write(CurrentLifetime);
     }
 
-    protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
+    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
     {
         CurrentLifetime = reader.ReadSingle();
     }

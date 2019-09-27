@@ -33,11 +33,11 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     {
     }
 
-    protected override void SerializeDirtyChecked(GSWriter writer)
+    protected override void SerializeDirtyChecked(NetWriter writer)
     {
     }
 
-    protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
+    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
     {
     }
 

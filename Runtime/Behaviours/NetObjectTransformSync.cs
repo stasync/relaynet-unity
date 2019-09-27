@@ -168,7 +168,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         return false;
     }
 
-    protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
+    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
     {
         m_TargetPosition = reader.ReadVector3();
         m_TargetRotation = reader.ReadQuaternion();
@@ -198,7 +198,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.Time - remoteSessionTime) * m_PredictionMultipler;
     }
 
-    protected override void SerializeDirtyChecked(GSWriter writer)
+    protected override void SerializeDirtyChecked(NetWriter writer)
     {
         m_TargetPosition = transform.localPosition;
         m_TargetRotation = transform.localRotation;

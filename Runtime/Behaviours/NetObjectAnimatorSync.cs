@@ -113,18 +113,17 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     }
 
     #region WRITE/READ
-    void WriteLayers(GSWriter writer)
+    void WriteLayers(NetWriter writer)
     {
         ForEachLayer((state, layerWeight, layerIndex) => 
         {
-            writer
-                .Write(layerWeight)
-                .Write(state.fullPathHash)
-                .Write(state.normalizedTime);
+            writer.Write(layerWeight);
+            writer.Write(state.fullPathHash);
+            writer.Write(state.normalizedTime);
         });
     }
 
-    void ReadLayers(GSReader reader)
+    void ReadLayers(NetReader reader)
     {
         ForEachLayer((state, layerWeight, layerIndex) =>
         {
@@ -140,7 +139,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         });
     }
 
-    void WriteParameters(GSWriter writer)
+    void WriteParameters(NetWriter writer)
     {
         for (var i = 0; i < m_Animator.parameters.Length; i++)
         {
@@ -156,7 +155,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         }
     }
 
-    void ReadParameters(GSReader reader)
+    void ReadParameters(NetReader reader)
     {
         for (var i = 0; i < m_Animator.parameters.Length; i++)
         {
@@ -173,13 +172,13 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     }
     #endregion
 
-    protected override void DeserializeDirtyChecked(GSReader reader, bool firstTime)
+    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
     {
         ReadParameters(reader);
         ReadLayers(reader);
     }
 
-    protected override void SerializeDirtyChecked(GSWriter writer)
+    protected override void SerializeDirtyChecked(NetWriter writer)
     {
         WriteParameters(writer);
         WriteLayers(writer);
