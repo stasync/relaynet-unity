@@ -341,17 +341,17 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!Initialized)
             throw new Exception("Trying to serialize object that not initialized, this is not allowed");
 
-        var w = new GSWriter()
-            .Write(InstanceId)
-            .Write(PrefabId)
-            .Write(IsSceneObject);
+        var writer = new NetWriter();
+        writer.Write(InstanceId);
+        writer.Write(PrefabId);
+        writer.Write(IsSceneObject);
 
-        m_RpcBuffer.Serialize(w);
+        m_RpcBuffer.Serialize(writer);
 
         foreach (var b in m_Observables)
-            b.Serialize(w);
+            b.Serialize(writer);
 
-        SendGameObject(w.ToArray(), initializable, deliveryIntent);
+        SendGameObject(writer.ToArray(), initializable, deliveryIntent);
 
         m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
     }
@@ -381,7 +381,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (data == null)
             return this;
 
-        var r = new GSReader(data);
+        var r = new NetReader(data);
 
         //Check instance id
         var id = r.ReadInstanceId();

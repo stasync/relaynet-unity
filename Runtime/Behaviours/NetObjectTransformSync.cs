@@ -71,7 +71,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
 
     void SetTransformRpcHandler(byte[] data)
     {
-        var reader = new GSReader(data);
+        var reader = new NetReader(data);
         var pos = reader.ReadVector3();
         var rot = reader.ReadQuaternion();
 

@@ -77,12 +77,13 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     {
         DoTriggerAction(hash, action);
 
+        var writer = new NetWriter();
+        writer.Write(hash);
+        writer.Write((int)action);
+
         OwnerToOthersRPC(
             SyncAnimatorTriggersHandler,
-            new GSWriter()
-                .Write(hash)
-                .Write((int)action)
-                .AsArray(), 
+            writer.ToArray(), 
             DeliveryIntent.UnreliableSequenced, 
             false);
     }
@@ -92,7 +93,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         if (IsLocal)
             return;
 
-        var r = new GSReader(data);
+        var r = new NetReader(data);
         var hash = r.ReadInt32();
         var action = (AnimatorTriggerAction)r.ReadInt32();
 
