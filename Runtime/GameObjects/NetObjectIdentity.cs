@@ -342,7 +342,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             throw new Exception("Trying to serialize object that not initialized, this is not allowed");
 
         var writer = new NetWriter();
-        writer.Write(InstanceId);
+        writer.WriteInstanceId(InstanceId);
         writer.Write(PrefabId);
         writer.Write(IsSceneObject);
 
