@@ -10,13 +10,13 @@ public class GSInstanceFactory : IGSInstanceFactory
 
     INetwork m_InternalNetwork;
     IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
-    ServiceProvider<ResourceTracker> m_ResourcesFactory;
+    ServiceProvider<IResourceTracker> m_ResourcesFactory;
 
     public GSInstanceFactory(INetwork network)
     {
         m_InternalNetwork = network;
         m_Objects = new Dictionary<GSInstanceId, GSInstanceIdentity>();
-        m_ResourcesFactory = new ServiceProvider<ResourceTracker>();
+        m_ResourcesFactory = new ServiceProvider<IResourceTracker>();
     }
 
     /// <summary>
