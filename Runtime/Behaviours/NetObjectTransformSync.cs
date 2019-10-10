@@ -1,10 +1,25 @@
-﻿using GameSparks.RT;
-using System;
+﻿using System;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class GSTransformSync : GSInstanceBehaviour
+/// <summary>
+/// TODO: Move serialization here;
+/// </summary>
+public class TransformSyncData : GSBehaviourAbstractData
 {
+    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
+    {
+    }
+
+    protected override void SerializeDirtyChecked(NetWriter writer)
+    {
+    }
+}
+
+[DisallowMultipleComponent]
+public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
+{
+    protected override TransformSyncData ProduceData() => new TransformSyncData();
+
     [SerializeField, Range(0f, 1f)]
     float m_InterpolateMovement = 1f;
     [SerializeField, Range(0f, 1f)]
