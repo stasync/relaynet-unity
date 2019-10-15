@@ -6,6 +6,8 @@ using UnityEngine;
 /// </summary>
 public class TransformSyncData : GSBehaviourAbstractData
 {
+    public TransformSyncData(Func<bool> writePermission) : base(writePermission) { }
+
     protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
     {
     }
@@ -18,7 +20,7 @@ public class TransformSyncData : GSBehaviourAbstractData
 [DisallowMultipleComponent]
 public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
 {
-    protected override TransformSyncData ProduceData() => new TransformSyncData();
+    protected override TransformSyncData ProduceData() => new TransformSyncData(() => IsLocal);
 
     [SerializeField, Range(0f, 1f)]
     float m_InterpolateMovement = 1f;
