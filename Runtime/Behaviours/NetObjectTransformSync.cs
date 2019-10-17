@@ -4,17 +4,9 @@ using UnityEngine;
 /// <summary>
 /// TODO: Move serialization here;
 /// </summary>
-public class TransformSyncData : GSBehaviourAbstractData
+public class TransformSyncData : GSBehaviourEmptyData
 {
     public TransformSyncData(Func<bool> writePermission) : base(writePermission) { }
-
-    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
-    {
-    }
-
-    protected override void SerializeDirtyChecked(NetWriter writer)
-    {
-    }
 }
 
 [DisallowMultipleComponent]
