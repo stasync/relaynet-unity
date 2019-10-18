@@ -46,7 +46,7 @@ public class GSObjectLifetime : GSInstanceBehaviour
                 CurrentLifetime = 0f;
                 m_onDestroy.Invoke();
                 if (m_autoDestroy)
-                    DestroyViaNetwork();
+                    DestroyObjectViaNetwork();
             }
 
             SetDirty();
