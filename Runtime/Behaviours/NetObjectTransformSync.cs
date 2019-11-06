@@ -4,9 +4,18 @@ using UnityEngine;
 /// <summary>
 /// TODO: Move serialization here;
 /// </summary>
-public class TransformSyncData : GSBehaviourEmptyData
+public class TransformSyncData : GSBehaviourAbstractData
 {
+    public SerializeableValue<Vector3> Position { get; private set; } = null;
+    public SerializeableValue<Quaternion> Rotation { get; private set; } = null;
+
     public TransformSyncData(Func<bool> writePermission) : base(writePermission) { }
+
+    protected override void OnDeclareValues(Func<bool> writePermission)
+    {
+        Position = new SerializeableValue<Vector3>(Vector3.zero, writePermission, (r, f) => r.ReadVector3(), (w, v) => w.Write(v));
+        Rotation = new SerializeableValue<Quaternion>(Quaternion.identity, writePermission, (r, f) => r.ReadQuaternion(), (w, v) => w.Write(v));
+    }
 }
 
 [DisallowMultipleComponent]
@@ -88,6 +97,11 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
         transform.rotation = rot;
 
         ResetTemporaryData();
+    }
+
+    public override void OnPreInitialize()
+    {
+        base.OnPreInitialize();
     }
 
     public override void OnPostInitialize()

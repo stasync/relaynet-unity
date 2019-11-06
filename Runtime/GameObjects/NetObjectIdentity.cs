@@ -202,7 +202,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
          */
         if (!IsLocal && data != null)
-            ((IIdentity)this).Deserialize(data, true, true); //Force true to allow deseriazation before object initialized.
+            Deserialize(data, true, true); //Force true to allow deseriazation before object initialized.
 
         if(additionalData != null)
             foreach (var o in m_Observables)
@@ -363,7 +363,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="force"></param>
     /// <param name="firstTime"></param>
     /// <returns></returns>
-    GSInstanceIdentity IIdentity.Deserialize(byte[] data, bool force, bool firstTime)
+    GSInstanceIdentity IIdentity.Deserialize(byte[] data, bool force, bool firstTime) => Deserialize(data, force, firstTime);
+    GSInstanceIdentity Deserialize(byte[] data, bool force, bool firstTime)
     {
         if (IsLocal)
         {
@@ -389,7 +390,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             throw new InvalidOperationException(string.Format("Object id is:{0}, but recieved id is {1}", InstanceId, id));
 
         var prefabId = r.ReadString();
-        if(prefabId != PrefabId)
+        if (prefabId != PrefabId)
             throw new InvalidOperationException(string.Format("Object prefab id is:{0}, but recieved preafab id is {1}", PrefabId, prefabId));
 
         var isSceneObject = r.ReadBoolean();
