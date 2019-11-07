@@ -7,14 +7,28 @@ using UnityEngine;
 public class TransformSyncData : GSBehaviourAbstractData
 {
     public SerializeableValue<Vector3> Position { get; private set; } = null;
+    public SerializeableValue<Vector3> LocalPosition { get; private set; } = null;
+
     public SerializeableValue<Quaternion> Rotation { get; private set; } = null;
+    public SerializeableValue<Quaternion> LocalRotation { get; private set; } = null;
+
+    public SerializeableValue<Vector3> MoveDirection { get; private set; } = null;
+    public SerializeableValue<float> SendingTime { get; private set; } = null;
+    public SerializeableValue<bool> HasParent { get; private set; } = null;
 
     public TransformSyncData(Func<bool> writePermission) : base(writePermission) { }
 
     protected override void OnDeclareValues(Func<bool> writePermission)
     {
         Position = new SerializeableValue<Vector3>(Vector3.zero, writePermission, (r, f) => r.ReadVector3(), (w, v) => w.Write(v));
+        LocalPosition = new SerializeableValue<Vector3>(Vector3.zero, writePermission, (r, f) => r.ReadVector3(), (w, v) => w.Write(v));
+
         Rotation = new SerializeableValue<Quaternion>(Quaternion.identity, writePermission, (r, f) => r.ReadQuaternion(), (w, v) => w.Write(v));
+        LocalRotation = new SerializeableValue<Quaternion>(Quaternion.identity, writePermission, (r, f) => r.ReadQuaternion(), (w, v) => w.Write(v));
+
+        MoveDirection = new SerializeableValue<Vector3>(Vector3.zero, writePermission, (r, f) => r.ReadVector3(), (w, v) => w.Write(v));
+        SendingTime = new SerializeableValue<float>(0f, writePermission, (r, f) => r.ReadSingle(), (w, v) => w.Write(v));
+        HasParent = new SerializeableValue<bool>(false, writePermission, (r, f) => r.ReadBoolean(), (w, v) => w.Write(v));
     }
 }
 
@@ -47,16 +61,15 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
     public void SetRotation(Quaternion rotation) => transform.localRotation = rotation;
 
     Vector3 m_LastFramePosition = Vector3.zero;
-    Vector3 m_LastPosition = Vector3.zero;
-    Quaternion m_LastRotation = Quaternion.identity;
+    Vector3 m_LastSendedPosition = Vector3.zero;
+    Quaternion m_LastSendedRotation = Quaternion.identity;
 
     Vector3 m_MovementDirection = Vector3.zero;
-
     Transform m_LastParent;
 
     public bool SyncEnabled
     {
-        get { return m_SyncEnabled; }
+        get => m_SyncEnabled;
         set
         {
             if (!IsLocal)
@@ -99,15 +112,33 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
         ResetTemporaryData();
     }
 
-    public override void OnPreInitialize()
+    protected override void OnDataDeserialized(bool firstTime)
     {
-        base.OnPreInitialize();
+        base.OnDataDeserialized(firstTime);
+
+        m_TargetPosition = Data.Position;
+        m_TargetRotation = Data.Rotation;
+
+        if (Data.HasParent && transform.parent != null)
+        {
+            m_TargetPosition = Data.LocalPosition.Value;
+            m_TargetRotation = Data.LocalRotation.Value;
+        }
+
+        if (firstTime)
+        {
+            SetPosition(m_TargetPosition);
+            SetRotation(m_TargetRotation);
+
+            ResetTemporaryData();
+        }
+        else if (m_Prediction)
+            m_TargetPosition += Data.MoveDirection.Value.normalized * (Network.Realtime.Time - Data.SendingTime.Value) * m_PredictionMultipler;
     }
 
     public override void OnPostInitialize()
     {
         Identity.RegisterRPCHandler(SetTransformRpcHandler);
-        ResetTemporaryData();
     }
 
     void ResetTemporaryData()
@@ -115,8 +146,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
         m_TargetPosition = transform.localPosition;
         m_TargetRotation = transform.localRotation;
 
-        m_LastPosition = m_TargetPosition;
-        m_LastRotation = m_TargetRotation;
+        m_LastSendedPosition = m_TargetPosition;
+        m_LastSendedRotation = m_TargetRotation;
 
         m_MovementDirection = Vector3.zero;
     }
@@ -130,9 +161,10 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
             m_LastParent = transform.parent;
             ResetTemporaryData();
 
-            TrySetDirty();
-        }
+            if(IsLocal)
+                Data.HasParent.Value = transform.parent != null;
 
+        }
         if (IsLocal)
         {
             m_MovementDirection = transform.position - m_LastFramePosition;
@@ -140,10 +172,23 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
 
             if (HasMoved(m_PositionThreshold, m_RotationThreshold))
             {
-                m_LastPosition = transform.position;
-                m_LastRotation = transform.rotation;
+                //Sets target position to current;
+                m_TargetPosition = transform.localPosition;
+                m_TargetRotation = transform.localRotation;
 
-                SetDirty();
+                m_LastSendedPosition = transform.position;
+                m_LastSendedRotation = transform.rotation;
+
+                //Fill network data;
+                Data.Position.Value = transform.position;
+                Data.LocalPosition.Value = transform.localPosition;
+
+                Data.Rotation.Value = transform.rotation;
+                Data.LocalRotation.Value = transform.localRotation;
+
+                Data.MoveDirection.Value = m_MovementDirection;
+                Data.SendingTime.Value = Network.Realtime.Time;
+                Data.HasParent.Value = transform.parent != null;
             }
         }
         else
@@ -170,7 +215,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
             else
                 SetRotation(m_TargetRotation);
         }
-        
     }
 
     bool HasMoved(float posDiff, float rotDiff)
@@ -179,64 +223,15 @@ public sealed class GSTransformSync : GSInstanceBehaviour<TransformSyncData>
             return false;
 
         // check if position has changed
-        var currentDirection = transform.position - m_LastPosition;
+        var currentDirection = transform.position - m_LastSendedPosition;
         if (currentDirection.sqrMagnitude > posDiff)
             return true;
 
         // check if rotation has changed
-        var angle = Quaternion.Angle(m_LastRotation, transform.rotation);
+        var angle = Quaternion.Angle(m_LastSendedRotation, transform.rotation);
         if (angle > rotDiff)
             return true;
 
         return false;
-    }
-
-    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
-    {
-        m_TargetPosition = reader.ReadVector3();
-        m_TargetRotation = reader.ReadQuaternion();
-        var hasParentRemotely = reader.ReadBoolean(); //If we has parent remotely, 
-        if(hasParentRemotely)
-        {
-            //Read local position and rotation;
-            var localPosition = reader.ReadVector3();
-            var localRotation = reader.ReadQuaternion();
-
-            if (transform.parent != null)
-            {
-                m_TargetPosition = localPosition;
-                m_TargetRotation = localRotation;
-            }
-        }
-
-        var remoteMovementDirection = reader.ReadVector3();
-        var remoteSessionTime = reader.ReadSingle();
-
-        if (firstTime)
-        {
-            SetPosition(m_TargetPosition);
-            SetRotation(m_TargetRotation);
-        }
-        else if (m_Prediction)
-            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.Time - remoteSessionTime) * m_PredictionMultipler;
-    }
-
-    protected override void SerializeDirtyChecked(NetWriter writer)
-    {
-        m_TargetPosition = transform.localPosition;
-        m_TargetRotation = transform.localRotation;
-
-        writer.Write(transform.position);
-        writer.Write(transform.rotation);
-        var hasParent = transform.parent != null;
-        writer.Write(hasParent);
-        if(hasParent)
-        {
-            writer.Write(transform.localPosition);
-            writer.Write(transform.localRotation);
-        }
-
-        writer.Write(m_MovementDirection);
-        writer.Write(Network.Realtime.Time);
     }
 }
