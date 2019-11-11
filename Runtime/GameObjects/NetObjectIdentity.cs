@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 public enum BufferedRPCType
@@ -224,7 +225,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         //Tell components abount object was initialized;
         foreach (var o in m_Observables)
+        {
+            TryAutoRegisterRPCHandlers(o);
             o.OnPostInitialize();
+        }
 
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
@@ -232,6 +236,19 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             m_RpcBuffer.Recieve(((IRPCReciever)this).RecieveRPCRemotely);
 
         return this;
+    }
+
+    void TryAutoRegisterRPCHandlers(IGSInstanceObservable targetObject)
+    {
+        var members = System.Reflection.Find
+                .MethodsWithAttribute<AutoRegisterRPCHandler>(targetObject, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+
+        foreach (var m in members)
+        {
+            var action = Create.DelegateWithSingleParameter<byte[]>(targetObject, m.Member);
+            if (action != null)
+                RegisterRPCHandler(action);
+        }
     }
 
     /// <summary>
