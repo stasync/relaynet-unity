@@ -335,7 +335,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     void FixedUpdate()
     {
-        if (!IsLocal || !Initialized || Time.fixedUnscaledTime < m_NextSendEventTime || !IsDirty)
+        if (!Initialized || !IsLocal || Time.fixedUnscaledTime < m_NextSendEventTime || !IsDirty)
             return;
 
         TrySerialize(m_DeliveryIntent);
@@ -618,16 +618,13 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             Debug.LogErrorFormat("Handler for RPC with hash {0} doesn't registred on object {1}", hashCode, gameObject.name);
     }
 
-    void SendGameObject(byte[] data, bool initializable, DeliveryIntent deliveryIntent)
-    {
-        m_InternalNetwork.SendGameObjectToOthers(
-            InstanceId, 
-            PrefabId, 
+    void SendGameObject(byte[] data, bool initializable, DeliveryIntent deliveryIntent) => m_InternalNetwork.SendGameObjectToOthers(
+            InstanceId,
+            PrefabId,
             IsSceneObject,
             data,
             initializable,
             deliveryIntent);
-    }
 
     public void DestroyViaNetwork()
     {
@@ -650,13 +647,20 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             Owner == null ? "NONE" : Owner.Name, 
             IsLocal));
     }
-    #endif
+#endif
 
     #region HELPERS
+    Dictionary<Type, GSInstanceBehaviour> m_CachedBehaviours = new Dictionary<Type, GSInstanceBehaviour>();
     public T GetBehaviour<T>() where T : GSInstanceBehaviour
     {
-        // TODO: Make in cached;
-        return GetComponent<T>();
+        var type = typeof(T);
+        if (!m_CachedBehaviours.TryGetValue(type, out var behaviour))
+        {
+            behaviour = GetComponent<T>();
+            if (behaviour != null)
+                m_CachedBehaviours.Add(type, behaviour);
+        }
+        return behaviour as T;
     }
 
     static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
