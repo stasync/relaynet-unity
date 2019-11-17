@@ -1,5 +1,4 @@
-﻿using GameSparks.RT;
-using System;
+﻿using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -33,7 +32,6 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     public override void OnPostInitialize()
     {
-        Identity.RegisterRPCHandler(SyncAnimatorTriggersHandler);
     }
 
     void FixedUpdate()
@@ -88,6 +86,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
             false);
     }
 
+    [AutoRegisterRPCHandler]
     void SyncAnimatorTriggersHandler(byte[] data)
     {
         if (IsLocal)
