@@ -104,10 +104,8 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, byte[] additionalData)
-    {
-        return CreateObjectInternal(owner, new GSInstanceId(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
-    }
+    public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
+            CreateObjectInternal(owner, new GSInstanceId(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
 
     /// <summary>
     /// Create object from remote client update, without position and rotation, but it can be stored in data.
@@ -163,7 +161,7 @@ public class GSInstanceFactory : IGSInstanceFactory
         Vector3 position, 
         Quaternion rotation, 
         byte[] baseData,
-        byte[] additionalData)
+        object[] additionalData)
     {
         if (m_Objects.ContainsKey(instanceId))
             throw new Exception("Object with id " + instanceId + " already created");
@@ -239,7 +237,7 @@ public class GSInstanceFactory : IGSInstanceFactory
         IGSRTPlayer owner, 
         INetwork transport,
         byte[] data,
-        byte[] additionalData)
+        object[] additionalData)
     {
         var initializable = identity as IIdentity;
         if (initializable == null)

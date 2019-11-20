@@ -185,7 +185,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         IGSRTPlayer owner, 
         INetwork network, 
         byte[] data,
-        byte[] additionalData)
+        object[] additionalData)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -205,7 +205,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal && data != null)
             Deserialize(data, true, true); //Force true to allow deseriazation before object initialized.
 
-        if(additionalData != null)
+        if(additionalData != null && additionalData.Length > 0)
             foreach (var o in m_Observables)
                 o.OnCreatedWithAdditionalData(additionalData);
 
