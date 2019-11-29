@@ -78,17 +78,11 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             m_Buffer = reader.ReadCollection(r => new BufferedRPCData(r)).ToList();
         }
 
-        public IEnumerator<byte[]> GetEnumerator()
-        {
-            return m_Buffer
+        public IEnumerator<byte[]> GetEnumerator() => m_Buffer
                 .Select(r => r.Data)
                 .GetEnumerator();
-        }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_Buffer.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => m_Buffer.GetEnumerator();
 
         void IRPCBuffer.Recieve(Action<int, byte[]> reciever)
         {
@@ -99,23 +93,14 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         void Remove(int hashCode)
         {
             m_Buffer.RemoveAll(d => d.Key == hashCode);
-            IsDirty = true;
+            SetDirty();
         }
 
-        void IRPCBuffer.Remove(int hashCode)
-        {
-            Remove(hashCode);
-        }
+        void IRPCBuffer.Remove(int hashCode) => Remove(hashCode);
 
-        public void SetDirty()
-        {
-            IsDirty = true;
-        }
+        public void SetDirty() => IsDirty = true;
 
-        public override string ToString()
-        {
-            return m_Buffer.ToString();
-        }
+        public override string ToString() => m_Buffer.ToString();
 
         public void Clear()
         {
@@ -132,13 +117,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     float m_NextSendEventTime;
 
     public GSInstanceId InstanceId { get; private set; }
-
-    IRPCBuffer m_RpcBuffer = new DefaultRpcBuffer();
-
     public bool IsOwnedByMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
     public bool IsLocal => m_InternalNetwork != null && m_InternalNetwork.LocalPlayer == Owner;
     public bool IsLocalPlayerTagObject => m_InternalNetwork.LocalPlayer.TagObjectId == InstanceId;
     public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_RpcBuffer.IsDirty;
+
+    /// <summary>
+    /// Rpc buffer
+    /// </summary>
+    IRPCBuffer m_RpcBuffer = new DefaultRpcBuffer();
 
     /// <summary>
     /// Readonly owner reference
@@ -146,7 +133,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     IGSRTPlayer m_Owner;
     public IGSRTPlayer Owner
     {
-        get { return m_Owner; }
+        get => m_Owner;
         private set
         {
             m_Owner = value;
@@ -167,6 +154,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     public bool Initialized { get; private set; }
 
     IEnumerable<IGSInstanceObservable> m_Observables;
+    NetWriter m_ObjectWriter;
 
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
@@ -358,17 +346,20 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!Initialized)
             throw new Exception("Trying to serialize object that not initialized, this is not allowed");
 
-        var writer = new NetWriter();
-        writer.WriteInstanceId(InstanceId);
-        writer.Write(PrefabId);
-        writer.Write(IsSceneObject);
+        if (m_ObjectWriter == null)
+            m_ObjectWriter = new NetWriter();
+        m_ObjectWriter.SeekZero();
 
-        m_RpcBuffer.Serialize(writer);
+        m_ObjectWriter.WriteInstanceId(InstanceId);
+        m_ObjectWriter.Write(PrefabId);
+        m_ObjectWriter.Write(IsSceneObject);
+
+        m_RpcBuffer.Serialize(m_ObjectWriter);
 
         foreach (var b in m_Observables)
-            b.Serialize(writer);
+            b.Serialize(m_ObjectWriter);
 
-        SendGameObject(writer.ToArray(), initializable, deliveryIntent);
+        SendGameObject(m_ObjectWriter.ToArray(), initializable, deliveryIntent);
 
         m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
     }
