@@ -626,7 +626,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     }
 
     #if UNITY_EDITOR
-    private void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         if (!Initialized)
             return;
