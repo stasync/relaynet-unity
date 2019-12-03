@@ -130,8 +130,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Readonly owner reference
     /// </summary>
-    IGSRTPlayer m_Owner;
-    public IGSRTPlayer Owner
+    INetRTPlayer m_Owner;
+    public INetRTPlayer Owner
     {
         get => m_Owner;
         private set
@@ -170,7 +170,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         string prefabId, 
         bool isSceneObject,
         GSInstanceId instanceId,
-        IGSRTPlayer owner, 
+        INetRTPlayer owner, 
         INetwork network, 
         byte[] data,
         object[] additionalData)
@@ -272,8 +272,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// </summary>
     void OnOwnerChanged()
     {
-        Debug.LogWarningFormat("{0} object with ID: {1} owner changed, now owner is {2}",
-            gameObject.name, InstanceId, Owner.ToString());
+        Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner.ToString()}");
         foreach (var b in m_Observables)
             b.OnOwnerChanged();
     }
@@ -296,7 +295,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// Change object owner.
     /// </summary>
     /// <param name="owner"></param>
-    public void SetOwner(IGSRTPlayer owner, bool send = false)
+    public void SetOwner(INetRTPlayer owner, bool send = false)
     {
         if (!Initialized)
             throw new Exception("You can manage owners only for initialized objects");

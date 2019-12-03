@@ -11,7 +11,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     public bool SyncEnabled
     {
-        get { return m_SyncEnabled; }
+        get => m_SyncEnabled;
         set
         {
             if (!IsLocal)
@@ -53,6 +53,12 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
                 m_Animator.IsInTransition(i) ?
                 m_Animator.GetNextAnimatorStateInfo(i) :
                 m_Animator.GetCurrentAnimatorStateInfo(i), m_Animator.GetLayerWeight(i), i);
+    }
+
+    void ForEachParameter(Action<AnimatorControllerParameter, int> processor)
+    {
+        for (var i = 0; i < m_Animator.parameters.Length; i++)
+            processor(m_Animator.parameters[i], i);
     }
 
     public void SetTrigger(string triggerName)
@@ -141,34 +147,32 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     void WriteParameters(NetWriter writer)
     {
-        for (var i = 0; i < m_Animator.parameters.Length; i++)
+        ForEachParameter((p, i) =>
         {
-            var par = m_Animator.parameters[i];
-            if (par.type == AnimatorControllerParameterType.Int)
-                writer.Write(m_Animator.GetInteger(par.nameHash));
+            if (p.type == AnimatorControllerParameterType.Int)
+                writer.Write(m_Animator.GetInteger(p.nameHash));
 
-            if (par.type == AnimatorControllerParameterType.Float)
-                writer.Write(m_Animator.GetFloat(par.nameHash));
+            if (p.type == AnimatorControllerParameterType.Float)
+                writer.Write(m_Animator.GetFloat(p.nameHash));
 
-            if (par.type == AnimatorControllerParameterType.Bool)
-                writer.Write(m_Animator.GetBool(par.nameHash));
-        }
+            if (p.type == AnimatorControllerParameterType.Bool)
+                writer.Write(m_Animator.GetBool(p.nameHash));
+        });
     }
 
     void ReadParameters(NetReader reader)
     {
-        for (var i = 0; i < m_Animator.parameters.Length; i++)
+        ForEachParameter((p, i) => 
         {
-            var par = m_Animator.parameters[i];
-            if (par.type == AnimatorControllerParameterType.Int)
-                m_Animator.SetInteger(par.nameHash, reader.ReadInt32());
+            if (p.type == AnimatorControllerParameterType.Int)
+                m_Animator.SetInteger(p.nameHash, reader.ReadInt32());
 
-            if (par.type == AnimatorControllerParameterType.Float)
-                m_Animator.SetFloat(par.nameHash, reader.ReadSingle());
+            if (p.type == AnimatorControllerParameterType.Float)
+                m_Animator.SetFloat(p.nameHash, reader.ReadSingle());
 
-            if (par.type == AnimatorControllerParameterType.Bool)
-                m_Animator.SetBool(par.nameHash, reader.ReadBoolean());
-        }
+            if (p.type == AnimatorControllerParameterType.Bool)
+                m_Animator.SetBool(p.nameHash, reader.ReadBoolean());
+        });
     }
     #endregion
 

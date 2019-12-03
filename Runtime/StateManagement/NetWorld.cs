@@ -104,7 +104,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateObject(IGSRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
+    public GSInstanceIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
             CreateObjectInternal(owner, new GSInstanceId(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
 
     /// <summary>
@@ -117,7 +117,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="prefabId"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateOrUpdateObject(GSInstanceId instanceId, bool initializable, IGSRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
+    public GSInstanceIdentity CreateOrUpdateObject(GSInstanceId instanceId, bool initializable, INetRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
     {
         // Check if we dont have any created object with UID.
         if (!m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity))
@@ -154,7 +154,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="baseData"></param>
     /// <returns></returns>
     GSInstanceIdentity CreateObjectInternal(
-        IGSRTPlayer owner, 
+        INetRTPlayer owner, 
         GSInstanceId instanceId, 
         string prefabId, 
         bool isSceneObject, 
@@ -234,7 +234,7 @@ public class GSInstanceFactory : IGSInstanceFactory
         string prefabId, 
         bool isSceneObject, 
         GSInstanceId instanceId, 
-        IGSRTPlayer owner, 
+        INetRTPlayer owner, 
         INetwork transport,
         byte[] data,
         object[] additionalData)
@@ -279,7 +279,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// <param name="position"></param>
     /// <param name="rotation"></param>
     /// <returns></returns>
-    public GSInstanceIdentity FindObjectOrCreateMock(IGSRTPlayer owner, GSInstanceId instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+    public GSInstanceIdentity FindObjectOrCreateMock(INetRTPlayer owner, GSInstanceId instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
         var identity = FindObject(instanceId);
         return 
@@ -290,7 +290,7 @@ public class GSInstanceFactory : IGSInstanceFactory
 
     /// <summary>
     /// If some object doesn't exist yet, we can wait for it;
-    /// Similar to: <see cref="FindObjectOrCreateMock(IGSRTPlayer, GSInstanceId, string, bool, Vector3, Quaternion)"/>
+    /// Similar to: <see cref="FindObjectOrCreateMock(INetRTPlayer, GSInstanceId, string, bool, Vector3, Quaternion)"/>
     /// But it doesn't create mock objects;
     /// </summary>
     /// <param name="instanceId"></param>
