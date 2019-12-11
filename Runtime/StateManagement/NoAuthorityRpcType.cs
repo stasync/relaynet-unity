@@ -1,8 +1,7 @@
-﻿
-/// <summary>
-/// Rpc type.
+﻿/// <summary>
+/// Type of PRC sending 
 /// </summary>
-public enum RpcType : byte
+public enum RPCType : byte
 {
     OwnerToOthers = 0,
     ToOwner = 1, 

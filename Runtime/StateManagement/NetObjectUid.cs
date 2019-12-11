@@ -5,8 +5,8 @@ using System.Linq;
 public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
 {
     #region STATIC
-    public static GSInstanceId Invalid { get { return uint.MaxValue; } }
-    static IList<uint> s_UnAllocatedIds = new List<uint>();
+    public static GSInstanceId Invalid => 0;
+    static IList<GSInstanceId> s_UnAllocatedIds = new List<GSInstanceId>();
     static uint s_IdCounter = 0;
 
     /// <summary>
@@ -15,7 +15,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
     /// </summary>
     public const uint c_SceneObjectReservedIdSpace = 1000;
-    public const uint c_FirstValidId = 0;
+    public const uint c_FirstValidId = 1;
 
     public static void UnAllocateId(GSInstanceId id)
     {
@@ -29,7 +29,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// </summary>
     public static void Reset()
     {
-        s_UnAllocatedIds = new List<uint>();
+        s_UnAllocatedIds = new List<GSInstanceId>();
         s_IdCounter = 0;
     }
 
@@ -49,12 +49,12 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         //Check unallocated id
         if (s_UnAllocatedIds.Any())
         {
-            m_InstanceId = s_UnAllocatedIds.FirstOrDefault();
-            s_UnAllocatedIds.Remove(m_InstanceId);
+            m_InstanceIdValue = s_UnAllocatedIds.FirstOrDefault();
+            s_UnAllocatedIds.Remove(m_InstanceIdValue);
         }
         //Allocate new id
         else
-            m_InstanceId = AllocateNewId(peerId);
+            m_InstanceIdValue = AllocateNewId(peerId);
     }
 
     /// <summary>
@@ -63,57 +63,24 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// <param name="instanceId"></param>
     private GSInstanceId(uint instanceId)
     {
-        m_InstanceId = instanceId;
+        m_InstanceIdValue = instanceId;
     }
 
-    public bool IsValid => m_InstanceId >= c_FirstValidId && m_InstanceId < Invalid;
+    public bool IsValid => m_InstanceIdValue != Invalid;
+    public bool IsSceneObjectSpaceId => IsValid && m_InstanceIdValue <= c_SceneObjectReservedIdSpace;
 
-    public bool IsSceneObjectSpaceId => IsValid && m_InstanceId <= c_SceneObjectReservedIdSpace;
+    uint m_InstanceIdValue;
 
-    private uint m_InstanceId;
+    public int CompareTo(GSInstanceId other) => m_InstanceIdValue.CompareTo(other.m_InstanceIdValue);
+    public static implicit operator uint(GSInstanceId value) => value.m_InstanceIdValue;
+    public static implicit operator GSInstanceId(uint value) => new GSInstanceId(value);
 
-    public int CompareTo(GSInstanceId other)
-    {
-        return m_InstanceId.CompareTo(other.m_InstanceId);
-    }
+    public static bool operator ==(GSInstanceId value0, GSInstanceId value1) => value0.m_InstanceIdValue == value1.m_InstanceIdValue;
+    public static bool operator !=(GSInstanceId value0, GSInstanceId value1) => value0.m_InstanceIdValue != value1.m_InstanceIdValue;
 
-    public static implicit operator uint(GSInstanceId value)
-    {
-        return value.m_InstanceId;
-    }
+    public bool Equals(GSInstanceId other) => m_InstanceIdValue.Equals(other.m_InstanceIdValue);
 
-    public static implicit operator GSInstanceId(uint value)
-    {
-        return new GSInstanceId(value);
-    }
-
-    public static bool operator ==(GSInstanceId value0, GSInstanceId value1)
-    {
-        return value0.m_InstanceId == value1.m_InstanceId;
-    }
-
-    public static bool operator !=(GSInstanceId value0, GSInstanceId value1)
-    {
-        return value0.m_InstanceId != value1.m_InstanceId;
-    }
-
-    public override string ToString()
-    {
-        return m_InstanceId.ToString();
-    }
-
-    public bool Equals(GSInstanceId other)
-    {
-        return m_InstanceId.Equals(other.m_InstanceId);
-    }
-
-    public override bool Equals(object obj)
-    {
-        return base.Equals(obj);
-    }
-
-    public override int GetHashCode()
-    {
-        return m_InstanceId.GetHashCode();
-    }
+    public override string ToString() => m_InstanceIdValue.ToString();
+    public override bool Equals(object obj) => base.Equals(obj);
+    public override int GetHashCode() => m_InstanceIdValue.GetHashCode();
 }

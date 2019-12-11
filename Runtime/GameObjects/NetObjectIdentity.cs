@@ -221,7 +221,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
         if (!IsLocal)
-            m_RpcBuffer.Recieve(((IRPCReciever)this).RecieveRPCRemotely);
+            m_RpcBuffer.Recieve(RecieveRPCRemotely);
 
         return this;
     }
@@ -478,7 +478,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             InvokeRpcHandler(hashCode, data);
 
         //Send ot others.
-        m_InternalNetwork.RPC(RpcType.OwnerToOthers, InstanceId, hashCode, data, deliveryIntent);
+        m_InternalNetwork.RPC(RPCType.OwnerToOthers, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -536,7 +536,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
         else
-            m_InternalNetwork.RPC(RpcType.ToOwner, InstanceId, hashCode, data, deliveryIntent);
+            m_InternalNetwork.RPC(RPCType.ToOwner, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -551,7 +551,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (IsOwnedByMasterClient)
             InvokeRpcHandler(hashCode, data);
         else
-            m_InternalNetwork.RPC(RpcType.ToMaster, InstanceId, hashCode, data, deliveryIntent);
+            m_InternalNetwork.RPC(RPCType.ToMaster, InstanceId, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -570,7 +570,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCRemotely(int hashCode, byte[] data)
+    void IRPCReciever.RecieveRPCRemotely(int hashCode, byte[] data) => RecieveRPCRemotely(hashCode, data);
+    void RecieveRPCRemotely(int hashCode, byte[] data)
     {
         if (IsLocal)
             throw new Exception("Trying to recieve NO-AUTHORITY RPC on local object behaviour, this is not allowed");
@@ -581,7 +582,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Recieve rpc on object with authority. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCLocaly(int hashCode, byte[] data)
+    void IRPCReciever.RecieveRPCLocaly(int hashCode, byte[] data) => RecieveRPCLocaly(hashCode, data);
+    void RecieveRPCLocaly(int hashCode, byte[] data)
     {
         if (!IsLocal)
             throw new Exception("Trying to recieve AUTHORITY RPC on remote object behaviour, this is not allowed");
@@ -592,7 +594,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Recieve rpc on master clent. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCOnMasterClient(int hashCode, byte[] data)
+    void IRPCReciever.RecieveRPCOnMasterClient(int hashCode, byte[] data) => RecieveRPCOnMasterClient(hashCode, data);
+    void RecieveRPCOnMasterClient(int hashCode, byte[] data)
     {
         if (!IsOwnedByMasterClient)
             throw new Exception("Trying to recieve MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
@@ -637,9 +640,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             Owner == null ? "NONE" : Owner.Name, 
             IsLocal));
     }
-#endif
+    #endif
 
-    #region HELPERS
     Dictionary<Type, GSInstanceBehaviour> m_CachedBehaviours = new Dictionary<Type, GSInstanceBehaviour>();
     public T GetBehaviour<T>() where T : GSInstanceBehaviour
     {
@@ -653,6 +655,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         return behaviour as T;
     }
 
+    #region STATIC_HELPERS
     static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
 
     public static GSInstanceIdentity Find(GSInstanceId instanceId) => 

@@ -4,7 +4,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class GSAnimatorSync : GSInstanceBehaviour
 {
-    enum AnimatorTriggerAction
+    enum AnimatorTriggerAction : byte
     {
         Set, Reset,
     }
@@ -83,7 +83,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
         var writer = new NetWriter();
         writer.Write(hash);
-        writer.Write((int)action);
+        writer.Write((byte)action);
 
         OwnerToOthersRPC(
             SyncAnimatorTriggersHandler,
@@ -100,7 +100,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
         var r = new NetReader(data);
         var hash = r.ReadInt32();
-        var action = (AnimatorTriggerAction)r.ReadInt32();
+        var action = (AnimatorTriggerAction)r.ReadByte();
 
         DoTriggerAction(hash, action);
     }
