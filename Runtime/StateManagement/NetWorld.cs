@@ -23,7 +23,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// Someone connected and loaded game scene.
     /// </summary>
     /// <param name="peerId"></param>
-    public void OnBecomesReady(ConnectionUID peerId)
+    public void OnBecomesReady(ClientUID peerId)
     {
         foreach (var o in m_Objects.Values.Where(o => o != null))
             o.OnBecomesReady(peerId);
@@ -33,7 +33,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// Someone disconnected.
     /// </summary>
     /// <param name="peerId"></param>
-    public void OnDisconnect(ConnectionUID peerId)
+    public void OnDisconnect(ClientUID peerId)
     {
         DestroyPlayerObjects(peerId);
         foreach (var o in m_Objects.Values.Where(o => o != null))
@@ -44,7 +44,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// Removes all ojects (except scene objects), owned by disconnected player, cleanup null references.
     /// </summary>
     /// <param name="peerId"></param>
-    public void DestroyPlayerObjects(ConnectionUID peerId)
+    public void DestroyPlayerObjects(ClientUID peerId)
     {
         var objects = m_Objects.Where(o =>
             o.Value == null ||
@@ -80,7 +80,7 @@ public class GSInstanceFactory : IGSInstanceFactory
     /// </summary>
     /// <param name="peerId"></param>
     /// <param name="instanceId"></param>
-    public void DestroyObject(ConnectionUID peerId, GSInstanceId instanceId)
+    public void DestroyObject(ClientUID peerId, GSInstanceId instanceId)
     {
         if (!m_Objects.ContainsKey(instanceId))
             throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());

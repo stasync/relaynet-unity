@@ -33,7 +33,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         s_IdCounter = 0;
     }
 
-    static GSInstanceId AllocateNewId(ConnectionUID peerId)
+    static GSInstanceId AllocateNewId(ClientUID peerId)
     {
         //Increment internal id
         s_IdCounter++;
@@ -41,10 +41,10 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         return PeerStartId(peerId) + s_IdCounter;
     }
 
-    static GSInstanceId PeerStartId(ConnectionUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
+    static GSInstanceId PeerStartId(ClientUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
     #endregion
 
-    public GSInstanceId(ConnectionUID peerId)
+    public GSInstanceId(ClientUID peerId)
     {
         //Check unallocated id
         if (s_UnAllocatedIds.Any())

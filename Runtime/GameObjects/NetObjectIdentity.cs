@@ -242,7 +242,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Other client connected and loaded game scene, set all component as dirty to send valid object state to other clients.
     /// </summary>
-    public void OnBecomesReady(ConnectionUID peerId)
+    public void OnBecomesReady(ClientUID peerId)
     {
         if (!IsLocal)
             return;
@@ -253,7 +253,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
     /// </summary>
-    public void OnDisconnected(ConnectionUID peerId)
+    public void OnDisconnected(ClientUID peerId)
     {
         //Is object owned by disconnected player and a scene object, trying to change owner.
         if (IsSceneObject && peerId == Owner.ConnectionUID)
