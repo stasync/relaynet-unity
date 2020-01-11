@@ -4,6 +4,9 @@ public static class HLNetReaderExtention
 {
     static ServiceProvider<GSNetwork> m_NetworkProvider = new ServiceProvider<GSNetwork>();
 
+    public static ClientUID ReadConnectionUID(this NetReader reader) =>
+        reader.ReadPackedUInt32();
+
     public static GSInstanceId ReadInstanceId(this NetReader reader) =>
         reader.ReadPackedUInt32();
 

@@ -3,6 +3,9 @@ using UnityEngine;
 
 public static class HLNetWriterExtention
 {
+    public static void WriteConnectionUID(this NetWriter writer, ClientUID connectionUID) =>
+       writer.WritePackedUInt32(connectionUID);
+
     public static void WritePlayer(this NetWriter writer, INetRTPlayer value) =>
         writer.WriteConnectionUID(value == null ? ClientUID.Invalid : value.ConnectionUID);
 
