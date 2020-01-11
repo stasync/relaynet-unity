@@ -114,8 +114,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     DeliveryIntent m_DeliveryIntent = DeliveryIntent.Unreliable;
 
     [SerializeField, Range(0.01f, 1f)]
-    float m_SendRate = 0.1f;
-    float m_NextSendEventTime;
+    float m_UpdateRate = 0.05f;
+    float m_NextUpdateEventTime;
 
     public GSInstanceId InstanceId { get; private set; }
     public bool IsOwnedByMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
@@ -310,23 +310,40 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <summary>
     /// Sets all behaviours dirty, if object is local.
     /// </summary>
-    void SetDirty()
+    void SetDirtyIfLocal()
     {
         if (!IsLocal)
             return;
 
+        //Set RPC Buffer dirty;
         m_RpcBuffer.SetDirty();
 
+        //Set components dirty;
         foreach (var o in m_Observables)
             o.SetDirty();
     }
 
     void FixedUpdate()
     {
-        if (!Initialized || !IsLocal || Time.fixedUnscaledTime < m_NextSendEventTime || !IsDirty)
+        //Object not initialized or remote;
+        if (!Initialized || !IsLocal)
             return;
 
-        TrySerialize(m_DeliveryIntent);
+        if (Time.fixedUnscaledTime < m_NextUpdateEventTime)
+            return;
+
+        //Update all behaviours;
+        UpdateBehaviours();
+
+        //Serialize object if it becomes dirty;
+        if (IsDirty)
+            TrySerialize(m_DeliveryIntent);
+    }
+
+    void UpdateBehaviours()
+    {
+        foreach (var b in m_Observables)
+            b.OnUpdate();
     }
 
     void ForceSerializeIfLocal()
@@ -334,7 +351,13 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (!IsLocal)
             return;
 
-        SetDirty();
+        //Force behaviour update;
+        UpdateBehaviours();
+
+        //Set object dirty;
+        SetDirtyIfLocal();
+
+        //Force serialization;
         TrySerialize(DeliveryIntent.Reliable, true);
     }
 
@@ -361,7 +384,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         SendGameObject(m_ObjectWriter.ToArray(), initializable, deliveryIntent);
 
-        m_NextSendEventTime = Time.fixedUnscaledTime + m_SendRate;
+        m_NextUpdateEventTime = Time.fixedUnscaledTime + m_UpdateRate;
     }
 
     /// <summary>
