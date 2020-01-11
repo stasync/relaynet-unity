@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Core.Networking;
+using UnityEngine;
 using UnityEngine.Events;
 
 public class GSObjectLifetime : GSInstanceBehaviour

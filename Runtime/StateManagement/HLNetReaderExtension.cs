@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Core.Networking;
+using UnityEngine;
 
 public static class HLNetReaderExtention
 {

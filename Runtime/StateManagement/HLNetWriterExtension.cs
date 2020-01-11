@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Core.Networking;
+using System;
 using UnityEngine;
 
 public static class HLNetWriterExtention
