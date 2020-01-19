@@ -1,129 +1,6 @@
 ﻿using Core.Networking;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using UnityEngine;
-
-/// <summary>
-/// TODO:
-/// </summary>
-/// <typeparam name="T"></typeparam>
-public class SerializableCollection<T> : SerializableValue<List<T>>
-{
-    public SerializableCollection(Func<bool> writePermission, Func<NetReader, bool, List<T>> reader, Action<NetWriter, List<T>> writer) : base(new List<T>(), writePermission, reader, writer)
-    {
-
-    }
-}
-
-public class SerializableValue<T> : ISerializeable
-{
-    readonly Func<NetReader, bool, T> m_Reader;
-    readonly Action<NetWriter, T> m_Writer;
-    readonly Func<bool> m_WritePermission;
-
-    protected bool HasPermission => m_WritePermission == null || m_WritePermission();
-
-    T m_Value;
-    public T Value
-    {
-        get => m_Value;
-        set
-        {
-            if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change value {typeof(T).Name}");
-
-            if (m_Value.Equals(value))
-                return;
-
-            m_Value = value;
-            SetDirty();
-        }
-    }
-
-    public SerializableValue(T defaultValue, Func<bool> writePermission, Func<NetReader, bool, T> reader, Action<NetWriter, T> writer)
-    {
-        m_Value = defaultValue;
-        m_WritePermission = writePermission;
-        m_Reader = reader;
-        m_Writer = writer;
-    }
-
-    public bool IsDirty { get; private set; }
-
-    public void Deserialize(NetReader reader, bool firstTime) => m_Value = m_Reader(reader, firstTime);
-    public void Serialize(NetWriter writer)
-    {
-        if (!HasPermission)
-            throw new InvalidOperationException($"No authority to serialize value {typeof(T).Name}");
-
-        IsDirty = false;
-        m_Writer(writer, Value);
-    }
-
-    public void SetDirty()
-    {
-        if (!HasPermission)
-            throw new InvalidOperationException($"No authority to set value {typeof(T).Name} dirty");
-
-        IsDirty = true;
-    }
-
-    public static implicit operator T(SerializableValue<T> value) => value.Value;
-}
-
-public abstract class GSBehaviourAbstractData : ISerializeable
-{
-    protected GSBehaviourAbstractData(Func<bool> writePermission)
-    {
-        OnDeclareValues(writePermission);
-        SerializeableValues = Find
-            .FieldReferences<ISerializeable>(this, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
-            .ToList();
-    }
-
-    protected IEnumerable<ISerializeable> SerializeableValues { get; private set; }
-    protected abstract void OnDeclareValues(Func<bool> writePermission);
-
-    public bool IsDirty => SerializeableValues != null && SerializeableValues.Any(v => v.IsDirty);
-    public virtual void SetDirty()
-    {
-        if (SerializeableValues != null)
-            foreach (var v in SerializeableValues)
-                v.SetDirty();
-    }
-
-    /// <summary>
-    /// Serialization called by GSInstanceIdentity.
-    /// </summary>
-    /// <param name="writer"></param>
-    public virtual void Serialize(NetWriter writer)
-    {
-        var needSerialize = IsDirty;
-        writer.Write(needSerialize);
-
-        if (!needSerialize)
-            return;
-
-        foreach (var v in SerializeableValues)
-            v.Serialize(writer);
-    }
-
-    /// <summary>
-    /// Deserialization called by GSInstanceIdentity.
-    /// </summary>
-    /// <param name="reader"></param>
-    public virtual void Deserialize(NetReader reader, bool firtsTime)
-    {
-        //Check if sended object was dirty
-        if (!reader.ReadBoolean())
-            return;
-
-        foreach (var v in SerializeableValues)
-            v.Deserialize(reader, firtsTime);
-    }
-}
 
 [RequireComponent(typeof(GSInstanceIdentity))]
 public abstract class GSInstanceBehaviour<T> : MonoBehaviour, IGSInstanceBehaviour where T : GSBehaviourAbstractData
@@ -177,7 +54,7 @@ public abstract class GSInstanceBehaviour<T> : MonoBehaviour, IGSInstanceBehavio
         Data.SetDirty();
     }
 
-    void ISerializeable.SetDirty() => SetDirty();
+    void ISerializable.SetDirty() => SetDirty();
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NOT AUTHORITY on this object.
@@ -251,7 +128,7 @@ public abstract class GSInstanceBehaviour<T> : MonoBehaviour, IGSInstanceBehavio
     /// Serialization called by GSInstanceIdentity.
     /// </summary>
     /// <param name="writer"></param>
-    void ISerializeable.Serialize(NetWriter writer)
+    void ISerializable.Serialize(NetWriter writer)
     {
         var needSerialize = IsDirty;
         writer.Write(needSerialize);
@@ -271,7 +148,7 @@ public abstract class GSInstanceBehaviour<T> : MonoBehaviour, IGSInstanceBehavio
     /// Deserialization called by GSInstanceIdentity.
     /// </summary>
     /// <param name="reader"></param>
-    void ISerializeable.Deserialize(NetReader reader, bool firtsTime)
+    void ISerializable.Deserialize(NetReader reader, bool firtsTime)
     {
         //Check if sended object was dirty
         if (!reader.ReadBoolean())

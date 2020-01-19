@@ -60,7 +60,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             IsDirty = true;
         }
 
-        void ISerializeable.Serialize(NetWriter writer)
+        void ISerializable.Serialize(NetWriter writer)
         {
             writer.Write(IsDirty);
             if (!IsDirty)
@@ -70,7 +70,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             writer.WriteCollection(m_Buffer, (v, w) => v.Serialize(w));
         }
 
-        void ISerializeable.Deserialize(NetReader reader, bool firstTime)
+        void ISerializable.Deserialize(NetReader reader, bool firstTime)
         {
             var wasDirty = reader.ReadBoolean();
             if (!wasDirty)
