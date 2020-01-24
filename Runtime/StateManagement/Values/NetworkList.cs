@@ -4,70 +4,72 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public class SerializableList<TSerializedValue> : ServializableValueDefenition<IList<TSerializedValue>, TSerializedValue>, IList<TSerializedValue>
+public class SerializableList<TValue> : ServializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
 {
-    public SerializableList(IList<TSerializedValue> defaultValue, Func<bool> writePermission, Func<NetReader, bool, TSerializedValue> reader, Action<NetWriter, TSerializedValue> writer) :
-        base(defaultValue, writePermission, reader, writer)
+    public SerializableList(List<TValue> defaultValue, Func<bool> writePermission, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) :
+        base(defaultValue, writePermission, 
+            (r, f) => r.ReadCollection(cValueReader => reader(cValueReader, f)).ToList(), 
+            (w, v) => w.WriteCollection(v, (cValue, cValueWriter) => writer(cValueWriter, cValue)))
     {
     }
 
     #region IList
-    public TSerializedValue this[int index]
+    public TValue this[int index]
     {
         get => Value[index];
         set
         {
             if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change list of type {typeof(TSerializedValue).Name}");
+                throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
-            Value[index] = value;
+            InternalValue[index] = value;
             SetDirty();
         }
     }
 
     public int Count => Value.Count;
 
-    public bool IsReadOnly => Value.IsReadOnly;
+    public bool IsReadOnly => false;
 
-    public void Add(TSerializedValue item)
+    public void Add(TValue item)
     {
         if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change list of type {typeof(TSerializedValue).Name}");
+            throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
-        Value.Add(item);
+        InternalValue.Add(item);
         SetDirty();
     }
 
     public void Clear()
     {
         if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change list of type {typeof(TSerializedValue).Name}");
+            throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
-        Value.Clear();
+        InternalValue.Clear();
         SetDirty();
     }
 
-    public bool Contains(TSerializedValue item) => Value.Contains(item);
+    public bool Contains(TValue item) => Value.Contains(item);
 
-    public void CopyTo(TSerializedValue[] array, int arrayIndex) => Value.CopyTo(array, arrayIndex);
+    public void CopyTo(TValue[] array, int arrayIndex) => InternalValue.CopyTo(array, arrayIndex);
 
-    public int IndexOf(TSerializedValue item) => Value.IndexOf(item);
+    public int IndexOf(TValue item) => InternalValue.IndexOf(item);
 
-    public void Insert(int index, TSerializedValue item)
+    public void Insert(int index, TValue item)
     {
         if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change list of type {typeof(TSerializedValue).Name}");
+            throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
-        Value.Insert(index, item);
+        InternalValue.Insert(index, item);
         SetDirty();
     }
 
-    public bool Remove(TSerializedValue item)
+    public bool Remove(TValue item)
     {
         if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change list of type {typeof(TSerializedValue).Name}");
+            throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
-        var removed = Value.Remove(item);
+        var removed = InternalValue.Remove(item);
         if (removed)
             SetDirty();
 
@@ -77,21 +79,16 @@ public class SerializableList<TSerializedValue> : ServializableValueDefenition<I
     public void RemoveAt(int index)
     {
         if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change list of type {typeof(TSerializedValue).Name}");
+            throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
-        Value.RemoveAt(index);
+        InternalValue.RemoveAt(index);
         SetDirty();
     }
 
-    public IEnumerator<TSerializedValue> GetEnumerator() => Value.GetEnumerator();
+    public IEnumerator<TValue> GetEnumerator() => Value.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => Value.GetEnumerator();
     #endregion
 
-    protected override IList<TSerializedValue> OnDeserialize(NetReader reader, bool firstTime) => reader
-        .ReadCollection(r => m_Reader(r, firstTime))
-        .ToList();
-
-    protected override void OnSerializeWithPermission(NetWriter writer) => writer
-        .WriteCollection(Value, (v, w) => m_Writer(w, v));
+    public override string ToJSONString() => RealtimeJSONUtils.ToJSONCollection(Value.Select(v => v.ToString()).ToArray());
 }
