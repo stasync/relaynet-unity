@@ -6,10 +6,18 @@ using System.Linq;
 
 public class SerializableList<TValue> : ServializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
 {
-    public SerializableList(List<TValue> defaultValue, Func<bool> writePermission, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) :
-        base(defaultValue, writePermission, 
-            (r, f) => r.ReadCollection(cValueReader => reader(cValueReader, f)).ToList(), 
-            (w, v) => w.WriteCollection(v, (cValue, cValueWriter) => writer(cValueWriter, cValue)))
+    public SerializableList(
+        List<TValue> defaultValue, 
+        Func<bool> writePermission, 
+        Func<NetReader, bool, TValue> valueReader, 
+        Action<NetWriter, TValue> valueWriter) :
+            base(
+                defaultValue, 
+                writePermission, 
+                (r, f) => r.ReadCollection(
+                    cValueReader => valueReader(cValueReader, f)).ToList(), 
+                (w, v) => w.WriteCollection(v, 
+                    (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
     {
     }
 

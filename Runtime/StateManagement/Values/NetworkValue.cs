@@ -6,6 +6,5 @@ public class SerializableValue<TValue> : ServializableValueDefinition<TValue, TV
     public SerializableValue(TValue defaultValue, Func<bool> writePermission, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) :
         base(defaultValue, writePermission, reader, writer)
     {
-        
     }
 }
