@@ -10,14 +10,14 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     {
         OnDeclareValues(writePermission);
         SerializeableValues = Find
-            .FieldReferencesWithFields<ISerializableValue>(this, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+            .FieldReferencesWithInfo<ISerializableValue>(this, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
             .ToList();
     }
 
     protected IEnumerable<KeyValuePair<FieldInfo, ISerializableValue>> SerializeableValues { get; private set; }
     protected abstract void OnDeclareValues(Func<bool> writePermission);
 
-    public bool IsDirty => SerializeableValues != null && SerializeableValues.Any(v => v.Value.IsDirty);
+    public bool IsDirty => SerializeableValues != null && SerializeableValues.Any(kvp => kvp.Value.IsDirty);
     public virtual void SetDirty()
     {
         if (SerializeableValues != null)
@@ -55,12 +55,8 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
             kvp.Value.Deserialize(reader, firtsTime);
     }
 
-    
-    public string ToJSONString()
-    {
-        return RealtimeJSONUtils.ToJSONCollection(SerializeableValues.Select(kvp => FieldValuePairToJSON(kvp)).ToArray());
-
-        string FieldValuePairToJSON(KeyValuePair<FieldInfo, ISerializableValue> kvp) =>
-                "{" + RealtimeJSONUtils.ToJSONValue(kvp.Key.Name) + ":" + RealtimeJSONUtils.ToJSONValue(kvp.Value.ToString()) + "}";
-    }
+    public string ToJSONProperty() => 
+        RealtimeJSONUtils.ToJSONCollection(SerializeableValues
+            .Select(kvp => "{" + RealtimeJSONUtils.ToJSONValue(kvp.Key.Name) + ":" + kvp.Value.ToJSONProperty() + "}")
+            .ToArray());
 }

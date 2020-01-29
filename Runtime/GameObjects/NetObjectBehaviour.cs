@@ -2,22 +2,8 @@
 using System;
 using UnityEngine;
 
-[RequireComponent(typeof(GSInstanceIdentity))]
-public abstract class GSInstanceBehaviour<T> : MonoBehaviour, IGSInstanceBehaviour where T : GSBehaviourAbstractData
+public abstract class GSInstanceBehaviour<T> : GSInstanceBehaviourBase, IGSInstanceBehaviour where T : GSBehaviourAbstractData
 {
-    protected ILocator Locator => m_Locator.Instance;
-    ServiceProvider<ILocator> m_Locator = new ServiceProvider<ILocator>();
-
-    protected GSNetwork Network => m_Network.Instance;
-    ServiceProvider<GSNetwork> m_Network = new ServiceProvider<GSNetwork>();
-
-    public GSInstanceIdentity Identity =>
-        m_Identity != null ?
-        m_Identity :
-        m_Identity = GetComponent<GSInstanceIdentity>();
-
-    GSInstanceIdentity m_Identity;
-
     T m_Data;
     protected abstract T ProduceData();
     protected T Data => m_Data ?? (m_Data = ProduceData());
@@ -226,4 +212,7 @@ public abstract class GSInstanceBehaviour<T> : MonoBehaviour, IGSInstanceBehavio
     /// </summary>
     /// <param name="firstTime"></param>
     protected virtual void OnDataDeserialized(bool firstTime) { }
+
+    public string ToJSONProperty() => 
+        "{" + RealtimeJSONUtils.ToJSONValue(GetType().Name) + ":" + Data.ToJSONProperty() + "}";
 }

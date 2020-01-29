@@ -116,5 +116,6 @@ public class SerializableDictionary<TKey, TValue> : ServializableValueDefinition
     IEnumerator IEnumerable.GetEnumerator() => Value.GetEnumerator();
     #endregion
 
-    public override string ToJSONString() => RealtimeJSONUtils.ToJSONCollection(Value.Select(v => v.ToString()).ToArray());
+    public override string ToJSONProperty() =>
+        RealtimeJSONUtils.ToJSONCollection(Value.Select(kvp => "{" + RealtimeJSONUtils.ToJSONValue(kvp.Key.ToString()) + ":" + RealtimeJSONUtils.ToJSONValue(kvp.Value.ToString()) + "}").ToArray());
 }

@@ -666,8 +666,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     }
     #endif
 
-    Dictionary<Type, GSInstanceBehaviour> m_CachedBehaviours = new Dictionary<Type, GSInstanceBehaviour>();
-    public T GetBehaviour<T>() where T : GSInstanceBehaviour
+    Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new Dictionary<Type, GSInstanceBehaviourBase>();
+    public T GetBehaviour<T>() where T : GSInstanceBehaviourBase
     {
         var type = typeof(T);
         if (!m_CachedBehaviours.TryGetValue(type, out var behaviour))
@@ -679,13 +679,15 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         return behaviour as T;
     }
 
+    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue($"object {InstanceId}") + ":" + RealtimeJSONUtils.ToJSONCollection(m_Observables.Select(v => v.ToJSONProperty()).ToArray()) + "}";
+
     #region STATIC_HELPERS
     static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
 
     public static GSInstanceIdentity Find(GSInstanceId instanceId) => 
         s_NetworkProvider.Instance.Realtime.FindNetworkObject(instanceId);
 
-    public static T Find<T>(GSInstanceId instanceId) where T : GSInstanceBehaviour => 
+    public static T Find<T>(GSInstanceId instanceId) where T : GSInstanceBehaviourBase => 
         s_NetworkProvider.Instance.Realtime.FindNetworkObject<T>(instanceId);
     #endregion
 }

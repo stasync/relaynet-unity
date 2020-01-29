@@ -17,7 +17,7 @@ public static class HLNetReaderExtention
     public static GSInstanceIdentity ReadObject(this NetReader reader) =>
         m_NetworkProvider.Instance.Realtime.FindNetworkObject(reader.ReadPackedUInt32());
 
-    public static T ReadObject<T>(this NetReader reader) where T : GSInstanceBehaviour =>
+    public static T ReadObject<T>(this NetReader reader) where T : GSInstanceBehaviourBase =>
         m_NetworkProvider.Instance.Realtime.FindNetworkObject<T>(reader.ReadPackedUInt32());
 
     public static Vector2 ReadVector2(this NetReader reader) => 

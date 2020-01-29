@@ -98,5 +98,6 @@ public class SerializableList<TValue> : ServializableValueDefinition<List<TValue
     IEnumerator IEnumerable.GetEnumerator() => Value.GetEnumerator();
     #endregion
 
-    public override string ToJSONString() => RealtimeJSONUtils.ToJSONCollection(Value.Select(v => v.ToString()).ToArray());
+    public override string ToJSONProperty() =>
+        RealtimeJSONUtils.ToJSONCollection(Value.Select(v => RealtimeJSONUtils.ToJSONValue(v.ToString())).ToArray());
 }

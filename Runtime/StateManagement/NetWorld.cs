@@ -320,4 +320,6 @@ public class GSInstanceFactory : IGSInstanceFactory
     public IEnumerator<GSInstanceIdentity> GetEnumerator() => m_Objects.Values.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => m_Objects.Values.GetEnumerator();
+
+    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue($"objects") + ":" + RealtimeJSONUtils.ToJSONCollection(m_Objects.Values.Select(o => o.ToJSONProperty()).ToArray()) + "}";
 }

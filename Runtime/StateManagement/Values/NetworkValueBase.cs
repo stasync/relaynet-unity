@@ -1,18 +1,22 @@
 ﻿using Core.Networking;
 using System;
 
-public interface IJSONSerializable : ISerializable
+public interface IJSONSerializable
 {
-    string ToJSONString();
+    string ToJSONProperty();
 }
 
-public interface ISerializableValue : IJSONSerializable
+public interface ISerializableValue : ISerializable, IJSONSerializable
 {
 }
 
 public abstract class ServializableValueDefinition<TValue, TExposed> : ISerializableValue where TValue : TExposed
 {
-    public ServializableValueDefinition(TValue defaultValue, Func<bool> writePermission, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer)
+    public ServializableValueDefinition(
+        TValue defaultValue, 
+        Func<bool> writePermission, 
+        Func<NetReader, bool, TValue> reader, 
+        Action<NetWriter, TValue> writer)
     {
         m_InternalValue = defaultValue;
         m_WritePermission = writePermission;
@@ -66,6 +70,6 @@ public abstract class ServializableValueDefinition<TValue, TExposed> : ISerializ
         m_Writer(writer, InternalValue);
     }
 
-    public virtual string ToJSONString() => RealtimeJSONUtils.ToJSONValue(InternalValue.ToString());
+    public abstract string ToJSONProperty();
 }
 
