@@ -156,6 +156,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
     IEnumerable<IGSInstanceObservable> m_Observables;
     NetWriter m_ObjectWriter;
+    NetReader m_ObjectReader;
 
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
@@ -413,28 +414,30 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (data == null)
             return this;
 
-        var r = new NetReader(data);
+        if (m_ObjectReader == null)
+            m_ObjectReader = new NetReader();
+        m_ObjectReader.Replace(data);
 
         //Check instance id
-        var id = r.ReadInstanceId();
+        var id = m_ObjectReader.ReadInstanceId();
         if (id != InstanceId)
             throw new InvalidOperationException(string.Format("Object id is:{0}, but recieved id is {1}", InstanceId, id));
 
-        var prefabId = r.ReadString();
+        var prefabId = m_ObjectReader.ReadString();
         if (prefabId != PrefabId)
             throw new InvalidOperationException(string.Format("Object prefab id is:{0}, but recieved preafab id is {1}", PrefabId, prefabId));
 
-        var isSceneObject = r.ReadBoolean();
+        var isSceneObject = m_ObjectReader.ReadBoolean();
         if (isSceneObject)
         {
             //Scene object can be handled here
         }
 
         //Buffered rpc
-        m_RpcBuffer.Deserialize(r, firstTime);
+        m_RpcBuffer.Deserialize(m_ObjectReader, firstTime);
 
         foreach (var b in m_Observables)
-            b.Deserialize(r, firstTime);
+            b.Deserialize(m_ObjectReader, firstTime);
 
         return this;
     }
@@ -679,7 +682,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         return behaviour as T;
     }
 
-    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue($"object {InstanceId}") + ":" + RealtimeJSONUtils.ToJSONCollection(m_Observables.Select(v => v.ToJSONProperty()).ToArray()) + "}";
+    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue($"obj {InstanceId} {gameObject.name}") + ":" + RealtimeJSONUtils.ToJSONCollection(m_Observables.Select(v => v.ToJSONProperty()).ToArray()) + "}";
 
     #region STATIC_HELPERS
     static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();

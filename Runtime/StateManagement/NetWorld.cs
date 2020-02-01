@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class GSInstanceFactory : IGSInstanceFactory
+public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializable
 {
     public event Action<GSInstanceIdentity> NewObjectInitialized = delegate { };
 
@@ -321,5 +321,5 @@ public class GSInstanceFactory : IGSInstanceFactory
 
     IEnumerator IEnumerable.GetEnumerator() => m_Objects.Values.GetEnumerator();
 
-    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue($"objects") + ":" + RealtimeJSONUtils.ToJSONCollection(m_Objects.Values.Select(o => o.ToJSONProperty()).ToArray()) + "}";
+    public string ToJSONProperty() => RealtimeJSONUtils.ToJSONCollection(m_Objects.Values.Select(o => o.ToJSONProperty()).ToArray());
 }

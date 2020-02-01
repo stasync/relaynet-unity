@@ -10,11 +10,11 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     {
         OnDeclareValues(writePermission);
         SerializeableValues = Find
-            .FieldReferencesWithInfo<ISerializableValue>(this, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+            .PropertyReferencesWithInfo<ISerializableValue>(this, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
             .ToList();
     }
 
-    protected IEnumerable<KeyValuePair<FieldInfo, ISerializableValue>> SerializeableValues { get; private set; }
+    protected IEnumerable<KeyValuePair<PropertyInfo, ISerializableValue>> SerializeableValues { get; private set; }
     protected abstract void OnDeclareValues(Func<bool> writePermission);
 
     public bool IsDirty => SerializeableValues != null && SerializeableValues.Any(kvp => kvp.Value.IsDirty);
