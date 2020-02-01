@@ -18,7 +18,7 @@ public class SerializableDictionary<TKey, TValue> : ServializableValueDefinition
                 writePermission,
                 (r, f) => r.ReadDictionary(
                     cKeyReader => keyReader(cKeyReader, f), 
-                    cValueReader => valueReader(cValueReader, f)).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                    cValueReader => valueReader(cValueReader, f)),
                 (w, v) => w.WriteDictionary(v, 
                     (cKey, cKeyWriter) => keyWriter(cKeyWriter, cKey), 
                     (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))

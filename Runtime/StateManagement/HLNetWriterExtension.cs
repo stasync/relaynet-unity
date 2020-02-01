@@ -16,7 +16,7 @@ public static class HLNetWriterExtention
     public static void WriteIdentity(this NetWriter writer, GSInstanceIdentity value) => 
         WriteInstanceId(writer, value == null ? GSInstanceId.Invalid : value.InstanceId);
 
-    public static void WriteBehaviour(this NetWriter writer, IGSInstanceBehaviour value) => 
+    public static void WriteBehaviour(this NetWriter writer, GSInstanceBehaviourBase value) => 
         WriteIdentity(writer, value == null ? null : value.Identity);
 
     public static void WriteGameObject(this NetWriter writer, GameObject value)

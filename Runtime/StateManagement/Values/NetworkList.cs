@@ -15,7 +15,7 @@ public class SerializableList<TValue> : ServializableValueDefinition<List<TValue
                 defaultValue, 
                 writePermission, 
                 (r, f) => r.ReadCollection(
-                    cValueReader => valueReader(cValueReader, f)).ToList(), 
+                    cValueReader => valueReader(cValueReader, f)), 
                 (w, v) => w.WriteCollection(v, 
                     (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
     {
