@@ -1,21 +1,34 @@
-﻿using Core.Networking;
+﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class GSObjectLifetime : GSInstanceBehaviour
+public class GSObjectLifetimeData : GSBehaviourAbstractData
 {
-    public float NormalizedLifetime { get { return CurrentLifetime / m_lifetime; } }
-    public float CurrentLifetime { get; private set; }
+    public GSObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
+    public SerializableFloat CurrentLifetime { get; private set; } = null;
 
-    [SerializeField]    private float m_lifetime = 60f;
-    [SerializeField]    private bool m_autoDestroy;
-    [SerializeField]    private UnityEvent m_onDestroy;
-
-    public void SetLifetime(float lifetime)
+    protected override void OnDeclareValues(Func<bool> writePermission)
     {
-        CurrentLifetime = lifetime;
-        SetDirty();
+        CurrentLifetime = new SerializableFloat(0f, writePermission);
     }
+}
+
+public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
+{
+    protected override GSObjectLifetimeData ProduceData() => new GSObjectLifetimeData(() => IsLocal);
+
+    public float NormalizedLifetime => CurrentLifetime / m_lifetime;
+    public float CurrentLifetime
+    {
+        get => Data.CurrentLifetime.Value;
+        private set => Data.CurrentLifetime.Set(value);
+    }
+
+    [SerializeField]    float m_lifetime = 60f;
+    [SerializeField]    bool m_autoDestroy;
+    [SerializeField]    UnityEvent m_onDestroy;
+
+    public void SetLifetimeWithAuthority(float lifetime) => CurrentLifetime = lifetime;
 
     public override void OnPostInitialize()
     {
@@ -23,17 +36,7 @@ public class GSObjectLifetime : GSInstanceBehaviour
             CurrentLifetime = m_lifetime;
     }
 
-    protected override void SerializeDirtyChecked(NetWriter writer)
-    {
-        writer.Write(CurrentLifetime);
-    }
-
-    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
-    {
-        CurrentLifetime = reader.ReadSingle();
-    }
-
-    private void FixedUpdate()
+    void FixedUpdate()
     {
         if (!IsLocal)
             return;
@@ -49,8 +52,6 @@ public class GSObjectLifetime : GSInstanceBehaviour
                 if (m_autoDestroy)
                     DestroyObjectViaNetwork();
             }
-
-            SetDirty();
         }
     }
 }

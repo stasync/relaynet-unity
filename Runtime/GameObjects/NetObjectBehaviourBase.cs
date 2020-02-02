@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 
 [RequireComponent(typeof(GSInstanceIdentity))]
-public class GSInstanceBehaviourBase : MonoBehaviour
+public abstract class GSInstanceBehaviourBase : MonoBehaviour
 {
     protected ILocator Locator => m_Locator.Instance;
     ServiceProvider<ILocator> m_Locator = new ServiceProvider<ILocator>();

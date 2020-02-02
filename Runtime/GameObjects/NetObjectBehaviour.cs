@@ -2,11 +2,11 @@
 using System;
 using UnityEngine;
 
-public abstract class GSInstanceBehaviour<T> : GSInstanceBehaviourBase, IGSInstanceBehaviour where T : GSBehaviourAbstractData
+public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSInstanceBehaviour where TData : GSBehaviourAbstractData
 {
-    T m_Data;
-    protected abstract T ProduceData();
-    protected T Data => m_Data ?? (m_Data = ProduceData());
+    TData m_Data;
+    protected abstract TData ProduceData();
+    protected TData Data => m_Data ?? (m_Data = ProduceData());
 
     public INetRTPlayer Owner => Identity.Owner;
 
@@ -198,14 +198,14 @@ public abstract class GSInstanceBehaviour<T> : GSInstanceBehaviourBase, IGSInsta
     /// </summary>
     /// <param name="writer"></param>
     [Obsolete("Use data based serialization instead")]
-    protected abstract void SerializeDirtyChecked(NetWriter writer);
+    protected virtual void SerializeDirtyChecked(NetWriter writer) { }
 
     /// <summary>
     /// Deserialize method without dirty check.
     /// </summary>
     /// <param name="reader"></param>
     [Obsolete("Use data based serialization instead")]
-    protected abstract void DeserializeDirtyChecked(NetReader reader, bool firstTime);
+    protected virtual void DeserializeDirtyChecked(NetReader reader, bool firstTime) { }
 
     /// <summary>
     /// Called, when network data was deserialized;
@@ -214,5 +214,5 @@ public abstract class GSInstanceBehaviour<T> : GSInstanceBehaviourBase, IGSInsta
     protected virtual void OnDataDeserialized(bool firstTime) { }
 
     public string ToJSONProperty() => 
-        "{" + RealtimeJSONUtils.ToJSONValue(GetType().Name) + ":" + Data.ToJSONProperty() + "}";
+        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TData).Name}") + ":" + Data.ToJSONProperty() + "}";
 }

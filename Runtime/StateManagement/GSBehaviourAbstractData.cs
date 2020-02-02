@@ -10,7 +10,7 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     {
         OnDeclareValues(writePermission);
         SerializeableValues = Find
-            .PropertyReferencesWithInfo<ISerializableValue>(this, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+            .PropertyReferencesWithInfo<ISerializableValue>(this, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)
             .ToList();
     }
 

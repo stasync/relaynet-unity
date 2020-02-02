@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class GSSceneObjectIdentity : GSInstanceBehaviour
+public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
 {
     [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_FirstValidId + GSInstanceId.c_SceneObjectReservedIdSpace)]
     int m_SceneObjectId;
@@ -31,14 +31,6 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     }
 
     public override void OnPostInitialize()
-    {
-    }
-
-    protected override void SerializeDirtyChecked(NetWriter writer)
-    {
-    }
-
-    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
     {
     }
 
