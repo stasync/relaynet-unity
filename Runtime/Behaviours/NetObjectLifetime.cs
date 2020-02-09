@@ -1,22 +1,18 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 
 public class GSObjectLifetimeData : GSBehaviourAbstractData
 {
-    public GSObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
     public SerializableFloat CurrentLifetime { get; private set; } = null;
 
-    protected override void OnDeclareValues(Func<bool> writePermission)
+    protected override void OnDefineValues()
     {
-        CurrentLifetime = new SerializableFloat(0f, writePermission);
+        CurrentLifetime = new SerializableFloat(0f, WritePemission);
     }
 }
 
 public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
 {
-    protected override GSObjectLifetimeData ProduceData() => new GSObjectLifetimeData(() => IsLocal);
-
     public float NormalizedLifetime => CurrentLifetime / m_lifetime;
     public float CurrentLifetime
     {

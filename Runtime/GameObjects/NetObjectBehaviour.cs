@@ -2,11 +2,29 @@
 using System;
 using UnityEngine;
 
-public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSInstanceBehaviour where TData : GSBehaviourAbstractData
+public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSInstanceBehaviour 
+    where TData : GSBehaviourAbstractData, new()
 {
     TData m_Data;
-    protected abstract TData ProduceData();
-    protected TData Data => m_Data ?? (m_Data = ProduceData());
+    protected TData Data
+    {
+        get
+        {
+            if (m_Data == null)
+                ConstructData();
+            return m_Data;
+
+            void ConstructData()
+            {
+                m_Data = new TData();
+                OnBeforeDataInitialized();
+                Data.Initialize(() => DataWritePermission, OnDataValuesCollected);
+                OnAfterDataInitialized();
+            }
+        }
+    }
+
+    public virtual bool DataWritePermission => IsLocal;
 
     public INetRTPlayer Owner => Identity.Owner;
 
@@ -19,6 +37,12 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     public virtual bool IsDirty => Data.IsDirty;
 
     public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
+
+    protected virtual void OnBeforeDataInitialized() { }
+
+    protected virtual void OnDataValuesCollected() { }
+
+    protected virtual void OnAfterDataInitialized() { }
 
     /// <summary>
     /// Calls IGSInstanceObservable.SetDirty() with IsLocal check.

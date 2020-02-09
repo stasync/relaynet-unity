@@ -1,5 +1,8 @@
 ﻿using System;
+using Core.Networking;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 public class SerializableFloat : SerializableValue<float>
 {
@@ -62,4 +65,64 @@ public class SerializableQuaternion : SerializableValue<Quaternion>
     public SerializableQuaternion(Quaternion defaultValue, Func<bool> writePermission) :
         base(defaultValue, writePermission, (r, f) => r.ReadQuaternion(), (w, v) => w.Write(v))
     { }
+}
+
+public class SerializableValueCollection : ISerializableValue
+{
+    public SerializableValueCollection(Func<bool> collectionChangePermission, Dictionary<string, ISerializableValue> baseValues = null)
+    {
+        CollectionChangePermission = collectionChangePermission ?? throw new ArgumentNullException(nameof(collectionChangePermission));
+        m_InternalCollection = new Dictionary<string, ISerializableValue>();
+        if (baseValues != null && baseValues.Any())
+            foreach(var kvp in baseValues)
+                m_InternalCollection.Add(kvp.Key, kvp.Value);
+    }
+
+    protected readonly Func<bool> CollectionChangePermission;
+    readonly Dictionary<string, ISerializableValue> m_InternalCollection;
+
+    public bool IsDirty => m_InternalCollection.Values.Any(v => v.IsDirty);
+
+    public void Add(string valueName, ISerializableValue value)
+    {
+        if (!CollectionChangePermission())
+            throw new InvalidOperationException("No permission to change collection");
+
+        if (m_InternalCollection.ContainsKey(valueName))
+            Debug.LogError($"Value collection already contains value with name {valueName}");
+        else
+            m_InternalCollection.Add(valueName, value);
+    }
+
+    public void AddRange(string valueName, Dictionary<string, ISerializableValue> values)
+    {
+        if (!CollectionChangePermission())
+            throw new InvalidOperationException("No permission to change collection");
+
+        foreach (var kvp in values)
+            Add(kvp.Key, kvp.Value);
+    }
+
+    public void Deserialize(NetReader reader, bool firstTime)
+    {
+        foreach (var v in m_InternalCollection.Values)
+            v.Deserialize(reader, firstTime);
+    }
+
+    public void Serialize(NetWriter writer)
+    {
+        foreach (var v in m_InternalCollection.Values)
+            v.Serialize(writer);
+    }
+
+    public void SetDirty()
+    {
+        foreach (var v in m_InternalCollection.Values)
+            v.SetDirty();
+    }
+
+    public string ToJSONProperty() =>
+            RealtimeJSONUtils
+                .ToJSONCollection(m_InternalCollection.Select(kvp => "{" + RealtimeJSONUtils.ToJSONValue(kvp.Key.ToString()) + ":" + kvp.Value.ToJSONProperty() + "}")
+                .ToArray());
 }

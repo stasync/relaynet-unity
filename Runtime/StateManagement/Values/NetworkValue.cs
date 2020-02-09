@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System;
 
-public class SerializableValue<TValue> : ServializableValueDefinition<TValue, TValue>
+public class SerializableValue<TValue> : SerializableValueDefinition<TValue, TValue>
 {
     public SerializableValue(
         TValue defaultValue, 

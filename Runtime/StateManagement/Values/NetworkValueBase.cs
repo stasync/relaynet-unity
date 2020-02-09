@@ -10,9 +10,9 @@ public interface ISerializableValue : ISerializable, IJSONSerializable
 {
 }
 
-public abstract class ServializableValueDefinition<TValue, TExposed> : ISerializableValue where TValue : TExposed
+public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializableValue where TValue : TExposed
 {
-    public ServializableValueDefinition(
+    public SerializableValueDefinition(
         TValue defaultValue, 
         Func<bool> writePermission, 
         Func<NetReader, bool, TValue> reader, 
@@ -29,7 +29,7 @@ public abstract class ServializableValueDefinition<TValue, TExposed> : ISerializ
     readonly Action<NetWriter, TValue> m_Writer;
 
     protected bool HasPermission => m_WritePermission == null || m_WritePermission();
-    public bool IsDirty { get; private set; }
+    public virtual bool IsDirty { get; private set; }
 
     public TExposed Value => InternalValue;
     public void Set(TValue value) => InternalValue = value;
@@ -51,7 +51,7 @@ public abstract class ServializableValueDefinition<TValue, TExposed> : ISerializ
         }
     }
 
-    public void Deserialize(NetReader reader, bool firstTime) => m_InternalValue = m_Reader(reader, firstTime);
+    public virtual void Deserialize(NetReader reader, bool firstTime) => m_InternalValue = m_Reader(reader, firstTime);
 
     public void SetDirty()
     {
@@ -61,7 +61,7 @@ public abstract class ServializableValueDefinition<TValue, TExposed> : ISerializ
         IsDirty = true;
     }
 
-    public void Serialize(NetWriter writer)
+    public virtual void Serialize(NetWriter writer)
     {
         if (!HasPermission)
             throw new InvalidOperationException($"No authority to serialize value {typeof(TValue).FullName}");

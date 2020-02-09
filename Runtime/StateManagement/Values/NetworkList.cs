@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public class SerializableList<TValue> : ServializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
+public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
 {
     public SerializableList(
         List<TValue> defaultValue, 
@@ -21,18 +21,35 @@ public class SerializableList<TValue> : ServializableValueDefinition<List<TValue
     {
     }
 
+    public void SetAt(int index, TValue value)
+    {
+        if (!HasPermission)
+            throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
+
+        if (index >= Count)
+            InternalValue.AddRange(Enumerable.Repeat<TValue>(default, index + 1 - Count));
+
+        SetAtUnsafe(index, value);
+    }
+
+    void SetAtUnsafe(int index, TValue value)
+    {
+        if (!HasPermission)
+            throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
+
+        var curretnValue = InternalValue[index];
+        if (curretnValue.Equals(value))
+            return;
+
+        InternalValue[index] = value;
+        SetDirty();
+    }
+
     #region IList
     public TValue this[int index]
     {
         get => Value[index];
-        set
-        {
-            if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
-
-            InternalValue[index] = value;
-            SetDirty();
-        }
+        set => SetAtUnsafe(index, value);
     }
 
     public int Count => Value.Count;
@@ -100,4 +117,32 @@ public class SerializableList<TValue> : ServializableValueDefinition<List<TValue
 
     public override string ToJSONProperty() =>
         RealtimeJSONUtils.ToJSONCollection(Value.Select(v => RealtimeJSONUtils.ToJSONValue(v.ToString())).ToArray());
+}
+
+public class SerializableFloatList : SerializableList<float>
+{
+    public SerializableFloatList(List<float> defaultValue, Func<bool> writePermission) :
+        base(defaultValue, writePermission, (r, f) => r.ReadSingle(), (w, v) => w.Write(v))
+    { }
+}
+
+public class SerializableIntList: SerializableList<int>
+{
+    public SerializableIntList(List<int> defaultValue, Func<bool> writePermission) :
+        base(defaultValue, writePermission, (r, f) => r.ReadInt32(), (w, v) => w.Write(v))
+    { }
+}
+
+public class SerializableIntBool : SerializableList<bool>
+{
+    public SerializableIntBool(List<bool> defaultValue, Func<bool> writePermission) :
+        base(defaultValue, writePermission, (r, f) => r.ReadBoolean(), (w, v) => w.Write(v))
+    { }
+}
+
+public class SerializableStringBool : SerializableList<string>
+{
+    public SerializableStringBool(List<string> defaultValue, Func<bool> writePermission) :
+        base(defaultValue, writePermission, (r, f) => r.ReadString(), (w, v) => w.Write(v))
+    { }
 }

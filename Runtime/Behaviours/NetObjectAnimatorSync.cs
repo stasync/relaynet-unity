@@ -1,9 +1,79 @@
 ﻿using Core.Networking;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
+public interface IAnimatorValueProxy
+{
+    void OnUpdate();
+    void OnDataDeserialized();
+}
+
+public abstract class AnimatorPerameterValueProxy<T> : IAnimatorValueProxy where T : struct
+{
+    protected readonly Animator TargetAnimator;
+    protected readonly AnimatorControllerParameter Parameter;
+    protected readonly SerializableValue<T> InternalValue;
+
+    public AnimatorPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<T> internalValue)
+    {
+        TargetAnimator = animator;
+        Parameter = parameter;
+        InternalValue = internalValue;
+    }
+
+    public abstract void OnUpdate();
+    public abstract void OnDataDeserialized();
+}
+
+public class AnimatorFloatPerameterValueProxy : AnimatorPerameterValueProxy<float>
+{
+    public AnimatorFloatPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<float> internalValue) :
+        base(animator, parameter, internalValue)
+    { }
+
+    public override void OnDataDeserialized() => TargetAnimator.SetFloat(Parameter.nameHash, InternalValue.Value);
+    public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetFloat(Parameter.nameHash));
+}
+
+public class AnimatorIntPerameterValueProxy : AnimatorPerameterValueProxy<int>
+{
+    public AnimatorIntPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<int> internalValue) :
+        base(animator, parameter, internalValue)
+    { }
+
+    public override void OnDataDeserialized() => TargetAnimator.SetInteger(Parameter.nameHash, InternalValue.Value);
+    public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetInteger(Parameter.nameHash));
+}
+
+public class AnimatorBoolPerameterValueProxy : AnimatorPerameterValueProxy<bool>
+{
+    public AnimatorBoolPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<bool> internalValue) :
+        base(animator, parameter, internalValue)
+    { }
+
+    public override void OnDataDeserialized() => TargetAnimator.SetBool(Parameter.nameHash, InternalValue.Value);
+    public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetBool(Parameter.nameHash));
+}
+
+public class AnimatorSyncData : GSBehaviourAbstractData
+{
+    public SerializableValueCollection Parameters { get; private set; } = null;
+    public SerializableFloatList LayerWeights { get; private set; } = null;
+    public SerializableIntList LayerStates { get; private set; } = null;
+    public SerializableFloatList LayerNormalizedTimes { get; private set; } = null;
+
+    protected override void OnDefineValues()
+    {
+        Parameters = new SerializableValueCollection(() => !Initialized);
+        LayerWeights = new SerializableFloatList(new List<float>(), WritePemission);
+        LayerStates = new SerializableIntList(new List<int>(), WritePemission);
+        LayerNormalizedTimes = new SerializableFloatList(new List<float>(), WritePemission);
+    }
+}
+
 [DisallowMultipleComponent]
-public sealed class GSAnimatorSync : GSInstanceBehaviour
+public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 {
     enum AnimatorTriggerAction : byte
     {
@@ -30,6 +100,50 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     Animator m_Animator;
 
     float m_NextSendEventTime;
+
+    List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new List<IAnimatorValueProxy>();
+
+    protected override void OnDataValuesCollected()
+    {
+        base.OnDataValuesCollected();
+
+        m_AnimatorParameterValueProxyCollection.Clear();
+        ForEachParameter((p, i) => 
+        {
+            switch(p.type)
+            {
+                case AnimatorControllerParameterType.Bool:
+                    BuildProxyForParameter(p.name, 
+                        () => new SerializableBool(false, 
+                        () => Data.HasPermission), v => new AnimatorBoolPerameterValueProxy(m_Animator, p, v));
+                    break;
+
+                case AnimatorControllerParameterType.Float:
+                    BuildProxyForParameter(p.name,
+                        () => new SerializableFloat(0f,
+                        () => Data.HasPermission), v => new AnimatorFloatPerameterValueProxy(m_Animator, p, v));
+                    break;
+
+                case AnimatorControllerParameterType.Int:
+                    BuildProxyForParameter(p.name,
+                         () => new SerializableInt(0,
+                         () => Data.HasPermission), v => new AnimatorIntPerameterValueProxy(m_Animator, p, v));
+                    break;
+            }
+        });
+
+        void BuildProxyForParameter<T>(
+            string valueName,
+            Func<SerializableValue<T>> valueFactory,
+            Func<SerializableValue<T>, AnimatorPerameterValueProxy<T>> parameterFactory) where T : struct
+        {
+            var v = valueFactory();
+            var p = parameterFactory(v);
+
+            Data.Parameters.Add(valueName, v);
+            m_AnimatorParameterValueProxyCollection.Add(p);
+        }
+    }
 
     public override void OnPostInitialize()
     {
@@ -119,73 +233,37 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         }
     }
 
-    #region WRITE/READ
-    void WriteLayers(NetWriter writer)
+    public override void OnUpdate()
     {
-        ForEachLayer((state, layerWeight, layerIndex) => 
+        base.OnUpdate();
+        foreach (var p in m_AnimatorParameterValueProxyCollection)
+            p.OnUpdate();
+
+        ForEachLayer((state, layerWeight, layerIndex) =>
         {
-            writer.Write(layerWeight);
-            writer.Write(state.fullPathHash);
-            writer.Write(state.normalizedTime);
+            Data.LayerWeights.SetAt(layerIndex, layerWeight);
+            Data.LayerStates.SetAt(layerIndex, state.fullPathHash);
+            Data.LayerNormalizedTimes.SetAt(layerIndex, state.normalizedTime);
         });
     }
 
-    void ReadLayers(NetReader reader)
+    protected override void OnDataDeserialized(bool firstTime)
     {
+        base.OnDataDeserialized(firstTime);
+        foreach (var p in m_AnimatorParameterValueProxyCollection)
+            p.OnDataDeserialized();
+
         ForEachLayer((state, layerWeight, layerIndex) =>
         {
-            var targetLayerWeight = reader.ReadSingle();
-            var targetStateHash = reader.ReadInt32();
-            var targetStateNormalizedTime = reader.ReadSingle();
+            var targetLayerWeight = Data.LayerWeights[layerIndex];
+            var targetStateHash = Data.LayerStates[layerIndex];
+            var targetStateNormalizedTime = Data.LayerNormalizedTimes[layerIndex];
 
             if (layerWeight != targetLayerWeight)
                 m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);
 
-            if(targetStateHash != 0 && state.fullPathHash != targetStateHash)
+            if (targetStateHash != 0 && state.fullPathHash != targetStateHash)
                 m_Animator.Play(targetStateHash, layerIndex, targetStateNormalizedTime);
         });
-    }
-
-    void WriteParameters(NetWriter writer)
-    {
-        ForEachParameter((p, i) =>
-        {
-            if (p.type == AnimatorControllerParameterType.Int)
-                writer.Write(m_Animator.GetInteger(p.nameHash));
-
-            if (p.type == AnimatorControllerParameterType.Float)
-                writer.Write(m_Animator.GetFloat(p.nameHash));
-
-            if (p.type == AnimatorControllerParameterType.Bool)
-                writer.Write(m_Animator.GetBool(p.nameHash));
-        });
-    }
-
-    void ReadParameters(NetReader reader)
-    {
-        ForEachParameter((p, i) => 
-        {
-            if (p.type == AnimatorControllerParameterType.Int)
-                m_Animator.SetInteger(p.nameHash, reader.ReadInt32());
-
-            if (p.type == AnimatorControllerParameterType.Float)
-                m_Animator.SetFloat(p.nameHash, reader.ReadSingle());
-
-            if (p.type == AnimatorControllerParameterType.Bool)
-                m_Animator.SetBool(p.nameHash, reader.ReadBoolean());
-        });
-    }
-    #endregion
-
-    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
-    {
-        ReadParameters(reader);
-        ReadLayers(reader);
-    }
-
-    protected override void SerializeDirtyChecked(NetWriter writer)
-    {
-        WriteParameters(writer);
-        WriteLayers(writer);
     }
 }

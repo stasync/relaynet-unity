@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public class SerializableDictionary<TKey, TValue> : ServializableValueDefinition<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>, IDictionary<TKey, TValue>
+public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>, IDictionary<TKey, TValue>
 {
     public SerializableDictionary(
         Dictionary<TKey, TValue> defaultValue,
