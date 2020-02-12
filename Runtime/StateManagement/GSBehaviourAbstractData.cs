@@ -75,7 +75,7 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
                 continue;
             }
 
-            if (!pvp.Key.GetCustomAttributes<IgnoreAutoCollection>().Any())
+            if (pvp.Key.GetCustomAttributes<IgnoreAutoCollection>().Any())
                 continue;
 
             if (pvp.Value == null)
