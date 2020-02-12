@@ -139,7 +139,7 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
                 null);
 
         return identity.Initialized ? 
-            (identity as IIdentity).Deserialize(baseData, false, false) : 
+            identity.Deserialize(baseData, false, false) : 
             null;    
     }
 
@@ -239,11 +239,7 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
         byte[] data,
         object[] additionalData)
     {
-        var initializable = identity as IIdentity;
-        if (initializable == null)
-            throw new InvalidCastException();
-
-        initializable.Initialze(
+        identity.Initialze(
                     prefabId,
                     isSceneObject,
                     instanceId,

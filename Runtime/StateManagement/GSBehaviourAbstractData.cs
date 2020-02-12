@@ -1,4 +1,5 @@
-﻿using Core.Networking;
+﻿#define VALIDATE_COLLECTED_FIELDS
+using Core.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,8 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
 
         OnDefineValues();
         CollectValues();
+        OnValuesCollected();
+
         onAfterValuesCollectedProcessor();
 
         Initialized = true;
@@ -48,17 +51,37 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     void CollectValues()
     {
         var bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic;
-        var values = Find
-            .PropertyReferencesWithInfo<ISerializableValue>(this, bindingFlags)
-            .Where(kvp => !kvp.Key.GetCustomAttributes<IgnoreAutoCollection>().Any());
+        var properties = Find.PropertyReferencesWithInfo<ISerializableValue>(this, bindingFlags);
+
+#if VALIDATE_COLLECTED_FIELDS
+        var fields = Find.FieldReferencesWithInfo<ISerializableValue>(this, bindingFlags);
+        foreach (var fvp in fields)
+        {
+            if (properties.Any(pvp => fvp.Key.Name.Equals($"<{pvp.Key.Name}>k__BackingField"))) //Skip backing fields;
+                continue;
+
+            Debug.LogError($"{GetType().FullName}.{fvp.Key.Name} is a field and will be ignored by auto collector. " +
+                $"Use property pattern instead: {fvp.Key.Name} {"{ get; private set; }"}");
+        }
+#endif
 
         m_InternalValueCollection = new Dictionary<string, ISerializableValue>();
-        foreach(var kvp in values)
+        foreach(var pvp in properties)
         {
-            if(kvp.Value == null)
-                Debug.LogError($"{GetType().FullName}.{kvp.Key.Name} value is not assigned and will be skipped");
+            if(pvp.Key.SetMethod.IsPublic)
+            {
+                Debug.LogError($"{GetType().FullName}.{pvp.Key.Name} has public setter and will be ignored by auto collector." +
+                    $"Use private setter instead");
+                continue;
+            }
+
+            if (!pvp.Key.GetCustomAttributes<IgnoreAutoCollection>().Any())
+                continue;
+
+            if (pvp.Value == null)
+                Debug.LogError($"{GetType().FullName}.{pvp.Key.Name} value is not assigned and will be skipped");
             else
-                AddValueManual(kvp.Key.Name, kvp.Value);
+                AddValueManual(pvp.Key.Name, pvp.Value);
         }
     }
 
@@ -73,7 +96,7 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
         m_InternalValueCollection.Add(valueName, value);
     }
 
-    protected virtual void OnValueCollected() { }
+    protected virtual void OnValuesCollected() { }
     protected virtual void OnInitialized() { }
 
     public bool IsDirty => SerializeableValues != null && SerializeableValues.Any(kvp => kvp.Value.IsDirty);
@@ -92,7 +115,6 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     {
         var needSerialize = IsDirty;
         writer.Write(needSerialize);
-
         if (!needSerialize)
             return;
 

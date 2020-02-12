@@ -13,7 +13,7 @@ public enum BufferedRPCType
 }
 
 [DisallowMultipleComponent]
-public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
+public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
 {
     class DefaultRpcBuffer : IRPCBuffer
     {
@@ -168,7 +168,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="network"></param>
     /// <param name="data"></param>
     /// <returns></returns>
-    GSInstanceIdentity IIdentity.Initialze(
+    public GSInstanceIdentity Initialze(
         string prefabId, 
         bool isSceneObject,
         GSInstanceId instanceId,
@@ -180,7 +180,11 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (Initialized)
             throw new Exception("Object already initialized");
 
-        m_Observables = gameObject.GetComponents<IGSInstanceObservable>();
+        m_Observables = gameObject
+            .GetComponents<IGSInstanceObservable>()
+            .OrderBy(c => c.SerializationOrder)
+            .ToList();
+
         m_Owner = owner ?? throw new ArgumentNullException("owner");
 
         InstanceId = instanceId;
@@ -338,7 +342,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         //Serialize object if it becomes dirty;
         if (IsDirty)
-            TrySerialize(m_DeliveryIntent);
+            TrySerializeAndSendGameObject(m_DeliveryIntent);
     }
 
     void UpdateBehaviours()
@@ -359,10 +363,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         SetDirtyIfLocal();
 
         //Force serialization;
-        TrySerialize(DeliveryIntent.Reliable, true);
+        TrySerializeAndSendGameObject(DeliveryIntent.Reliable, true);
     }
 
-    void TrySerialize(DeliveryIntent deliveryIntent, bool initializable = false)
+    void TrySerializeAndSendGameObject(DeliveryIntent deliveryIntent, bool initializable = false)
     {
         if (!IsLocal)
             throw new Exception("Trying to serialize remote player object, this is not allowed");
@@ -372,20 +376,42 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
 
         if (m_ObjectWriter == null)
             m_ObjectWriter = new NetWriter();
-        m_ObjectWriter.SeekZero();
 
-        m_ObjectWriter.WriteInstanceId(InstanceId);
-        m_ObjectWriter.Write(PrefabId);
-        m_ObjectWriter.Write(IsSceneObject);
+        SerializeTo(m_ObjectWriter);
 
-        m_RpcBuffer.Serialize(m_ObjectWriter);
-
-        foreach (var b in m_Observables)
-            b.Serialize(m_ObjectWriter);
-
-        SendGameObject(m_ObjectWriter.ToArray(), initializable, deliveryIntent);
+        SendGameObjectState(m_ObjectWriter.ToArray(), initializable, deliveryIntent);
 
         m_NextUpdateEventTime = Time.fixedUnscaledTime + m_UpdateRate;
+    }
+
+    void SerializeTo(NetWriter writer)
+    {
+        if (writer == null)
+            throw new ArgumentNullException(nameof(writer));
+
+        writer.SeekZero();
+        m_RpcBuffer.Serialize(writer);
+
+        foreach (var b in m_Observables)
+            b.Serialize(writer);
+    }
+
+    NetWriter SerializeToNewWriter()
+    {
+        var writer = new NetWriter();
+        SerializeTo(writer);
+        return writer;
+    }
+
+    public byte[] CreateObjectStateSnapshot()
+    {
+        SetDirtyIfLocal();
+        var writer = SerializeToNewWriter();
+
+        /// Make object dirty again, because we break previous dirty state;
+        /// TODO: Make it more beautiful, without change dirty state;
+        SetDirtyIfLocal();
+        return writer.ToArray();
     }
 
     /// <summary>
@@ -395,8 +421,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
     /// <param name="force"></param>
     /// <param name="firstTime"></param>
     /// <returns></returns>
-    GSInstanceIdentity IIdentity.Deserialize(byte[] data, bool force, bool firstTime) => Deserialize(data, force, firstTime);
-    GSInstanceIdentity Deserialize(byte[] data, bool force, bool firstTime)
+    public GSInstanceIdentity Deserialize(byte[] data, bool force, bool firstTime)
     {
         if (IsLocal)
         {
@@ -417,21 +442,6 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
         if (m_ObjectReader == null)
             m_ObjectReader = new NetReader();
         m_ObjectReader.Replace(data);
-
-        //Check instance id
-        var id = m_ObjectReader.ReadInstanceId();
-        if (id != InstanceId)
-            throw new InvalidOperationException(string.Format("Object id is:{0}, but recieved id is {1}", InstanceId, id));
-
-        var prefabId = m_ObjectReader.ReadString();
-        if (prefabId != PrefabId)
-            throw new InvalidOperationException(string.Format("Object prefab id is:{0}, but recieved preafab id is {1}", PrefabId, prefabId));
-
-        var isSceneObject = m_ObjectReader.ReadBoolean();
-        if (isSceneObject)
-        {
-            //Scene object can be handled here
-        }
 
         //Buffered rpc
         m_RpcBuffer.Deserialize(m_ObjectReader, firstTime);
@@ -638,13 +648,8 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IIdentity
             Debug.LogErrorFormat("Handler for RPC with hash {0} doesn't registred on object {1}", hashCode, gameObject.name);
     }
 
-    void SendGameObject(byte[] data, bool initializable, DeliveryIntent deliveryIntent) => m_InternalNetwork.SendGameObjectToOthers(
-            InstanceId,
-            PrefabId,
-            IsSceneObject,
-            data,
-            initializable,
-            deliveryIntent);
+    void SendGameObjectState(byte[] payload, bool initializable, DeliveryIntent deliveryIntent) => 
+        m_InternalNetwork.SendGameObjectStateToOthers(InstanceId, PrefabId, IsSceneObject, payload, initializable, deliveryIntent);
 
     public void DestroyViaNetwork()
     {

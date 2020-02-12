@@ -11,18 +11,17 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
         get
         {
             if (m_Data == null)
-                ConstructData();
-            return m_Data;
-
-            void ConstructData()
             {
                 m_Data = new TData();
                 OnBeforeDataInitialized();
                 Data.Initialize(() => DataWritePermission, OnDataValuesCollected);
                 OnAfterDataInitialized();
             }
+            return m_Data;
         }
     }
+
+    public virtual int SerializationOrder => 0;
 
     public virtual bool DataWritePermission => IsLocal;
 
@@ -142,7 +141,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     {
         var needSerialize = IsDirty;
         writer.Write(needSerialize);
-
         if (!needSerialize)
             return;
 
