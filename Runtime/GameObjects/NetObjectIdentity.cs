@@ -239,7 +239,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
 
         foreach (var m in members)
         {
-            var action = Create.DelegateWithSingleParameter<byte[]>(targetObject, m.Member);
+            var action = Create.DelegateWithSingleParameter<byte[]>(targetObject, m.Key);
             if (action != null)
                 RegisterRPCHandler(action);
         }
