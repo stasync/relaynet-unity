@@ -6,6 +6,8 @@ using System.Linq;
 
 public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>, IDictionary<TKey, TValue>
 {
+    protected override bool WriteWithDirtyCheck => true;
+
     public SerializableDictionary(
         Dictionary<TKey, TValue> defaultValue,
         Func<bool> writePermission,

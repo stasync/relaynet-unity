@@ -6,6 +6,8 @@ using System.Linq;
 
 public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
 {
+    protected override bool WriteWithDirtyCheck => true;
+
     public SerializableList(
         List<TValue> defaultValue, 
         Func<bool> writePermission, 
