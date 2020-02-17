@@ -9,6 +9,8 @@ public class SerializableFloat : SerializableValue<float>
     public SerializableFloat(float defaultValue, Func<bool> writePermission) : 
         base(defaultValue, writePermission, (r, f) => r.ReadSingle(), (w, v) => w.Write(v))
     { }
+
+    public void Change(float value) => Set(InternalValue + value);
 }
 
 public class SerializableInt : SerializableValue<int>
@@ -16,6 +18,8 @@ public class SerializableInt : SerializableValue<int>
     public SerializableInt(int defaultValue, Func<bool> writePermission) :
         base(defaultValue, writePermission, (r, f) => r.ReadInt32(), (w, v) => w.Write(v))
     { }
+
+    public void Change(int value) => Set(InternalValue + value);
 }
 
 public class SerializableBool : SerializableValue<bool>
@@ -44,6 +48,8 @@ public class SerializableUInt : SerializableValue<uint>
     public SerializableUInt(uint defaultValue, Func<bool> writePermission) :
         base(defaultValue, writePermission, (r, f) => r.ReadPackedUInt32(), (w, v) => w.WritePackedUInt32(v))
     { }
+
+    public void Change(uint value) => Set(InternalValue + value);
 }
 
 public class SerializableVector3: SerializableValue<Vector3>

@@ -16,7 +16,7 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
             base(
                 defaultValue, 
                 writePermission, 
-                (r, f) => r.ReadCollection(
+                (r, f) => r.ReadList(
                     cValueReader => valueReader(cValueReader, f)), 
                 (w, v) => w.WriteCollection(v, 
                     (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
@@ -71,6 +71,9 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
     {
         if (!HasPermission)
             throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
+
+        if (InternalValue.Count == 0)
+            return;
 
         InternalValue.Clear();
         SetDirty();

@@ -76,7 +76,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
             if (!wasDirty)
                 return;
 
-            m_Buffer = reader.ReadCollection(r => new BufferedRPCData(r));
+            reader.ReadListTo(m_Buffer, r => new BufferedRPCData(r));
         }
 
         public IEnumerator<byte[]> GetEnumerator() => m_Buffer

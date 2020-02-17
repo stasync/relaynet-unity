@@ -72,6 +72,9 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
         if (!HasPermission)
             throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
 
+        if (InternalValue.Count == 0)
+            return;
+
         InternalValue.Clear();
         SetDirty();
     }
