@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializable
+public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
 {
     public event Action<GSInstanceIdentity> NewObjectInitialized = delegate { };
 
@@ -12,7 +12,7 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
     IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
     ServiceProvider<IResourceTracker> m_ResourcesFactory;
 
-    public GSInstanceFactory(INetwork network)
+    public NetWorld(INetwork network)
     {
         m_InternalNetwork = network;
         m_Objects = new Dictionary<GSInstanceId, GSInstanceIdentity>();
@@ -46,10 +46,9 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
     /// <param name="peerId"></param>
     public void DestroyPlayerObjects(ClientUID peerId)
     {
-        var objects = m_Objects.Where(o =>
-            o.Value == null ||
-            ((o.Value.Owner == null ||
-            o.Value.Owner.ConnectionUID == peerId) && !o.Value.IsSceneObject)).ToArray();//Copy to iterate
+        var objects = m_Objects
+            .Where(kvp => kvp.Value == null || (kvp.Value.Owner == null || kvp.Value.Owner.ConnectionUID == peerId) && !kvp.Value.IsSceneObject)
+            .ToArray();//Copy to iterate
 
         foreach (var o in objects)
         {
@@ -58,7 +57,6 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
                 UnityEngine.Object.Destroy(obj.gameObject);
             m_Objects.Remove(o.Key);
         }
-
     }
 
     /// <summary>
@@ -67,11 +65,9 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
     public void DestroyNetworkObjects()
     {
         foreach (var o in m_Objects.Values)
-        {
-            if (o == null)
-                continue;
-            UnityEngine.Object.Destroy(o.gameObject);
-        }
+            if (o != null)
+                UnityEngine.Object.Destroy(o.gameObject);
+
         m_Objects.Clear();
     }
 
@@ -172,6 +168,8 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
             throw new NullReferenceException("Object with prefab id " + prefabId + " not founded in resources");
 
         var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
+        UnityEngine.Object.DontDestroyOnLoad(newGameObject);
+
         var identity = newGameObject.GetComponent<GSInstanceIdentity>();
         var sceneIdentity = newGameObject.GetComponent<GSSceneObjectIdentity>();
 
@@ -258,10 +256,8 @@ public class GSInstanceFactory : IEnumerable<GSInstanceIdentity>, IJSONSerializa
     /// </summary>
     /// <param name="instanceId"></param>
     /// <returns></returns>
-    public GSInstanceIdentity FindObject(GSInstanceId instanceId)
-    {
-        return m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity) ? identity : null;
-    }
+    public GSInstanceIdentity FindObject(GSInstanceId instanceId) =>
+        m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity) ? identity : null;
 
     /// <summary>
     /// Get object before in was actually created by transport system.
