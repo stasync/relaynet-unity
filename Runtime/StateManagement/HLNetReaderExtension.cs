@@ -14,7 +14,7 @@ public static class HLNetReaderExtention
     public static INetRTPlayer ReadPlayer(this NetReader reader) =>
         m_NetworkProvider.Instance.Realtime.GetPlayerByPeerId(reader.ReadConnectionUID());
 
-    public static GSInstanceIdentity ReadObject(this NetReader reader) =>
+    public static NetObjectIdentity ReadObject(this NetReader reader) =>
         m_NetworkProvider.Instance.Realtime.FindNetworkObject(reader.ReadPackedUInt32());
 
     public static T ReadObject<T>(this NetReader reader) where T : GSInstanceBehaviourBase =>

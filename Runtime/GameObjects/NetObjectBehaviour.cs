@@ -204,7 +204,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     public virtual void OnOwnerChanged() { }
 
     /// <summary>
-    /// Called, when object needs to be updated, according to <see cref="GSInstanceIdentity.m_UpdateRate"/>
+    /// Called, when object needs to be updated, according to <see cref="NetObjectIdentity.m_UpdateRate"/>
     /// Data values can be setted here
     /// </summary>
     public virtual void OnUpdate() { }

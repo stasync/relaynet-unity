@@ -1,6 +1,5 @@
 ﻿using Core.Networking;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -13,7 +12,7 @@ public enum BufferedRPCType
 }
 
 [DisallowMultipleComponent]
-public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
+public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
 {
     [SerializeField]
     DeliveryIntent m_DeliveryIntent = DeliveryIntent.Unreliable;
@@ -73,7 +72,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
     /// <param name="network"></param>
     /// <param name="data"></param>
     /// <returns></returns>
-    public GSInstanceIdentity Initialze(
+    public NetObjectIdentity Initialze(
         string prefabId, 
         bool isSceneObject,
         NetObjectUID instanceId,
@@ -326,7 +325,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
     /// <param name="force"></param>
     /// <param name="firstTime"></param>
     /// <returns></returns>
-    public GSInstanceIdentity Deserialize(byte[] data, bool force, bool firstTime)
+    public NetObjectIdentity Deserialize(byte[] data, bool force, bool firstTime)
     {
         if (IsLocal)
         {
@@ -597,7 +596,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
     #region STATIC_HELPERS
     static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
 
-    public static GSInstanceIdentity Find(NetObjectUID instanceId) => 
+    public static NetObjectIdentity Find(NetObjectUID instanceId) => 
         s_NetworkProvider.Instance.Realtime.FindNetworkObject(instanceId);
 
     public static T Find<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase => 

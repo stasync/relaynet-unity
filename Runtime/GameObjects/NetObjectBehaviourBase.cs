@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(GSInstanceIdentity))]
+[RequireComponent(typeof(NetObjectIdentity))]
 public abstract class GSInstanceBehaviourBase : MonoBehaviour
 {
     protected ILocator Locator => m_Locator.Instance;
@@ -9,10 +9,10 @@ public abstract class GSInstanceBehaviourBase : MonoBehaviour
     protected GSNetwork Network => m_Network.Instance;
     ServiceProvider<GSNetwork> m_Network = new ServiceProvider<GSNetwork>();
 
-    public GSInstanceIdentity Identity =>
+    public NetObjectIdentity Identity =>
         m_Identity != null ?
         m_Identity :
-        m_Identity = GetComponent<GSInstanceIdentity>();
+        m_Identity = GetComponent<NetObjectIdentity>();
 
-    GSInstanceIdentity m_Identity;
+    NetObjectIdentity m_Identity;
 }

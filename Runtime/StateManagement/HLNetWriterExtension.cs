@@ -13,7 +13,7 @@ public static class HLNetWriterExtention
     public static void WriteInstanceId(this NetWriter writer, NetObjectUID value) => 
         writer.WritePackedUInt32(value);
 
-    public static void WriteIdentity(this NetWriter writer, GSInstanceIdentity value) => 
+    public static void WriteIdentity(this NetWriter writer, NetObjectIdentity value) => 
         WriteInstanceId(writer, value == null ? NetObjectUID.Invalid : value.InstanceId);
 
     public static void WriteBehaviour(this NetWriter writer, GSInstanceBehaviourBase value) => 
@@ -21,7 +21,7 @@ public static class HLNetWriterExtention
 
     public static void WriteGameObject(this NetWriter writer, GameObject value)
     {
-        var identity = value.GetComponent<GSInstanceIdentity>();
+        var identity = value.GetComponent<NetObjectIdentity>();
         if (identity == null)
             throw new InvalidOperationException("Unable to write object without 'GSInstanceIdentity'");
 

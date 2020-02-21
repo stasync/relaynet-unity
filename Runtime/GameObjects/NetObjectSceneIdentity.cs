@@ -33,7 +33,7 @@ public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
     {
     }
 
-    public static implicit operator GSInstanceIdentity(GSSceneObjectIdentity value) => value.Identity;
+    public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => value.Identity;
 
 #if UNITY_EDITOR
     [UnityEditor.MenuItem("Network/Validate scene objects")]

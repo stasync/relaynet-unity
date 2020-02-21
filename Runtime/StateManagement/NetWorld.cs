@@ -4,18 +4,18 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
+public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
 {
-    public event Action<GSInstanceIdentity> NewObjectInitialized = delegate { };
+    public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
     INetwork m_InternalNetwork;
-    IDictionary<NetObjectUID, GSInstanceIdentity> m_Objects;
+    IDictionary<NetObjectUID, NetObjectIdentity> m_Objects;
     ServiceProvider<IResourceTracker> m_ResourcesFactory;
 
     public NetWorld(INetwork network)
     {
         m_InternalNetwork = network;
-        m_Objects = new Dictionary<NetObjectUID, GSInstanceIdentity>();
+        m_Objects = new Dictionary<NetObjectUID, NetObjectIdentity>();
         m_ResourcesFactory = new ServiceProvider<IResourceTracker>();
     }
 
@@ -81,7 +81,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
         if (!m_Objects.ContainsKey(instanceId))
             throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());
 
-        if (m_Objects.TryGetValue(instanceId, out GSInstanceIdentity objectToDelete))
+        if (m_Objects.TryGetValue(instanceId, out NetObjectIdentity objectToDelete))
         {
             if (objectToDelete.Owner.ConnectionUID != peerId)
                 throw new Exception("Owner exception: Remote peer id: " + peerId + " Local object peer id: " + objectToDelete.Owner.ConnectionUID);
@@ -100,7 +100,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
+    public NetObjectIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
             CreateObjectInternal(owner, new NetObjectUID(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
 
     /// <summary>
@@ -113,10 +113,10 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <param name="prefabId"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateOrUpdateObject(NetObjectUID instanceId, bool initializable, INetRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
+    public NetObjectIdentity CreateOrUpdateObject(NetObjectUID instanceId, bool initializable, INetRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
     {
         // Check if we dont have any created object with UID.
-        if (!m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity))
+        if (!m_Objects.TryGetValue(instanceId, out NetObjectIdentity identity))
             return initializable ?
                 CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, Vector3.zero, Quaternion.identity, baseData, null) : 
                 null;
@@ -149,7 +149,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    GSInstanceIdentity CreateObjectInternal(
+    NetObjectIdentity CreateObjectInternal(
         INetRTPlayer owner, 
         NetObjectUID instanceId, 
         string prefabId, 
@@ -170,7 +170,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
         var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
         UnityEngine.Object.DontDestroyOnLoad(newGameObject);
 
-        var identity = newGameObject.GetComponent<GSInstanceIdentity>();
+        var identity = newGameObject.GetComponent<NetObjectIdentity>();
         var sceneIdentity = newGameObject.GetComponent<GSSceneObjectIdentity>();
 
         if (identity == null || owner == null || sceneIdentity != null)
@@ -227,8 +227,8 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
                 null);
     }
 
-    GSInstanceIdentity InitializeIdentity(
-        GSInstanceIdentity identity, 
+    NetObjectIdentity InitializeIdentity(
+        NetObjectIdentity identity, 
         string prefabId, 
         bool isSceneObject, 
         NetObjectUID instanceId, 
@@ -256,8 +256,8 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// </summary>
     /// <param name="instanceId"></param>
     /// <returns></returns>
-    public GSInstanceIdentity FindObject(NetObjectUID instanceId) =>
-        m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity) ? identity : null;
+    public NetObjectIdentity FindObject(NetObjectUID instanceId) =>
+        m_Objects.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
 
     /// <summary>
     /// Get object before in was actually created by transport system.
@@ -271,7 +271,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <param name="position"></param>
     /// <param name="rotation"></param>
     /// <returns></returns>
-    public GSInstanceIdentity FindObjectOrCreateMock(INetRTPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+    public NetObjectIdentity FindObjectOrCreateMock(INetRTPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
         var identity = FindObject(instanceId);
         return 
@@ -287,7 +287,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// </summary>
     /// <param name="instanceId"></param>
     /// <param name="result"></param>
-    public void FindObjectOrWait(NetObjectUID instanceId, Action<GSInstanceIdentity> result)
+    public void FindObjectOrWait(NetObjectUID instanceId, Action<NetObjectIdentity> result)
     {
         var identity = FindObject(instanceId);
         if(identity != null)
@@ -297,7 +297,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
         }
         NewObjectInitialized += OnNewObjectInitialized;
 
-        void OnNewObjectInitialized(GSInstanceIdentity o)
+        void OnNewObjectInitialized(NetObjectIdentity o)
         {
             if (o == null || o.InstanceId != instanceId)
                 return;
@@ -309,7 +309,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
 
     public IRPCReciever FindRpcReciever(NetObjectUID id) => FindObject(id);
 
-    public IEnumerator<GSInstanceIdentity> GetEnumerator() => m_Objects.Values.GetEnumerator();
+    public IEnumerator<NetObjectIdentity> GetEnumerator() => m_Objects.Values.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => m_Objects.Values.GetEnumerator();
 
