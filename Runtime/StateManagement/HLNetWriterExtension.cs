@@ -10,11 +10,11 @@ public static class HLNetWriterExtention
     public static void WritePlayer(this NetWriter writer, INetRTPlayer value) =>
         writer.WriteConnectionUID(value == null ? ClientUID.Invalid : value.ConnectionUID);
 
-    public static void WriteInstanceId(this NetWriter writer, GSInstanceId value) => 
+    public static void WriteInstanceId(this NetWriter writer, NetObjectUID value) => 
         writer.WritePackedUInt32(value);
 
     public static void WriteIdentity(this NetWriter writer, GSInstanceIdentity value) => 
-        WriteInstanceId(writer, value == null ? GSInstanceId.Invalid : value.InstanceId);
+        WriteInstanceId(writer, value == null ? NetObjectUID.Invalid : value.InstanceId);
 
     public static void WriteBehaviour(this NetWriter writer, GSInstanceBehaviourBase value) => 
         WriteIdentity(writer, value == null ? null : value.Identity);

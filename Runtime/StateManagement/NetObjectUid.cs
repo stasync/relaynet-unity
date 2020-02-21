@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 
-public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
+public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
 {
     #region STATIC
-    public static GSInstanceId Invalid => 0;
-    static IList<GSInstanceId> s_UnAllocatedIds = new List<GSInstanceId>();
+    public static NetObjectUID Invalid => 0;
+    static IList<NetObjectUID> s_UnAllocatedIds = new List<NetObjectUID>();
     static uint s_IdCounter = 0;
 
     /// <summary>
@@ -17,7 +17,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     public const uint c_SceneObjectReservedIdSpace = 1000;
     public const uint c_FirstValidId = 1;
 
-    public static void UnAllocateId(GSInstanceId id)
+    public static void UnAllocateId(NetObjectUID id)
     {
         if (s_UnAllocatedIds.Contains(id))
             throw new Exception("Trying to unallocate id, that already unallocated");
@@ -29,11 +29,11 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// </summary>
     public static void Reset()
     {
-        s_UnAllocatedIds = new List<GSInstanceId>();
+        s_UnAllocatedIds = new List<NetObjectUID>();
         s_IdCounter = 0;
     }
 
-    static GSInstanceId AllocateNewId(ClientUID peerId)
+    static NetObjectUID AllocateNewId(ClientUID peerId)
     {
         //Increment internal id
         s_IdCounter++;
@@ -41,10 +41,10 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         return PeerStartId(peerId) + s_IdCounter;
     }
 
-    static GSInstanceId PeerStartId(ClientUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
+    static NetObjectUID PeerStartId(ClientUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
     #endregion
 
-    public GSInstanceId(ClientUID peerId)
+    public NetObjectUID(ClientUID peerId)
     {
         //Check unallocated id
         if (s_UnAllocatedIds.Any())
@@ -61,7 +61,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
     /// This private constructor in use for casting.
     /// </summary>
     /// <param name="instanceId"></param>
-    private GSInstanceId(uint instanceId)
+    private NetObjectUID(uint instanceId)
     {
         m_InstanceIdValue = instanceId;
     }
@@ -71,16 +71,16 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
 
     uint m_InstanceIdValue;
 
-    public int CompareTo(GSInstanceId other) => m_InstanceIdValue.CompareTo(other.m_InstanceIdValue);
-    public static implicit operator uint(GSInstanceId value) => value.m_InstanceIdValue;
-    public static implicit operator GSInstanceId(uint value) => new GSInstanceId(value);
+    public int CompareTo(NetObjectUID other) => m_InstanceIdValue.CompareTo(other.m_InstanceIdValue);
+    public static implicit operator uint(NetObjectUID value) => value.m_InstanceIdValue;
+    public static implicit operator NetObjectUID(uint value) => new NetObjectUID(value);
 
-    public static bool operator ==(GSInstanceId value0, GSInstanceId value1) => value0.m_InstanceIdValue == value1.m_InstanceIdValue;
-    public static bool operator !=(GSInstanceId value0, GSInstanceId value1) => value0.m_InstanceIdValue != value1.m_InstanceIdValue;
+    public static bool operator ==(NetObjectUID value0, NetObjectUID value1) => value0.m_InstanceIdValue == value1.m_InstanceIdValue;
+    public static bool operator !=(NetObjectUID value0, NetObjectUID value1) => value0.m_InstanceIdValue != value1.m_InstanceIdValue;
 
-    public bool Equals(GSInstanceId other) => m_InstanceIdValue.Equals(other.m_InstanceIdValue);
+    public bool Equals(NetObjectUID other) => m_InstanceIdValue.Equals(other.m_InstanceIdValue);
 
     public override string ToString() => m_InstanceIdValue.ToString();
-    public override bool Equals(object obj) => base.Equals(obj);
+    public override bool Equals(object obj) => m_InstanceIdValue.Equals(obj);
     public override int GetHashCode() => m_InstanceIdValue.GetHashCode();
 }

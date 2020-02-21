@@ -5,9 +5,9 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
 {
-    [SerializeField, Range(GSInstanceId.c_FirstValidId, GSInstanceId.c_FirstValidId + GSInstanceId.c_SceneObjectReservedIdSpace)]
+    [SerializeField, Range(NetObjectUID.c_FirstValidId, NetObjectUID.c_FirstValidId + NetObjectUID.c_SceneObjectReservedIdSpace)]
     int m_SceneObjectId;
-    public GSInstanceId SceneObjectId => (uint)m_SceneObjectId;
+    public NetObjectUID SceneObjectId => (uint)m_SceneObjectId;
 
     /// <summary>
     /// We needs to register this object in object factory, if it placed in scene by default.
@@ -74,7 +74,7 @@ public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
         {
             UnityEditor.Undo.RecordObject(obj, "Peek scene instance id");
             while (ObjectWithSameId(sceneObjects, obj) != null)
-                obj.m_SceneObjectId = RandomExtended.Default.Int(GSInstanceId.c_FirstValidId, GSInstanceId.c_SceneObjectReservedIdSpace);
+                obj.m_SceneObjectId = RandomExtended.Default.Int(NetObjectUID.c_FirstValidId, NetObjectUID.c_SceneObjectReservedIdSpace);
         }
         ValidateSceneObjects();
     }

@@ -9,13 +9,13 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     public event Action<GSInstanceIdentity> NewObjectInitialized = delegate { };
 
     INetwork m_InternalNetwork;
-    IDictionary<GSInstanceId, GSInstanceIdentity> m_Objects;
+    IDictionary<NetObjectUID, GSInstanceIdentity> m_Objects;
     ServiceProvider<IResourceTracker> m_ResourcesFactory;
 
     public NetWorld(INetwork network)
     {
         m_InternalNetwork = network;
-        m_Objects = new Dictionary<GSInstanceId, GSInstanceIdentity>();
+        m_Objects = new Dictionary<NetObjectUID, GSInstanceIdentity>();
         m_ResourcesFactory = new ServiceProvider<IResourceTracker>();
     }
 
@@ -76,7 +76,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// </summary>
     /// <param name="peerId"></param>
     /// <param name="instanceId"></param>
-    public void DestroyObject(ClientUID peerId, GSInstanceId instanceId)
+    public void DestroyObject(ClientUID peerId, NetObjectUID instanceId)
     {
         if (!m_Objects.ContainsKey(instanceId))
             throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());
@@ -101,7 +101,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <param name="baseData"></param>
     /// <returns></returns>
     public GSInstanceIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
-            CreateObjectInternal(owner, new GSInstanceId(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
+            CreateObjectInternal(owner, new NetObjectUID(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
 
     /// <summary>
     /// Create object from remote client update, without position and rotation, but it can be stored in data.
@@ -113,7 +113,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <param name="prefabId"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public GSInstanceIdentity CreateOrUpdateObject(GSInstanceId instanceId, bool initializable, INetRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
+    public GSInstanceIdentity CreateOrUpdateObject(NetObjectUID instanceId, bool initializable, INetRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
     {
         // Check if we dont have any created object with UID.
         if (!m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity))
@@ -151,7 +151,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <returns></returns>
     GSInstanceIdentity CreateObjectInternal(
         INetRTPlayer owner, 
-        GSInstanceId instanceId, 
+        NetObjectUID instanceId, 
         string prefabId, 
         bool isSceneObject, 
         Vector3 position, 
@@ -231,7 +231,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
         GSInstanceIdentity identity, 
         string prefabId, 
         bool isSceneObject, 
-        GSInstanceId instanceId, 
+        NetObjectUID instanceId, 
         INetRTPlayer owner, 
         INetwork transport,
         byte[] data,
@@ -256,7 +256,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// </summary>
     /// <param name="instanceId"></param>
     /// <returns></returns>
-    public GSInstanceIdentity FindObject(GSInstanceId instanceId) =>
+    public GSInstanceIdentity FindObject(NetObjectUID instanceId) =>
         m_Objects.TryGetValue(instanceId, out GSInstanceIdentity identity) ? identity : null;
 
     /// <summary>
@@ -271,7 +271,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
     /// <param name="position"></param>
     /// <param name="rotation"></param>
     /// <returns></returns>
-    public GSInstanceIdentity FindObjectOrCreateMock(INetRTPlayer owner, GSInstanceId instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+    public GSInstanceIdentity FindObjectOrCreateMock(INetRTPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
         var identity = FindObject(instanceId);
         return 
@@ -282,12 +282,12 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
 
     /// <summary>
     /// If some object doesn't exist yet, we can wait for it;
-    /// Similar to: <see cref="FindObjectOrCreateMock(INetRTPlayer, GSInstanceId, string, bool, Vector3, Quaternion)"/>
+    /// Similar to: <see cref="FindObjectOrCreateMock(INetRTPlayer, NetObjectUID, string, bool, Vector3, Quaternion)"/>
     /// But it doesn't create mock objects;
     /// </summary>
     /// <param name="instanceId"></param>
     /// <param name="result"></param>
-    public void FindObjectOrWait(GSInstanceId instanceId, Action<GSInstanceIdentity> result)
+    public void FindObjectOrWait(NetObjectUID instanceId, Action<GSInstanceIdentity> result)
     {
         var identity = FindObject(instanceId);
         if(identity != null)
@@ -307,7 +307,7 @@ public class NetWorld : IEnumerable<GSInstanceIdentity>, IJSONSerializable
         }
     }
 
-    public IRPCReciever FindRpcReciever(GSInstanceId id) => FindObject(id);
+    public IRPCReciever FindRpcReciever(NetObjectUID id) => FindObject(id);
 
     public IEnumerator<GSInstanceIdentity> GetEnumerator() => m_Objects.Values.GetEnumerator();
 

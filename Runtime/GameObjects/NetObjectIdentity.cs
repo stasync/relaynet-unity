@@ -15,101 +15,6 @@ public enum BufferedRPCType
 [DisallowMultipleComponent]
 public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
 {
-    class DefaultRpcBuffer : IRPCBuffer
-    {
-        class BufferedRPCData
-        {
-            public BufferedRPCData(int key, byte[] data)
-            {
-                Key = key;
-                Data = data;
-            }
-
-            public BufferedRPCData(NetReader reader)
-            {
-                Key = reader.ReadInt32();
-                Data = reader.ReadBytesAndSize();
-            }
-
-            public NetWriter Serialize(NetWriter writer)
-            {
-                writer.Write(Key);
-                writer.WriteBytesAndSize(Data);
-                return writer;
-            }
-
-            public readonly int Key;
-            public readonly byte[] Data;
-        }
-
-        public bool IsDirty { get; private set; }
-
-        List<BufferedRPCData> m_Buffer;
-
-        public DefaultRpcBuffer()
-        {
-            m_Buffer = new List<BufferedRPCData>();
-        }
-
-        void IRPCBuffer.AddOrUpdate(int hashCode, byte[] data, BufferedRPCType type)
-        {
-            if (type == BufferedRPCType.Replace)
-                Remove(hashCode);
-
-            m_Buffer.Add(new BufferedRPCData(hashCode, data));
-            IsDirty = true;
-        }
-
-        void ISerializable.Serialize(NetWriter writer)
-        {
-            writer.Write(IsDirty);
-            if (!IsDirty)
-                return;
-
-            IsDirty = false;
-            writer.WriteCollection(m_Buffer, (v, w) => v.Serialize(w));
-        }
-
-        void ISerializable.Deserialize(NetReader reader, bool firstTime)
-        {
-            var wasDirty = reader.ReadBoolean();
-            if (!wasDirty)
-                return;
-
-            reader.ReadListTo(m_Buffer, r => new BufferedRPCData(r));
-        }
-
-        public IEnumerator<byte[]> GetEnumerator() => m_Buffer
-                .Select(r => r.Data)
-                .GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => m_Buffer.GetEnumerator();
-
-        void IRPCBuffer.Recieve(Action<int, byte[]> reciever)
-        {
-            foreach (var rpc in m_Buffer)
-                reciever(rpc.Key, rpc.Data);
-        }
-
-        void Remove(int hashCode)
-        {
-            m_Buffer.RemoveAll(d => d.Key == hashCode);
-            SetDirty();
-        }
-
-        void IRPCBuffer.Remove(int hashCode) => Remove(hashCode);
-
-        public void SetDirty() => IsDirty = true;
-
-        public override string ToString() => m_Buffer.ToString();
-
-        public void Clear()
-        {
-            m_Buffer.Clear();
-            IsDirty = true;
-        }
-    }
-
     [SerializeField]
     DeliveryIntent m_DeliveryIntent = DeliveryIntent.Unreliable;
 
@@ -117,7 +22,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
     float m_UpdateRate = 0.05f;
     float m_NextUpdateEventTime;
 
-    public GSInstanceId InstanceId { get; private set; }
+    public NetObjectUID InstanceId { get; private set; }
     public bool IsOwnedByMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
     public bool IsLocal => m_InternalNetwork != null && m_InternalNetwork.LocalPlayer == Owner;
     public bool IsLocalPlayerTagObject => m_InternalNetwork.LocalPlayer.TagObjectId == InstanceId;
@@ -171,7 +76,7 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
     public GSInstanceIdentity Initialze(
         string prefabId, 
         bool isSceneObject,
-        GSInstanceId instanceId,
+        NetObjectUID instanceId,
         INetRTPlayer owner, 
         INetwork network, 
         byte[] data,
@@ -692,10 +597,10 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
     #region STATIC_HELPERS
     static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
 
-    public static GSInstanceIdentity Find(GSInstanceId instanceId) => 
+    public static GSInstanceIdentity Find(NetObjectUID instanceId) => 
         s_NetworkProvider.Instance.Realtime.FindNetworkObject(instanceId);
 
-    public static T Find<T>(GSInstanceId instanceId) where T : GSInstanceBehaviourBase => 
+    public static T Find<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase => 
         s_NetworkProvider.Instance.Realtime.FindNetworkObject<T>(instanceId);
     #endregion
 }

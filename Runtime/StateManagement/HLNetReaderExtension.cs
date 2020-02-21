@@ -8,7 +8,7 @@ public static class HLNetReaderExtention
     public static ClientUID ReadConnectionUID(this NetReader reader) =>
         reader.ReadPackedUInt32();
 
-    public static GSInstanceId ReadInstanceId(this NetReader reader) =>
+    public static NetObjectUID ReadInstanceId(this NetReader reader) =>
         reader.ReadPackedUInt32();
 
     public static INetRTPlayer ReadPlayer(this NetReader reader) =>
