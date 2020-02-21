@@ -101,7 +101,12 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
     /// <param name="baseData"></param>
     /// <returns></returns>
     public NetObjectIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
-            CreateObjectInternal(owner, new NetObjectUID(owner.ConnectionUID), prefabId, isSceneObject, position, rotation, null, additionalData); //Null data and additional data is ok.
+            CreateObjectInternal(
+                ObjectCreateUpdateSnapshot.Create(owner.ConnectionUID, prefabId, isSceneObject, null),
+                owner,
+                position,
+                rotation, 
+                additionalData); //Null data and additional data is ok.
 
     /// <summary>
     /// Create object from remote client update, without position and rotation, but it can be stored in data.
@@ -113,29 +118,26 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
     /// <param name="prefabId"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public NetObjectIdentity CreateOrUpdateObject(NetObjectUID instanceId, bool initializable, INetRTPlayer owner, string prefabId, bool isSceneObject, byte[] baseData)
+    public NetObjectIdentity CreateOrUpdateObject(ObjectCreateUpdateSnapshot snapshot, bool initializable, INetRTPlayer owner)
     {
         // Check if we dont have any created object with UID.
-        if (!m_Objects.TryGetValue(instanceId, out NetObjectIdentity identity))
+        if (!m_Objects.TryGetValue(snapshot.TargetObjectUID, out NetObjectIdentity identity))
             return initializable ?
-                CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, Vector3.zero, Quaternion.identity, baseData, null) : 
+                CreateObjectInternal(snapshot, owner, Vector3.zero, Quaternion.identity, null) : 
                 null;
 
         // Check if identity not initialized yet.
         // This is used for object, which placed in scene by default.
         if (!identity.Initialized && initializable)
             InitializeIdentity(
-                identity, 
-                prefabId, 
-                isSceneObject, 
-                instanceId, 
+                identity,
+                snapshot,
                 owner, 
                 m_InternalNetwork, 
-                baseData,
                 null);
 
         return identity.Initialized ? 
-            identity.Deserialize(baseData, false, false) : 
+            identity.Deserialize(snapshot.Data, false, false) : 
             null;    
     }
 
@@ -149,23 +151,15 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    NetObjectIdentity CreateObjectInternal(
-        INetRTPlayer owner, 
-        NetObjectUID instanceId, 
-        string prefabId, 
-        bool isSceneObject, 
-        Vector3 position, 
-        Quaternion rotation, 
-        byte[] baseData,
-        object[] additionalData)
+    NetObjectIdentity CreateObjectInternal(ObjectCreateUpdateSnapshot snapshot, INetRTPlayer owner, Vector3 position, Quaternion rotation, object[] additionalData)
     {
-        if (m_Objects.ContainsKey(instanceId))
-            throw new Exception("Object with id " + instanceId + " already created");
+        if (m_Objects.ContainsKey(snapshot.TargetObjectUID))
+            throw new Exception("Object with id " + snapshot.TargetObjectUID + " already created");
 
-        var gameObject = m_ResourcesFactory.Instance.Load<GameObject>(prefabId);
+        var gameObject = m_ResourcesFactory.Instance.Load<GameObject>(snapshot.PrefabId);
 
         if (gameObject == null)
-            throw new NullReferenceException("Object with prefab id " + prefabId + " not founded in resources");
+            throw new NullReferenceException("Object with prefab id " + snapshot.PrefabId + " not founded in resources");
 
         var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
         UnityEngine.Object.DontDestroyOnLoad(newGameObject);
@@ -227,15 +221,7 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
                 null);
     }
 
-    NetObjectIdentity InitializeIdentity(
-        NetObjectIdentity identity, 
-        string prefabId, 
-        bool isSceneObject, 
-        NetObjectUID instanceId, 
-        INetRTPlayer owner, 
-        INetwork transport,
-        byte[] data,
-        object[] additionalData)
+    NetObjectIdentity InitializeIdentity(NetObjectIdentity identity, ObjectCreateUpdateSnapshot snapshot, INetRTPlayer owner, INetwork transport, object[] additionalData)
     {
         identity.Initialze(
                     prefabId,
