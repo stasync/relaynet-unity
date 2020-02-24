@@ -49,38 +49,38 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
         //Check unallocated id
         if (s_UnAllocatedIds.Any())
         {
-            m_InstanceIdValue = s_UnAllocatedIds.FirstOrDefault();
-            s_UnAllocatedIds.Remove(m_InstanceIdValue);
+            m_Value = s_UnAllocatedIds.FirstOrDefault();
+            s_UnAllocatedIds.Remove(m_Value);
         }
         //Allocate new id
         else
-            m_InstanceIdValue = AllocateNewId(peerId);
+            m_Value = AllocateNewId(peerId);
     }
 
     /// <summary>
     /// This private constructor in use for casting.
     /// </summary>
     /// <param name="instanceId"></param>
-    private NetObjectUID(uint instanceId)
+    NetObjectUID(uint instanceId)
     {
-        m_InstanceIdValue = instanceId;
+        m_Value = instanceId;
     }
 
-    public bool IsValid => m_InstanceIdValue != Invalid;
-    public bool IsSceneObjectSpaceId => IsValid && m_InstanceIdValue <= c_SceneObjectReservedIdSpace;
+    uint m_Value;
 
-    uint m_InstanceIdValue;
+    public bool IsValid => m_Value != Invalid;
+    public bool IsSceneObjectSpaceId => IsValid && m_Value <= c_SceneObjectReservedIdSpace;
 
-    public int CompareTo(NetObjectUID other) => m_InstanceIdValue.CompareTo(other.m_InstanceIdValue);
-    public static implicit operator uint(NetObjectUID value) => value.m_InstanceIdValue;
+    public int CompareTo(NetObjectUID other) => m_Value.CompareTo(other.m_Value);
+    public static implicit operator uint(NetObjectUID value) => value.m_Value;
     public static implicit operator NetObjectUID(uint value) => new NetObjectUID(value);
 
-    public static bool operator ==(NetObjectUID value0, NetObjectUID value1) => value0.m_InstanceIdValue == value1.m_InstanceIdValue;
-    public static bool operator !=(NetObjectUID value0, NetObjectUID value1) => value0.m_InstanceIdValue != value1.m_InstanceIdValue;
+    public static bool operator ==(NetObjectUID value0, NetObjectUID value1) => value0.m_Value == value1.m_Value;
+    public static bool operator !=(NetObjectUID value0, NetObjectUID value1) => value0.m_Value != value1.m_Value;
 
-    public bool Equals(NetObjectUID other) => m_InstanceIdValue.Equals(other.m_InstanceIdValue);
+    public bool Equals(NetObjectUID other) => m_Value.Equals(other.m_Value);
 
-    public override string ToString() => m_InstanceIdValue.ToString();
-    public override bool Equals(object obj) => m_InstanceIdValue.Equals(obj);
-    public override int GetHashCode() => m_InstanceIdValue.GetHashCode();
+    public override string ToString() => m_Value.ToString();
+    public override bool Equals(object obj) => m_Value.Equals(obj);
+    public override int GetHashCode() => m_Value.GetHashCode();
 }

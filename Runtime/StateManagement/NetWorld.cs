@@ -5,16 +5,18 @@ using UnityEngine;
 
 public class NetWorld : IJSONSerializable
 {
+    public NetWorldUID UID { get; private set; }
+
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> Objects => m_Objects;
     Dictionary<NetObjectUID, NetObjectIdentity> m_Objects;
-    NetWorldView m_WorldView;
 
+    NetWorldView m_WorldView;
     INetwork m_InternalNetwork;
     NetObjectFactory m_ObjectFactory;
-
     float m_LastUpdateTime;
+
     const float m_MinUpdateInteraval = 0.1f; //10 times per second;
 
     public NetWorld(INetwork network)
@@ -30,6 +32,8 @@ public class NetWorld : IJSONSerializable
         m_InternalNetwork = network;
         m_ObjectFactory = new NetObjectFactory();
         m_Objects = new Dictionary<NetObjectUID, NetObjectIdentity>();
+
+        UID = NetWorldUID.Allocate();
     }
 
     public void TryUpdate(float deltaTime)
