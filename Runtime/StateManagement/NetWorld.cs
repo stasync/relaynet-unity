@@ -1,24 +1,50 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
+public class NetWorld : IJSONSerializable
 {
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
+    public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> Objects => m_Objects;
+    Dictionary<NetObjectUID, NetObjectIdentity> m_Objects;
+    NetWorldView m_WorldView;
+
     INetwork m_InternalNetwork;
-    IDictionary<NetObjectUID, NetObjectIdentity> m_Objects;
-    ServiceProvider<IResourceTracker> m_ResourcesFactory;
+    NetObjectFactory m_ObjectFactory;
 
     public NetWorld(INetwork network)
     {
+        if (m_WorldView != null)
+            throw new InvalidOperationException($"{nameof(m_WorldView)} alreay created");
+
+        m_WorldView = new GameObject("NetworkWorldRoot")
+            .AddComponent<NetWorldView>();
+
+        UnityEngine.Object.DontDestroyOnLoad(m_WorldView.gameObject);
+
         m_InternalNetwork = network;
+        m_ObjectFactory = new NetObjectFactory();
         m_Objects = new Dictionary<NetObjectUID, NetObjectIdentity>();
-        m_ResourcesFactory = new ServiceProvider<IResourceTracker>();
     }
 
+    /// <summary>
+    /// Destroy all network objects and cleanup scene.
+    /// </summary>
+    public void Destroy()
+    {
+        NewObjectInitialized = null;
+
+        m_Objects.Clear();
+        m_Objects = null;
+
+        UnityEngine.Object.Destroy(m_WorldView); //Destroy all net object;
+        m_WorldView = null;
+
+        m_InternalNetwork = null;
+        m_ObjectFactory = null;
+    }
     /// <summary>
     /// Someone connected and loaded game scene.
     /// </summary>
@@ -57,18 +83,6 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
                 UnityEngine.Object.Destroy(obj.gameObject);
             m_Objects.Remove(o.Key);
         }
-    }
-
-    /// <summary>
-    /// Destroy all network objects and cleanup scene.
-    /// </summary>
-    public void DestroyNetworkObjects()
-    {
-        foreach (var o in m_Objects.Values)
-            if (o != null)
-                UnityEngine.Object.Destroy(o.gameObject);
-
-        m_Objects.Clear();
     }
 
     /// <summary>
@@ -121,7 +135,7 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
     public NetObjectIdentity CreateOrUpdateObject(ObjectCreateUpdateSnapshot snapshot, bool initializable, INetRTPlayer owner)
     {
         // Check if we dont have any created object with UID.
-        if (!m_Objects.TryGetValue(snapshot.TargetObjectUID, out NetObjectIdentity identity))
+        if (!m_Objects.TryGetValue(snapshot.ObjectUID, out NetObjectIdentity identity))
             return initializable ?
                 CreateObjectInternal(snapshot, owner, Vector3.zero, Quaternion.identity, null) : 
                 null;
@@ -153,36 +167,20 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
     /// <returns></returns>
     NetObjectIdentity CreateObjectInternal(ObjectCreateUpdateSnapshot snapshot, INetRTPlayer owner, Vector3 position, Quaternion rotation, object[] additionalData)
     {
-        if (m_Objects.ContainsKey(snapshot.TargetObjectUID))
-            throw new Exception("Object with id " + snapshot.TargetObjectUID + " already created");
+        if (owner == null)
+            throw new ArgumentNullException(nameof(owner));
 
-        var gameObject = m_ResourcesFactory.Instance.Load<GameObject>(snapshot.PrefabId);
+        if (m_Objects.ContainsKey(snapshot.ObjectUID))
+            throw new InvalidOperationException($"Object with id {snapshot.ObjectUID} already exists");
 
-        if (gameObject == null)
-            throw new NullReferenceException("Object with prefab id " + snapshot.PrefabId + " not founded in resources");
-
-        var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
-        UnityEngine.Object.DontDestroyOnLoad(newGameObject);
-
-        var identity = newGameObject.GetComponent<NetObjectIdentity>();
-        var sceneIdentity = newGameObject.GetComponent<GSSceneObjectIdentity>();
-
-        if (identity == null || owner == null || sceneIdentity != null)
-        {
-            UnityEngine.Object.Destroy(newGameObject);
-            throw new InvalidOperationException();
-        }
-        
+        var identity = m_ObjectFactory.Create(snapshot.PrefabId, position, rotation);
         m_Objects.Add(
-            instanceId,
+            snapshot.ObjectUID,
             InitializeIdentity(
                 identity,
-                prefabId, 
-                isSceneObject,
-                instanceId, 
+                snapshot, 
                 owner, 
                 m_InternalNetwork, 
-                baseData, 
                 additionalData));
 
         return identity;
@@ -209,27 +207,26 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
                 sceneIdentity.SceneObjectId, 
                 sceneIdentity.Identity);
 
-        if(!sceneIdentity.Identity.Initialized && m_InternalNetwork.IsMasterClient)
+        //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
+        if (!sceneIdentity.Identity.Initialized && m_InternalNetwork.IsMasterClient)
             InitializeIdentity(
-                sceneIdentity.Identity,
-                "SceneObject", //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-                true,
-                sceneIdentity.SceneObjectId,
+                sceneIdentity.Identity, 
+                ObjectCreateUpdateSnapshot.Create(sceneIdentity.SceneObjectId, m_InternalNetwork.MasterClientConnection, "SceneObject", true, null),
                 m_InternalNetwork.MasterPlayer,
                 m_InternalNetwork,
-                null, 
                 null);
     }
 
     NetObjectIdentity InitializeIdentity(NetObjectIdentity identity, ObjectCreateUpdateSnapshot snapshot, INetRTPlayer owner, INetwork transport, object[] additionalData)
     {
+        identity.transform.SetParent(m_WorldView.transform);
         identity.Initialze(
-                    prefabId,
-                    isSceneObject,
-                    instanceId,
+                    snapshot.PrefabId,
+                    snapshot.IsSceneObject,
+                    snapshot.ObjectUID,
                     owner,
                     transport,
-                    data, 
+                    snapshot.Data, 
                     additionalData);
 
         NewObjectInitialized(identity);
@@ -262,7 +259,7 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
         var identity = FindObject(instanceId);
         return 
             identity == null ? 
-            CreateObjectInternal(owner, instanceId, prefabId, isSceneObject, position, rotation, null, null) : 
+            CreateObjectInternal(ObjectCreateUpdateSnapshot.Create(instanceId, owner.ConnectionUID, prefabId, isSceneObject, null), owner, position, rotation, null) : 
             identity;
     }
 
@@ -294,10 +291,6 @@ public class NetWorld : IEnumerable<NetObjectIdentity>, IJSONSerializable
     }
 
     public IRPCReciever FindRpcReciever(NetObjectUID id) => FindObject(id);
-
-    public IEnumerator<NetObjectIdentity> GetEnumerator() => m_Objects.Values.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => m_Objects.Values.GetEnumerator();
 
     public string ToJSONProperty() => RealtimeJSONUtils.ToJSONCollection(m_Objects.Values.Select(o => o.ToJSONProperty()).ToArray());
 }
