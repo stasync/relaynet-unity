@@ -219,7 +219,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// Sets all behaviours dirty, if object is local.
     /// </summary>
-    void SetDirtyIfLocal()
+    public void SetDirtyIfLocal()
     {
         if (!IsLocal)
             return;
@@ -232,7 +232,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             o.SetDirty();
     }
 
-    void FixedUpdate()
+    public void OnUpdate(float deltaTime)
     {
         //Object not initialized or remote;
         if (!Initialized || !IsLocal)

@@ -14,6 +14,9 @@ public class NetWorld : IJSONSerializable
     INetwork m_InternalNetwork;
     NetObjectFactory m_ObjectFactory;
 
+    float m_LastUpdateTime;
+    const float m_MinUpdateInteraval = 0.1f; //10 times per second;
+
     public NetWorld(INetwork network)
     {
         if (m_WorldView != null)
@@ -27,6 +30,21 @@ public class NetWorld : IJSONSerializable
         m_InternalNetwork = network;
         m_ObjectFactory = new NetObjectFactory();
         m_Objects = new Dictionary<NetObjectUID, NetObjectIdentity>();
+    }
+
+    public void TryUpdate(float deltaTime)
+    {
+        var worldDelta = Time.fixedUnscaledTime - m_LastUpdateTime;
+        if (worldDelta < m_MinUpdateInteraval)
+            return;
+
+        m_LastUpdateTime = Time.fixedUnscaledTime;
+        m_WorldView.OnUpdate(worldDelta);
+        foreach(var kvp in m_Objects)
+        {
+            var obj = kvp.Value;
+            obj.OnUpdate(worldDelta);
+        }
     }
 
     /// <summary>
@@ -45,6 +63,14 @@ public class NetWorld : IJSONSerializable
         m_InternalNetwork = null;
         m_ObjectFactory = null;
     }
+
+    public void SetLocalObjectsDirty()
+    {
+        foreach (var o in m_Objects.Values)
+            if (o != null && o.IsLocal)
+                o.SetDirtyIfLocal();
+    }
+
     /// <summary>
     /// Someone connected and loaded game scene.
     /// </summary>
