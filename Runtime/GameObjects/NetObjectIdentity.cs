@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-public enum BufferedRPCType
+public enum RPCBufferChnageMethod
 {
     Replace, 
     Add,
@@ -14,23 +14,24 @@ public enum BufferedRPCType
 [DisallowMultipleComponent]
 public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
 {
-    [SerializeField]
-    DeliveryIntent m_DeliveryIntent = DeliveryIntent.Unreliable;
+    /*[SerializeField]
+    DeliveryIntent m_DeliveryIntent = DeliveryIntent.Unreliable;*/
 
-    [SerializeField, Range(0.01f, 1f)]
+    /*[SerializeField, Range(0.01f, 1f)]
     float m_UpdateRate = 0.05f;
-    float m_NextUpdateEventTime;
+    float m_NextUpdateEventTime;*/
 
     public NetObjectUID InstanceId { get; private set; }
     public bool IsOwnedByMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
     public bool IsLocal => m_InternalNetwork != null && m_InternalNetwork.LocalPlayer == Owner;
     public bool IsLocalPlayerTagObject => m_InternalNetwork.LocalPlayer.TagObjectId == InstanceId;
-    public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_RpcBuffer.IsDirty;
+    public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_PersistentRPCBuffer.IsDirty;
 
     /// <summary>
     /// Rpc buffer
     /// </summary>
-    IRPCBuffer m_RpcBuffer = new DefaultRpcBuffer();
+    IRPCBuffer m_PersistentRPCBuffer = new RPCBuffer();
+    IRPCBuffer m_TemporalRPCBuffer = new TemporalRPCBuffer();
 
     /// <summary>
     /// Readonly owner reference
@@ -66,12 +67,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    /// <param name="prefabId"></param>
-    /// <param name="instanceId"></param>
-    /// <param name="owner"></param>
-    /// <param name="network"></param>
-    /// <param name="data"></param>
-    /// <returns></returns>
     public NetObjectIdentity Initialze(
         string prefabId, 
         bool isSceneObject,
@@ -114,10 +109,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         //Mark object as initialized;
         Initialized = true;
 
-        //Forse obect to send itself after creation.
-        //Is local check inside this method.
-        ForceSerializeIfLocal();
-
         //Owner changed;
         OnOwnerChanged();
 
@@ -131,7 +122,14 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
         if (!IsLocal)
-            m_RpcBuffer.Recieve(RecieveRPCRemotely);
+        {
+            m_PersistentRPCBuffer.Recieve(RecieveRPCRemotely);
+            m_TemporalRPCBuffer.Recieve(RecieveRPCRemotely);
+        }
+
+        //Force obect to send itself after creation.
+        //Is local check inside this method.
+        //ForceSerializeIfLocal();
 
         return this;
     }
@@ -152,13 +150,13 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// Other client connected and loaded game scene, set all component as dirty to send valid object state to other clients.
     /// </summary>
-    public void OnBecomesReady(ClientUID peerId)
+    /*public void OnBecomesReady(ClientUID peerId)
     {
         if (!IsLocal)
             return;
 
         ForceSerializeIfLocal();
-    }
+    }*/
 
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
@@ -224,8 +222,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!IsLocal)
             return;
 
-        //Set RPC Buffer dirty;
-        m_RpcBuffer.SetDirty();
+        //Set RPC Buffers dirty;
+        m_PersistentRPCBuffer.SetDirty();
+        m_TemporalRPCBuffer.SetDirty();
 
         //Set components dirty;
         foreach (var o in m_Observables)
@@ -238,15 +237,22 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!Initialized || !IsLocal)
             return;
 
-        if (Time.fixedUnscaledTime < m_NextUpdateEventTime)
-            return;
+        /*if (Time.fixedUnscaledTime < m_NextUpdateEventTime)
+            return;*/
 
         //Update all behaviours;
         UpdateBehaviours();
+    }
 
+    public byte[] Serialize()
+    {
         //Serialize object if it becomes dirty;
-        if (IsDirty)
-            TrySerializeAndSendGameObject(m_DeliveryIntent);
+        if (m_ObjectWriter == null)
+            m_ObjectWriter = new NetWriter();
+
+        SerializeTo(m_ObjectWriter);
+
+        return m_ObjectWriter.ToArray();
     }
 
     void UpdateBehaviours()
@@ -255,7 +261,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             b.OnUpdate();
     }
 
-    void ForceSerializeIfLocal()
+    /*void ForceSerializeIfLocal()
     {
         if (!IsLocal)
             return;
@@ -268,9 +274,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
 
         //Force serialization;
         TrySerializeAndSendGameObject(DeliveryIntent.Reliable, true);
-    }
+    }*/
 
-    void TrySerializeAndSendGameObject(DeliveryIntent deliveryIntent, bool initializable = false)
+    /*void TrySerializeAndSendGameObject(DeliveryIntent deliveryIntent, bool initializable = false)
     {
         if (!IsLocal)
             throw new Exception("Trying to serialize remote player object, this is not allowed");
@@ -278,15 +284,10 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!Initialized)
             throw new Exception("Trying to serialize object that not initialized, this is not allowed");
 
-        if (m_ObjectWriter == null)
-            m_ObjectWriter = new NetWriter();
+        
 
-        SerializeTo(m_ObjectWriter);
-
-        SendGameObjectState(m_ObjectWriter.ToArray(), initializable, deliveryIntent);
-
-        m_NextUpdateEventTime = Time.fixedUnscaledTime + m_UpdateRate;
-    }
+        //m_NextUpdateEventTime = Time.fixedUnscaledTime + m_UpdateRate;
+    }*/
 
     void SerializeTo(NetWriter writer)
     {
@@ -294,7 +295,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             throw new ArgumentNullException(nameof(writer));
 
         writer.SeekZero();
-        m_RpcBuffer.Serialize(writer);
+        m_PersistentRPCBuffer.Serialize(writer);
+        m_TemporalRPCBuffer.Serialize(writer);
 
         foreach (var b in m_Observables)
             b.Serialize(writer);
@@ -347,11 +349,16 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             m_ObjectReader = new NetReader();
         m_ObjectReader.Replace(data);
 
-        //Buffered rpc
-        m_RpcBuffer.Deserialize(m_ObjectReader, firstTime);
+        //RPC
+        m_PersistentRPCBuffer.Deserialize(m_ObjectReader, firstTime);
+        m_TemporalRPCBuffer.Deserialize(m_ObjectReader, firstTime);
 
         foreach (var b in m_Observables)
             b.Deserialize(m_ObjectReader, firstTime);
+
+        //Recieve rpc buffer if object initialized;
+        if(Initialized)
+            m_TemporalRPCBuffer.Recieve(RecieveRPCRemotely);
 
         return this;
     }
@@ -380,23 +387,13 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void OwnerToOthersRPC(
-        Action<byte[]> rpcHandlerMethod,
-        byte[] data,
-        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable,
-        bool invokeLocaly = true)
-    {
+    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true) =>
         OwnerToOthersRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent, invokeLocaly);
-    }
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void OwnerToOthersRPC(
-        string rpcCode,
-        byte[] data, 
-        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, 
-        bool invokeLocaly = true)
+    void OwnerToOthersRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
@@ -405,45 +402,31 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         OwnerToOthersRPC(hashCode, data, deliveryIntent, invokeLocaly);
     }
 
-    void OwnerToOthersRPC(
-        int hashCode,
-        byte[] data,
-        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable,
-        bool invokeLocaly = true)
+    void OwnerToOthersRPC(int hashCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
-        //Invoke handler locally.
+        //Try invoke handler locally.
         if (invokeLocaly)
             InvokeRpcHandler(hashCode, data);
 
-        //Send ot others.
-        m_InternalNetwork.RPC(RPCType.OwnerToOthers, InstanceId, hashCode, data, deliveryIntent);
+        //Add to sending buffeR;
+        m_TemporalRPCBuffer.AddOrUpdate(hashCode, data, RPCBufferChnageMethod.Add);
     }
 
     /// <summary>
     /// Same as AuthRPC, but buffered.
     /// Only works via RELIABLE delivery.
     /// </summary>
-    public void OwnerToOthersRPCBuffered(
-        Action<byte[]> rpcHandlerMethod,
-        byte[] data,
-        BufferedRPCType rpcType = BufferedRPCType.Replace,
-        bool invokeLocaly = true)
-    {
+    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RPCBufferChnageMethod rpcType = RPCBufferChnageMethod.Replace, bool invokeLocaly = true) =>
         OwnerToOthersRPCBuffered(RPCUtils.ActionToString(rpcHandlerMethod), data, rpcType, invokeLocaly);
-    }
 
     /// <summary>
     /// Same as AuthRPC, but buffered.
     /// Only works via RELIABLE delivery.
     /// </summary>
-    public void OwnerToOthersRPCBuffered(
-        string rpcCode,
-        byte[] data, 
-        BufferedRPCType rpcType = BufferedRPCType.Replace,
-        bool invokeLocaly = true)
+    void OwnerToOthersRPCBuffered(string rpcCode, byte[] data, RPCBufferChnageMethod rpcType = RPCBufferChnageMethod.Replace, bool invokeLocaly = true)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
 
@@ -451,26 +434,21 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         OwnerToOthersRPC(hashCode, data, DeliveryIntent.Reliable, invokeLocaly);
 
         //Add rpc to buffer, rpc buffer becomes dirty after this.
-        m_RpcBuffer.AddOrUpdate(hashCode, data, rpcType);
+        m_PersistentRPCBuffer.AddOrUpdate(hashCode, data, rpcType);
     }
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToOwnerRPC(
-        Action<byte[]> rpcHandlerMethod,
-        byte[] data,
-        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
-    {
+    public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
         ToOwnerRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent);
-    }
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
+    void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
         //If we have authority on this object, don't need to send this kind of RPC.
@@ -498,7 +476,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// Clear current rpc buffer and sets buffer dirty.
     /// </summary>
-    public void ClearRPCBuffer() => m_RpcBuffer.Clear();
+    public void ClearRPCBuffer() => m_PersistentRPCBuffer.Clear();
 
     /// <summary>
     /// Remove RPC from buffer
@@ -506,12 +484,11 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <param name="rpcHandlerMethod"></param>
     public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => RemoveRPCFromBuffer(RPCUtils.ActionToString(rpcHandlerMethod));
 
-    public void RemoveRPCFromBuffer(string rpcCode) => m_RpcBuffer.Remove(RPCUtils.NameToHash(rpcCode));
+    public void RemoveRPCFromBuffer(string rpcCode) => m_PersistentRPCBuffer.Remove(RPCUtils.NameToHash(rpcCode));
 
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCRemotely(int hashCode, byte[] data) => RecieveRPCRemotely(hashCode, data);
     void RecieveRPCRemotely(int hashCode, byte[] data)
     {
         if (IsLocal)
@@ -551,9 +528,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         else
             Debug.LogErrorFormat("Handler for RPC with hash {0} doesn't registred on object {1}", hashCode, gameObject.name);
     }
-
-    void SendGameObjectState(byte[] payload, bool initializable, DeliveryIntent deliveryIntent) => 
-        m_InternalNetwork.SendGameObjectStateToOthers(InstanceId, PrefabId, IsSceneObject, payload, initializable, deliveryIntent);
 
     public void DestroyViaNetwork()
     {

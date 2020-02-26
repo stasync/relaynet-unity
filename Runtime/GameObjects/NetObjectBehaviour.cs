@@ -70,25 +70,8 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// </summary>
     /// <param name="rpcCode"></param>
     /// <param name="data"></param>
-    public void OwnerToOthersRPC(
-        Action<byte[]> rpcHandlerMethod,
-        byte[] data,
-        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable,
-        bool invokeLocally = true) =>
-                Identity.OwnerToOthersRPC(rpcHandlerMethod, data, deliveryIntent, invokeLocally);
-
-    /// <summary>
-    /// RPC, invokes locally and sends to ALL clients, who HAS NOT AUTHORITY on this object.
-    /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="data"></param>
-    public void OwnerToOthersRPC(
-        string rpcCode,
-        byte[] data,
-        DeliveryIntent deliveryIntent = DeliveryIntent.Reliable,
-        bool invokeLocally = true) =>
-                Identity.OwnerToOthersRPC(rpcCode, data, deliveryIntent, invokeLocally);
-
+    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocally = true) =>
+        Identity.OwnerToOthersRPC(rpcHandlerMethod, data, deliveryIntent, invokeLocally);
 
     /// <summary>
     /// Same as OwnerToOthersRPC, but buffered.
@@ -99,14 +82,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
         Identity.OwnerToOthersRPCBuffered(rpcHandlerMethod, data);
 
     /// <summary>
-    /// Same as OwnerToOthersRPC, but buffered.
-    /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="data"></param>
-    public void OwnerToOthersRPCBuffered(string rpcCode, byte[] data) =>
-        Identity.OwnerToOthersRPCBuffered(rpcCode, data);
-
-    /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
@@ -114,15 +89,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// <param name="data"></param>
     public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
         Identity.ToOwnerRPC(rpcHandlerMethod, data, deliveryIntent);
-
-    /// <summary>
-    /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
-    /// IF we have authority, just invokes locally without sending data.
-    /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="data"></param>
-    public void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
-        Identity.ToOwnerRPC(rpcCode, data, deliveryIntent);
 
     /// <summary>
     /// RPC variation, sends RPC to MASTER client.

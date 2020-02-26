@@ -2,15 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
 public class NetWorld : IJSONSerializable
 {
     public NetWorldUID UID { get; private set; }
 
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
+    public IEnumerable<NetObjectIdentity> ObjectsCollection => Objects.Values;
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> Objects => m_Objects;
     Dictionary<NetObjectUID, NetObjectIdentity> m_Objects;
+    HashSet<NetObjectUID> m_RemoteInitializationQueue;
+    Queue<Action> m_UpdateActionQueue;
 
     NetWorldView m_WorldView;
     INetwork m_InternalNetwork;
@@ -24,14 +26,16 @@ public class NetWorld : IJSONSerializable
         if (m_WorldView != null)
             throw new InvalidOperationException($"{nameof(m_WorldView)} alreay created");
 
+        m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
+
         m_WorldView = new GameObject("NetworkWorldRoot")
             .AddComponent<NetWorldView>();
-
         UnityEngine.Object.DontDestroyOnLoad(m_WorldView.gameObject);
 
-        m_InternalNetwork = network;
         m_ObjectFactory = new NetObjectFactory();
         m_Objects = new Dictionary<NetObjectUID, NetObjectIdentity>();
+        m_RemoteInitializationQueue = new HashSet<NetObjectUID>();
+        m_UpdateActionQueue = new Queue<Action>();
 
         UID = NetWorldUID.Allocate();
     }
@@ -44,12 +48,42 @@ public class NetWorld : IJSONSerializable
 
         m_LastUpdateTime = Time.fixedUnscaledTime;
         m_WorldView.OnUpdate(worldDelta);
-        foreach(var kvp in m_Objects)
+
+        //Execute commands;
+        while (m_UpdateActionQueue.Count > 0)
+            m_UpdateActionQueue.Dequeue()();
+
+        //Update objects;
+        var keys = m_Objects.Keys.ToArray(); // Copy to iterate;
+        foreach (var key in keys)
         {
-            var obj = kvp.Value;
-            obj.OnUpdate(worldDelta);
+            var netObject = m_Objects[key];
+            if (!netObject.IsLocal) //Skip remote objects;
+                continue;
+
+            netObject.OnUpdate(worldDelta);
+
+            var deliveryIntent = DeliveryIntent.Unreliable;
+            var requireRemoteInit = m_RemoteInitializationQueue.Remove(netObject.InstanceId);
+            if (requireRemoteInit)
+            {
+                deliveryIntent = DeliveryIntent.Reliable;
+                netObject.SetDirtyIfLocal();
+            }
+
+            if(netObject.IsDirty)
+                m_InternalNetwork.SendGameObjectStateToOthers(
+                    netObject.InstanceId, 
+                    netObject.PrefabId, 
+                    netObject.IsSceneObject, netObject.Serialize(), 
+                    requireRemoteInit, 
+                    deliveryIntent);
         }
+
+        m_RemoteInitializationQueue.Clear();
     }
+
+    public void ScheduleOnUpdate(Action a) => m_UpdateActionQueue.Enqueue(a);
 
     /// <summary>
     /// Destroy all network objects and cleanup scene.
@@ -60,6 +94,12 @@ public class NetWorld : IJSONSerializable
 
         m_Objects.Clear();
         m_Objects = null;
+
+        m_RemoteInitializationQueue.Clear();
+        m_RemoteInitializationQueue = null;
+
+        m_UpdateActionQueue.Clear();
+        m_UpdateActionQueue = null;
 
         UnityEngine.Object.Destroy(m_WorldView); //Destroy all net object;
         m_WorldView = null;
@@ -75,14 +115,29 @@ public class NetWorld : IJSONSerializable
                 o.SetDirtyIfLocal();
     }
 
+    void ScheduleRemoteInitForLocalObject(NetObjectIdentity netObject)
+    {
+        if (netObject == null)
+            throw new ArgumentNullException(nameof(netObject));
+
+        if (!netObject.IsLocal)
+            return;
+
+        if (!m_Objects.ContainsKey(netObject.InstanceId))
+            Debug.LogError($"Instance with id {netObject.InstanceId} doesn't presented in network world");
+
+        if (!m_RemoteInitializationQueue.Add(netObject.InstanceId))
+            Debug.LogError($"Initialization update for object {netObject.InstanceId} already scheduled");
+    }
+
     /// <summary>
-    /// Someone connected and loaded game scene.
+    /// Someone connected and loaded game scene, schedule local objects for reliable update update;
     /// </summary>
     /// <param name="peerId"></param>
     public void OnBecomesReady(ClientUID peerId)
     {
-        foreach (var o in m_Objects.Values.Where(o => o != null))
-            o.OnBecomesReady(peerId);
+        foreach(var obj in ObjectsCollection)
+            ScheduleRemoteInitForLocalObject(obj);
     }
 
     /// <summary>
@@ -102,16 +157,15 @@ public class NetWorld : IJSONSerializable
     /// <param name="peerId"></param>
     public void DestroyPlayerObjects(ClientUID peerId)
     {
-        var objects = m_Objects
-            .Where(kvp => kvp.Value == null || (kvp.Value.Owner == null || kvp.Value.Owner.ConnectionUID == peerId) && !kvp.Value.IsSceneObject)
-            .ToArray();//Copy to iterate
-
-        foreach (var o in objects)
+        var keys = m_Objects.Keys.ToArray(); //Copy to iterate
+        foreach (var k in keys)
         {
-            var obj = m_Objects[o.Key];
-            if (obj != null)
+            var obj = m_Objects[k];
+            if(obj == null || (obj.Owner == null || obj.Owner.ConnectionUID == peerId) && !obj.IsSceneObject)
+            {
                 UnityEngine.Object.Destroy(obj.gameObject);
-            m_Objects.Remove(o.Key);
+                m_Objects.Remove(k);
+            }
         }
     }
 
@@ -122,15 +176,15 @@ public class NetWorld : IJSONSerializable
     /// <param name="instanceId"></param>
     public void DestroyObject(ClientUID peerId, NetObjectUID instanceId)
     {
-        if (!m_Objects.ContainsKey(instanceId))
-            throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());
-
         if (m_Objects.TryGetValue(instanceId, out NetObjectIdentity objectToDelete))
         {
             if (objectToDelete.Owner.ConnectionUID != peerId)
                 throw new Exception("Owner exception: Remote peer id: " + peerId + " Local object peer id: " + objectToDelete.Owner.ConnectionUID);
             UnityEngine.Object.Destroy(objectToDelete.gameObject);
         }
+        else
+            throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());
+
         m_Objects.Remove(instanceId);
     }
 
@@ -249,7 +303,11 @@ public class NetWorld : IJSONSerializable
 
     NetObjectIdentity InitializeIdentity(NetObjectIdentity identity, ObjectCreateUpdateSnapshot snapshot, INetRTPlayer owner, INetwork transport, object[] additionalData)
     {
+        //Put to world view;
+        UnityEngine.Object.DontDestroyOnLoad(identity.gameObject);
         identity.transform.SetParent(m_WorldView.transform);
+
+        //Init;
         identity.Initialze(
                     snapshot.PrefabId,
                     snapshot.IsSceneObject,
@@ -258,6 +316,9 @@ public class NetWorld : IJSONSerializable
                     transport,
                     snapshot.Data, 
                     additionalData);
+
+        //Try schedule remote init;
+        ScheduleRemoteInitForLocalObject(identity);
 
         NewObjectInitialized(identity);
         return identity;

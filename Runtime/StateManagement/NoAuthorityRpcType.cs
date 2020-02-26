@@ -3,7 +3,6 @@
 /// </summary>
 public enum RPCType : byte
 {
-    OwnerToOthers = 0,
-    ToOwner = 1, 
-    ToMaster = 2,
+    ToOwner = 0, 
+    ToMaster = 1,
 }
