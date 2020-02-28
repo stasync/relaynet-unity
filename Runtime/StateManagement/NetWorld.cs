@@ -2,17 +2,134 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+
+public class WorldPlayersCollection
+{
+    ClientUID m_LocalPlayerUID;
+    ClientUID m_MasterClientUID;
+
+    public IEnumerable<ClientUID> PlayerUIDs => m_PlayersCollection.Keys;
+
+    Dictionary<ClientUID, WorldPlayer> m_PlayersCollection;
+
+    Queue<Action> m_UpdateQueue;
+
+    public WorldPlayer LocalPlayer => Find(m_LocalPlayerUID);
+    public WorldPlayer MasterPlayer => Find(m_MasterClientUID);
+    public WorldPlayer Find(ClientUID uid) => m_PlayersCollection.TryGetValue(uid, out var player) ? player : null;
+    public bool Contains(ClientUID uid) => m_PlayersCollection.ContainsKey(uid);
+
+    public WorldPlayersCollection()
+    {
+        m_LocalPlayerUID = ClientUID.Invalid;
+        m_PlayersCollection = new Dictionary<ClientUID, WorldPlayer>();
+        m_UpdateQueue = new Queue<Action>();
+    }
+
+    public void Register(ClientUID uid, string name, bool isLocal) =>
+        ScheduleOnUpdate(() =>
+        {
+            if (isLocal)
+                m_LocalPlayerUID = uid;
+
+            if (m_PlayersCollection.ContainsKey(uid))
+                throw new InvalidOperationException();
+
+            m_PlayersCollection.Add(uid, new WorldPlayer(uid, name, () => m_LocalPlayerUID, () => m_MasterClientUID));
+        });
+
+    public void Unregister(ClientUID uid) =>
+        ScheduleOnUpdate(() =>
+        {
+            if (m_LocalPlayerUID == uid)
+                m_LocalPlayerUID = ClientUID.Invalid;
+
+            m_PlayersCollection.Remove(uid);
+        });
+
+    void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
+
+    public void Udpate()
+    {
+        while (m_UpdateQueue.Count > 0)
+            m_UpdateQueue.Dequeue()();
+
+        m_MasterClientUID = PlayerUIDs.Any() ? PlayerUIDs.Min() : ClientUID.Invalid;
+    }
+
+    public void Clear()
+    {
+        m_LocalPlayerUID = ClientUID.Invalid;
+
+        m_PlayersCollection.Clear();
+        m_PlayersCollection = null;
+
+        m_UpdateQueue.Clear();
+        m_UpdateQueue = null;
+    }
+}
+
+public class WorldPlayer
+{
+    public readonly ClientUID UID;
+    public readonly string Name;
+    public bool IsLocal => UID == m_LocalPlayer();
+    public bool IsMaster => UID == m_MasterPlayer();
+
+    readonly Func<ClientUID> m_LocalPlayer;
+    readonly Func<ClientUID> m_MasterPlayer;
+
+    public WorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayer, Func<ClientUID> masterPlayer)
+    {
+        UID = uid;
+        Name = name;
+        m_LocalPlayer = localPlayer;
+        m_MasterPlayer = masterPlayer;
+    }
+}
+
+public struct WorldSnapshot 
+{
+    public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> Objects => m_ObjectStates;
+    readonly Dictionary<NetObjectUID, ObjectUpdateSnapshot> m_ObjectStates;
+
+    // TODO: World players;
+
+    public WorldSnapshot(Dictionary<NetObjectUID, ObjectUpdateSnapshot> objects)
+    {
+        m_ObjectStates = objects;
+    }
+
+    public static WorldSnapshot FromWorld(NetWorld world)
+    {
+        var objects = new Dictionary<NetObjectUID, ObjectUpdateSnapshot>();
+        foreach (var kvp in world.ObjectStates)
+            objects.Add(kvp.Key, kvp.Value.ToSnapshot());
+
+        return new WorldSnapshot(objects);
+    }
+}
+
 public class NetWorld : IJSONSerializable
 {
     public NetWorldUID UID { get; private set; }
 
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
-    public IEnumerable<NetObjectIdentity> ObjectsCollection => Objects.Values;
-    public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> Objects => m_Objects;
-    Dictionary<NetObjectUID, NetObjectIdentity> m_Objects;
-    HashSet<NetObjectUID> m_RemoteInitializationQueue;
-    Queue<Action> m_UpdateActionQueue;
+    WorldPlayersCollection m_WorldPlayers;
+
+    public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> ObjectViews => m_CurrentObjectViews;
+    public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
+
+    //===
+    Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
+    Dictionary<NetObjectUID, NetObjectIdentity> m_CurrentObjectViews;
+
+    Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
+    Dictionary<NetObjectUID, NetObjectIdentity> m_PendingObjectViews;
+
+    Dictionary<NetObjectUID, ObjectUpdateSnapshot> m_RemoteObjectUpdateRequests;
+    //===
 
     NetWorldView m_WorldView;
     INetwork m_InternalNetwork;
@@ -21,23 +138,59 @@ public class NetWorld : IJSONSerializable
 
     const float m_MinUpdateInteraval = 0.1f; //10 times per second;
 
-    public NetWorld(INetwork network)
+    public NetWorld(INetwork network, string worldName = "NetworkWorldRoot")
     {
         if (m_WorldView != null)
             throw new InvalidOperationException($"{nameof(m_WorldView)} alreay created");
 
         m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
 
-        m_WorldView = new GameObject("NetworkWorldRoot")
+        UID = NetWorldUID.Allocate();
+
+        m_WorldView = new GameObject($"{UID}:{worldName}")
             .AddComponent<NetWorldView>();
+
         UnityEngine.Object.DontDestroyOnLoad(m_WorldView.gameObject);
 
-        m_ObjectFactory = new NetObjectFactory();
-        m_Objects = new Dictionary<NetObjectUID, NetObjectIdentity>();
-        m_RemoteInitializationQueue = new HashSet<NetObjectUID>();
-        m_UpdateActionQueue = new Queue<Action>();
+        m_WorldPlayers = new WorldPlayersCollection();
 
-        UID = NetWorldUID.Allocate();
+        m_ObjectFactory = new NetObjectFactory();
+
+        /// Must be cleaned, when player disconnects;
+        {
+            m_CurrentObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
+            m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
+
+            m_RemoteObjectUpdateRequests = new Dictionary<NetObjectUID, ObjectUpdateSnapshot>();
+
+            m_ObjectsRegisterRequests = new Dictionary<NetObjectUID, NetObjectState>();
+            m_PendingObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
+        }
+    }
+
+    void RemoveFromDictionary<T>(NetObjectUID uid, Dictionary<NetObjectUID, T> dictionary, Action<T> valueProcessor = null)
+    {
+        if (!dictionary.TryGetValue(uid, out var val))
+            return;
+
+        dictionary.Remove(uid);
+        valueProcessor?.Invoke(val);
+    }
+
+    public WorldSnapshot ToSnapshot() => WorldSnapshot.FromWorld(this);
+
+    public void ScheduleUpdateForRemoteObject(NetObjectUID UID, ObjectUpdateSnapshot snapshot)
+    {
+        if (m_RemoteObjectUpdateRequests.ContainsKey(UID))
+        {
+            var current = m_RemoteObjectUpdateRequests[UID];
+            if (current.StateChangeType < snapshot.StateChangeType)
+                m_RemoteObjectUpdateRequests[UID] = snapshot;
+            else
+                Debug.LogError($"Unable to schedule update for remote object {snapshot.ObjectUID} {snapshot.PrefabId} with {snapshot.StateChangeType}, already scheduled update witht high priority");
+        }
+        else
+            m_RemoteObjectUpdateRequests.Add(UID, snapshot);
     }
 
     public void TryUpdate(float deltaTime)
@@ -47,43 +200,206 @@ public class NetWorld : IJSONSerializable
             return;
 
         m_LastUpdateTime = Time.fixedUnscaledTime;
+
+        /// Loop
+        {
+            /// Update player collection;
+            m_WorldPlayers.Udpate();
+            /// Remove objects, if player disconnected;
+            UpdateRemovedPlyers();
+            /// Update remote object state data;
+            UpdateRemoteObjects();
+            /// Update local object data;
+            UpdateLocalObjects();
+            /// Save current;
+            RecordState(worldDelta);
+            /// Execulte;
+            ExecuteState();
+        }
+        //This is not used at now;
         m_WorldView.OnUpdate(worldDelta);
 
-        //Execute commands;
-        while (m_UpdateActionQueue.Count > 0)
-            m_UpdateActionQueue.Dequeue()();
-
-        //Update objects;
-        var keys = m_Objects.Keys.ToArray(); // Copy to iterate;
-        foreach (var key in keys)
+        #region INTERNAL
+        void UpdateRemovedPlyers()
         {
-            var netObject = m_Objects[key];
-            if (!netObject.IsLocal) //Skip remote objects;
-                continue;
-
-            netObject.OnUpdate(worldDelta);
-
-            var deliveryIntent = DeliveryIntent.Unreliable;
-            var requireRemoteInit = m_RemoteInitializationQueue.Remove(netObject.InstanceId);
-            if (requireRemoteInit)
+            foreach (var UID in m_CurrentObjectStates.Keys.ToArray())
             {
-                deliveryIntent = DeliveryIntent.Reliable;
-                netObject.SetDirtyIfLocal();
-            }
+                var state = m_CurrentObjectStates[UID];
 
-            if(netObject.IsDirty)
-                m_InternalNetwork.SendGameObjectStateToOthers(
-                    netObject.InstanceId, 
-                    netObject.PrefabId, 
-                    netObject.IsSceneObject, netObject.Serialize(), 
-                    requireRemoteInit, 
-                    deliveryIntent);
+                if (!m_WorldPlayers.Contains(state.OwnerUID) && !state.IsSceneObject)
+                {
+                    m_CurrentObjectStates.Remove(UID);
+
+                    RemoveFromDictionary(UID, m_CurrentObjectViews, v => UnityEngine.Object.Destroy(v.gameObject));
+                    RemoveFromDictionary(UID, m_PendingObjectViews, v => UnityEngine.Object.Destroy(v.gameObject));
+                    RemoveFromDictionary(UID, m_ObjectsRegisterRequests);
+                    RemoveFromDictionary(UID, m_RemoteObjectUpdateRequests);
+                }
+                else
+                {
+                    if (m_CurrentObjectViews.TryGetValue(UID, out var view))
+                        view.OnDisconnected(state.OwnerUID);
+                }
+            }
         }
 
-        m_RemoteInitializationQueue.Clear();
-    }
+        void UpdateRemoteObjects()
+        {
+            foreach (var UID in m_RemoteObjectUpdateRequests.Keys.ToArray())
+            {
+                var snapshot = m_RemoteObjectUpdateRequests[UID];
 
-    public void ScheduleOnUpdate(Action a) => m_UpdateActionQueue.Enqueue(a);
+                if (!snapshot.ObjectUID.IsValid || string.IsNullOrWhiteSpace(snapshot.PrefabId) || snapshot.Data == null)
+                    throw new InvalidOperationException();
+
+                /// Update existed;
+                if (m_CurrentObjectStates.TryGetValue(snapshot.ObjectUID, out var objState))
+                {
+                    objState.ChangeObjectRemotely(snapshot);
+                    m_RemoteObjectUpdateRequests.Remove(UID);
+                }
+                /// Add new or get pending;
+                else
+                {
+                    if (snapshot.StateChangeType != ObjectStateChangeRequestType.InitializationUpdate)
+                        continue;
+
+                    if (m_ObjectsRegisterRequests.TryGetValue(snapshot.ObjectUID, out var newState) && newState.IsOwnerBy(snapshot.Owner))
+                    {
+                        newState.ChangeObjectRemotely(snapshot);
+                        m_CurrentObjectStates.Add(snapshot.ObjectUID, newState);
+
+                        m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
+                    }
+                    else
+                        newState = new NetObjectState(snapshot, m_WorldPlayers.Find);
+
+                    m_CurrentObjectStates.Add(snapshot.ObjectUID, newState);
+                    m_RemoteObjectUpdateRequests.Remove(UID);
+                }
+            }
+        }
+
+        void UpdateLocalObjects()
+        {
+            /// Register new objects, that was created localy;
+            {
+                //Register new local object, that was just created;
+                foreach (var UID in m_ObjectsRegisterRequests.Keys.ToArray())
+                {
+                    var state = m_ObjectsRegisterRequests[UID];
+                    //Skip remote objects;
+                    if (!state.IsOwnerByLocalPlayer)
+                        continue;
+
+                    if (m_CurrentObjectStates.ContainsKey(state.UID))
+                        Debug.LogError($"Object with UID {state.UID} already exists");
+                    else
+                    {
+                        state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
+                        m_CurrentObjectStates.Add(state.UID, state);
+                    }
+
+                    m_ObjectsRegisterRequests.Remove(UID);
+                }
+            }
+
+            //Update local objects;
+            foreach (var netObject in m_CurrentObjectStates.Values)
+            {
+                if (!netObject.IsOwnerByLocalPlayer)
+                    continue;
+
+                if (!m_CurrentObjectViews.TryGetValue(netObject.UID, out var netObjectView))
+                {
+                    //Try add pending view;
+                    if (m_PendingObjectViews.TryGetValue(netObject.UID, out netObjectView))
+                        m_CurrentObjectViews.Add(netObject.UID, netObjectView);
+                    else
+                    {
+                        Debug.LogError($"Unable to find view for object with UID {netObject.UID}");
+                        continue;
+                    }
+                }
+
+                var deliveryIntent = DeliveryIntent.Unreliable;
+                if (netObjectView.State.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
+                {
+                    deliveryIntent = DeliveryIntent.Reliable;
+                    if (netObjectView.State.StateChangeType == ObjectStateChangeRequestType.InitializationUpdate)
+                        netObjectView.SetDirtyIfLocal();
+                }
+                netObjectView.OnUpdate(worldDelta);
+
+                if (netObjectView.IsDirty)
+                    m_InternalNetwork.SendGameObjectStateMessage(netObject.Data, deliveryIntent);
+            }
+        }
+
+        void RecordState(float delta)
+        {
+        }
+
+        void ExecuteState()
+        {
+            //Update objects;
+            var UIDs = m_CurrentObjectStates.Keys.ToArray(); // Copy to iterate;
+            foreach (var UID in UIDs)
+            {
+                var state = m_CurrentObjectStates[UID];
+
+                //Try get or create new state view;
+                if (!m_CurrentObjectViews.TryGetValue(UID, out var netObjectView))
+                {
+                    if (m_PendingObjectViews.TryGetValue(UID, out netObjectView))
+                    {
+                        m_PendingObjectViews.Remove(UID);
+                        m_CurrentObjectViews.Add(UID, netObjectView);
+                    }
+                    else
+                    {
+                        netObjectView = m_ObjectFactory.Create(state.PrefabId, Vector3.zero, Quaternion.identity);
+                        m_CurrentObjectViews.Add(UID, netObjectView);
+                    }
+                }
+
+                //Remove state if need;
+                if (state.StateChangeType == ObjectStateChangeRequestType.RemoveUpdate)
+                {
+                    m_CurrentObjectStates.Remove(UID);
+                    m_CurrentObjectViews.Remove(UID);
+
+                    if (netObjectView != null)
+                        UnityEngine.Object.Destroy(netObjectView.gameObject);
+                }
+                else
+                {
+                    //Initialize new view;
+                    if (netObjectView.Initialized)
+                    {
+                        if (!state.IsOwnerByLocalPlayer)
+                            netObjectView.Deserialize(state.Data, false, false);
+                    }
+                    else
+                        InitializeIdentity(netObjectView, state, m_InternalNetwork, null);
+
+                    //Executed;
+                    state.OnExecuted();
+
+                    //Report to player;
+                    var senderPlayer = m_InternalNetwork.FindPlayer(state.OwnerUID);
+                    if (senderPlayer == null)
+                    {
+                        Debug.LogError($"Unable to update object state for player with UID {state.OwnerUID}. Player doesn't exists");
+                        continue;
+                    }
+
+                    senderPlayer.OnObjectCreateUpdate(netObjectView);
+                }
+            }
+        }
+        #endregion
+    }
 
     /// <summary>
     /// Destroy all network objects and cleanup scene.
@@ -92,14 +408,23 @@ public class NetWorld : IJSONSerializable
     {
         NewObjectInitialized = null;
 
-        m_Objects.Clear();
-        m_Objects = null;
+        m_WorldPlayers.Clear();
+        m_WorldPlayers = null;
 
-        m_RemoteInitializationQueue.Clear();
-        m_RemoteInitializationQueue = null;
+        m_CurrentObjectViews.Clear();
+        m_CurrentObjectViews = null;
 
-        m_UpdateActionQueue.Clear();
-        m_UpdateActionQueue = null;
+        m_CurrentObjectStates.Clear();
+        m_CurrentObjectStates = null;
+
+        m_RemoteObjectUpdateRequests.Clear();
+        m_RemoteObjectUpdateRequests = null;
+
+        m_ObjectsRegisterRequests.Clear();
+        m_ObjectsRegisterRequests = null;
+
+        m_PendingObjectViews.Clear();
+        m_PendingObjectViews = null;
 
         UnityEngine.Object.Destroy(m_WorldView); //Destroy all net object;
         m_WorldView = null;
@@ -108,84 +433,26 @@ public class NetWorld : IJSONSerializable
         m_ObjectFactory = null;
     }
 
-    public void SetLocalObjectsDirty()
-    {
-        foreach (var o in m_Objects.Values)
-            if (o != null && o.IsLocal)
-                o.SetDirtyIfLocal();
-    }
-
-    void ScheduleRemoteInitForLocalObject(NetObjectIdentity netObject)
-    {
-        if (netObject == null)
-            throw new ArgumentNullException(nameof(netObject));
-
-        if (!netObject.IsLocal)
-            return;
-
-        if (!m_Objects.ContainsKey(netObject.InstanceId))
-            Debug.LogError($"Instance with id {netObject.InstanceId} doesn't presented in network world");
-
-        if (!m_RemoteInitializationQueue.Add(netObject.InstanceId))
-            Debug.LogError($"Initialization update for object {netObject.InstanceId} already scheduled");
-    }
+    public void OnPlayerBecomesReady(INetRTPlayer player, bool isLocal) =>
+        m_WorldPlayers.Register(player.UID, player.Name, isLocal);
 
     /// <summary>
     /// Someone connected and loaded game scene, schedule local objects for reliable update update;
     /// </summary>
     /// <param name="peerId"></param>
-    public void OnBecomesReady(ClientUID peerId)
+    public void OnRemotePlayerLoadedGameScene(ClientUID peerId)
     {
-        foreach(var obj in ObjectsCollection)
-            ScheduleRemoteInitForLocalObject(obj);
+        foreach (var obj in m_CurrentObjectViews.Values)
+            obj.OnBecomesReady(peerId);
     }
 
     /// <summary>
     /// Someone disconnected.
     /// </summary>
-    /// <param name="peerId"></param>
-    public void OnDisconnect(ClientUID peerId)
+    /// <param name="uid"></param>
+    public void OnDisconnect(ClientUID uid)
     {
-        DestroyPlayerObjects(peerId);
-        foreach (var o in m_Objects.Values.Where(o => o != null))
-            o.OnDisconnected(peerId);
-    }
-
-    /// <summary>
-    /// Removes all ojects (except scene objects), owned by disconnected player, cleanup null references.
-    /// </summary>
-    /// <param name="peerId"></param>
-    public void DestroyPlayerObjects(ClientUID peerId)
-    {
-        var keys = m_Objects.Keys.ToArray(); //Copy to iterate
-        foreach (var k in keys)
-        {
-            var obj = m_Objects[k];
-            if(obj == null || (obj.Owner == null || obj.Owner.ConnectionUID == peerId) && !obj.IsSceneObject)
-            {
-                UnityEngine.Object.Destroy(obj.gameObject);
-                m_Objects.Remove(k);
-            }
-        }
-    }
-
-    /// <summary>
-    /// When anybody destroys object, this will be called on other clients.
-    /// </summary>
-    /// <param name="peerId"></param>
-    /// <param name="instanceId"></param>
-    public void DestroyObject(ClientUID peerId, NetObjectUID instanceId)
-    {
-        if (m_Objects.TryGetValue(instanceId, out NetObjectIdentity objectToDelete))
-        {
-            if (objectToDelete.Owner.ConnectionUID != peerId)
-                throw new Exception("Owner exception: Remote peer id: " + peerId + " Local object peer id: " + objectToDelete.Owner.ConnectionUID);
-            UnityEngine.Object.Destroy(objectToDelete.gameObject);
-        }
-        else
-            throw new Exception("Trying to delet object that not exists. Object id: " + instanceId.ToString());
-
-        m_Objects.Remove(instanceId);
+        m_WorldPlayers.Unregister(uid);
     }
 
     /// <summary>
@@ -198,76 +465,18 @@ public class NetWorld : IJSONSerializable
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public NetObjectIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData) =>
-            CreateObjectInternal(
-                ObjectCreateUpdateSnapshot.Create(owner.ConnectionUID, prefabId, isSceneObject, null),
-                owner,
-                position,
-                rotation, 
-                additionalData); //Null data and additional data is ok.
-
-    /// <summary>
-    /// Create object from remote client update, without position and rotation, but it can be stored in data.
-    /// Called by GSTransport to syncronize object.
-    /// We create object with zero position and roation. We expect, that position and rotation stored in 'baseData'.
-    /// </summary>
-    /// <param name="instanceId"></param>
-    /// <param name="owner"></param>
-    /// <param name="prefabId"></param>
-    /// <param name="baseData"></param>
-    /// <returns></returns>
-    public NetObjectIdentity CreateOrUpdateObject(ObjectCreateUpdateSnapshot snapshot, bool initializable, INetRTPlayer owner)
+    public NetObjectIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData)
     {
-        // Check if we dont have any created object with UID.
-        if (!m_Objects.TryGetValue(snapshot.ObjectUID, out NetObjectIdentity identity))
-            return initializable ?
-                CreateObjectInternal(snapshot, owner, Vector3.zero, Quaternion.identity, null) : 
-                null;
+        var uid = new NetObjectUID(owner.UID);
+        var state = new NetObjectState(uid, prefabId, isSceneObject, owner.UID, m_WorldPlayers.Find);
+        var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
 
-        // Check if identity not initialized yet.
-        // This is used for object, which placed in scene by default.
-        if (!identity.Initialized && initializable)
-            InitializeIdentity(
-                identity,
-                snapshot,
-                owner, 
-                m_InternalNetwork, 
-                null);
+        InitializeIdentity(netObjectView, state, m_InternalNetwork, additionalData);
 
-        return identity.Initialized ? 
-            identity.Deserialize(snapshot.Data, false, false) : 
-            null;    
-    }
+        m_ObjectsRegisterRequests.Add(uid, state);
+        m_PendingObjectViews.Add(uid, netObjectView);
 
-    /// <summary>
-    /// Internal object creation pipeline. Null baseData is ok.
-    /// </summary>
-    /// <param name="owner"></param>
-    /// <param name="instanceId"></param>
-    /// <param name="prefabId"></param>
-    /// <param name="position"></param>
-    /// <param name="rotation"></param>
-    /// <param name="baseData"></param>
-    /// <returns></returns>
-    NetObjectIdentity CreateObjectInternal(ObjectCreateUpdateSnapshot snapshot, INetRTPlayer owner, Vector3 position, Quaternion rotation, object[] additionalData)
-    {
-        if (owner == null)
-            throw new ArgumentNullException(nameof(owner));
-
-        if (m_Objects.ContainsKey(snapshot.ObjectUID))
-            throw new InvalidOperationException($"Object with id {snapshot.ObjectUID} already exists");
-
-        var identity = m_ObjectFactory.Create(snapshot.PrefabId, position, rotation);
-        m_Objects.Add(
-            snapshot.ObjectUID,
-            InitializeIdentity(
-                identity,
-                snapshot, 
-                owner, 
-                m_InternalNetwork, 
-                additionalData));
-
-        return identity;
+        return netObjectView;
     }
 
     /// <summary>
@@ -278,48 +487,45 @@ public class NetWorld : IJSONSerializable
     /// <param name="sceneIdentity"></param>
     public void TryRegisterOrInitializeSceneObjectIdentity(GSSceneObjectIdentity sceneIdentity)
     {
-        if (m_Objects.ContainsKey(sceneIdentity.SceneObjectId))
+        if (m_CurrentObjectStates.ContainsKey(sceneIdentity.SceneObjectId))
         {
 #if NETWORK_DEBUG
             Debug.LogErrorFormat("Trying to register scene identity {0}: but object with id {1} already registered",
                 sceneIdentity.gameObject.name,
                 sceneIdentity.SceneObjectId);
 #endif
+            return;
         }
-        else
-            m_Objects.Add(
-                sceneIdentity.SceneObjectId, 
-                sceneIdentity.Identity);
 
+        if (sceneIdentity.Identity.Initialized)
+            throw new InvalidOperationException($"{sceneIdentity.gameObject.name} alredy initialized");
+
+        //Create state from scen object identity;
         //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        if (!sceneIdentity.Identity.Initialized && m_InternalNetwork.IsMasterClient)
-            InitializeIdentity(
-                sceneIdentity.Identity, 
-                ObjectCreateUpdateSnapshot.Create(sceneIdentity.SceneObjectId, m_InternalNetwork.MasterClientConnection, "SceneObject", true, null),
-                m_InternalNetwork.MasterPlayer,
-                m_InternalNetwork,
-                null);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, "SceneObject", true, m_InternalNetwork.MasterClientConnection, m_WorldPlayers.Find);
+        
+        //Initialize immidiatlty on master client;
+        if (m_InternalNetwork.IsMasterClient)
+            InitializeIdentity(sceneIdentity.Identity, newState, m_InternalNetwork, null);
+
+        //Schedule state to be registerd;
+        m_ObjectsRegisterRequests.Add(newState.UID, newState);
+
+        //Add view to be used in future;
+        m_PendingObjectViews.Add(newState.UID, sceneIdentity.Identity);
     }
 
-    NetObjectIdentity InitializeIdentity(NetObjectIdentity identity, ObjectCreateUpdateSnapshot snapshot, INetRTPlayer owner, INetwork transport, object[] additionalData)
+    NetObjectIdentity InitializeIdentity(NetObjectIdentity identity, NetObjectState state, INetwork transport, object[] additionalData)
     {
+        if(identity.Initialized)
+            throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{state.UID} already initialized");
+
         //Put to world view;
         UnityEngine.Object.DontDestroyOnLoad(identity.gameObject);
         identity.transform.SetParent(m_WorldView.transform);
 
         //Init;
-        identity.Initialze(
-                    snapshot.PrefabId,
-                    snapshot.IsSceneObject,
-                    snapshot.ObjectUID,
-                    owner,
-                    transport,
-                    snapshot.Data, 
-                    additionalData);
-
-        //Try schedule remote init;
-        ScheduleRemoteInitForLocalObject(identity);
-
+        identity.Initialze(state, transport, this, additionalData);
         NewObjectInitialized(identity);
         return identity;
     }
@@ -331,27 +537,32 @@ public class NetWorld : IJSONSerializable
     /// <param name="instanceId"></param>
     /// <returns></returns>
     public NetObjectIdentity FindObject(NetObjectUID instanceId) =>
-        m_Objects.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
+        m_CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
 
     /// <summary>
     /// Get object before in was actually created by transport system.
     /// Note that this object will not be in valid state, until update happens.
     /// Use in only if its highly nessesery.
-    /// </summary>
-    /// <param name="owner"></param>
-    /// <param name="instanceId"></param>
-    /// <param name="prefabId"></param>
-    /// <param name="isSceneObject"></param>
-    /// <param name="position"></param>
-    /// <param name="rotation"></param>
-    /// <returns></returns>
     public NetObjectIdentity FindObjectOrCreateMock(INetRTPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
         var identity = FindObject(instanceId);
         return 
-            identity == null ? 
-            CreateObjectInternal(ObjectCreateUpdateSnapshot.Create(instanceId, owner.ConnectionUID, prefabId, isSceneObject, null), owner, position, rotation, null) : 
+            identity == null ?
+            CC() : 
             identity;
+
+        NetObjectIdentity CC()
+        {
+            var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.UID, m_WorldPlayers.Find);
+            var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
+
+            InitializeIdentity(netObjectView, state, m_InternalNetwork, null);
+
+            m_ObjectsRegisterRequests.Add(instanceId, state);
+            m_PendingObjectViews.Add(instanceId, netObjectView);
+
+            return netObjectView;
+        }
     }
 
     /// <summary>
@@ -381,7 +592,5 @@ public class NetWorld : IJSONSerializable
         }
     }
 
-    public IRPCReciever FindRpcReciever(NetObjectUID id) => FindObject(id);
-
-    public string ToJSONProperty() => RealtimeJSONUtils.ToJSONCollection(m_Objects.Values.Select(o => o.ToJSONProperty()).ToArray());
+    public string ToJSONProperty() => RealtimeJSONUtils.ToJSONCollection(m_CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray());
 }

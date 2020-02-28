@@ -5,10 +5,126 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-public enum RPCBufferChnageMethod
+public enum RPCBufferChnageMethod : byte
 {
     Replace, 
     Add,
+}
+
+public enum ObjectStateChangeRequestType : byte
+{
+    None,
+    UnreliableUpdate,
+    ReliableUpdate,
+    InitializationUpdate,
+    RemoveUpdate,
+}
+
+public class NetObjectState
+{
+    public event Action OnOwnerChanged = delegate { };
+
+    readonly Func<ClientUID, WorldPlayer> m_PlayerProvider;
+
+    #region SYNCRONIZED STATE
+    public readonly NetObjectUID UID;
+    public readonly string PrefabId;
+    public readonly bool IsSceneObject;
+    public ClientUID OwnerUID { get; private set; }
+    public ObjectStateChangeRequestType StateChangeType { get; private set; }
+    public byte[] Data { get; private set; }
+    #endregion
+
+    public bool IsOwnerByLocalPlayer => Owner.IsLocal;
+    public bool IsOwnedByMasterClient => Owner.IsMaster;
+
+    public bool IsOwnerBy(ClientUID uid) => OwnerUID == uid;
+
+    NetWriter m_Writer;
+
+    public WorldPlayer Owner => m_PlayerProvider(OwnerUID);
+
+    public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, WorldPlayer> playerProvier)
+    {
+        m_PlayerProvider = playerProvier;
+
+        UID = uid;
+        PrefabId = prefabId;
+        IsSceneObject = isSceneObject;
+        OwnerUID = owner;
+
+        StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
+        Data = new byte[] { };
+    }
+
+    public NetObjectState(ObjectUpdateSnapshot snapshot, Func<ClientUID, WorldPlayer> playerProvier) : 
+        this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.Owner, playerProvier) => ChangeObjectRemotely(snapshot);
+
+    public void ChangeObjectLocaly(byte[] data)
+    {
+        if (!IsOwnerByLocalPlayer)
+            throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
+
+        Data = data;
+    }
+
+    public void OnExecuted()
+    {
+        //Return object to regular UDP pipeline;
+        StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
+    }
+
+    public void ChangeObjectRemotely(ObjectUpdateSnapshot snapshot)
+    {
+        if (IsOwnerByLocalPlayer)
+            throw new InvalidOperationException($"Unable to restore local object with {UID}");
+
+        var previousOwner = OwnerUID;
+        OwnerUID = snapshot.Owner;
+        StateChangeType = snapshot.StateChangeType;
+        Data = snapshot.Data;
+
+        if (previousOwner != snapshot.Owner)
+            OnOwnerChanged();
+    }
+
+    public ObjectUpdateSnapshot ToSnapshot() => ObjectUpdateSnapshot.FormState(this);
+
+    public void ScheduleUpdate(ObjectStateChangeRequestType requestType)
+    {
+        if (!IsOwnerByLocalPlayer)
+            throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
+
+        if (StateChangeType > requestType)
+            Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
+        else
+            StateChangeType = requestType;
+    }
+
+    public void ScheduleOwnerChanged(ClientUID newOwner)
+    {
+        if(StateChangeType > ObjectStateChangeRequestType.ReliableUpdate)
+            Debug.LogError($"Unable to set request {ObjectStateChangeRequestType.ReliableUpdate} because it has less priority than current request {StateChangeType}");
+        else
+        {
+            StateChangeType = ObjectStateChangeRequestType.ReliableUpdate;
+            OwnerUID = newOwner;
+        }
+    }
+
+    public byte[] Serialize()
+    {
+        if (m_Writer == null)
+            m_Writer = new NetWriter();
+
+        m_Writer.WriteInstanceId(UID);
+        m_Writer.Write(PrefabId);
+        m_Writer.Write(IsSceneObject);
+        m_Writer.Write((byte)StateChangeType);
+        m_Writer.WriteBytesAndSize(Data);
+
+        return m_Writer.ToArray();
+    }
 }
 
 [DisallowMultipleComponent]
@@ -21,10 +137,10 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     float m_UpdateRate = 0.05f;
     float m_NextUpdateEventTime;*/
 
-    public NetObjectUID InstanceId { get; private set; }
-    public bool IsOwnedByMasterClient => m_InternalNetwork != null && m_InternalNetwork.MasterPlayer == Owner;
-    public bool IsLocal => m_InternalNetwork != null && m_InternalNetwork.LocalPlayer == Owner;
-    public bool IsLocalPlayerTagObject => m_InternalNetwork.LocalPlayer.TagObjectId == InstanceId;
+    public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
+    public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
+    public bool IsLocal => State != null && State.IsOwnerByLocalPlayer;
+    public bool IsLocalPlayerTagObject => State != null && m_InternalNetwork.LocalPlayer.TagObjectId == State.UID;
     public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_PersistentRPCBuffer.IsDirty;
 
     /// <summary>
@@ -33,19 +149,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     IRPCBuffer m_PersistentRPCBuffer = new RPCBuffer();
     IRPCBuffer m_TemporalRPCBuffer = new TemporalRPCBuffer();
 
-    /// <summary>
-    /// Readonly owner reference
-    /// </summary>
-    INetRTPlayer m_Owner;
-    public INetRTPlayer Owner
-    {
-        get => m_Owner;
-        private set
-        {
-            m_Owner = value;
-            OnOwnerChanged();
-        }
-    }
+    public INetRTPlayer NetworkOwner => m_InternalNetwork.FindPlayer(State.OwnerUID);
 
     /// <summary>
     /// Readonly transport reference
@@ -53,28 +157,27 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     INetwork m_InternalNetwork;
 
     /// <summary>
+    /// World, that contains this object;
+    /// </summary>
+    NetWorld m_NetWorld;
+
+    /// <summary>
     /// Object prefab id
     /// </summary>
-    public string PrefabId { get; private set; }
-    public bool IsSceneObject { get; private set; }
+    public bool IsSceneObject => State != null && State.IsSceneObject;
     public bool Initialized { get; private set; }
 
     IEnumerable<IGSInstanceObservable> m_Observables;
     NetWriter m_ObjectWriter;
     NetReader m_ObjectReader;
 
+    public NetObjectState State { get; private set; }
+
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    public NetObjectIdentity Initialze(
-        string prefabId, 
-        bool isSceneObject,
-        NetObjectUID instanceId,
-        INetRTPlayer owner, 
-        INetwork network, 
-        byte[] data,
-        object[] additionalData)
+    public NetObjectIdentity Initialze(NetObjectState state, INetwork network, NetWorld world, object[] additionalData)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -84,19 +187,17 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             .OrderBy(c => c.SerializationOrder)
             .ToList();
 
-        m_Owner = owner ?? throw new ArgumentNullException("owner");
-
-        InstanceId = instanceId;
-        PrefabId = prefabId;
-        IsSceneObject = isSceneObject;
         m_InternalNetwork = network;
+        m_NetWorld = world;
 
+        State = state;
+        State.OnOwnerChanged += OnOwnerChanged;
         /*
          * Skip deserialization if it calls on local object.
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
          */
-        if (!IsLocal && data != null)
-            Deserialize(data, true, true); //Force true to allow deseriazation before object initialized.
+        if (!IsLocal && State.Data != null)
+            Deserialize(State.Data, true, true); //Force true to allow deseriazation before object initialized.
 
         if(additionalData != null && additionalData.Length > 0)
             foreach (var o in m_Observables)
@@ -126,11 +227,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             m_PersistentRPCBuffer.Recieve(RecieveRPCRemotely);
             m_TemporalRPCBuffer.Recieve(RecieveRPCRemotely);
         }
-
-        //Force obect to send itself after creation.
-        //Is local check inside this method.
-        //ForceSerializeIfLocal();
-
         return this;
     }
 
@@ -150,13 +246,11 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// Other client connected and loaded game scene, set all component as dirty to send valid object state to other clients.
     /// </summary>
-    /*public void OnBecomesReady(ClientUID peerId)
+    public void OnBecomesReady(ClientUID peerId)
     {
-        if (!IsLocal)
-            return;
-
-        ForceSerializeIfLocal();
-    }*/
+        if (IsLocal)
+            State.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
+    }
 
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
@@ -164,7 +258,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     public void OnDisconnected(ClientUID peerId)
     {
         //Is object owned by disconnected player and a scene object, trying to change owner.
-        if (IsSceneObject && peerId == Owner.ConnectionUID)
+        if (IsSceneObject && peerId == State.OwnerUID)
         {
             //Is local client becomes master client, set object's owner and sync it.
             if (m_InternalNetwork.IsMasterClient)
@@ -180,7 +274,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// </summary>
     void OnOwnerChanged()
     {
-        Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner.ToString()}");
+        Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {NetworkOwner.ToString()}");
         foreach (var b in m_Observables)
             b.OnOwnerChanged();
     }
@@ -196,22 +290,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        SetOwner(m_InternalNetwork.LocalPlayer, true);
-    }
-
-    /// <summary>
-    /// Change object owner.
-    /// </summary>
-    /// <param name="owner"></param>
-    public void SetOwner(INetRTPlayer owner, bool send = false)
-    {
-        if (!Initialized)
-            throw new Exception("You can manage owners only for initialized objects");
-
-        Owner = owner ?? throw new ArgumentNullException("owner");
-        //Send changes
-        if(send)
-            m_InternalNetwork.SetOwner(InstanceId, Owner.ConnectionUID);
+        State.ScheduleOwnerChanged(m_InternalNetwork.LocalPlayer.UID);
     }
 
     /// <summary>
@@ -240,54 +319,22 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         /*if (Time.fixedUnscaledTime < m_NextUpdateEventTime)
             return;*/
 
-        //Update all behaviours;
-        UpdateBehaviours();
+        //Update all the behaviours;
+        foreach (var b in m_Observables)
+            b.OnUpdate();
+
+        State.ChangeObjectLocaly(Serialize());
     }
 
-    public byte[] Serialize()
+    byte[] Serialize()
     {
         //Serialize object if it becomes dirty;
         if (m_ObjectWriter == null)
             m_ObjectWriter = new NetWriter();
 
         SerializeTo(m_ObjectWriter);
-
         return m_ObjectWriter.ToArray();
     }
-
-    void UpdateBehaviours()
-    {
-        foreach (var b in m_Observables)
-            b.OnUpdate();
-    }
-
-    /*void ForceSerializeIfLocal()
-    {
-        if (!IsLocal)
-            return;
-
-        //Force behaviour update;
-        UpdateBehaviours();
-
-        //Set object dirty;
-        SetDirtyIfLocal();
-
-        //Force serialization;
-        TrySerializeAndSendGameObject(DeliveryIntent.Reliable, true);
-    }*/
-
-    /*void TrySerializeAndSendGameObject(DeliveryIntent deliveryIntent, bool initializable = false)
-    {
-        if (!IsLocal)
-            throw new Exception("Trying to serialize remote player object, this is not allowed");
-
-        if (!Initialized)
-            throw new Exception("Trying to serialize object that not initialized, this is not allowed");
-
-        
-
-        //m_NextUpdateEventTime = Time.fixedUnscaledTime + m_UpdateRate;
-    }*/
 
     void SerializeTo(NetWriter writer)
     {
@@ -307,17 +354,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         var writer = new NetWriter();
         SerializeTo(writer);
         return writer;
-    }
-
-    public byte[] CreateObjectStateSnapshot()
-    {
-        SetDirtyIfLocal();
-        var writer = SerializeToNewWriter();
-
-        /// Make object dirty again, because we break previous dirty state;
-        /// TODO: Make it more beautiful, without change dirty state;
-        SetDirtyIfLocal();
-        return writer.ToArray();
     }
 
     /// <summary>
@@ -413,6 +449,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
 
         //Add to sending buffeR;
         m_TemporalRPCBuffer.AddOrUpdate(hashCode, data, RPCBufferChnageMethod.Add);
+
+        if (deliveryIntent == DeliveryIntent.Reliable)
+            State.ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
     }
 
     /// <summary>
@@ -534,7 +573,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!IsLocal)
             throw new Exception("Trying to destroy remote object, this is not allowed");
 
-        m_InternalNetwork.DestroyGameObject(InstanceId);
+        State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdate);
     }
 
     #if UNITY_EDITOR
@@ -547,7 +586,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             transform.position, 
             string.Format("Object: {0}, Owner: {1}, Local: {2}", 
             InstanceId.ToString(), 
-            Owner == null ? "NONE" : Owner.Name, 
+            NetworkOwner == null ? "NONE" : NetworkOwner.Name, 
             IsLocal));
     }
     #endif

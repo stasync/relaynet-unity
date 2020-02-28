@@ -8,7 +8,7 @@ public static class HLNetWriterExtention
        writer.WritePackedUInt32(connectionUID);
 
     public static void WritePlayer(this NetWriter writer, INetRTPlayer value) =>
-        writer.WriteConnectionUID(value == null ? ClientUID.Invalid : value.ConnectionUID);
+        writer.WriteConnectionUID(value == null ? ClientUID.Invalid : value.UID);
 
     public static void WriteInstanceId(this NetWriter writer, NetObjectUID value) => 
         writer.WritePackedUInt32(value);
