@@ -9,7 +9,6 @@ public class WorldPlayersCollection
     ClientUID m_MasterClientUID;
 
     public IEnumerable<ClientUID> PlayerUIDs => m_PlayersCollection.Keys;
-
     Dictionary<ClientUID, WorldPlayer> m_PlayersCollection;
 
     Queue<Action> m_UpdateQueue;
@@ -60,6 +59,7 @@ public class WorldPlayersCollection
     public void Clear()
     {
         m_LocalPlayerUID = ClientUID.Invalid;
+        m_MasterClientUID = ClientUID.Invalid;
 
         m_PlayersCollection.Clear();
         m_PlayersCollection = null;
@@ -86,6 +86,8 @@ public class WorldPlayer
         m_LocalPlayer = localPlayer;
         m_MasterPlayer = masterPlayer;
     }
+
+    public override string ToString() => $"{UID}:{Name} l:{IsLocal} m:{IsMaster}";
 }
 
 public struct WorldSnapshot 
@@ -116,10 +118,12 @@ public class NetWorld : IJSONSerializable
 
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
-    WorldPlayersCollection m_WorldPlayers;
+    public WorldPlayersCollection Players { get; private set; }
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> ObjectViews => m_CurrentObjectViews;
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
+    public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
+    public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> RemoteObjectUpdateRequests => m_RemoteObjectUpdateRequests;
 
     //===
     Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
@@ -152,7 +156,7 @@ public class NetWorld : IJSONSerializable
 
         UnityEngine.Object.DontDestroyOnLoad(m_WorldView.gameObject);
 
-        m_WorldPlayers = new WorldPlayersCollection();
+        Players = new WorldPlayersCollection();
 
         m_ObjectFactory = new NetObjectFactory();
 
@@ -193,6 +197,12 @@ public class NetWorld : IJSONSerializable
             m_RemoteObjectUpdateRequests.Add(UID, snapshot);
     }
 
+    void ForEachState(Action<NetObjectUID, NetObjectState> processor)
+    {
+        foreach (var UID in m_CurrentObjectStates.Keys.ToArray())
+            processor(UID, m_CurrentObjectStates[UID]);
+    }
+
     public void TryUpdate(float deltaTime)
     {
         var worldDelta = Time.fixedUnscaledTime - m_LastUpdateTime;
@@ -204,7 +214,7 @@ public class NetWorld : IJSONSerializable
         /// Loop
         {
             /// Update player collection;
-            m_WorldPlayers.Udpate();
+            Players.Udpate();
             /// Remove objects, if player disconnected;
             UpdateRemovedPlyers();
             /// Update remote object state data;
@@ -226,7 +236,7 @@ public class NetWorld : IJSONSerializable
             {
                 var state = m_CurrentObjectStates[UID];
 
-                if (!m_WorldPlayers.Contains(state.OwnerUID) && !state.IsSceneObject)
+                if (!Players.Contains(state.OwnerUID) && !state.IsSceneObject)
                 {
                     m_CurrentObjectStates.Remove(UID);
 
@@ -264,7 +274,7 @@ public class NetWorld : IJSONSerializable
                     if (snapshot.StateChangeType != ObjectStateChangeRequestType.InitializationUpdate)
                         continue;
 
-                    if (m_ObjectsRegisterRequests.TryGetValue(snapshot.ObjectUID, out var newState) && newState.IsOwnerBy(snapshot.Owner))
+                    if (m_ObjectsRegisterRequests.TryGetValue(snapshot.ObjectUID, out var newState) && newState.IsOwnerBy(snapshot.OwnerUID))
                     {
                         newState.ChangeObjectRemotely(snapshot);
                         m_CurrentObjectStates.Add(snapshot.ObjectUID, newState);
@@ -272,7 +282,7 @@ public class NetWorld : IJSONSerializable
                         m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
                     }
                     else
-                        newState = new NetObjectState(snapshot, m_WorldPlayers.Find);
+                        newState = new NetObjectState(snapshot, Players.Find);
 
                     m_CurrentObjectStates.Add(snapshot.ObjectUID, newState);
                     m_RemoteObjectUpdateRequests.Remove(UID);
@@ -331,8 +341,8 @@ public class NetWorld : IJSONSerializable
                 }
                 netObjectView.OnUpdate(worldDelta);
 
-                if (netObjectView.IsDirty)
-                    m_InternalNetwork.SendGameObjectStateMessage(netObject.Data, deliveryIntent);
+                if (netObject.DataChanged || deliveryIntent == DeliveryIntent.Reliable)
+                    m_InternalNetwork.SendGameObjectStateMessage(netObject.Serialize(), deliveryIntent);
             }
         }
 
@@ -343,8 +353,7 @@ public class NetWorld : IJSONSerializable
         void ExecuteState()
         {
             //Update objects;
-            var UIDs = m_CurrentObjectStates.Keys.ToArray(); // Copy to iterate;
-            foreach (var UID in UIDs)
+            foreach (var UID in m_CurrentObjectStates.Keys.ToArray())
             {
                 var state = m_CurrentObjectStates[UID];
 
@@ -394,7 +403,8 @@ public class NetWorld : IJSONSerializable
                         continue;
                     }
 
-                    senderPlayer.OnObjectCreateUpdate(netObjectView);
+                    if(!senderPlayer.IsLocal)
+                        senderPlayer.OnObjectCreateUpdate(netObjectView);
                 }
             }
         }
@@ -406,10 +416,11 @@ public class NetWorld : IJSONSerializable
     /// </summary>
     public void Destroy()
     {
+        Debug.LogError($"Destroy world {m_WorldView.gameObject}");
         NewObjectInitialized = null;
 
-        m_WorldPlayers.Clear();
-        m_WorldPlayers = null;
+        Players.Clear();
+        Players = null;
 
         m_CurrentObjectViews.Clear();
         m_CurrentObjectViews = null;
@@ -426,7 +437,7 @@ public class NetWorld : IJSONSerializable
         m_PendingObjectViews.Clear();
         m_PendingObjectViews = null;
 
-        UnityEngine.Object.Destroy(m_WorldView); //Destroy all net object;
+        UnityEngine.Object.Destroy(m_WorldView.gameObject); //Destroy all net object;
         m_WorldView = null;
 
         m_InternalNetwork = null;
@@ -434,7 +445,7 @@ public class NetWorld : IJSONSerializable
     }
 
     public void OnPlayerBecomesReady(INetRTPlayer player, bool isLocal) =>
-        m_WorldPlayers.Register(player.UID, player.Name, isLocal);
+        Players.Register(player.UID, player.Name, isLocal);
 
     /// <summary>
     /// Someone connected and loaded game scene, schedule local objects for reliable update update;
@@ -452,7 +463,7 @@ public class NetWorld : IJSONSerializable
     /// <param name="uid"></param>
     public void OnDisconnect(ClientUID uid)
     {
-        m_WorldPlayers.Unregister(uid);
+        Players.Unregister(uid);
     }
 
     /// <summary>
@@ -468,7 +479,7 @@ public class NetWorld : IJSONSerializable
     public NetObjectIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData)
     {
         var uid = new NetObjectUID(owner.UID);
-        var state = new NetObjectState(uid, prefabId, isSceneObject, owner.UID, m_WorldPlayers.Find);
+        var state = new NetObjectState(uid, prefabId, isSceneObject, owner.UID, Players.Find);
         var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
 
         InitializeIdentity(netObjectView, state, m_InternalNetwork, additionalData);
@@ -502,7 +513,7 @@ public class NetWorld : IJSONSerializable
 
         //Create state from scen object identity;
         //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        var newState = new NetObjectState(sceneIdentity.SceneObjectId, "SceneObject", true, m_InternalNetwork.MasterClientConnection, m_WorldPlayers.Find);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, "SceneObject", true, m_InternalNetwork.MasterClientConnection, Players.Find);
         
         //Initialize immidiatlty on master client;
         if (m_InternalNetwork.IsMasterClient)
@@ -553,7 +564,7 @@ public class NetWorld : IJSONSerializable
 
         NetObjectIdentity CC()
         {
-            var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.UID, m_WorldPlayers.Find);
+            var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.UID, Players.Find);
             var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
 
             InitializeIdentity(netObjectView, state, m_InternalNetwork, null);

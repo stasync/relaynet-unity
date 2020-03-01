@@ -3,7 +3,7 @@ using System.Linq;
 
 public struct ObjectUpdateSnapshot
 {
-    public ClientUID Owner { get; private set; }
+    public ClientUID OwnerUID { get; private set; }
     public NetObjectUID ObjectUID { get; private set; }
     public string PrefabId { get; private set; }
     public bool IsSceneObject { get; private set; }
@@ -12,11 +12,28 @@ public struct ObjectUpdateSnapshot
 
     void Restore(NetReader reader)
     {
+        var owner = reader.ReadConnectionUID();
+        if(owner != OwnerUID)
+            UnityEngine.Debug.LogError($"Deserialized owner {owner} doesn't match object owner {OwnerUID}");
+
         ObjectUID = reader.ReadInstanceId();
         PrefabId = reader.ReadString();
-        IsSceneObject = reader.ReadBoolean();
+        var isSceneObject = reader.ReadBoolean();
+        if(isSceneObject != IsSceneObject)
+            UnityEngine.Debug.LogError($"Deserialized scene object state {isSceneObject} doesn't match object scene state {IsSceneObject}");
+
         StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
         Data = reader.ReadBytesAndSize();
+    }
+
+    public void Serialize(NetWriter writer)
+    {
+        writer.WriteConnectionUID(OwnerUID);
+        writer.WriteInstanceId(ObjectUID);
+        writer.Write(PrefabId);
+        writer.Write(IsSceneObject);
+        writer.Write((byte)StateChangeType);
+        writer.WriteBytesAndSize(Data);
     }
 
     public static ObjectUpdateSnapshot FormReader(ClientUID sender, NetReader reader)
@@ -29,11 +46,13 @@ public struct ObjectUpdateSnapshot
     public static ObjectUpdateSnapshot FormState(NetObjectState state) =>
         new ObjectUpdateSnapshot
         {
-            Owner = state.OwnerUID,
+            OwnerUID = state.OwnerUID,
             ObjectUID = state.UID,
             PrefabId = state.PrefabId,
             IsSceneObject = state.IsSceneObject,
             StateChangeType = state.StateChangeType,
             Data = state.Data.ToArray()
         };
+
+    public override string ToString() => $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
 }
