@@ -11,7 +11,7 @@ public enum ObjectStateChangeRequestType : byte
     RemoveUpdate,
 }
 
-public class NetObjectState
+public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectState>
 {
     public event Action OnOwnerChanged = delegate { };
 
@@ -39,10 +39,10 @@ public class NetObjectState
         return hash;
     }
 
-    public bool IsOwnerByLocalPlayer => Owner != null && Owner.IsLocal;
+    public bool IsOwnedByLocalPlayer => Owner != null && Owner.IsLocal;
     public bool IsOwnedByMasterClient => Owner != null && Owner.IsMaster;
 
-    public bool IsOwnerBy(ClientUID uid) => OwnerUID == uid;
+    public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
     NetWriter m_Writer;
@@ -63,28 +63,29 @@ public class NetObjectState
     public NetObjectState(ObjectUpdateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
         this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvier) => ChangeObjectRemotely(snapshot);
 
-    public bool DataChanged { get; private set; }
-    public void ChangeObjectLocaly(byte[] data)
+    public bool ChangedLocaly { get; private set; }
+    public void ChangeObjectDataLocaly(byte[] data)
     {
-        if (!IsOwnerByLocalPlayer)
+        if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
-        if (Data.Length != data.Length || Data.GetHashCode() != data.GetHashCode())
-            DataChanged = true;
-
+        var hashCode = GetHashCode();
         Data = data;
+        ChangedLocaly = hashCode != GetHashCode();
     }
 
-    public void OnExecuted()
+    public void FinalizeIteration()
     {
         //Return object to regular UDP pipeline;
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
-        DataChanged = false;
+        ChangedLocaly = false;
     }
+
+    public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
 
     public void ChangeObjectRemotely(ObjectUpdateSnapshot snapshot)
     {
-        if (IsOwnerByLocalPlayer)
+        if (IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"Unable to restore local object with {UID}");
 
         var previousOwner = OwnerUID;
@@ -100,7 +101,7 @@ public class NetObjectState
 
     public void ScheduleUpdate(ObjectStateChangeRequestType requestType)
     {
-        if (!IsOwnerByLocalPlayer)
+        if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
         if (StateChangeType > requestType)
@@ -111,6 +112,9 @@ public class NetObjectState
 
     public void ScheduleOwnerChanged(ClientUID newOwner)
     {
+        if (!IsSceneObject)
+            throw new Exception("You can manage owners only for scene objects");
+
         if (StateChangeType > ObjectStateChangeRequestType.ReliableUpdate)
             Debug.LogError($"Unable to set request {ObjectStateChangeRequestType.ReliableUpdate} because it has less priority than current request {StateChangeType}");
         else
@@ -138,6 +142,10 @@ public class NetObjectState
             $"s:{IsSceneObject} " +
             $"st:{StateChangeType} " +
             $"own:{OwnerUID}:{(Owner == null ? "null" : Owner.ToString())} " +
-            $"l:{IsOwnerByLocalPlayer} " +
+            $"l:{IsOwnedByLocalPlayer} " +
             $"m:{IsOwnedByMasterClient}";
+
+
+    public int CompareTo(NetObjectState other) => UID.CompareTo(other.UID);
+    public bool Equals(NetObjectState other) => UID.Equals(other.UID);
 }

@@ -23,7 +23,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
 
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
-    public bool IsLocal => State != null && State.IsOwnerByLocalPlayer;
+    public bool IsLocal => State != null && State.IsOwnedByLocalPlayer;
     public bool IsLocalPlayerTagObject => State != null && m_InternalNetwork.LocalPlayer.TagObjectId == State.UID;
     public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_PersistentRPCBuffer.IsDirty;
 
@@ -33,7 +33,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     IRPCBuffer m_PersistentRPCBuffer = new RPCBuffer();
     IRPCBuffer m_TemporalRPCBuffer = new TemporalRPCBuffer();
 
-    public INetRTPlayer NetworkOwner => m_InternalNetwork.FindPlayer(State.OwnerUID);
+    public INetRTPlayer Owner => m_InternalNetwork.FindPlayer(State.Owner.UID);
 
     /// <summary>
     /// Readonly transport reference
@@ -141,14 +141,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// </summary>
     public void OnDisconnected(ClientUID peerId)
     {
-        //Is object owned by disconnected player and a scene object, trying to change owner.
-        if (IsSceneObject && peerId == State.OwnerUID)
-        {
-            //Is local client becomes master client, set object's owner and sync it.
-            if (m_InternalNetwork.IsMasterClient)
-                OwnObejct();
-        }
-
         foreach (var b in m_Observables)
             b.OnDisconnected(peerId);
     }
@@ -158,7 +150,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// </summary>
     void OnOwnerChanged()
     {
-        Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {NetworkOwner.ToString()}");
+        Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner.ToString()}");
         foreach (var b in m_Observables)
             b.OnOwnerChanged();
     }
@@ -207,7 +199,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         foreach (var b in m_Observables)
             b.OnUpdate();
 
-        State.ChangeObjectLocaly(Serialize());
+        State.ChangeObjectDataLocaly(Serialize());
     }
 
     byte[] Serialize()
@@ -470,7 +462,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             transform.position, 
             string.Format("Object: {0}, Owner: {1}, Local: {2}", 
             InstanceId.ToString(), 
-            NetworkOwner == null ? "NONE" : NetworkOwner.Name, 
+            Owner == null ? "NONE" : Owner.Name, 
             IsLocal));
     }
     #endif

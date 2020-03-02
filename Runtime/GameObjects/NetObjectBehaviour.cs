@@ -25,7 +25,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
 
     public virtual bool DataWritePermission => IsLocal;
 
-    public INetRTPlayer Owner => Identity.NetworkOwner;
+    public INetRTPlayer Owner => Identity.Owner;
 
     public bool IsLocal => Identity.IsLocal;
 

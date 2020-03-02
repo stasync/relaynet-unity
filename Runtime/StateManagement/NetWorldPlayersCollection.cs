@@ -9,6 +9,8 @@ public class NetWorldPlayersCollection
 
     public IEnumerable<ClientUID> PlayerUIDs => m_PlayersCollection.Keys;
     Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
+    public IReadOnlyCollection<ClientUID> RemovedPlayers => m_JustRemovedPlayers;
+    HashSet<ClientUID> m_JustRemovedPlayers;
 
     Queue<Action> m_UpdateQueue;
 
@@ -20,7 +22,11 @@ public class NetWorldPlayersCollection
     public NetWorldPlayersCollection()
     {
         m_LocalPlayerUID = ClientUID.Invalid;
+        m_MasterClientUID = ClientUID.Invalid;
+
         m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayer>();
+        m_JustRemovedPlayers = new HashSet<ClientUID>();
+
         m_UpdateQueue = new Queue<Action>();
     }
 
@@ -42,6 +48,7 @@ public class NetWorldPlayersCollection
             if (m_LocalPlayerUID == uid)
                 m_LocalPlayerUID = ClientUID.Invalid;
 
+            m_JustRemovedPlayers.Add(uid);
             m_PlayersCollection.Remove(uid);
         });
 
@@ -55,6 +62,11 @@ public class NetWorldPlayersCollection
         m_MasterClientUID = PlayerUIDs.Any() ? PlayerUIDs.Min() : ClientUID.Invalid;
     }
 
+    public void FinalizeIteration()
+    {
+        m_JustRemovedPlayers.Clear();
+    }
+
     public void Clear()
     {
         m_LocalPlayerUID = ClientUID.Invalid;
@@ -63,7 +75,12 @@ public class NetWorldPlayersCollection
         m_PlayersCollection.Clear();
         m_PlayersCollection = null;
 
+        m_JustRemovedPlayers.Clear();
+        m_JustRemovedPlayers = null;
+
         m_UpdateQueue.Clear();
         m_UpdateQueue = null;
     }
+
+    public NetWorldPlayersCollectionsSnapshot ToSnapshot() => NetWorldPlayersCollectionsSnapshot.FormCollection(this);
 }

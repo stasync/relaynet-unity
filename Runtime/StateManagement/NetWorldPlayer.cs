@@ -1,6 +1,6 @@
 ﻿using System;
 
-public class NetWorldPlayer
+public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
 {
     public readonly ClientUID UID;
     public readonly string Name;
@@ -18,5 +18,9 @@ public class NetWorldPlayer
         m_MasterPlayer = masterPlayer;
     }
 
+    public NetWorldPlayerSnapshot ToSnapshot() => NetWorldPlayerSnapshot.FormPlayer(this);
+
     public override string ToString() => $"{UID}:{Name} l:{IsLocal} m:{IsMaster}";
+    public int CompareTo(NetWorldPlayer other) => UID.CompareTo(other.UID);
+    public bool Equals(NetWorldPlayer other) => UID.Equals(other.UID);
 }
