@@ -15,7 +15,7 @@ public class NetObjectState
 {
     public event Action OnOwnerChanged = delegate { };
 
-    readonly Func<ClientUID, WorldPlayer> m_PlayerProvider;
+    readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
 
     #region SYNCRONIZED STATE
     public readonly NetObjectUID UID;
@@ -43,11 +43,11 @@ public class NetObjectState
     public bool IsOwnedByMasterClient => Owner != null && Owner.IsMaster;
 
     public bool IsOwnerBy(ClientUID uid) => OwnerUID == uid;
-    public WorldPlayer Owner => m_PlayerProvider(OwnerUID);
+    public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
     NetWriter m_Writer;
 
-    public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, WorldPlayer> playerProvier)
+    public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvier)
     {
         m_PlayerProvider = playerProvier;
 
@@ -60,7 +60,7 @@ public class NetObjectState
         Data = new byte[] { };
     }
 
-    public NetObjectState(ObjectUpdateSnapshot snapshot, Func<ClientUID, WorldPlayer> playerProvier) :
+    public NetObjectState(ObjectUpdateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
         this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvier) => ChangeObjectRemotely(snapshot);
 
     public bool DataChanged { get; private set; }

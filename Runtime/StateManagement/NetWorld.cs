@@ -3,93 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class WorldPlayersCollection
-{
-    ClientUID m_LocalPlayerUID;
-    ClientUID m_MasterClientUID;
-
-    public IEnumerable<ClientUID> PlayerUIDs => m_PlayersCollection.Keys;
-    Dictionary<ClientUID, WorldPlayer> m_PlayersCollection;
-
-    Queue<Action> m_UpdateQueue;
-
-    public WorldPlayer LocalPlayer => Find(m_LocalPlayerUID);
-    public WorldPlayer MasterPlayer => Find(m_MasterClientUID);
-    public WorldPlayer Find(ClientUID uid) => m_PlayersCollection.TryGetValue(uid, out var player) ? player : null;
-    public bool Contains(ClientUID uid) => m_PlayersCollection.ContainsKey(uid);
-
-    public WorldPlayersCollection()
-    {
-        m_LocalPlayerUID = ClientUID.Invalid;
-        m_PlayersCollection = new Dictionary<ClientUID, WorldPlayer>();
-        m_UpdateQueue = new Queue<Action>();
-    }
-
-    public void Register(ClientUID uid, string name, bool isLocal) =>
-        ScheduleOnUpdate(() =>
-        {
-            if (isLocal)
-                m_LocalPlayerUID = uid;
-
-            if (m_PlayersCollection.ContainsKey(uid))
-                throw new InvalidOperationException();
-
-            m_PlayersCollection.Add(uid, new WorldPlayer(uid, name, () => m_LocalPlayerUID, () => m_MasterClientUID));
-        });
-
-    public void Unregister(ClientUID uid) =>
-        ScheduleOnUpdate(() =>
-        {
-            if (m_LocalPlayerUID == uid)
-                m_LocalPlayerUID = ClientUID.Invalid;
-
-            m_PlayersCollection.Remove(uid);
-        });
-
-    void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
-
-    public void Udpate()
-    {
-        while (m_UpdateQueue.Count > 0)
-            m_UpdateQueue.Dequeue()();
-
-        m_MasterClientUID = PlayerUIDs.Any() ? PlayerUIDs.Min() : ClientUID.Invalid;
-    }
-
-    public void Clear()
-    {
-        m_LocalPlayerUID = ClientUID.Invalid;
-        m_MasterClientUID = ClientUID.Invalid;
-
-        m_PlayersCollection.Clear();
-        m_PlayersCollection = null;
-
-        m_UpdateQueue.Clear();
-        m_UpdateQueue = null;
-    }
-}
-
-public class WorldPlayer
-{
-    public readonly ClientUID UID;
-    public readonly string Name;
-    public bool IsLocal => UID == m_LocalPlayer();
-    public bool IsMaster => UID == m_MasterPlayer();
-
-    readonly Func<ClientUID> m_LocalPlayer;
-    readonly Func<ClientUID> m_MasterPlayer;
-
-    public WorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayer, Func<ClientUID> masterPlayer)
-    {
-        UID = uid;
-        Name = name;
-        m_LocalPlayer = localPlayer;
-        m_MasterPlayer = masterPlayer;
-    }
-
-    public override string ToString() => $"{UID}:{Name} l:{IsLocal} m:{IsMaster}";
-}
-
 public struct WorldSnapshot 
 {
     public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> Objects => m_ObjectStates;
@@ -118,7 +31,7 @@ public class NetWorld : IJSONSerializable
 
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
-    public WorldPlayersCollection Players { get; private set; }
+    public NetWorldPlayersCollection Players { get; private set; }
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> ObjectViews => m_CurrentObjectViews;
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
@@ -156,7 +69,7 @@ public class NetWorld : IJSONSerializable
 
         UnityEngine.Object.DontDestroyOnLoad(m_WorldView.gameObject);
 
-        Players = new WorldPlayersCollection();
+        Players = new NetWorldPlayersCollection();
 
         m_ObjectFactory = new NetObjectFactory();
 

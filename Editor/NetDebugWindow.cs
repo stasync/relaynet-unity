@@ -78,5 +78,5 @@ public class NetWorldDebugWindow : EditorWindow
         }
     }
 
-    void DrawPlayer(string prefix, WorldPlayer p) => EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");
+    void DrawPlayer(string prefix, NetWorldPlayer p) => EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");
 }
