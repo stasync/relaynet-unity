@@ -14,6 +14,7 @@ public enum ObjectStateChangeRequestType : byte
 public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectState>
 {
     public event Action OnOwnerChanged = delegate { };
+    public event Action<bool> LocalUpdateRequest = delegate { };
 
     readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
 
@@ -72,6 +73,14 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         var hashCode = GetHashCode();
         Data = data;
         ChangedLocaly = hashCode != GetHashCode();
+    }
+
+    public void RequestUpdate()
+    {
+        if (!IsOwnedByLocalPlayer)
+            throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
+
+        LocalUpdateRequest(StateChangeType == ObjectStateChangeRequestType.InitializationUpdate);
     }
 
     public void FinalizeIteration()

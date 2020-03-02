@@ -3,15 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class NetWorld : IJSONSerializable
+public class NetWorld : IJSONSerializable, INetWoldOperand
 {
+    #region INetWoldOperand
+    Dictionary<NetObjectUID, NetObjectState> INetWoldOperand.ObjectStates => m_CurrentObjectStates;
+    Dictionary<NetObjectUID, NetObjectIdentity> INetWoldOperand.ObjectViews => m_CurrentObjectViews;
+    Dictionary<NetObjectUID, NetObjectState> INetWoldOperand.ObjectsRegisterRequests => m_ObjectsRegisterRequests;
+    Dictionary<NetObjectUID, NetObjectIdentity> INetWoldOperand.PendingObjectViews => m_PendingObjectViews;
+    Dictionary<NetObjectUID, ObjectUpdateSnapshot> INetWoldOperand.RemoteObjectUpdateRequests => m_RemoteObjectUpdateRequests;
+    #endregion
+
     public NetWorldUID UID { get; private set; }
 
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
     public NetWorldPlayersCollection Players { get; private set; }
 
-    public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> ObjectViews => m_CurrentObjectViews;
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
+    public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> ObjectViews => m_CurrentObjectViews;
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> RemoteObjectUpdateRequests => m_RemoteObjectUpdateRequests;
 
@@ -25,29 +33,34 @@ public class NetWorld : IJSONSerializable
     Dictionary<NetObjectUID, ObjectUpdateSnapshot> m_RemoteObjectUpdateRequests;
     //===
 
+    public IReadOnlyCollection<NetWorldSnapshot> HistroyBuffer => m_HistoryBuffer;
+    LinkedList<NetWorldSnapshot> m_HistoryBuffer;
+
     NetWorldView m_WorldView;
     INetwork m_InternalNetwork;
     NetObjectFactory m_ObjectFactory;
     float m_LastUpdateTime;
 
-    const float m_MinUpdateInteraval = 0.1f; //10 times per second;
+    const float c_MinUpdateInteraval = 0.1f; //10 times per second;
+    const float c_HistoryBufferSecondsLength = 30f; //Record last 30 seconds;
 
-    public NetWorld(INetwork network, string worldName = "NetworkWorldRoot")
+    List<NetWorldOperator> m_Operators;
+
+    public NetWorld(NetWorldUID uid, string worldName)
+    {
+        UID = uid;
+        m_WorldView = new GameObject($"{UID}:{worldName}").AddComponent<NetWorldView>();
+        UnityEngine.Object.DontDestroyOnLoad(m_WorldView.gameObject);
+    }
+
+    public NetWorld(INetwork network, string worldName = "NetworkWorldRoot") : this(NetWorldUID.Allocate(), worldName)
     {
         if (m_WorldView != null)
             throw new InvalidOperationException($"{nameof(m_WorldView)} alreay created");
 
         m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
 
-        UID = NetWorldUID.Allocate();
-
-        m_WorldView = new GameObject($"{UID}:{worldName}")
-            .AddComponent<NetWorldView>();
-
-        UnityEngine.Object.DontDestroyOnLoad(m_WorldView.gameObject);
-
         Players = new NetWorldPlayersCollection();
-
         m_ObjectFactory = new NetObjectFactory();
 
         /// Must be cleaned, when player disconnects;
@@ -60,18 +73,31 @@ public class NetWorld : IJSONSerializable
             m_ObjectsRegisterRequests = new Dictionary<NetObjectUID, NetObjectState>();
             m_PendingObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
         }
+
+        m_HistoryBuffer = new LinkedList<NetWorldSnapshot>();
+
+        m_Operators = new List<NetWorldOperator>()
+        {
+            new NetWorldRemovedPlayersOperator(this),
+            new NetWorldUpdateRemoteObjectsOperator(this),
+            new NetWorldUpdateLocalObjectsOperator(m_InternalNetwork, this),
+            new NetWorldGenericOperator(this, p => 
+                {
+                    var elementsCount = c_HistoryBufferSecondsLength / c_MinUpdateInteraval;
+                    m_HistoryBuffer.AddLast(NetWorldSnapshot.FromWorld(p.DeltaTime, this));
+                    if (m_HistoryBuffer.Count > elementsCount)
+                        m_HistoryBuffer.RemoveFirst();
+                }),
+            new NetWorldExecutorOperator(m_InternalNetwork, m_ObjectFactory, this),
+            new NetWorldGenericOperator(this, p =>
+                {
+                    Players.FinalizeIteration();
+                    p.ForEachStates((UID, state) => state.FinalizeIteration());
+                }),
+        };
     }
 
-    void RemoveFromDictionary<T>(NetObjectUID uid, Dictionary<NetObjectUID, T> dictionary, Action<T> valueProcessor = null)
-    {
-        if (!dictionary.TryGetValue(uid, out var val))
-            return;
-
-        dictionary.Remove(uid);
-        valueProcessor?.Invoke(val);
-    }
-
-    public NetWorldSnapshot ToSnapshot() => NetWorldSnapshot.FromWorld(this);
+    public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => NetWorldSnapshot.FromWorld(deltaTime, this);
 
     public void ScheduleUpdateForRemoteObject(NetObjectUID UID, ObjectUpdateSnapshot snapshot)
     {
@@ -87,252 +113,21 @@ public class NetWorld : IJSONSerializable
             m_RemoteObjectUpdateRequests.Add(UID, snapshot);
     }
 
-    void ForEachStates(Action<NetObjectUID, NetObjectState> processor)
-    {
-        foreach (var UID in m_CurrentObjectStates.Keys.ToArray())
-            processor(UID, m_CurrentObjectStates[UID]);
-    }
-
-    void ForEachLocalStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((UID, state) =>
-    {
-        if (state.IsOwnedByLocalPlayer)
-            processor(UID, state);
-    });
-
     public void TryUpdate(float deltaTime)
     {
         var worldDelta = Time.fixedUnscaledTime - m_LastUpdateTime;
-        if (worldDelta < m_MinUpdateInteraval)
+        if (worldDelta < c_MinUpdateInteraval)
             return;
 
         m_LastUpdateTime = Time.fixedUnscaledTime;
+        Players.Udpate();
 
-        /// Loop
-        {
-            /// Update player collection;
-            Players.Udpate();
-            /// Remove objects, if player disconnected;
-            UpdateRemovedPlayers();
-            /// Update remote object state data;
-            UpdateRemoteObjects();
-            /// Update local object data;
-            UpdateLocalObjects();
-            /// Save current;
-            RecordState(worldDelta);
-            /// Execulte;
-            ExecuteState();
-            /// Finalize;
-            FinalizeIteration();
-        }
+        /// Execute opertors
+        foreach (var op in m_Operators)
+            op.Execute(deltaTime);
 
         //This is not used at now;
         m_WorldView.OnUpdate(worldDelta);
-
-        #region INTERNAL
-        void UpdateRemovedPlayers()
-        {
-            foreach (var playerUID in Players.RemovedPlayers.ToArray())
-            {
-                foreach (var stateUID in m_CurrentObjectStates.Keys.ToArray())
-                {
-                    var state = m_CurrentObjectStates[stateUID];
-                    var ownedByRemovedPlayer = state.IsOwnedBy(playerUID);
-
-                    //Object owned by disconnected player;
-                    if (ownedByRemovedPlayer)
-                    {
-                        //Change owner, if object is scene obeject;
-                        if (state.IsSceneObject)
-                        {
-                            //Is local client becomes master client, set object's owner and sync it.
-                            if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster)
-                                state.ScheduleOwnerChanged(Players.LocalPlayer.UID);
-                            else
-                                state.InvalidateOwner();
-
-                            TryNotifyView(playerUID, stateUID);
-                        }
-                        //Destroy object;
-                        else
-                        {
-                            m_CurrentObjectStates.Remove(stateUID);
-
-                            RemoveFromDictionary(stateUID, m_CurrentObjectViews, v => UnityEngine.Object.Destroy(v.gameObject));
-                            RemoveFromDictionary(stateUID, m_PendingObjectViews, v => UnityEngine.Object.Destroy(v.gameObject));
-                            RemoveFromDictionary(stateUID, m_ObjectsRegisterRequests);
-                            RemoveFromDictionary(stateUID, m_RemoteObjectUpdateRequests);
-                        }
-                    }
-                    //Notify view;
-                    else
-                        TryNotifyView(playerUID, stateUID);
-                }
-            }
-
-            void TryNotifyView(ClientUID clientUID, NetObjectUID objectUID)
-            {
-                if (m_CurrentObjectViews.TryGetValue(objectUID, out var view))
-                    view.OnDisconnected(clientUID);
-            }
-        }
-
-        void UpdateRemoteObjects()
-        {
-            foreach (var UID in m_RemoteObjectUpdateRequests.Keys.ToArray())
-            {
-                var snapshot = m_RemoteObjectUpdateRequests[UID];
-
-                if (!snapshot.ObjectUID.IsValid || string.IsNullOrWhiteSpace(snapshot.PrefabId) || snapshot.Data == null)
-                    throw new InvalidOperationException();
-
-                /// Update existed;
-                if (m_CurrentObjectStates.TryGetValue(snapshot.ObjectUID, out var objState))
-                {
-                    objState.ChangeObjectRemotely(snapshot);
-                    m_RemoteObjectUpdateRequests.Remove(UID);
-                }
-                /// Add new or get pending;
-                else
-                {
-                    if (snapshot.StateChangeType != ObjectStateChangeRequestType.InitializationUpdate)
-                        continue;
-
-                    if (m_ObjectsRegisterRequests.TryGetValue(snapshot.ObjectUID, out var newState))
-                    {
-                        if(newState.IsOwnedBy(snapshot.OwnerUID))
-                        {
-                            newState.ChangeObjectRemotely(snapshot);
-                            m_CurrentObjectStates.Add(snapshot.ObjectUID, newState);
-
-                            m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
-                        }
-                        else
-                            Debug.LogError($"Unable to restore object {newState.ToString()} form {snapshot.ToString()}");
-                    }
-                    else
-                        newState = new NetObjectState(snapshot, Players.Find);
-
-                    m_CurrentObjectStates.Add(snapshot.ObjectUID, newState);
-                    m_RemoteObjectUpdateRequests.Remove(UID);
-                }
-            }
-        }
-
-        void UpdateLocalObjects()
-        {
-            //Register new local object, that was just created;
-            foreach (var UID in m_ObjectsRegisterRequests.Keys.ToArray())
-            {
-                var state = m_ObjectsRegisterRequests[UID];
-                //Skip remote objects;
-                if (!state.IsOwnedByLocalPlayer)
-                    continue;
-
-                if (m_CurrentObjectStates.ContainsKey(state.UID))
-                    Debug.LogError($"Object with UID {state.UID} already exists");
-                else
-                {
-                    state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-                    m_CurrentObjectStates.Add(state.UID, state);
-                }
-
-                m_ObjectsRegisterRequests.Remove(UID);
-            }
-
-            //Update and send local objects;
-            ForEachLocalStates((UID, state) => 
-            {
-                if (!m_CurrentObjectViews.TryGetValue(state.UID, out var netObjectView))
-                {
-                    //Try add pending view;
-                    if (m_PendingObjectViews.TryGetValue(state.UID, out netObjectView))
-                        m_CurrentObjectViews.Add(state.UID, netObjectView);
-                    else
-                    {
-                        Debug.LogError($"Unable to find view for object with UID {state.UID}");
-                        return;
-                    }
-                }
-
-                var deliveryIntent = DeliveryIntent.Unreliable;
-                if (netObjectView.State.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
-                {
-                    deliveryIntent = DeliveryIntent.Reliable;
-                    if (netObjectView.State.StateChangeType == ObjectStateChangeRequestType.InitializationUpdate)
-                        netObjectView.SetDirtyIfLocal();
-                }
-                netObjectView.OnUpdate(worldDelta);
-
-                if (state.ChangedLocaly || deliveryIntent == DeliveryIntent.Reliable)
-                    m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
-            });
-        }
-
-        void RecordState(float delta)
-        {
-        }
-
-        void ExecuteState()
-        {
-            ForEachStates((UID, state) => 
-            {
-                //Try get or create new state view;
-                if (!m_CurrentObjectViews.TryGetValue(UID, out var netObjectView))
-                {
-                    if (m_PendingObjectViews.TryGetValue(UID, out netObjectView))
-                    {
-                        m_PendingObjectViews.Remove(UID);
-                        m_CurrentObjectViews.Add(UID, netObjectView);
-                    }
-                    else
-                    {
-                        netObjectView = m_ObjectFactory.Create(state.PrefabId, Vector3.zero, Quaternion.identity);
-                        m_CurrentObjectViews.Add(UID, netObjectView);
-                    }
-                }
-
-                //Remove state if need;
-                if (state.StateChangeType == ObjectStateChangeRequestType.RemoveUpdate)
-                {
-                    m_CurrentObjectStates.Remove(UID);
-                    m_CurrentObjectViews.Remove(UID);
-
-                    if (netObjectView != null)
-                        UnityEngine.Object.Destroy(netObjectView.gameObject);
-                }
-                else
-                {
-                    //Initialize new view;
-                    if (netObjectView.Initialized)
-                    {
-                        if (!state.IsOwnedByLocalPlayer)
-                            netObjectView.Deserialize(state.Data, false, false);
-                    }
-                    else
-                        InitializeIdentity(netObjectView, state, m_InternalNetwork, null);
-
-                    //Report to player;
-                    {
-                        var senderPlayer = m_InternalNetwork.FindPlayer(state.OwnerUID);
-                        if (senderPlayer == null)
-                        {
-                            Debug.LogError($"Unable to update object state for player with UID {state.OwnerUID}. Player doesn't exists");
-                            return;
-                        }
-
-                        if (!senderPlayer.IsLocal)
-                            senderPlayer.OnObjectCreateUpdate(netObjectView);
-                    }
-                }
-            });
-        }
-
-        void FinalizeIteration()
-        {
-            Players.FinalizeIteration();
-            ForEachStates((UID, state) => state.FinalizeIteration());
-        }
-        #endregion
     }
 
     /// <summary>
@@ -360,6 +155,9 @@ public class NetWorld : IJSONSerializable
 
         m_PendingObjectViews.Clear();
         m_PendingObjectViews = null;
+
+        m_HistoryBuffer.Clear();
+        m_HistoryBuffer = null;
 
         UnityEngine.Object.Destroy(m_WorldView.gameObject); //Destroy all net object;
         m_WorldView = null;
@@ -449,6 +247,9 @@ public class NetWorld : IJSONSerializable
         //Add view to be used in future;
         m_PendingObjectViews.Add(newState.UID, sceneIdentity.Identity);
     }
+
+    NetObjectIdentity INetWoldOperand.InitializeIdentity(NetObjectIdentity identity, NetObjectState state, INetwork transport, object[] additionalData) =>
+        InitializeIdentity(identity, state, transport, additionalData);
 
     NetObjectIdentity InitializeIdentity(NetObjectIdentity identity, NetObjectState state, INetwork transport, object[] additionalData)
     {

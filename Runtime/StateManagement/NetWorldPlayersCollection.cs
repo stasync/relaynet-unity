@@ -9,8 +9,8 @@ public class NetWorldPlayersCollection
 
     public IEnumerable<ClientUID> PlayerUIDs => m_PlayersCollection.Keys;
     Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
-    public IReadOnlyCollection<ClientUID> RemovedPlayers => m_JustRemovedPlayers;
-    HashSet<ClientUID> m_JustRemovedPlayers;
+    public IReadOnlyList<ClientUID> RemovedPlayers => m_JustRemovedPlayers;
+    List<ClientUID> m_JustRemovedPlayers;
 
     Queue<Action> m_UpdateQueue;
 
@@ -25,7 +25,7 @@ public class NetWorldPlayersCollection
         m_MasterClientUID = ClientUID.Invalid;
 
         m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayer>();
-        m_JustRemovedPlayers = new HashSet<ClientUID>();
+        m_JustRemovedPlayers = new List<ClientUID>();
 
         m_UpdateQueue = new Queue<Action>();
     }
@@ -83,4 +83,14 @@ public class NetWorldPlayersCollection
     }
 
     public NetWorldPlayersCollectionsSnapshot ToSnapshot() => NetWorldPlayersCollectionsSnapshot.FormCollection(this);
+    public void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
+    {
+        m_LocalPlayerUID = snapshot.LocalPlayerUID;
+        m_MasterClientUID = snapshot.MasterClientUID;
+        foreach(var p in snapshot.PlayersCollection)
+        {
+            if(!m_PlayersCollection.ContainsKey(p.Key))
+                m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.UID, p.Value.Name, () => m_LocalPlayerUID, () => m_MasterClientUID));
+        }
+    }
 }

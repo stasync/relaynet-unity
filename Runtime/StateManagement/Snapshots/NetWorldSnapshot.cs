@@ -2,14 +2,16 @@
 
 public struct NetWorldSnapshot
 {
+    public readonly float DeltaTime;
     public readonly NetWorldUID UID;
     public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> Objects => m_ObjectStates;
     readonly Dictionary<NetObjectUID, ObjectUpdateSnapshot> m_ObjectStates;
 
     public readonly NetWorldPlayersCollectionsSnapshot Players;
 
-    public NetWorldSnapshot(NetWorld world)
+    public NetWorldSnapshot(float deltaTime, NetWorld world)
     {
+        DeltaTime = deltaTime;
         UID = world.UID;
 
         m_ObjectStates = new Dictionary<NetObjectUID, ObjectUpdateSnapshot>();
@@ -18,5 +20,5 @@ public struct NetWorldSnapshot
 
         Players = world.Players.ToSnapshot();
     }
-    public static NetWorldSnapshot FromWorld(NetWorld world) => new NetWorldSnapshot(world);
+    public static NetWorldSnapshot FromWorld(float deltaTime, NetWorld world) => new NetWorldSnapshot(deltaTime, world);
 }

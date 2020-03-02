@@ -76,6 +76,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
 
         State = state;
         State.OnOwnerChanged += OnOwnerChanged;
+        State.LocalUpdateRequest += OnLocalUpdateRequest;
         /*
          * Skip deserialization if it calls on local object.
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
@@ -145,6 +146,24 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             b.OnDisconnected(peerId);
     }
 
+    void OnLocalUpdateRequest(bool forced)
+    {
+        if (!Initialized)
+            throw new InvalidOperationException($"Object {gameObject.name} not initialized");
+
+        if (!IsLocal)
+            return;
+
+        if (forced)
+            SetDirtyIfLocal();
+
+        foreach (var b in m_Observables)
+            b.OnUpdate();
+
+        if (forced || IsDirty)
+            State.ChangeObjectDataLocaly(Serialize());
+    }
+
     /// <summary>
     /// Object owner was changed.
     /// </summary>
@@ -184,22 +203,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         //Set components dirty;
         foreach (var o in m_Observables)
             o.SetDirty();
-    }
-
-    public void OnUpdate(float deltaTime)
-    {
-        //Object not initialized or remote;
-        if (!Initialized || !IsLocal)
-            return;
-
-        /*if (Time.fixedUnscaledTime < m_NextUpdateEventTime)
-            return;*/
-
-        //Update all the behaviours;
-        foreach (var b in m_Observables)
-            b.OnUpdate();
-
-        State.ChangeObjectDataLocaly(Serialize());
     }
 
     byte[] Serialize()
