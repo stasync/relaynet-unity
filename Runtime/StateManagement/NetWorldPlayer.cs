@@ -2,8 +2,11 @@
 
 public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
 {
-    public readonly ClientUID UID;
-    public readonly string Name;
+    #region STATE
+    public ClientUID UID { get; private set; }
+    public string Name { get; private set; }
+    #endregion
+
     public bool IsLocal => UID == m_LocalPlayer();
     public bool IsMaster => UID == m_MasterPlayer();
 
@@ -18,6 +21,11 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         m_MasterPlayer = masterPlayer;
     }
 
+    public void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
+    {
+        UID = snapshot.UID;
+        Name = snapshot.Name;
+    }
     public NetWorldPlayerSnapshot ToSnapshot() => NetWorldPlayerSnapshot.FormPlayer(this);
 
     public override string ToString() => $"{UID}:{Name} l:{IsLocal} m:{IsMaster}";

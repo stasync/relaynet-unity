@@ -24,6 +24,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public readonly bool IsSceneObject;
     public ClientUID OwnerUID { get; private set; }
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
+    public bool RequireRemoving => StateChangeType == ObjectStateChangeRequestType.RemoveUpdate;
     public byte[] Data { get; private set; }
     #endregion
 
