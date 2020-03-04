@@ -7,24 +7,21 @@ public abstract class NetWorld
 {
     public NetWorldUID UID { get; private set; }
     public NetWorldView WorldView { get; private set; }
-    public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => CurrentObjectStates;
-    protected Dictionary<NetObjectUID, NetObjectState> CurrentObjectStates { get; private set; }
+    public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
+    Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
     public NetWorldPlayersCollection Players { get; private set; }
 
-    protected virtual bool RecordHistory => true;
-
-    public NetWorld(NetWorldUID uid, string worldName)
+    protected NetWorld(NetWorldUID uid, string worldName)
     {
-        if (WorldView != null)
-            throw new InvalidOperationException($"{nameof(WorldView)} alreay created");
-
         UID = uid;
-        CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
+        m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         Players = new NetWorldPlayersCollection();
 
         WorldView = new GameObject($"{UID}:{worldName}").AddComponent<NetWorldView>();
         WorldView.Init(this);
     }
+
+    protected void AddObject(NetObjectUID uid, NetObjectState state) => m_CurrentObjectStates.Add(uid, state);
 
     protected void Evaluate(float worldDelta)
     {
@@ -44,8 +41,8 @@ public abstract class NetWorld
     {
         UID = NetWorldUID.Invalid;
 
-        CurrentObjectStates.Clear();
-        CurrentObjectStates = null;
+        m_CurrentObjectStates.Clear();
+        m_CurrentObjectStates = null;
 
         Players.Clear();
         Players = null;
@@ -54,12 +51,12 @@ public abstract class NetWorld
         WorldView = null;
     }
 
-    public virtual bool ObjectExists(NetObjectUID uid) => CurrentObjectStates.ContainsKey(uid);
+    public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
 
     public void ForEachStates(Action<NetObjectUID, NetObjectState> processor)
     {
-        foreach (var UID in CurrentObjectStates.Keys.ToArray())
-            processor(UID, CurrentObjectStates[UID]);
+        foreach (var UID in m_CurrentObjectStates.Keys.ToArray())
+            processor(UID, m_CurrentObjectStates[UID]);
     }
 
     protected void ForEachLocalStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((UID, state) =>
@@ -69,7 +66,7 @@ public abstract class NetWorld
     });
 
     protected virtual void RemoveObject(NetObjectUID stateUID) =>
-        CurrentObjectStates.Remove(stateUID);
+        m_CurrentObjectStates.Remove(stateUID);
 
     public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => NetWorldSnapshot.FromWorld(deltaTime, this);
 
@@ -81,10 +78,10 @@ public abstract class NetWorld
         //Add or update objects;
         foreach(var kvp in snapshot.Objects)
         {
-            if (CurrentObjectStates.ContainsKey(kvp.Key))
-                CurrentObjectStates[kvp.Key].ChangeObjectRemotely(kvp.Value);
+            if (m_CurrentObjectStates.ContainsKey(kvp.Key))
+                m_CurrentObjectStates[kvp.Key].ChangeObjectRemotely(kvp.Value);
             else
-                CurrentObjectStates.Add(kvp.Key, new NetObjectState(kvp.Value, Players.Find));
+                m_CurrentObjectStates.Add(kvp.Key, new NetObjectState(kvp.Value, Players.Find));
         }
 
         //Remove absent obejets;

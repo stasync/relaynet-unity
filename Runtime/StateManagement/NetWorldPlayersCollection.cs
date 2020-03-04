@@ -113,7 +113,7 @@ public class NetWorldPlayersCollection
             if (m_PlayersCollection.TryGetValue(p.Key, out var player))
                 player.RestoreFromSnapshot(p.Value);
             else
-                m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.UID, p.Value.Name, () => m_LocalPlayerUID, () => m_MasterClientUID););
+                m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.UID, p.Value.Name, () => m_LocalPlayerUID, () => m_MasterClientUID));
                 
         }
     }

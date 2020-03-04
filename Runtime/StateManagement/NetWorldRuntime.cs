@@ -3,52 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class NetWorldEvaluator : NetWorld
-{
-    LinkedList<NetWorldSnapshot> m_HistoryBuffer;
-    NetWorldSnapshot m_CurrentSnapshot;
-    float m_CurrentTime;
-    float m_NextSnapshotTime;
-
-    public NetWorldEvaluator(NetWorldRuntime runtime) : base(runtime.UID, $"World {runtime.UID} replica")
-    {
-        m_HistoryBuffer = new LinkedList<NetWorldSnapshot>(runtime.HistroyBuffer);
-        m_CurrentTime = 0f;
-        UpdateCurrentSnapshotInfo();
-    }
-
-    void NextSnapshot()
-    {
-        m_HistoryBuffer.RemoveFirst();
-        if (m_HistoryBuffer.Count > 0)
-            UpdateCurrentSnapshotInfo();
-    }
-
-    void UpdateCurrentSnapshotInfo()
-    {
-        m_CurrentSnapshot = m_HistoryBuffer.First();
-        m_NextSnapshotTime = m_CurrentTime + m_CurrentSnapshot.DeltaTime;
-    }
-
-    public void OnFixedUpdate()
-    {
-        if (m_HistoryBuffer.Count == 0)
-            return;
-
-        m_CurrentTime += Time.fixedUnscaledDeltaTime;
-        if (m_CurrentTime < m_NextSnapshotTime)
-            return;
-
-        Evaluate(m_CurrentSnapshot.DeltaTime);
-        NextSnapshot();
-    }
-
-    protected override void OnUpdateWorldState(float worldDelta)
-    {
-        RestoreFromSnapshot(m_CurrentSnapshot);
-    }
-}
-
 public class NetWorldRuntime : NetWorld, IJSONSerializable
 {
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
@@ -192,7 +146,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                 else
                     newState = new NetObjectState(snapshot, Players.Find);
 
-                CurrentObjectStates.Add(snapshot.ObjectUID, newState);
+                AddObject(snapshot.ObjectUID, newState);
                 m_RemoteObjectUpdateRequests.Remove(UID);
             });
         }
@@ -208,12 +162,12 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                 if (!state.IsOwnedByLocalPlayer)
                     continue;
 
-                if (CurrentObjectStates.ContainsKey(state.UID))
+                if (ObjectExists(state.UID))
                     Debug.LogError($"Object with UID {state.UID} already exists");
                 else
                 {
                     state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-                    CurrentObjectStates.Add(state.UID, state);
+                    AddObject(state.UID, state);
                 }
 
                 m_ObjectsRegisterRequests.Remove(UID);
@@ -328,7 +282,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     /// <param name="sceneIdentity"></param>
     public void TryRegisterOrInitializeSceneObjectIdentity(GSSceneObjectIdentity sceneIdentity)
     {
-        if (CurrentObjectStates.ContainsKey(sceneIdentity.SceneObjectId))
+        if (ObjectExists(sceneIdentity.SceneObjectId))
         {
 #if NETWORK_DEBUG
             Debug.LogErrorFormat("Trying to register scene identity {0}: but object with id {1} already registered",
