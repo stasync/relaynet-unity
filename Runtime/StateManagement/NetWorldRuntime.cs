@@ -5,8 +5,6 @@ using UnityEngine;
 
 public class NetWorldRuntime : NetWorld, IJSONSerializable
 {
-    public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
-
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
 
@@ -17,14 +15,18 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     LinkedList<NetWorldSnapshot> m_HistoryBuffer;
 
     INetwork m_InternalNetwork;
+    Action<byte[], DeliveryIntent> m_ObjectSender;
 
     const float c_HistoryBufferSecondsLength = 30f; //Record last 30 seconds;
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
     float m_LastUpdateTime;
 
-    public NetWorldRuntime(INetwork network, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
+    public NetWorldRuntime(INetwork network, Action<byte[], DeliveryIntent> objectSender, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
     {
         m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
+        m_ObjectSender = objectSender ?? throw new ArgumentNullException(nameof(objectSender));
+
+        NetObjectUID.Reset();
 
         /// Must be cleaned, when player disconnects;
         {
@@ -51,7 +53,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
             m_RemoteObjectUpdateRequests.Add(UID, snapshot);
     }
 
-    public void TryUpdate()
+    protected override void UpdateImplementation()
     {
         var worldDelta = Time.fixedUnscaledTime - m_LastUpdateTime;
         if (worldDelta < c_MinUpdateInteraval)
@@ -90,7 +92,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                             else
                                 state.InvalidateOwner();
 
-                            TryNotifyView(playerUID, stateUID);
+                            TryNotifyViewAboutDisconnectedPlayer(playerUID, stateUID);
                         }
                         //Destroy object;
                         else
@@ -98,11 +100,11 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                     }
                     //Notify view;
                     else
-                        TryNotifyView(playerUID, stateUID);
+                        TryNotifyViewAboutDisconnectedPlayer(playerUID, stateUID);
                 }
             });
 
-            void TryNotifyView(ClientUID clientUID, NetObjectUID objectUID)
+            void TryNotifyViewAboutDisconnectedPlayer(ClientUID clientUID, NetObjectUID objectUID)
             {
                 if (WorldView.CurrentObjectViews.TryGetValue(objectUID, out var view))
                     view.OnDisconnected(clientUID);
@@ -190,7 +192,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
 
                 state.RequestUpdate();
                 if (state.ChangedLocaly || deliveryIntent == DeliveryIntent.Reliable)
-                    m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
+                    m_ObjectSender(state.Serialize(), deliveryIntent);
 
                 if (state.RequireRemoving)
                     RemoveObject(UID);
@@ -226,7 +228,6 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         base.Destroy();
 
         Debug.LogError($"Destroy world {WorldView.gameObject}");
-        NewObjectInitialized = null;
 
         m_RemoteObjectUpdateRequests.Clear();
         m_RemoteObjectUpdateRequests = null;
@@ -271,7 +272,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     {
         var state = new NetObjectState(new NetObjectUID(owner.UID), prefabId, isSceneObject, owner.UID, Players.Find);
         m_ObjectsRegisterRequests.Add(state.UID, state);
-        return WorldView.CreateImmidiate(state, m_InternalNetwork, position, rotation, additionalData);      
+        return WorldView.CreateImmidiate(state, position, rotation, additionalData);      
     }
 
     /// <summary>
@@ -352,7 +353,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
             result(identity);
             return;
         }
-        NewObjectInitialized += OnNewObjectInitialized;
+        WorldView.NewObjectInitialized += OnNewObjectInitialized;
 
         void OnNewObjectInitialized(NetObjectIdentity o)
         {
@@ -360,7 +361,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                 return;
 
             result(o);
-            NewObjectInitialized -= OnNewObjectInitialized;
+            WorldView.NewObjectInitialized -= OnNewObjectInitialized;
         }
     }
 

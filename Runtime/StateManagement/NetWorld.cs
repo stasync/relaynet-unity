@@ -5,6 +5,7 @@ using UnityEngine;
 
 public abstract class NetWorld
 {
+    public bool IsValid => UID.IsValid;
     public NetWorldUID UID { get; private set; }
     public NetWorldView WorldView { get; private set; }
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
@@ -12,7 +13,7 @@ public abstract class NetWorld
     public NetWorldPlayersCollection Players { get; private set; }
 
     protected NetWorld(NetWorldUID uid, string worldName)
-    {
+    {        
         UID = uid;
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         Players = new NetWorldPlayersCollection();
@@ -20,6 +21,14 @@ public abstract class NetWorld
         WorldView = new GameObject($"{UID}:{worldName}").AddComponent<NetWorldView>();
         WorldView.Init(this);
     }
+
+    public void FixedUpdate()
+    {
+        if (IsValid)
+            UpdateImplementation();
+    }
+
+    protected abstract void UpdateImplementation();
 
     protected void AddObject(NetObjectUID uid, NetObjectState state) => m_CurrentObjectStates.Add(uid, state);
 

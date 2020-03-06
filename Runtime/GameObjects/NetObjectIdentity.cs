@@ -14,13 +14,6 @@ public enum RPCBufferChnageMethod : byte
 [DisallowMultipleComponent]
 public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
 {
-    /*[SerializeField]
-    DeliveryIntent m_DeliveryIntent = DeliveryIntent.Unreliable;*/
-
-    /*[SerializeField, Range(0.01f, 1f)]
-    float m_UpdateRate = 0.05f;
-    float m_NextUpdateEventTime;*/
-
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
     public bool IsLocal => State != null && State.IsOwnedByLocalPlayer;
@@ -34,11 +27,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     IRPCBuffer m_TemporalRPCBuffer = new TemporalRPCBuffer();
 
     public INetRTPlayer Owner => m_InternalNetwork.FindPlayer(State.Owner.UID);
-
-    /// <summary>
-    /// Readonly transport reference
-    /// </summary>
-    INetwork m_InternalNetwork;
 
     /// <summary>
     /// World, that contains this object;
@@ -61,7 +49,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    public NetObjectIdentity Initialze(NetObjectState state, INetwork network, NetWorld world, object[] additionalData)
+    public NetObjectIdentity Initialze(NetObjectState state, NetWorld world, object[] additionalData)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -71,7 +59,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             .OrderBy(c => c.SerializationOrder)
             .ToList();
 
-        m_InternalNetwork = network;
         m_NetWorld = world;
 
         State = state;
@@ -185,7 +172,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        State.ScheduleOwnerChanged(m_InternalNetwork.LocalPlayer.UID);
+        State.ScheduleOwnerChanged(m_NetWorld.Players.LocalPlayerUID);
     }
 
     /// <summary>

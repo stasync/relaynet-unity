@@ -7,19 +7,25 @@ public class NetWorldEvaluator : NetWorld
     NetWorldSnapshot m_CurrentSnapshot;
     float m_CurrentTime;
     float m_NextSnapshotTime;
+    bool m_AutoDestroy;
 
-    public NetWorldEvaluator(NetWorldRuntime runtime) : base(runtime.UID, $"World {runtime.UID} evaluator")
+    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.UID, $"World {runtime.UID} evaluator")
     {
         m_HistoryBuffer = new LinkedList<NetWorldSnapshot>(runtime.HistroyBuffer);
         m_CurrentTime = 0f;
+        m_AutoDestroy = autoDestroy;
+
         UpdateCurrentSnapshotInfo();
     }
 
     void NextSnapshot()
     {
         m_HistoryBuffer.RemoveFirst();
+
         if (m_HistoryBuffer.Count > 0)
             UpdateCurrentSnapshotInfo();
+        else if (m_AutoDestroy)
+            Destroy();
     }
 
     void UpdateCurrentSnapshotInfo()
@@ -28,7 +34,7 @@ public class NetWorldEvaluator : NetWorld
         m_NextSnapshotTime = m_CurrentTime + m_CurrentSnapshot.DeltaTime;
     }
 
-    public void OnFixedUpdate()
+    protected override void UpdateImplementation()
     {
         if (m_HistoryBuffer.Count == 0)
             return;

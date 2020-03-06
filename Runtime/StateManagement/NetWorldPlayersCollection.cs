@@ -5,8 +5,8 @@ using System.Linq;
 public class NetWorldPlayersCollection
 {
     #region State
-    ClientUID m_LocalPlayerUID;
-    ClientUID m_MasterClientUID;
+    public ClientUID LocalPlayerUID { get; private set; }
+    public ClientUID MasterClientUID { get; private set; }
 
     public IEnumerable<ClientUID> PlayerUIDs => m_PlayersCollection.Keys;
     Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
@@ -14,8 +14,8 @@ public class NetWorldPlayersCollection
 
     Queue<Action> m_UpdateQueue;
 
-    public NetWorldPlayer LocalPlayer => Find(m_LocalPlayerUID);
-    public NetWorldPlayer MasterPlayer => Find(m_MasterClientUID);
+    public NetWorldPlayer LocalPlayer => Find(LocalPlayerUID);
+    public NetWorldPlayer MasterPlayer => Find(MasterClientUID);
     public NetWorldPlayer Find(ClientUID uid) => m_PlayersCollection.TryGetValue(uid, out var player) ? player : null;
     public bool Contains(ClientUID uid) => m_PlayersCollection.ContainsKey(uid);
 
@@ -27,8 +27,8 @@ public class NetWorldPlayersCollection
 
     public NetWorldPlayersCollection()
     {
-        m_LocalPlayerUID = ClientUID.Invalid;
-        m_MasterClientUID = ClientUID.Invalid;
+        LocalPlayerUID = ClientUID.Invalid;
+        MasterClientUID = ClientUID.Invalid;
 
         m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayer>();
         m_UpdateQueue = new Queue<Action>();
@@ -41,20 +41,20 @@ public class NetWorldPlayersCollection
         ScheduleOnUpdate(() =>
         {
             if (isLocal)
-                m_LocalPlayerUID = uid;
+                LocalPlayerUID = uid;
 
             if (m_PlayersCollection.ContainsKey(uid))
                 throw new InvalidOperationException();
 
-            m_PlayersCollection.Add(uid, new NetWorldPlayer(uid, name, () => m_LocalPlayerUID, () => m_MasterClientUID));
+            m_PlayersCollection.Add(uid, new NetWorldPlayer(uid, name, () => LocalPlayerUID, () => MasterClientUID));
             m_AddedPlayers.Add(uid);
         });
 
     public void Unregister(ClientUID uid) =>
         ScheduleOnUpdate(() =>
         {
-            if (m_LocalPlayerUID == uid)
-                m_LocalPlayerUID = ClientUID.Invalid;
+            if (LocalPlayerUID == uid)
+                LocalPlayerUID = ClientUID.Invalid;
 
             if (m_PlayersCollection.Remove(uid))
                 m_RemovedPlayers.Remove(uid);
@@ -67,7 +67,7 @@ public class NetWorldPlayersCollection
         while (m_UpdateQueue.Count > 0)
             m_UpdateQueue.Dequeue()();
 
-        m_MasterClientUID = PlayerUIDs.Any() ? PlayerUIDs.Min() : ClientUID.Invalid;
+        MasterClientUID = PlayerUIDs.Any() ? PlayerUIDs.Min() : ClientUID.Invalid;
     }
 
     public void FinalizeIteration()
@@ -78,8 +78,8 @@ public class NetWorldPlayersCollection
 
     public void Clear()
     {
-        m_LocalPlayerUID = ClientUID.Invalid;
-        m_MasterClientUID = ClientUID.Invalid;
+        LocalPlayerUID = ClientUID.Invalid;
+        MasterClientUID = ClientUID.Invalid;
 
         m_PlayersCollection.Clear();
         m_PlayersCollection = null;
@@ -97,8 +97,8 @@ public class NetWorldPlayersCollection
     public NetWorldPlayersCollectionsSnapshot ToSnapshot() => NetWorldPlayersCollectionsSnapshot.FormCollection(this);
     public void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
     {
-        m_LocalPlayerUID = snapshot.LocalPlayerUID;
-        m_MasterClientUID = snapshot.MasterClientUID;
+        LocalPlayerUID = snapshot.LocalPlayerUID;
+        MasterClientUID = snapshot.MasterClientUID;
 
         //Remove;
         foreach(var p in m_PlayersCollection.Keys.ToArray())
@@ -113,7 +113,7 @@ public class NetWorldPlayersCollection
             if (m_PlayersCollection.TryGetValue(p.Key, out var player))
                 player.RestoreFromSnapshot(p.Value);
             else
-                m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.UID, p.Value.Name, () => m_LocalPlayerUID, () => m_MasterClientUID));
+                m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.UID, p.Value.Name, () => LocalPlayerUID, () => MasterClientUID));
                 
         }
     }

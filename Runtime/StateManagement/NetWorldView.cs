@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class NetWorldView : MonoBehaviour
 {
+    public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
+
     NetWorld m_World;
     NetObjectFactory m_ObjectFactory;
 
@@ -65,7 +67,7 @@ public class NetWorldView : MonoBehaviour
                     netObjectView.Deserialize(state.Data, false, false);
             }
             else
-                InitializeView(netObjectView, state, m_Sender, null);
+                InitializeView(netObjectView, state, null);
 
             //Report to player;
             {
@@ -96,15 +98,15 @@ public class NetWorldView : MonoBehaviour
         return netObjectView;
     }
 
-    public NetObjectIdentity CreateImmidiate(NetObjectState state, INetwork transport, Vector3 position, Quaternion rotation, object[] additionalData)
+    public NetObjectIdentity CreateImmidiate(NetObjectState state, Vector3 position, Quaternion rotation, object[] additionalData)
     {
         var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
-        InitializeView(netObjectView, state, transport, additionalData);
+        InitializeView(netObjectView, state, additionalData);
         m_PendingObjectViews.Add(state.UID, netObjectView);
         return netObjectView;
     }
 
-    public void InitializeView(NetObjectIdentity identity, NetObjectState state, INetwork transport, object[] additionalData)
+    public void InitializeView(NetObjectIdentity identity, NetObjectState state, object[] additionalData)
     {
         if (identity.Initialized)
             throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{state.UID} already initialized");
@@ -114,7 +116,10 @@ public class NetWorldView : MonoBehaviour
         identity.transform.SetParent(transform);
 
         //Init;
-        identity.Initialze(state, transport, m_World, additionalData);
+        identity.Initialze(state, m_World, additionalData);
+
+        //Push event;
+        NewObjectInitialized(identity);
     }
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => m_PendingObjectViews.Add(uid, identity);
@@ -150,6 +155,8 @@ public class NetWorldView : MonoBehaviour
 
     public void Destroy()
     {
+        NewObjectInitialized = null;
+
         m_CurrentObjectViews.Clear();
         m_CurrentObjectViews = null;
 

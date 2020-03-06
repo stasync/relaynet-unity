@@ -129,8 +129,13 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
             Debug.LogError($"Unable to set request {ObjectStateChangeRequestType.ReliableUpdate} because it has less priority than current request {StateChangeType}");
         else
         {
-            StateChangeType = ObjectStateChangeRequestType.ReliableUpdate;
-            OwnerUID = newOwner;
+            if (newOwner.IsValid)
+            {
+                StateChangeType = ObjectStateChangeRequestType.ReliableUpdate;
+                OwnerUID = newOwner;
+            }
+            else
+                Debug.LogError($"Unable to change owner, invalid id {newOwner}");
         }
     }
 
