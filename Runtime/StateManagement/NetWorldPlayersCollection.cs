@@ -2,7 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 
-public class NetWorldPlayersCollection
+public interface IReadOnlyNetWorldPlayersCollection
+{
+    IEnumerable<ClientUID> PlayerUIDs { get; }
+    ClientUID LocalPlayerUID { get; }
+    ClientUID MasterClientUID { get; }
+    NetWorldPlayer LocalPlayer { get; }
+    NetWorldPlayer MasterPlayer { get; }
+    NetWorldPlayer Find(ClientUID uid);
+    bool Contains(ClientUID uid);
+    NetWorldPlayersCollectionsSnapshot ToSnapshot();
+}
+
+public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
 {
     #region State
     public ClientUID LocalPlayerUID { get; private set; }

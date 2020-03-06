@@ -68,19 +68,6 @@ public class NetWorldView : MonoBehaviour
             }
             else
                 InitializeView(netObjectView, state, null);
-
-            //Report to player;
-            {
-                var senderPlayer = m_Sender.FindPlayer(state.OwnerUID);
-                if (senderPlayer == null)
-                {
-                    Debug.LogError($"Unable to update object state for player with UID {state.OwnerUID}. Player doesn't exists");
-                    return;
-                }
-
-                if (!senderPlayer.IsLocal)
-                    senderPlayer.OnObjectCreateUpdate(netObjectView);
-            }
         });
     }
 

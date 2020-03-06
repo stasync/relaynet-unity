@@ -1,5 +1,6 @@
 ﻿using Core.Networking;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum ObjectStateChangeRequestType : byte
@@ -47,6 +48,9 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
+    public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCRequests => m_RPCRequests;
+    List<RPCWithoutAuthorityRequest> m_RPCRequests = new List<RPCWithoutAuthorityRequest>();
+
     NetWriter m_Writer;
 
     public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvier)
@@ -89,6 +93,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         //Return object to regular UDP pipeline;
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
         ChangedLocaly = false;
+        m_RPCRequests.Clear();
     }
 
     public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
@@ -163,4 +168,24 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
     public int CompareTo(NetObjectState other) => UID.CompareTo(other.UID);
     public bool Equals(NetObjectState other) => UID.Equals(other.UID);
+
+    public void ScheduleRPCWithoutAuthority(RPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent) =>
+        m_RPCRequests.Add(new RPCWithoutAuthorityRequest(type, hashCode, data, deliveryIntent));
+
+}
+
+public struct RPCWithoutAuthorityRequest
+{
+    public readonly RPCType Type;
+    public readonly int HashCode;
+    public readonly byte[] Data;
+    public readonly DeliveryIntent DeliveryIntent;
+
+    public RPCWithoutAuthorityRequest(RPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent)
+    {
+        Type = type;
+        HashCode = hashCode;
+        Data = data;
+        DeliveryIntent = deliveryIntent;
+    }
 }

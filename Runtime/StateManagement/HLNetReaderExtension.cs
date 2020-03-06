@@ -12,7 +12,7 @@ public static class HLNetReaderExtention
         reader.ReadPackedUInt32();
 
     public static INetRTPlayer ReadPlayer(this NetReader reader) =>
-        m_NetworkProvider.Instance.Realtime.GetPlayerByPeerId(reader.ReadConnectionUID());
+        m_NetworkProvider.Instance.Realtime.FindPlayer(reader.ReadConnectionUID());
 
     public static NetObjectIdentity ReadObject(this NetReader reader) =>
         m_NetworkProvider.Instance.Realtime.FindNetworkObject(reader.ReadPackedUInt32());

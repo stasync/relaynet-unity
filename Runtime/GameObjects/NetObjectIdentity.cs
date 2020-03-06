@@ -14,10 +14,13 @@ public enum RPCBufferChnageMethod : byte
 [DisallowMultipleComponent]
 public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
 {
+    [Obsolete]
+    ServiceProvider<GSNetwork> m_NetProvider = new ServiceProvider<GSNetwork>();
+
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
     public bool IsLocal => State != null && State.IsOwnedByLocalPlayer;
-    public bool IsLocalPlayerTagObject => State != null && m_InternalNetwork.LocalPlayer.TagObjectId == State.UID;
+    public bool IsLocalPlayerTagObject => State != null && m_NetProvider.Instance.Realtime.LocalPlayer.TagObjectId == State.UID;
     public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_PersistentRPCBuffer.IsDirty;
 
     /// <summary>
@@ -26,7 +29,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     IRPCBuffer m_PersistentRPCBuffer = new RPCBuffer();
     IRPCBuffer m_TemporalRPCBuffer = new TemporalRPCBuffer();
 
-    public INetRTPlayer Owner => m_InternalNetwork.FindPlayer(State.Owner.UID);
+    public INetRTPlayer Owner => m_NetProvider.Instance.Realtime.FindPlayer(State.Owner.UID);
 
     /// <summary>
     /// World, that contains this object;
@@ -360,7 +363,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
         else
-            m_InternalNetwork.RPC(RPCType.ToOwner, InstanceId, hashCode, data, deliveryIntent);
+            State.ScheduleRPCWithoutAuthority(RPCType.ToOwner, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -375,7 +378,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (IsOwnedByMasterClient)
             InvokeRpcHandler(hashCode, data);
         else
-            m_InternalNetwork.RPC(RPCType.ToMaster, InstanceId, hashCode, data, deliveryIntent);
+            State.ScheduleRPCWithoutAuthority(RPCType.ToMaster, hashCode, data, deliveryIntent);
     }
 
     /// <summary>

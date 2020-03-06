@@ -7,19 +7,21 @@ public abstract class NetWorld
 {
     public bool IsValid => UID.IsValid;
     public NetWorldUID UID { get; private set; }
-    public NetWorldView WorldView { get; private set; }
+    public NetWorldView View { get; private set; }
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
     Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
-    public NetWorldPlayersCollection Players { get; private set; }
+
+    public IReadOnlyNetWorldPlayersCollection Players => PlayersInternal;
+    protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
     protected NetWorld(NetWorldUID uid, string worldName)
     {        
         UID = uid;
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
-        Players = new NetWorldPlayersCollection();
+        PlayersInternal = new NetWorldPlayersCollection();
 
-        WorldView = new GameObject($"{UID}:{worldName}").AddComponent<NetWorldView>();
-        WorldView.Init(this);
+        View = new GameObject($"{UID}:{worldName}").AddComponent<NetWorldView>();
+        View.Init(this);
     }
 
     public void FixedUpdate()
@@ -36,9 +38,9 @@ public abstract class NetWorld
     {
         OnUpdateWorldState(worldDelta);
         OnBeforeExecuteView();
-        WorldView.Execute();
+        View.Execute();
 
-        Players.FinalizeIteration();
+        PlayersInternal.FinalizeIteration();
         ForEachStates((UID, state) => state.FinalizeIteration());
     }
 
@@ -53,11 +55,11 @@ public abstract class NetWorld
         m_CurrentObjectStates.Clear();
         m_CurrentObjectStates = null;
 
-        Players.Clear();
-        Players = null;
+        PlayersInternal.Clear();
+        PlayersInternal = null;
 
-        WorldView.Destroy(); //Destroy all net object;
-        WorldView = null;
+        View.Destroy(); //Destroy all net object;
+        View = null;
     }
 
     public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
@@ -74,6 +76,12 @@ public abstract class NetWorld
             processor(UID, state);
     });
 
+    protected void ForEachRemoteStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((UID, state) =>
+    {
+        if (!state.IsOwnedByLocalPlayer)
+            processor(UID, state);
+    });
+
     protected virtual void RemoveObject(NetObjectUID stateUID) =>
         m_CurrentObjectStates.Remove(stateUID);
 
@@ -82,7 +90,7 @@ public abstract class NetWorld
     public void RestoreFromSnapshot(NetWorldSnapshot snapshot)
     {
         //Restore players;
-        Players.RestoreFromSnapshot(snapshot.Players);
+        PlayersInternal.RestoreFromSnapshot(snapshot.Players);
 
         //Add or update objects;
         foreach(var kvp in snapshot.Objects)
@@ -90,7 +98,7 @@ public abstract class NetWorld
             if (m_CurrentObjectStates.ContainsKey(kvp.Key))
                 m_CurrentObjectStates[kvp.Key].ChangeObjectRemotely(kvp.Value);
             else
-                m_CurrentObjectStates.Add(kvp.Key, new NetObjectState(kvp.Value, Players.Find));
+                m_CurrentObjectStates.Add(kvp.Key, new NetObjectState(kvp.Value, PlayersInternal.Find));
         }
 
         //Remove absent obejets;
