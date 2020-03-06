@@ -26,9 +26,9 @@ public abstract class AnimatorPerameterValueProxy<T> : IAnimatorValueProxy where
     public abstract void OnDataDeserialized();
 }
 
-public class AnimatorFloatPerameterValueProxy : AnimatorPerameterValueProxy<float>
+public class AnimatorFloatParameterValueProxy : AnimatorPerameterValueProxy<float>
 {
-    public AnimatorFloatPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<float> internalValue) :
+    public AnimatorFloatParameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<float> internalValue) :
         base(animator, parameter, internalValue)
     { }
 
@@ -36,9 +36,9 @@ public class AnimatorFloatPerameterValueProxy : AnimatorPerameterValueProxy<floa
     public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetFloat(Parameter.nameHash));
 }
 
-public class AnimatorIntPerameterValueProxy : AnimatorPerameterValueProxy<int>
+public class AnimatorIntParameterValueProxy : AnimatorPerameterValueProxy<int>
 {
-    public AnimatorIntPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<int> internalValue) :
+    public AnimatorIntParameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<int> internalValue) :
         base(animator, parameter, internalValue)
     { }
 
@@ -46,9 +46,9 @@ public class AnimatorIntPerameterValueProxy : AnimatorPerameterValueProxy<int>
     public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetInteger(Parameter.nameHash));
 }
 
-public class AnimatorBoolPerameterValueProxy : AnimatorPerameterValueProxy<bool>
+public class AnimatorBoolParameterValueProxy : AnimatorPerameterValueProxy<bool>
 {
-    public AnimatorBoolPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<bool> internalValue) :
+    public AnimatorBoolParameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<bool> internalValue) :
         base(animator, parameter, internalValue)
     { }
 
@@ -80,21 +80,8 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
         Set, Reset,
     }
 
-    public bool SyncEnabled
-    {
-        get => m_SyncEnabled;
-        set
-        {
-            if (!IsLocal)
-                throw new Exception("Cannot change transform sync state on remote object");
-            m_SyncEnabled = value;
-        }
-    }
     [SerializeField, Range(0.01f, 1f)]
     float m_MinSendRate = 0.1f;
-
-    [SerializeField]
-    bool m_SyncEnabled = true;
 
     [SerializeField]
     Animator m_Animator;
@@ -115,19 +102,19 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
                 case AnimatorControllerParameterType.Bool:
                     BuildProxyForParameter(p.name, 
                         () => new SerializableBool(false, 
-                        () => Data.HasPermission), v => new AnimatorBoolPerameterValueProxy(m_Animator, p, v));
+                        () => Data.HasPermission), v => new AnimatorBoolParameterValueProxy(m_Animator, p, v));
                     break;
 
                 case AnimatorControllerParameterType.Float:
                     BuildProxyForParameter(p.name,
                         () => new SerializableFloat(0f,
-                        () => Data.HasPermission), v => new AnimatorFloatPerameterValueProxy(m_Animator, p, v));
+                        () => Data.HasPermission), v => new AnimatorFloatParameterValueProxy(m_Animator, p, v));
                     break;
 
                 case AnimatorControllerParameterType.Int:
                     BuildProxyForParameter(p.name,
                          () => new SerializableInt(0,
-                         () => Data.HasPermission), v => new AnimatorIntPerameterValueProxy(m_Animator, p, v));
+                         () => Data.HasPermission), v => new AnimatorIntParameterValueProxy(m_Animator, p, v));
                     break;
             }
         });
@@ -147,18 +134,6 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 
     public override void OnPostInitialize()
     {
-    }
-
-    void FixedUpdate()
-    {
-        if (!m_SyncEnabled || !IsLocal)
-            return;
-
-        if (m_NextSendEventTime > Time.fixedUnscaledTime)
-            return;
-
-        m_NextSendEventTime = Time.fixedUnscaledTime + m_MinSendRate;
-        SetDirty();
     }
 
     void ForEachLayer(Action<AnimatorStateInfo, float, int> processor)
@@ -203,7 +178,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
         OwnerToOthersRPC(
             SyncAnimatorTriggersHandler,
             writer.ToArray(), 
-            DeliveryIntent.UnreliableSequenced, 
+            DeliveryIntent.Unreliable, 
             false);
     }
 
@@ -236,6 +211,12 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
     public override void OnUpdate()
     {
         base.OnUpdate();
+
+        if (m_NextSendEventTime > Time.fixedUnscaledTime)
+            return;
+
+        m_NextSendEventTime = Time.fixedUnscaledTime + m_MinSendRate;
+
         foreach (var p in m_AnimatorParameterValueProxyCollection)
             p.OnUpdate();
 

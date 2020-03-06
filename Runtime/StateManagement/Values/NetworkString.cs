@@ -11,6 +11,7 @@ public class SerializableFloat : SerializableValue<float>
     { }
 
     public void Change(float value) => Set(InternalValue + value);
+    public void ChangeClamped(float value, float min, float max) => Set(Mathf.Clamp(InternalValue + value, min, max));
 }
 
 public class SerializableInt : SerializableValue<int>
@@ -20,6 +21,7 @@ public class SerializableInt : SerializableValue<int>
     { }
 
     public void Change(int value) => Set(InternalValue + value);
+    public void ChangeClamped(int value, int min, int max) => Set(Mathf.Clamp(InternalValue + value, min, max));
 }
 
 public class SerializableBool : SerializableValue<bool>
