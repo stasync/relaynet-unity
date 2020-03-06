@@ -18,7 +18,7 @@ public struct NetWorldPlayersCollectionsSnapshot
         MasterClientUID = collection.MasterPlayer.UID;
 
         m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
-        foreach (var UID in collection.PlayerUIDs)
+        foreach (var UID in collection.AllUIDs)
             m_PlayersCollection.Add(UID, collection.Find(UID).ToSnapshot());
 
         m_RemovedPlayers = collection.RemovedPlayers.ToList();

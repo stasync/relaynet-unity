@@ -14,11 +14,15 @@ public abstract class NetWorld
     public IReadOnlyNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
+    Queue<Action> m_UpdateQueue;
+
     protected NetWorld(NetWorldUID uid, string worldName)
     {        
         UID = uid;
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         PlayersInternal = new NetWorldPlayersCollection();
+
+        m_UpdateQueue = new Queue<Action>();
 
         View = new GameObject($"{UID}:{worldName}").AddComponent<NetWorldView>();
         View.Init(this);
@@ -26,8 +30,13 @@ public abstract class NetWorld
 
     public void FixedUpdate()
     {
-        if (IsValid)
-            UpdateImplementation();
+        if (!IsValid)
+            return;
+
+        while (m_UpdateQueue.Count > 0)
+            m_UpdateQueue.Dequeue()();
+
+        UpdateImplementation();
     }
 
     protected abstract void UpdateImplementation();
@@ -58,9 +67,14 @@ public abstract class NetWorld
         PlayersInternal.Clear();
         PlayersInternal = null;
 
+        m_UpdateQueue.Clear();
+        m_UpdateQueue = null;
+
         View.Destroy(); //Destroy all net object;
         View = null;
     }
+
+    public void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
 
     public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
 

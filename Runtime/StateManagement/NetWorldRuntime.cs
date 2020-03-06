@@ -11,6 +11,9 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> RemoteObjectUpdateRequests => m_RemoteObjectUpdateRequests;    
     Dictionary<NetObjectUID, ObjectUpdateSnapshot> m_RemoteObjectUpdateRequests;
 
+    public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> RemotePlayersUpdateRequests => m_RemotePlayersUpdateRequests;
+    Dictionary<ClientUID, NetWorldPlayerSnapshot> m_RemotePlayersUpdateRequests;
+
     public IReadOnlyCollection<NetWorldSnapshot> HistroyBuffer => m_HistoryBuffer;
     LinkedList<NetWorldSnapshot> m_HistoryBuffer;
 
@@ -31,6 +34,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         /// Must be cleaned, when player disconnects;
         {
             m_RemoteObjectUpdateRequests = new Dictionary<NetObjectUID, ObjectUpdateSnapshot>();
+            m_RemotePlayersUpdateRequests = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
             m_ObjectsRegisterRequests = new Dictionary<NetObjectUID, NetObjectState>();
         }
 
@@ -53,6 +57,15 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
             m_RemoteObjectUpdateRequests.Add(UID, snapshot);
     }
 
+
+    public void ScheduleUpdateForRemotePlayer(ClientUID UID, NetWorldPlayerSnapshot snapshot)
+    {
+        if (m_RemotePlayersUpdateRequests.ContainsKey(UID))
+             Debug.LogError($"Unable to schedule update for remote player {snapshot.UID}: already scheduled");
+        else
+            m_RemotePlayersUpdateRequests.Add(UID, snapshot);
+    }
+
     protected override void UpdateImplementation()
     {
         var worldDelta = Time.fixedUnscaledTime - m_LastUpdateTime;
@@ -66,7 +79,38 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     #region Loop
     protected override void OnUpdateWorldState(float deltaTime)
     {
-        PlayersInternal.Udpate();
+        //Players
+        {
+            //Update remotes;
+            {
+                foreach(var UID in m_RemotePlayersUpdateRequests.Keys.ToArray())
+                {
+                    var snapshot = m_RemotePlayersUpdateRequests[UID];
+                    var player = Players.Find(UID);
+
+                    //Player not exists;
+                    if (player == null)
+                    {
+                        //Create new;
+                        player = PlayersInternal.Register(snapshot.UID, false);
+
+                        //Set local player dirty, to send our player to others ASAP;
+                        Players.LocalPlayer.SetDitry(); 
+                    }
+                    //Restore player;
+                    player.RestoreFromSnapshot(snapshot);
+                }
+                m_RemotePlayersUpdateRequests.Clear();
+            }
+
+            //Send local player;
+            {
+                var locaPlayer = Players.LocalPlayer;
+                if (locaPlayer.Dirty)
+                    m_InternalNetwork.SendDataToOthers(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
+            }
+        }
+
 
         UpdateStateBasedOnRemovedPlayers();
         UpdateStateBasedOnRemoteData();
@@ -243,6 +287,9 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         m_RemoteObjectUpdateRequests.Clear();
         m_RemoteObjectUpdateRequests = null;
 
+        m_RemotePlayersUpdateRequests.Clear();
+        m_RemotePlayersUpdateRequests = null;
+
         m_ObjectsRegisterRequests.Clear();
         m_ObjectsRegisterRequests = null;
 
@@ -256,12 +303,22 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     public void OnRemotePlayerLoadedGameScene(ClientUID peerId) =>
         View.OnRemotePlayerBecomesReady(peerId);
 
-    public void OnPlayerBecomesReady(INetRTPlayer player, bool isLocal) =>
-        PlayersInternal.Register(player.UID, player.Name, isLocal);
+    /// Connect;
+    public void OnLocalPlayerBecomesReady(ClientUID peerId) => 
+        ScheduleOnUpdate(() => PlayersInternal.Register(peerId, true));
 
-    /// Someone disconnected.
+    /// Disconnected;
     public void OnDisconnect(ClientUID uid) =>
-        PlayersInternal.Unregister(uid);
+        ScheduleOnUpdate(() => 
+        {
+            PlayersInternal.UnregisterImmidiate(uid);
+            if (m_RemotePlayersUpdateRequests.Remove(uid))
+                Debug.LogError($"Removed absend update request for player {uid}");
+        });
+
+    /// Scene loaded;
+    public void OnSceneLoaded() => 
+        ScheduleOnUpdate(() => PlayersInternal.LocalPlayer.IsInGameScene = true);
 
     protected void ForEachRemoteRequests(Action<NetObjectUID, ObjectUpdateSnapshot> processor)
     {

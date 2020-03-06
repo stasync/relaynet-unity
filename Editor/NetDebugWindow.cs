@@ -46,7 +46,7 @@ public class NetWorldDebugWindow : EditorWindow
             DrawPlayer("Master: ", players.MasterPlayer);
 
             EditorGUILayout.Space();
-            foreach (var uid in players.PlayerUIDs)
+            foreach (var uid in players.AllUIDs)
                 DrawPlayer(string.Empty, players.Find(uid));
         }
 
