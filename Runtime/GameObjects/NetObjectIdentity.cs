@@ -180,12 +180,16 @@ public sealed class GSInstanceIdentity : MonoBehaviour, IRPCReciever, IJSONSeria
         if (Initialized)
             throw new Exception("Object already initialized");
 
+        m_Owner = owner ?? throw new ArgumentNullException("owner");
+
+        if (!instanceId.IsValid)
+            throw new InvalidOperationException($"Trying in initialize {gameObject.name} with invalid id {instanceId}");
+
         m_Observables = gameObject
             .GetComponents<IGSInstanceObservable>()
             .OrderBy(c => c.SerializationOrder)
             .ToList();
 
-        m_Owner = owner ?? throw new ArgumentNullException("owner");
 
         InstanceId = instanceId;
         PrefabId = prefabId;

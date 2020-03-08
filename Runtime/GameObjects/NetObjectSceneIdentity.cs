@@ -49,6 +49,11 @@ public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
 
         foreach (var obj in sceneObjects)
         {
+            if (!obj.SceneObjectId.IsValid)
+            {
+                Debug.LogError($"{obj.gameObject.name} has ivalid id {obj.SceneObjectId} (Has to be fixed manually)");
+                continue;
+            }
             var objectWithSameId = ObjectWithSameId(sceneObjects, obj);
 
             if (objectWithSameId == null)

@@ -66,7 +66,7 @@ public struct GSInstanceId : IComparable<GSInstanceId>, IEquatable<GSInstanceId>
         m_InstanceIdValue = instanceId;
     }
 
-    public bool IsValid => m_InstanceIdValue != Invalid;
+    public bool IsValid => m_InstanceIdValue > Invalid.m_InstanceIdValue;
     public bool IsSceneObjectSpaceId => IsValid && m_InstanceIdValue <= c_SceneObjectReservedIdSpace;
 
     uint m_InstanceIdValue;
