@@ -78,6 +78,17 @@ public abstract class NetWorld
 
     public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
 
+    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
+        View.CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
+
+    public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
+        View.CurrentObjectViews.Values
+            .Select(v => v.GetBehaviour<T>())
+            .Where(b => b != null);
+
+    public NetObjectState FindObject(NetObjectUID instanceId) =>
+        m_CurrentObjectStates.TryGetValue(instanceId, out NetObjectState state) ? state : null;
+
     public void ForEachStates(Action<NetObjectUID, NetObjectState> processor)
     {
         foreach (var UID in m_CurrentObjectStates.Keys.ToArray())

@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class NetWorldRuntime : NetWorld, IJSONSerializable
 {
+    public Action<NetWorldPlayer, bool> NewPlayerRegisterd = delegate { };
+
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
 
@@ -16,6 +18,9 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
 
     public IReadOnlyCollection<NetWorldSnapshot> HistroyBuffer => m_HistoryBuffer;
     LinkedList<NetWorldSnapshot> m_HistoryBuffer;
+
+    HashSet<ClientUID> m_LocalPlayerRegisterQueue;
+    HashSet<ClientUID> m_PlayerUnregisterQueue;
 
     INetwork m_InternalNetwork;
     Action<byte[], DeliveryIntent> m_ObjectSender;
@@ -38,32 +43,35 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
             m_ObjectsRegisterRequests = new Dictionary<NetObjectUID, NetObjectState>();
         }
 
+        m_LocalPlayerRegisterQueue = new HashSet<ClientUID>();
+        m_PlayerUnregisterQueue = new HashSet<ClientUID>();
+
         m_HistoryBuffer = new LinkedList<NetWorldSnapshot>();
     }
 
     public NetWorldEvaluator Replicate() => new NetWorldEvaluator(this);
 
-    public void ScheduleUpdateForRemoteObject(NetObjectUID UID, ObjectUpdateSnapshot snapshot)
+    public void ScheduleUpdateForRemoteObject(ObjectUpdateSnapshot snapshot)
     {
-        if (m_RemoteObjectUpdateRequests.ContainsKey(UID))
+        if (m_RemoteObjectUpdateRequests.ContainsKey(snapshot.ObjectUID))
         {
-            var current = m_RemoteObjectUpdateRequests[UID];
+            var current = m_RemoteObjectUpdateRequests[snapshot.ObjectUID];
             if (current.StateChangeType < snapshot.StateChangeType)
-                m_RemoteObjectUpdateRequests[UID] = snapshot;
+                m_RemoteObjectUpdateRequests[snapshot.ObjectUID] = snapshot;
             else
                 Debug.LogError($"Unable to schedule update for remote object {snapshot.ObjectUID} {snapshot.PrefabId} with {snapshot.StateChangeType}, already scheduled update witht high priority");
         }
         else
-            m_RemoteObjectUpdateRequests.Add(UID, snapshot);
+            m_RemoteObjectUpdateRequests.Add(snapshot.ObjectUID, snapshot);
     }
 
 
-    public void ScheduleUpdateForRemotePlayer(ClientUID UID, NetWorldPlayerSnapshot snapshot)
+    public void ScheduleUpdateForRemotePlayer(NetWorldPlayerSnapshot snapshot)
     {
-        if (m_RemotePlayersUpdateRequests.ContainsKey(UID))
-             Debug.LogError($"Unable to schedule update for remote player {snapshot.UID}: already scheduled");
+        if (m_RemotePlayersUpdateRequests.ContainsKey(snapshot.PlayerUID))
+             Debug.LogError($"Unable to schedule update for remote player {snapshot.PlayerUID}: already scheduled");
         else
-            m_RemotePlayersUpdateRequests.Add(UID, snapshot);
+            m_RemotePlayersUpdateRequests.Add(snapshot.PlayerUID, snapshot);
     }
 
     protected override void UpdateImplementation()
@@ -79,11 +87,34 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     #region Loop
     protected override void OnUpdateWorldState(float deltaTime)
     {
-        //Players
+        UpdatePlayerStates();
+        UpdateStateBasedOnRemovedPlayers();
+        UpdateStateBasedOnRemoteData();
+        UpdateRemoteRPCRequests();
+        UpdateLocalObjectState();
+
+        #region Internal
+        void UpdatePlayerStates()
         {
+            //Add local
+            {
+                foreach (var p in m_LocalPlayerRegisterQueue)
+                    NewPlayerRegisterd(PlayersInternal.RegisterImmidiate(p, true), true); //Add player and notify;
+
+                m_LocalPlayerRegisterQueue.Clear();
+            }
+
+            //Remove all
+            {
+                foreach (var p in m_PlayerUnregisterQueue)
+                    PlayersInternal.UnregisterImmidiate(p);
+
+                m_PlayerUnregisterQueue.Clear();
+            }
+
             //Update remotes;
             {
-                foreach(var UID in m_RemotePlayersUpdateRequests.Keys.ToArray())
+                foreach (var UID in m_RemotePlayersUpdateRequests.Keys.ToArray())
                 {
                     var snapshot = m_RemotePlayersUpdateRequests[UID];
                     var player = Players.Find(UID);
@@ -92,10 +123,13 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                     if (player == null)
                     {
                         //Create new;
-                        player = PlayersInternal.Register(snapshot.UID, false);
+                        player = PlayersInternal.RegisterImmidiate(snapshot.PlayerUID, false);
+
+                        //Notify player registred;
+                        NewPlayerRegisterd(player, false);
 
                         //Set local player dirty, to send our player to others ASAP;
-                        Players.LocalPlayer.SetDitry(); 
+                        Players.LocalPlayer.SetDitry();
                     }
                     //Restore player;
                     player.RestoreFromSnapshot(snapshot);
@@ -111,13 +145,6 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
             }
         }
 
-
-        UpdateStateBasedOnRemovedPlayers();
-        UpdateStateBasedOnRemoteData();
-        UpdateRemoteRPCRequests();
-        UpdateLocalObjectState();
-
-        #region Internal
         /// Update states based on removed player, if player leave, remove object;
         void UpdateStateBasedOnRemovedPlayers()
         {
@@ -293,9 +320,16 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         m_ObjectsRegisterRequests.Clear();
         m_ObjectsRegisterRequests = null;
 
+        m_LocalPlayerRegisterQueue.Clear();
+        m_LocalPlayerRegisterQueue = null;
+
+        m_PlayerUnregisterQueue.Clear();
+        m_PlayerUnregisterQueue = null;
+
         m_HistoryBuffer.Clear();
         m_HistoryBuffer = null;
 
+        NewPlayerRegisterd = null;
         m_InternalNetwork = null;
     }
 
@@ -305,20 +339,27 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
 
     /// Connect;
     public void OnLocalPlayerBecomesReady(ClientUID peerId) => 
-        ScheduleOnUpdate(() => PlayersInternal.Register(peerId, true));
+        m_LocalPlayerRegisterQueue.Add(peerId);
 
     /// Disconnected;
-    public void OnDisconnect(ClientUID uid) =>
-        ScheduleOnUpdate(() => 
-        {
-            PlayersInternal.UnregisterImmidiate(uid);
-            if (m_RemotePlayersUpdateRequests.Remove(uid))
-                Debug.LogError($"Removed absend update request for player {uid}");
-        });
+    public void OnDisconnect(ClientUID uid)
+    {
+        if (m_RemotePlayersUpdateRequests.Remove(uid))
+            Debug.LogError($"Removed absend update request for player {uid}");
+
+        m_LocalPlayerRegisterQueue.Remove(uid);
+        m_PlayerUnregisterQueue.Add(uid);
+    }
 
     /// Scene loaded;
     public void OnSceneLoaded() => 
-        ScheduleOnUpdate(() => PlayersInternal.LocalPlayer.IsInGameScene = true);
+        ScheduleOnUpdate(() => 
+        {
+            //Check for player exists;
+            var player = PlayersInternal.LocalPlayer; 
+            if (player != null)
+                player.IsInGameScene = true;
+        });
 
     protected void ForEachRemoteRequests(Action<NetObjectUID, ObjectUpdateSnapshot> processor)
     {
@@ -336,7 +377,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public NetObjectIdentity CreateObject(INetRTPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData)
+    public NetObjectIdentity CreateObject(NetWorldPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData)
     {
         var state = new NetObjectState(new NetObjectUID(owner.UID), prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(state.UID, state);
@@ -378,19 +419,10 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     }
 
     /// <summary>
-    /// Find game object reference by id.
-    /// Can be NULL.
-    /// </summary>
-    /// <param name="instanceId"></param>
-    /// <returns></returns>
-    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
-        View.CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
-
-    /// <summary>
     /// Get object before in was actually created by transport system.
     /// Note that this object will not be in valid state, until update happens.
     /// Use in only if its highly nessesery.
-    public NetObjectIdentity FindObjectOrCreateMock(INetRTPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+    public NetObjectIdentity FindObjectOrCreateMock(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
         var identity = FindObjectView(instanceId);
         return 
@@ -408,7 +440,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
 
     /// <summary>
     /// If some object doesn't exist yet, we can wait for it;
-    /// Similar to: <see cref="FindObjectOrCreateMock(INetRTPlayer, NetObjectUID, string, bool, Vector3, Quaternion)"/>
+    /// Similar to: <see cref="FindObjectOrCreateMock(NetWorldPlayer, NetObjectUID, string, bool, Vector3, Quaternion)"/>
     /// But it doesn't create mock objects;
     /// </summary>
     /// <param name="instanceId"></param>

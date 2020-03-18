@@ -86,6 +86,23 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     }
     int m_RTT;
 
+    public NetObjectUID TagObjectUID
+    {
+        get => m_TagObjectUID;
+        set
+        {
+            if (!IsLocal)
+                throw new Exception("Trying to change tag object uid value without authority, this is not allowed. Player id: " + UID);
+
+            if (m_TagObjectUID == value)
+                return;
+
+            m_TagObjectUID = value;
+            m_PlayerDirty = true;
+        }
+    }
+    NetObjectUID m_TagObjectUID;
+
     [Obsolete] //TODO: Implement serialization;
     public IProperties Properties => m_Properties;
     readonly ISerializableProperties m_Properties;
@@ -93,6 +110,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
 
     #endregion
 
+    public bool IsValid => UID.IsValid;
     public bool IsLocal => UID == m_LocalPlayer();
     public bool IsMaster => UID == m_MasterPlayer();
 
@@ -114,11 +132,12 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
 
     public void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
     {
-        UID = snapshot.UID;
+        UID = snapshot.PlayerUID;
         m_Name = snapshot.Name;
         m_IsInGameScene = snapshot.IsInGameScene;
         m_Platform = snapshot.Platform;
         m_RTT = snapshot.RTT;
+        m_TagObjectUID = snapshot.TagObjectUID;
     }
     public NetWorldPlayerSnapshot ToSnapshot() => NetWorldPlayerSnapshot.FormPlayer(this);
 

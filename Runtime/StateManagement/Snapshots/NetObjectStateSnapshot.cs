@@ -36,7 +36,7 @@ public struct ObjectUpdateSnapshot
         writer.WriteBytesAndSize(Data);
     }
 
-    public static ObjectUpdateSnapshot FormReader(ClientUID sender, NetReader reader)
+    public static ObjectUpdateSnapshot FormReader(NetReader reader)
     {
         var snapshot = new ObjectUpdateSnapshot();
         snapshot.Restore(reader);

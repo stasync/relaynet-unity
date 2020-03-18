@@ -11,7 +11,7 @@ public static class HLNetReaderExtention
     public static NetObjectUID ReadInstanceId(this NetReader reader) =>
         reader.ReadPackedUInt32();
 
-    public static INetRTPlayer ReadPlayer(this NetReader reader) =>
+    public static NetWorldPlayer ReadPlayer(this NetReader reader) =>
         m_NetworkProvider.Instance.Realtime.FindPlayer(reader.ReadConnectionUID());
 
     public static NetObjectIdentity ReadObject(this NetReader reader) =>
