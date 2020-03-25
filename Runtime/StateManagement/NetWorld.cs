@@ -59,6 +59,8 @@ public abstract class NetWorld
 
     public virtual void Destroy()
     {
+        Debug.LogError($"Destroy world {View.gameObject.name}");
+
         UID = NetWorldUID.Invalid;
 
         m_CurrentObjectStates.Clear();

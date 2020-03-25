@@ -103,9 +103,8 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     }
     NetObjectUID m_TagObjectUID;
 
-    [Obsolete] //TODO: Implement serialization;
     public IProperties Properties => m_Properties;
-    readonly ISerializableProperties m_Properties;
+    readonly SerializablePropertiesImpl m_Properties;
     #endregion
 
     #endregion
@@ -120,7 +119,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     public NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayer, Func<ClientUID> masterPlayer)
     {
         UID = uid;
-        Name = name;
+        m_Name = name;
         m_LocalPlayer = localPlayer;
         m_MasterPlayer = masterPlayer;
 
@@ -138,8 +137,11 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         m_Platform = snapshot.Platform;
         m_RTT = snapshot.RTT;
         m_TagObjectUID = snapshot.TagObjectUID;
+
+        m_Properties.SetData(snapshot.Properties);
     }
-    public NetWorldPlayerSnapshot ToSnapshot() => NetWorldPlayerSnapshot.FormPlayer(this);
+
+    public NetWorldPlayerSnapshot ToSnapshot() => NetWorldPlayerSnapshot.FormPlayer(this, ((SerializablePropertiesImpl)m_Properties).Data);
 
     public override string ToString() => $"{UID}:{Name} l:{IsLocal} m:{IsMaster}";
     public int CompareTo(NetWorldPlayer other) => UID.CompareTo(other.UID);

@@ -1,4 +1,6 @@
 ﻿using Core.Networking;
+using System.Collections.Generic;
+using System.Linq;
 
 public struct NetWorldPlayerSnapshot
 {
@@ -8,8 +10,9 @@ public struct NetWorldPlayerSnapshot
     public readonly GSDevice.Platform Platform;
     public readonly int RTT;
     public readonly NetObjectUID TagObjectUID;
+    public readonly Dictionary<uint, byte[]> Properties;
 
-    public NetWorldPlayerSnapshot(NetWorldPlayer player)
+    public NetWorldPlayerSnapshot(NetWorldPlayer player, IReadOnlyDictionary<uint, byte[]> properties)
     {
         PlayerUID = player.UID;
         Name = player.Name;
@@ -17,6 +20,9 @@ public struct NetWorldPlayerSnapshot
         Platform = player.Platform;
         RTT = player.RTT;
         TagObjectUID = player.TagObjectUID;
+        Properties = new Dictionary<uint, byte[]>();
+        foreach (var d in properties)
+            Properties.Add(d.Key, d.Value.ToArray());
     }
 
     public NetWorldPlayerSnapshot(NetReader reader)
@@ -27,9 +33,10 @@ public struct NetWorldPlayerSnapshot
         Platform = (GSDevice.Platform)reader.ReadInt32();
         RTT = reader.ReadInt32();
         TagObjectUID = reader.ReadInstanceId();
+        Properties = reader.ReadDictionary(kr => kr.ReadPackedUInt32(), vr => vr.ReadBytesAndSize());
     }
 
-    public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player) => new NetWorldPlayerSnapshot(player);
+    public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player, IReadOnlyDictionary<uint, byte[]> properties) => new NetWorldPlayerSnapshot(player, properties);
     public static NetWorldPlayerSnapshot FormReader(NetReader reader) => new NetWorldPlayerSnapshot(reader);
 
     public void Serialize(NetWriter writer)
@@ -40,5 +47,6 @@ public struct NetWorldPlayerSnapshot
         writer.Write((int)Platform);
         writer.Write(RTT);
         writer.WriteInstanceId(TagObjectUID);
+        writer.WriteDictionary(Properties, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteBytesAndSize(v));
     }
 }

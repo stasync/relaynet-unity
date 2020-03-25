@@ -76,6 +76,12 @@ public class NetWorldDebugWindow : EditorWindow
             foreach (var obj in remoteRequests)
                 EditorGUILayout.LabelField(obj.Value.ToString());
         }
+
+        //Remote udpate requests
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField($"History size: {world.HistroyBuffer}", EditorStyles.boldLabel);
+        }
     }
 
     void DrawPlayer(string prefix, NetWorldPlayer p) => EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");

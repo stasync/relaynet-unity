@@ -12,16 +12,10 @@ public struct ObjectUpdateSnapshot
 
     void Restore(NetReader reader)
     {
-        var owner = reader.ReadConnectionUID();
-        if(owner != OwnerUID)
-            UnityEngine.Debug.LogError($"Deserialized owner {owner} doesn't match object owner {OwnerUID}");
-
+        OwnerUID = reader.ReadConnectionUID();
         ObjectUID = reader.ReadInstanceId();
         PrefabId = reader.ReadString();
-        var isSceneObject = reader.ReadBoolean();
-        if(isSceneObject != IsSceneObject)
-            UnityEngine.Debug.LogError($"Deserialized scene object state {isSceneObject} doesn't match object scene state {IsSceneObject}");
-
+        IsSceneObject = reader.ReadBoolean();
         StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
         Data = reader.ReadBytesAndSize();
     }
