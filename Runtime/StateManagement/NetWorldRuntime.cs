@@ -6,7 +6,6 @@ using UnityEngine;
 public class NetWorldRuntime : NetWorld, IJSONSerializable
 {
     public Action<NetWorldPlayer, bool> NewPlayerRegisterd = delegate { };
-    public Action<NetWorldPlayer> PlayerStateChanged = delegate { };
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
@@ -138,15 +137,11 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
 
                         //Notify player registred;
                         NewPlayerRegisterd(player, false);
-
-                        //Set local player dirty, to send our player to others ASAP;
-                        Players.LocalPlayer.SetDitry();
                     }
 
                     var wasInGameScene = player.IsInGameScene;
                     //Restore player;
                     player.RestoreFromSnapshot(snapshot);
-                    PlayerStateChanged(player);
 
                     if (player.IsInGameScene && !wasInGameScene)
                         View.OnRemotePlayerBecomesReady(player.UID);
@@ -157,11 +152,10 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
             //Send local player;
             {
                 var locaPlayer = Players.LocalPlayer;
-                if (locaPlayer.Dirty)
-                {
-                    PlayerStateChanged(locaPlayer);
+                if (locaPlayer == null)
+                    Debug.LogError("Unable to send local player: doesn't exists");
+                else
                     m_InternalNetwork.SendDataToOthers(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
-                }
             }
         }
 
@@ -359,7 +353,6 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         m_HistoryBuffer = null;
 
         NewPlayerRegisterd = null;
-        PlayerStateChanged = null;
 
         m_InternalNetwork = null;
     }

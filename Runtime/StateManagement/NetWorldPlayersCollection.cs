@@ -66,10 +66,7 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
         m_AddedPlayers.Add(uid);
 
         if (isLocal)
-        {
             LocalPlayerUID = uid;
-            player.SetDitry(); //Ser dirty local player ASAP;
-        }
 
         UpdateMasterUID();
         return player;
