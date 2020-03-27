@@ -134,4 +134,17 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
                 m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.PlayerUID, p.Value.Name, () => LocalPlayerUID, () => MasterPlayerUID));
         }
     }
+
+    public override int GetHashCode()
+    {
+        var hash = 13;
+        hash = (hash * 7) + LocalPlayerUID.GetHashCode();
+        hash = (hash * 7) + MasterPlayerUID.GetHashCode();
+        foreach (var kvp in m_PlayersCollection)
+        {
+            hash += kvp.Key.GetHashCode();
+            hash += kvp.Value.GetHashCode();
+        }
+        return hash;
+    }
 }

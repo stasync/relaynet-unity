@@ -135,4 +135,17 @@ public abstract class NetWorld
                 RemoveObject(UID);
         });
     }
+
+    public override int GetHashCode()
+    {
+        var hash = 13;
+        hash = (hash * 7) + UID.GetHashCode();
+        foreach (var kvp in m_CurrentObjectStates)
+        {
+            hash += kvp.Key.GetHashCode();
+            hash += kvp.Value.GetHashCode();
+        }
+        hash = (hash * 7) + PlayersInternal.GetHashCode();
+        return hash;
+    }
 }

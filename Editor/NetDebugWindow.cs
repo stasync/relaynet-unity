@@ -41,6 +41,9 @@ public class NetWorldDebugWindow : EditorWindow
             return;
         }
 
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField($"World hash: {world.GetHashCode()}", EditorStyles.boldLabel);
+
         //Hitory
         {
             EditorGUILayout.Space();

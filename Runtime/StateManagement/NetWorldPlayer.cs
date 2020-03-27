@@ -155,4 +155,9 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         ToSnapshot().Serialize(m_PlayerWriter);
         return m_PlayerWriter.ToArray();
     }
+
+    public override int GetHashCode()
+    {
+        return UID.GetHashCode();
+    }
 }
