@@ -21,4 +21,18 @@ public struct NetWorldSnapshot
         Players = world.Players.ToSnapshot();
     }
     public static NetWorldSnapshot FromWorld(float deltaTime, NetWorld world) => new NetWorldSnapshot(deltaTime, world);
+    public int GetSize()
+    {
+        var size = 0;
+        size += sizeof(float); // DeltaTime
+        size += sizeof(uint); // UID
+        foreach (var o in m_ObjectStates.Values)
+        {
+            size += sizeof(uint); // NetObjectUID
+            size += o.GetSize();
+        }
+
+        size += Players.GetSize();
+        return size;
+    }
 }

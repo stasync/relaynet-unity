@@ -81,7 +81,7 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
             LocalPlayerUID = ClientUID.Invalid;
 
         if (m_PlayersCollection.Remove(uid))
-            m_RemovedPlayers.Remove(uid);
+            m_RemovedPlayers.Add(uid);
 
         UpdateMasterUID();
     }
@@ -112,11 +112,14 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
     public NetWorldPlayersCollectionsSnapshot ToSnapshot() => NetWorldPlayersCollectionsSnapshot.FormCollection(this);
     public void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
     {
-        LocalPlayerUID = snapshot.LocalPlayerUID;
-        MasterPlayerUID = snapshot.MasterClientUID;
+        //LocalPlayerUID = snapshot.LocalPlayerUID;
+        //MasterPlayerUID = snapshot.MasterClientUID;
+
+        LocalPlayerUID = ClientUID.Invalid;
+        MasterPlayerUID = ClientUID.Invalid;
 
         //Remove;
-        foreach(var p in m_PlayersCollection.Keys.ToArray())
+        foreach (var p in m_PlayersCollection.Keys.ToArray())
         {
             if (!snapshot.PlayersCollection.ContainsKey(p))
                 m_PlayersCollection.Remove(p);
@@ -129,7 +132,6 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
                 player.RestoreFromSnapshot(p.Value);
             else
                 m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.PlayerUID, p.Value.Name, () => LocalPlayerUID, () => MasterPlayerUID));
-                
         }
     }
 }

@@ -28,7 +28,7 @@ public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
 
     public override void OnPostInitialize()
     {
-        if (IsSceneObject && Network.Realtime.IsMasterPlayer || IsLocal)
+        if (IsLocal)
             CurrentLifetime = m_lifetime;
     }
 

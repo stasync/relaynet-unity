@@ -6,6 +6,7 @@ using UnityEngine;
 public class NetWorldRuntime : NetWorld, IJSONSerializable
 {
     public Action<NetWorldPlayer, bool> NewPlayerRegisterd = delegate { };
+    public Action<NetWorldPlayer> PlayerStateChanged = delegate { };
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
@@ -17,7 +18,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     Dictionary<ClientUID, NetWorldPlayerSnapshot> m_RemotePlayersUpdateRequests;
 
     public IReadOnlyCollection<NetWorldSnapshot> HistroyBuffer => m_HistoryBuffer;
-    LinkedList<NetWorldSnapshot> m_HistoryBuffer;
+    HistoryBiffer m_HistoryBuffer;
 
     HashSet<ClientUID> m_LocalPlayerRegisterQueue;
     HashSet<ClientUID> m_PlayerUnregisterQueue;
@@ -29,12 +30,16 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
     float m_LastUpdateTime;
 
+    public float FixedTime => Time.fixedUnscaledTime;
+
     public NetWorldRuntime(INetwork network, Action<byte[], DeliveryIntent> objectSender, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
     {
         m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
         m_ObjectSender = objectSender ?? throw new ArgumentNullException(nameof(objectSender));
 
         NetObjectUID.Reset();
+
+        m_LastUpdateTime = FixedTime;
 
         /// Must be cleaned, when player disconnects;
         {
@@ -46,7 +51,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         m_LocalPlayerRegisterQueue = new HashSet<ClientUID>();
         m_PlayerUnregisterQueue = new HashSet<ClientUID>();
 
-        m_HistoryBuffer = new LinkedList<NetWorldSnapshot>();
+        m_HistoryBuffer = new HistoryBiffer();
     }
 
     public NetWorldEvaluator Replicate() => new NetWorldEvaluator(this);
@@ -82,11 +87,11 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
 
     protected override void UpdateImplementation()
     {
-        var worldDelta = Time.fixedUnscaledTime - m_LastUpdateTime;
+        var worldDelta = FixedTime - m_LastUpdateTime;
         if (worldDelta < c_MinUpdateInteraval)
             return;
 
-        m_LastUpdateTime = Time.fixedUnscaledTime;
+        m_LastUpdateTime = FixedTime;
         Evaluate(worldDelta);
     }
 
@@ -141,6 +146,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                     var wasInGameScene = player.IsInGameScene;
                     //Restore player;
                     player.RestoreFromSnapshot(snapshot);
+                    PlayerStateChanged(player);
 
                     if (player.IsInGameScene && !wasInGameScene)
                         View.OnRemotePlayerBecomesReady(player.UID);
@@ -152,7 +158,10 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
             {
                 var locaPlayer = Players.LocalPlayer;
                 if (locaPlayer.Dirty)
+                {
+                    PlayerStateChanged(locaPlayer);
                     m_InternalNetwork.SendDataToOthers(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
+                }
             }
         }
 
@@ -305,14 +314,14 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         #endregion
     }
 
-    protected override void OnBeforeExecuteView()
+    protected override void OnBeforeExecuteView(float worldDelta)
     {
-        base.OnBeforeExecuteView();
+        base.OnBeforeExecuteView(worldDelta);
 
         var elementsCount = c_HistoryBufferSecondsLength / c_MinUpdateInteraval;
-        m_HistoryBuffer.AddLast(ToSnapshot());
+        m_HistoryBuffer.Enqueue(ToSnapshot(worldDelta));
         if (m_HistoryBuffer.Count > elementsCount)
-            m_HistoryBuffer.RemoveFirst();
+            m_HistoryBuffer.Dequeue();
     }
     #endregion
 
@@ -350,6 +359,8 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         m_HistoryBuffer = null;
 
         NewPlayerRegisterd = null;
+        PlayerStateChanged = null;
+
         m_InternalNetwork = null;
     }
 
@@ -482,4 +493,6 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     }
 
     public string ToJSONProperty() => RealtimeJSONUtils.ToJSONCollection(View.CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray());
+
+    public int GetHistoryBufferSize() => m_HistoryBuffer.Sum(s => s.GetSize());
 }

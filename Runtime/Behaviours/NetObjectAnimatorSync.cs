@@ -236,6 +236,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 
         ForEachLayer((state, layerWeight, layerIndex) =>
         {
+            if (!ValidateCollections(layerIndex, Data.LayerWeights, Data.LayerStates, Data.LayerNormalizedTimes))
+                return;
+
             var targetLayerWeight = Data.LayerWeights[layerIndex];
             var targetStateHash = Data.LayerStates[layerIndex];
             var targetStateNormalizedTime = Data.LayerNormalizedTimes[layerIndex];
@@ -246,5 +249,13 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
             if (targetStateHash != 0 && state.fullPathHash != targetStateHash)
                 m_Animator.Play(targetStateHash, layerIndex, targetStateNormalizedTime);
         });
+
+        bool ValidateCollections(int index, params ICollectionWithCount[] collections)
+        {
+            foreach (var c in collections)
+                if (index >= c.Count)
+                    return false;
+            return true;
+        }
     }
 }

@@ -25,4 +25,22 @@ public struct NetWorldPlayersCollectionsSnapshot
     }
 
     public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) => new NetWorldPlayersCollectionsSnapshot(collection);
+
+    public int GetSize()
+    {
+        var result = 0;
+        result += sizeof(uint); // LocalPlayerUID
+        result += sizeof(uint); // MasterClientUID
+
+        foreach (var p in m_PlayersCollection.Values)
+        {
+            result += sizeof(uint); // ClientUID
+            result += p.GetSize();
+        }
+
+        foreach (var p in m_RemovedPlayers)
+            result += sizeof(uint); // ClientUID
+
+        return result;
+    }
 }

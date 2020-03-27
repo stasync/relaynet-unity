@@ -49,4 +49,22 @@ public struct NetWorldPlayerSnapshot
         writer.WriteInstanceId(TagObjectUID);
         writer.WriteDictionary(Properties, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteBytesAndSize(v));
     }
+
+    public int GetSize()
+    {
+        var result = 0;
+        result += sizeof(uint); // PlayerUID
+        result += Name.Length;
+        result += sizeof(bool); // IsInGameScene
+        result += 1; // Platform
+        result += sizeof(int); // RTT
+        result += sizeof(uint); // TagObjectUID
+        foreach(var kvp in Properties)
+        {
+            result += sizeof(uint); // Key
+            result += kvp.Value.Length; // Value
+        }
+
+        return result;
+    }
 }

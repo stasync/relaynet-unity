@@ -28,7 +28,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// World, that contains this object;
     /// </summary>
-    NetWorld m_NetWorld;
+    public NetWorld World { get; private set; }
 
     /// <summary>
     /// Object prefab id
@@ -56,7 +56,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             .OrderBy(c => c.SerializationOrder)
             .ToList();
 
-        m_NetWorld = world;
+        World = world;
 
         State = state;
         State.OnOwnerChanged += OnOwnerChanged;
@@ -167,7 +167,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        State.ScheduleOwnerChanged(m_NetWorld.Players.LocalPlayerUID);
+        State.ScheduleOwnerChanged(World.Players.LocalPlayerUID);
     }
 
     /// <summary>

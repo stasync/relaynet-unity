@@ -101,7 +101,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public void ChangeObjectRemotely(ObjectUpdateSnapshot snapshot)
     {
         if (IsOwnedByLocalPlayer)
-            throw new InvalidOperationException($"Unable to restore local object with {UID}");
+            throw new InvalidOperationException($"Unable to restore local object with {UID} : {PrefabId}");
 
         var previousOwner = OwnerUID;
         OwnerUID = snapshot.OwnerUID;

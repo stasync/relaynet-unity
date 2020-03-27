@@ -3,10 +3,13 @@ using UnityEditor;
 
 public class NetWorldDebugWindow : EditorWindow
 {
+    bool m_ShowHistoryBuffer;
     ServiceProvider<GSNetwork> m_NetworkProvider;
 
     [MenuItem("Network/World debug")]
+#pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
     static void Init()
+#pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены
     {
         var window = GetWindow<NetWorldDebugWindow>("World info");
         window.Show();
@@ -36,6 +39,32 @@ public class NetWorldDebugWindow : EditorWindow
         {
             EditorGUILayout.HelpBox("World not represented yet", MessageType.Error);
             return;
+        }
+
+        //Hitory
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField($"History size: {world.GetHistoryBufferSize()} bytes, {world.HistroyBuffer.Count} frames", EditorStyles.boldLabel);
+
+            if (GUILayout.Button("Playback"))
+            {
+                var replica = m_NetworkProvider.Instance.Realtime.CurrentWorld.Replicate();
+                var unityService = new ServiceProvider<IUnityService>();
+                unityService.Instance.UnityFixedUpdate += OnFixedUpdate;
+
+                void OnFixedUpdate()
+                {
+                    replica.FixedUpdate();
+                    if (!replica.IsValid)
+                        unityService.Instance.UnityFixedUpdate -= OnFixedUpdate;
+                }
+            }
+
+            m_ShowHistoryBuffer = EditorGUILayout.Foldout(m_ShowHistoryBuffer, "Show buffer");
+            if(m_ShowHistoryBuffer)
+                foreach(var s in world.HistroyBuffer)
+                    EditorGUILayout.LabelField($"{s.DeltaTime} size: {s.GetSize()}", EditorStyles.boldLabel);
+
         }
 
         //Players
@@ -70,17 +99,12 @@ public class NetWorldDebugWindow : EditorWindow
 
         //Remote udpate requests
         {
+            EditorGUILayout.Separator();
             EditorGUILayout.Space();
             var remoteRequests = world.RemoteObjectUpdateRequests;
             EditorGUILayout.LabelField($"Objects remote request: {remoteRequests.Count}", EditorStyles.boldLabel);
             foreach (var obj in remoteRequests)
                 EditorGUILayout.LabelField(obj.Value.ToString());
-        }
-
-        //Remote udpate requests
-        {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField($"History size: {world.HistroyBuffer}", EditorStyles.boldLabel);
         }
     }
 

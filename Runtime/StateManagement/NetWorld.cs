@@ -46,7 +46,7 @@ public abstract class NetWorld
     protected void Evaluate(float worldDelta)
     {
         OnUpdateWorldState(worldDelta);
-        OnBeforeExecuteView();
+        OnBeforeExecuteView(worldDelta);
         View.Execute();
 
         PlayersInternal.FinalizeIteration();
@@ -55,7 +55,7 @@ public abstract class NetWorld
 
     protected abstract void OnUpdateWorldState(float worldDelta);
 
-    protected virtual void OnBeforeExecuteView() { }
+    protected virtual void OnBeforeExecuteView(float worldDelta) { }
 
     public virtual void Destroy()
     {

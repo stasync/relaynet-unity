@@ -47,13 +47,13 @@ public class NetWorldView : MonoBehaviour
                 }
                 else
                 {
-                    if (state.UID.IsSceneObjectSpaceId)
-                        Debug.LogError($"Unable to replicate state {state.ToString()} becase it is a scene object");
-                    else
+                    if (!state.UID.IsSceneObjectSpaceId)
                     {
                         netObjectView = m_ObjectFactory.Create(state.PrefabId, Vector3.zero, Quaternion.identity);
                         m_CurrentObjectViews.Add(UID, netObjectView);
                     }
+                    //else
+                    //    Debug.LogError($"Unable to replicate state {state.ToString()} becase it is a scene object");
                 }
             }
 

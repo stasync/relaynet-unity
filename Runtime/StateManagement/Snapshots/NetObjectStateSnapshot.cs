@@ -49,4 +49,16 @@ public struct ObjectUpdateSnapshot
         };
 
     public override string ToString() => $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
+
+    public int GetSize()
+    {
+        var result = 0;
+        result += sizeof(uint); // OwnerUID
+        result += sizeof(uint); // ObjectUID
+        result += PrefabId.Length;
+        result += sizeof(bool); // IsSceneObject
+        result += 1; // StateChangeType
+        result += Data.Length;
+        return result;
+    }
 }
