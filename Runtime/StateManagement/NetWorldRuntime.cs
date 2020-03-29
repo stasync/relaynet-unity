@@ -25,7 +25,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     INetwork m_InternalNetwork;
     Action<byte[], DeliveryIntent> m_ObjectSender;
 
-    const float c_HistoryBufferSecondsLength = 30f; //Record last 30 seconds;
+    const float c_HistoryBufferSecondsLength = 10f; //Record last 30 seconds;
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
     float m_LastUpdateTime;
 

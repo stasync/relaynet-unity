@@ -45,13 +45,17 @@ public abstract class NetWorld
 
     protected void Evaluate(float worldDelta)
     {
+        OnBeforeUpdateWorldState(worldDelta);
         OnUpdateWorldState(worldDelta);
         OnBeforeExecuteView(worldDelta);
         View.Execute();
 
+        //Finalize iteration;
         PlayersInternal.FinalizeIteration();
         ForEachStates((UID, state) => state.FinalizeIteration());
     }
+
+    protected virtual void OnBeforeUpdateWorldState(float worldDelta) => ForEachStates((UID, state) => state.OnBeforeUpdateWorldState(worldDelta));
 
     protected abstract void OnUpdateWorldState(float worldDelta);
 
@@ -78,6 +82,17 @@ public abstract class NetWorld
 
     public void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
 
+    public void ScheduleOnUpdateIfObejctExists(NetObjectUID objectUID, Action<NetObjectState> a) => ScheduleOnUpdate(() => 
+    {
+        if(!TryGetObject(objectUID, out var state))
+        {
+            Debug.LogError($"Skipping scheduled action for absent object {objectUID}");
+            return;
+        }
+
+        a(state);
+    });
+
     public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
 
     public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
@@ -90,6 +105,9 @@ public abstract class NetWorld
 
     public NetObjectState FindObject(NetObjectUID instanceId) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out NetObjectState state) ? state : null;
+
+    public bool TryGetObject(NetObjectUID instanceId, out NetObjectState state) =>
+        m_CurrentObjectStates.TryGetValue(instanceId, out state);
 
     public void ForEachStates(Action<NetObjectUID, NetObjectState> processor)
     {

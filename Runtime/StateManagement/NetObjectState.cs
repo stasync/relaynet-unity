@@ -8,6 +8,7 @@ public enum ObjectStateChangeRequestType : byte
     None,
     UnreliableUpdate,
     ReliableUpdate,
+    ReliableUpdateOwnerChange,
     InitializationUpdate,
     RemoveUpdate,
 }
@@ -18,6 +19,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public event Action<bool> LocalUpdateRequest = delegate { };
 
     readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
+    readonly Queue<Action> m_UpdateQueue;
 
     #region SYNCRONIZED STATE
     public readonly NetObjectUID UID;
@@ -56,6 +58,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvier)
     {
         m_PlayerProvider = playerProvier;
+        m_UpdateQueue = new Queue<Action>();
 
         UID = uid;
         PrefabId = prefabId;
@@ -90,9 +93,6 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
     public void FinalizeIteration()
     {
-        //Return object to regular UDP pipeline;
-        StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
-        ChangedLocaly = false;
         m_RPCRequests.Clear();
     }
 
@@ -100,8 +100,16 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
     public void ChangeObjectRemotely(ObjectUpdateSnapshot snapshot)
     {
-        if (IsOwnedByLocalPlayer)
-            throw new InvalidOperationException($"Unable to restore local object with {UID} : {PrefabId}");
+        var checkOwner = snapshot.StateChangeType < ObjectStateChangeRequestType.ReliableUpdateOwnerChange;
+
+        if(snapshot.StateChangeType == ObjectStateChangeRequestType.ReliableUpdateOwnerChange)
+            Debug.LogError($"_______ {snapshot.StateChangeType} {UID} : {PrefabId}");
+
+        if (checkOwner && IsOwnedByLocalPlayer)
+        {
+            Debug.LogError($"Unable to restore local object with {UID} : {PrefabId} Change type: {snapshot.StateChangeType}. This can be normal in some cases");
+            return;
+        }
 
         var previousOwner = OwnerUID;
         OwnerUID = snapshot.OwnerUID;
@@ -114,6 +122,26 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
     public ObjectUpdateSnapshot ToSnapshot() => ObjectUpdateSnapshot.FormState(this);
 
+    void ScheduleStateChange(ObjectStateChangeRequestType requestType) => ScheduleOnUpdate(() =>
+    {
+        if (StateChangeType > requestType)
+            Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
+        else
+            StateChangeType = requestType;
+    });
+
+    void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
+
+    public void OnBeforeUpdateWorldState(float worldDelta)
+    {
+        //Return object to regular UDP pipeline;
+        StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
+        ChangedLocaly = false;
+
+        while (m_UpdateQueue.Count > 0)
+            m_UpdateQueue.Dequeue()();
+    }
+
     public void ScheduleUpdate(ObjectStateChangeRequestType requestType)
     {
         if (!IsOwnedByLocalPlayer)
@@ -122,7 +150,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         if (StateChangeType > requestType)
             Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
         else
-            StateChangeType = requestType;
+            ScheduleStateChange(requestType);
     }
 
     public void ScheduleOwnerChanged(ClientUID newOwner)
@@ -130,18 +158,13 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        if (StateChangeType > ObjectStateChangeRequestType.ReliableUpdate)
-            Debug.LogError($"Unable to set request {ObjectStateChangeRequestType.ReliableUpdate} because it has less priority than current request {StateChangeType}");
-        else
+        if(newOwner.IsValid)
         {
-            if (newOwner.IsValid)
-            {
-                StateChangeType = ObjectStateChangeRequestType.ReliableUpdate;
-                OwnerUID = newOwner;
-            }
-            else
-                Debug.LogError($"Unable to change owner, invalid id {newOwner}");
+            OwnerUID = newOwner;
+            ScheduleStateChange(ObjectStateChangeRequestType.ReliableUpdateOwnerChange);
         }
+        else
+            Debug.LogError($"Unable to change owner, invalid id {newOwner}");
     }
 
     public byte[] Serialize()
