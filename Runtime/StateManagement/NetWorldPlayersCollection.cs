@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public interface IReadOnlyNetWorldPlayersCollection
+public interface IReadOnlyNetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
 {
     IEnumerable<ClientUID> AllUIDs { get; }
     IReadOnlyCollection<NetWorldPlayer> All { get; }
@@ -144,4 +145,7 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
         }
         return hash;
     }
+
+    public IEnumerator<NetWorldPlayer> GetEnumerator() => All.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => All.GetEnumerator();
 }

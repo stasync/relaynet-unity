@@ -34,7 +34,7 @@ public class NetWorldDebugWindow : EditorWindow
         if (m_NetworkProvider.Instance == null)
             return;
 
-        var world = m_NetworkProvider.Instance.Realtime.CurrentWorld;
+        var world = m_NetworkProvider.Instance.Realtime.MainWorld;
         if(world == null)
         {
             EditorGUILayout.HelpBox("World not represented yet", MessageType.Error);
@@ -51,7 +51,7 @@ public class NetWorldDebugWindow : EditorWindow
 
             if (GUILayout.Button("Playback"))
             {
-                var replica = m_NetworkProvider.Instance.Realtime.CurrentWorld.Replicate();
+                var replica = m_NetworkProvider.Instance.Realtime.MainWorld.Replicate();
                 var unityService = new ServiceProvider<IUnityService>();
                 unityService.Instance.UnityFixedUpdate += OnFixedUpdate;
 

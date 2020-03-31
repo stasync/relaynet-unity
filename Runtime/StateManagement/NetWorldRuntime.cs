@@ -442,15 +442,15 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     /// Get object before in was actually created by transport system.
     /// Note that this object will not be in valid state, until update happens.
     /// Use in only if its highly nessesery.
-    public NetObjectIdentity FindObjectOrCreateMock(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+    public NetObjectIdentity FindObjectViewOrCreateMock(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
         var identity = FindObjectView(instanceId);
         return 
             identity == null ?
-            CC() : 
+            CreatePendingObject() : 
             identity;
 
-        NetObjectIdentity CC()
+        NetObjectIdentity CreatePendingObject()
         {
             var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
             m_ObjectsRegisterRequests.Add(instanceId, state);
@@ -458,32 +458,11 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         }
     }
 
-    /// <summary>
-    /// If some object doesn't exist yet, we can wait for it;
-    /// Similar to: <see cref="FindObjectOrCreateMock(NetWorldPlayer, NetObjectUID, string, bool, Vector3, Quaternion)"/>
-    /// But it doesn't create mock objects;
-    /// </summary>
-    /// <param name="instanceId"></param>
-    /// <param name="result"></param>
-    public void FindObjectOrWait(NetObjectUID instanceId, Action<NetObjectIdentity> result)
+    public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation) where T : GSInstanceBehaviourBase
     {
-        var identity = FindObjectView(instanceId);
-        if(identity != null)
-        {
-            result(identity);
-            return;
-        }
-        View.NewObjectInitialized += OnNewObjectInitialized;
-
-        void OnNewObjectInitialized(NetObjectIdentity o)
-        {
-            if (o == null || o.InstanceId != instanceId)
-                return;
-
-            result(o);
-            View.NewObjectInitialized -= OnNewObjectInitialized;
-        }
-    }
+        var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
+        return networkObject == null ? null : networkObject.GetComponent<T>();
+    } 
 
     public string ToJSONProperty() => RealtimeJSONUtils.ToJSONCollection(View.CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray());
 

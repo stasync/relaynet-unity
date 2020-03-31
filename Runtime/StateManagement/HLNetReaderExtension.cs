@@ -14,11 +14,11 @@ public static class HLNetReaderExtention
     public static NetWorldPlayer ReadPlayer(this NetReader reader) =>
         m_NetworkProvider.Instance.Realtime.FindPlayer(reader.ReadConnectionUID());
 
-    public static NetObjectIdentity ReadObject(this NetReader reader) =>
-        m_NetworkProvider.Instance.Realtime.FindNetworkObject(reader.ReadPackedUInt32());
+    public static NetObjectIdentity ReadObject(this NetReader reader, NetWorld targetWorld) =>
+        targetWorld.FindObjectView(reader.ReadPackedUInt32());
 
-    public static T ReadObject<T>(this NetReader reader) where T : GSInstanceBehaviourBase =>
-        m_NetworkProvider.Instance.Realtime.FindNetworkObject<T>(reader.ReadPackedUInt32());
+    public static T ReadObject<T>(this NetReader reader, NetWorld targetWorld) where T : GSInstanceBehaviourBase =>
+        targetWorld.FindObjectView<T>(reader.ReadPackedUInt32());
 
     public static Vector2 ReadVector2(this NetReader reader) => 
         new Vector2(reader.ReadSingle(), reader.ReadSingle());

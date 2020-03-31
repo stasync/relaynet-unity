@@ -15,4 +15,6 @@ public abstract class GSInstanceBehaviourBase : MonoBehaviour
         m_Identity = GetComponent<NetObjectIdentity>();
 
     NetObjectIdentity m_Identity;
+
+    protected virtual void OnDestroy() { }
 }

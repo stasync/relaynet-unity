@@ -98,6 +98,12 @@ public abstract class NetWorld
     public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
         View.CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
 
+    public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase
+    {
+        var networkObject = FindObjectView(instanceId);
+        return networkObject == null ? null : networkObject.GetComponent<T>();
+    }
+
     public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
         View.CurrentObjectViews.Values
             .Select(v => v.GetBehaviour<T>())

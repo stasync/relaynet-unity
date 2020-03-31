@@ -100,7 +100,9 @@ public class NetWorldView : MonoBehaviour
 
         //Put to world view;
         DontDestroyOnLoad(identity.gameObject);
-        identity.transform.SetParent(transform);
+
+        //Set world as view parent;
+        ResetViewParent(identity.transform);
 
         //Init;
         identity.Initialze(state, m_World, additionalData);
@@ -108,6 +110,8 @@ public class NetWorldView : MonoBehaviour
         //Push event;
         NewObjectInitialized(identity);
     }
+
+    public void ResetViewParent(Transform targetTransform) => targetTransform.SetParent(transform);
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => m_PendingObjectViews.Add(uid, identity);
 

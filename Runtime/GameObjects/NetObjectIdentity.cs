@@ -37,6 +37,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     public bool Initialized { get; private set; }
 
     IEnumerable<IGSInstanceObservable> m_Observables;
+
     NetWriter m_ObjectWriter;
     NetReader m_ObjectReader;
 
@@ -460,9 +461,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
 
     public static NetObjectIdentity Find(NetObjectUID instanceId) => 
-        s_NetworkProvider.Instance.Realtime.FindNetworkObject(instanceId);
+        s_NetworkProvider.Instance.Realtime.MainWorld.FindObjectView(instanceId);
 
     public static T Find<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase => 
-        s_NetworkProvider.Instance.Realtime.FindNetworkObject<T>(instanceId);
+        s_NetworkProvider.Instance.Realtime.MainWorld.FindObjectView<T>(instanceId);
     #endregion
 }
