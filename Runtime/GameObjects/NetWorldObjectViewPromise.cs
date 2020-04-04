@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class NetWorldObjectWaiter : IDisposable
+public class NetWorldObjectViewWaiter : IDisposable
 {
     NetWorld m_World;
     Dictionary<NetObjectUID, List<Action<NetObjectIdentity>>> m_NewObjectWaiters;
 
-    public NetWorldObjectWaiter(NetWorld world)
+    public NetWorldObjectViewWaiter(NetWorld world)
     {
         m_World = world;
         m_NewObjectWaiters = new Dictionary<NetObjectUID, List<Action<NetObjectIdentity>>>();

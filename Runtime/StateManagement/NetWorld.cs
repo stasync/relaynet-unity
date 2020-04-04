@@ -63,8 +63,6 @@ public abstract class NetWorld
 
     public virtual void Destroy()
     {
-        Debug.LogError($"Destroy world {View.gameObject.name}");
-
         UID = NetWorldUID.Invalid;
 
         m_CurrentObjectStates.Clear();
@@ -76,8 +74,14 @@ public abstract class NetWorld
         m_UpdateQueue.Clear();
         m_UpdateQueue = null;
 
-        View.Destroy(); //Destroy all net object;
-        View = null;
+        if (View == null)
+            Debug.LogError($"View already destroyed (Maybe it's done by unity via exiting play mode)");
+        else
+        {
+            Debug.LogError($"Destroy world {View.gameObject.name}");
+            View.Destroy(); //Destroy all net object;
+            View = null;
+        }
     }
 
     public void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
