@@ -18,7 +18,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
     public bool IsLocal => State != null && State.IsOwnedByLocalPlayer;
     public bool IsLocalPlayerTagObject => State != null && Owner != null && Owner.TagObjectUID == State.UID;
-    public bool IsDirty => m_Observables.Any(o => o.IsDirty) || m_RPCBuffer.IsDirty;
+    public bool IsDirty => m_Observables.Any(o => o.IsDirty);
 
 
     GenericRPCBuffer m_RPCBuffer = new GenericRPCBuffer();
@@ -180,7 +180,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             return;
 
         //Set RPC Buffers dirty;
-        m_RPCBuffer.SetDirty();
+        m_RPCBuffer.MarkAsChanged();
 
         //Set components dirty;
         foreach (var o in m_Observables)
@@ -294,10 +294,10 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
         var hashCode = RPCUtils.NameToHash(rpcCode);
-        OwnerToOthersRPC(hashCode, data, false, deliveryIntent, invokeLocaly);
+        OwnerToOthersRPC(hashCode, data, false, RPCBufferChangeMethod.Add, deliveryIntent, invokeLocaly);
     }
 
-    void OwnerToOthersRPC(int hashCode, byte[] data, bool persistent, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
+    void OwnerToOthersRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
@@ -307,7 +307,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             InvokeRpcHandler(hashCode, data);
 
         //Add to sending buffeR;
-        m_RPCBuffer.AddOrUpdate(hashCode, data, persistent, RPCBufferChangeMethod.Add);
+        m_RPCBuffer.AddOrUpdate(hashCode, data, persistent, bufferChangeMethod);
 
         if (deliveryIntent == DeliveryIntent.Reliable)
             State.ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
@@ -317,15 +317,15 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// Same as AuthRPC, but buffered.
     /// Only works via RELIABLE delivery.
     /// </summary>
-    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RPCBufferChangeMethod rpcType = RPCBufferChangeMethod.Replace, bool invokeLocaly = true) =>
-        OwnerToOthersRPCBuffered(RPCUtils.ActionToString(rpcHandlerMethod), data, rpcType, invokeLocaly);
+    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocaly = true) =>
+        OwnerToOthersRPCBuffered(RPCUtils.ActionToString(rpcHandlerMethod), data, bufferChangeMethod, invokeLocaly);
 
     /// <summary>
     /// Same as AuthRPC, but buffered.
     /// Only works via RELIABLE delivery.
     /// </summary>
-    void OwnerToOthersRPCBuffered(string rpcCode, byte[] data, RPCBufferChangeMethod rpcType = RPCBufferChangeMethod.Replace, bool invokeLocaly = true) =>
-         OwnerToOthersRPC(RPCUtils.NameToHash(rpcCode), data, true, DeliveryIntent.Reliable, invokeLocaly);
+    void OwnerToOthersRPCBuffered(string rpcCode, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocaly = true) =>
+         OwnerToOthersRPC(RPCUtils.NameToHash(rpcCode), data, true, bufferChangeMethod, DeliveryIntent.Reliable, invokeLocaly);
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
@@ -366,7 +366,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// Clear current rpc buffer and sets buffer dirty.
     /// </summary>
-    public void ClearRPCBuffer() => m_RPCBuffer.ClearPersistent(true);
+    public void ClearRPCBuffer() => m_RPCBuffer.ClearPersistent();
 
     /// <summary>
     /// Remove RPC from buffer
@@ -435,10 +435,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
 
         UnityEditor.Handles.Label(
             transform.position, 
-            string.Format("Object: {0}, Owner: {1}, Local: {2}", 
-            InstanceId.ToString(), 
-            Owner == null ? "NONE" : Owner.Name, 
-            IsLocal));
+            $"Object: {InstanceId.ToString()}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
     }
     #endif
 
