@@ -179,9 +179,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!IsLocal)
             return;
 
-        //Set RPC Buffers dirty;
-        m_RPCBuffer.MarkAsChanged();
-
         //Set components dirty;
         foreach (var o in m_Observables)
             o.SetDirty();

@@ -66,7 +66,7 @@ public class NetWorldDebugWindow : EditorWindow
             m_ShowHistoryBuffer = EditorGUILayout.Foldout(m_ShowHistoryBuffer, "Show buffer");
             if(m_ShowHistoryBuffer)
                 foreach(var s in world.HistroyBuffer)
-                    EditorGUILayout.LabelField($"{s.DeltaTime} size: {s.GetSize()}", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField($"{s.DeltaTime} size: {s.GetSize()} obj: {s.Objects.Count} pl: {s.Players.PlayersCollection.Count}", EditorStyles.boldLabel);
 
         }
 
