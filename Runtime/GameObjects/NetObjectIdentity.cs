@@ -17,7 +17,17 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
     public bool IsLocal => State != null && State.IsOwnedByLocalPlayer;
-    public bool IsLocalPlayerTagObject => State != null && Owner != null && Owner.TagObjectUID == State.UID;
+    public bool IsLocalPlayerTagObject
+    {
+        get
+        {
+            if (State == null || World == null)
+                return false;
+
+            var localPlayer = World.Players.LocalPlayer;
+            return localPlayer.TagObjectUID.IsValid && localPlayer.TagObjectUID.Equals(State.UID);
+        }
+    }
     public bool IsDirty => m_Observables.Any(o => o.IsDirty);
 
 
