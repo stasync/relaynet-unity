@@ -115,6 +115,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         OwnerUID = snapshot.OwnerUID;
         StateChangeType = snapshot.StateChangeType;
         Data = snapshot.Data;
+        m_RPCBuffer.RestoreFormSnapshot(snapshot.RPCState);
 
         if (previousOwner != snapshot.OwnerUID)
             OnOwnerChanged();
