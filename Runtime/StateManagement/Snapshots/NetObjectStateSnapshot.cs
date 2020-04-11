@@ -9,6 +9,7 @@ public struct ObjectUpdateSnapshot
     public bool IsSceneObject { get; private set; }
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
     public byte[] Data { get; private set; }
+    public NetObjectRPCStateSnapshot RPCState { get; private set; }
 
     void Restore(NetReader reader)
     {
@@ -18,6 +19,7 @@ public struct ObjectUpdateSnapshot
         IsSceneObject = reader.ReadBoolean();
         StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
         Data = reader.ReadBytesAndSize();
+        RPCState = NetObjectRPCStateSnapshot.FromReader(reader);
     }
 
     public void Serialize(NetWriter writer)
@@ -28,6 +30,7 @@ public struct ObjectUpdateSnapshot
         writer.Write(IsSceneObject);
         writer.Write((byte)StateChangeType);
         writer.WriteBytesAndSize(Data);
+        RPCState.Serialize(writer);
     }
 
     public static ObjectUpdateSnapshot FormReader(NetReader reader)
@@ -45,7 +48,8 @@ public struct ObjectUpdateSnapshot
             PrefabId = state.PrefabId,
             IsSceneObject = state.IsSceneObject,
             StateChangeType = state.StateChangeType,
-            Data = state.Data.ToArray()
+            Data = state.Data.ToArray(),
+            RPCState = state.RPCBuffer.ToSnapshot()
         };
 
     public override string ToString() => $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
@@ -59,6 +63,7 @@ public struct ObjectUpdateSnapshot
         result += sizeof(bool); // IsSceneObject
         result += 1; // StateChangeType
         result += Data.Length;
+        result += RPCState.GetSize();
         return result;
     }
 }

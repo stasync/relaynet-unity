@@ -30,9 +30,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     }
     public bool IsDirty => m_Observables.Any(o => o.IsDirty);
 
-
-    GenericRPCBuffer m_RPCBuffer = new GenericRPCBuffer();
-
     public NetWorldPlayer Owner => State?.Owner;
 
     /// <summary>
@@ -103,7 +100,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
         if (!IsLocal)
-            m_RPCBuffer.Receive(true, ReceiveRPCRemotely);
+            State.RPCBuffer.Receive(true, ReceiveRPCRemotely);
 
         return this;
     }
@@ -210,8 +207,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             throw new ArgumentNullException(nameof(writer));
 
         writer.SeekZero();
-        m_RPCBuffer.Serialize(writer);
-
         foreach (var b in m_Observables)
             b.Serialize(writer);
     }
@@ -252,15 +247,12 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             m_ObjectReader = new NetReader();
         m_ObjectReader.Replace(data);
 
-        //RPC
-        m_RPCBuffer.Deserialize(m_ObjectReader);
-
         foreach (var b in m_Observables)
             b.Deserialize(m_ObjectReader, firstTime);
 
         //Recieve rpc buffer if object initialized;
         if(Initialized)
-            m_RPCBuffer.Receive(false, ReceiveRPCRemotely);
+            State.RPCBuffer.Receive(false, ReceiveRPCRemotely);
 
         return this;
     }
@@ -314,10 +306,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             InvokeRpcHandler(hashCode, data);
 
         //Add to sending buffeR;
-        m_RPCBuffer.AddOrUpdate(hashCode, data, persistent, bufferChangeMethod);
-
-        if (deliveryIntent == DeliveryIntent.Reliable)
-            State.ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
+        State.ScheduleRPC(hashCode, data, persistent, bufferChangeMethod, deliveryIntent);
     }
 
     /// <summary>
@@ -371,17 +360,12 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     }
 
     /// <summary>
-    /// Clear current rpc buffer and sets buffer dirty.
-    /// </summary>
-    public void ClearRPCBuffer() => m_RPCBuffer.ClearPersistent();
-
-    /// <summary>
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
     public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => RemoveRPCFromBuffer(RPCUtils.ActionToString(rpcHandlerMethod));
 
-    public void RemoveRPCFromBuffer(string rpcCode) => m_RPCBuffer.RemovePersistent(RPCUtils.NameToHash(rpcCode));
+    public void RemoveRPCFromBuffer(string rpcCode) => State.ScheduleRemovePersistentRPC(RPCUtils.NameToHash(rpcCode));
 
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).

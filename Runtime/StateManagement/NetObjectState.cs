@@ -29,6 +29,8 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
     public bool RequireRemoving => StateChangeType == ObjectStateChangeRequestType.RemoveUpdate;
     public byte[] Data { get; private set; }
+    public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
+    NetObjectRPCState m_RPCBuffer;
     #endregion
 
     public override int GetHashCode()
@@ -41,6 +43,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         hash = (hash * 7) + StateChangeType.GetHashCode();
         foreach (var d in Data)
             hash = (hash * 7) + d.GetHashCode();
+        hash = m_RPCBuffer.GetHashCode();
         return hash;
     }
 
@@ -50,8 +53,8 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
-    public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCRequests => m_RPCRequests;
-    List<RPCWithoutAuthorityRequest> m_RPCRequests = new List<RPCWithoutAuthorityRequest>();
+    public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCRequests => m_RPCWithoutAuthorityRequests;
+    List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
 
     NetWriter m_Writer;
 
@@ -67,6 +70,8 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
         Data = new byte[] { };
+
+        m_RPCBuffer = new NetObjectRPCState();
     }
 
     public NetObjectState(ObjectUpdateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
@@ -89,11 +94,6 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
         LocalUpdateRequest(StateChangeType == ObjectStateChangeRequestType.InitializationUpdate);
-    }
-
-    public void FinalizeIteration()
-    {
-        m_RPCRequests.Clear();
     }
 
     public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
@@ -122,18 +122,25 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
     public ObjectUpdateSnapshot ToSnapshot() => ObjectUpdateSnapshot.FormState(this);
 
-    void ScheduleStateChange(ObjectStateChangeRequestType requestType) => ScheduleOnUpdate(() =>
-    {
-        if (StateChangeType > requestType)
-            Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
-        else
-            StateChangeType = requestType;
-    });
+    void ScheduleStateChange(ObjectStateChangeRequestType requestType) => 
+        ScheduleOnUpdate(() =>
+        {
+            if (StateChangeType > requestType)
+                Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
+            else
+                StateChangeType = requestType;
+        });
 
     void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
 
     public void OnBeforeUpdateWorldState(float worldDelta)
     {
+        //Clear rpc request without authority;
+        m_RPCWithoutAuthorityRequests.Clear();
+
+        //Clear temporal rpc buffer;
+        m_RPCBuffer.ClearTemporal();
+
         //Return object to regular UDP pipeline;
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
         ChangedLocaly = false;
@@ -173,10 +180,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
             m_Writer = new NetWriter();
 
         m_Writer.SeekZero();
-
-        ObjectUpdateSnapshot
-            .FormState(this)
-            .Serialize(m_Writer);
+        ToSnapshot().Serialize(m_Writer);
 
         return m_Writer.ToArray();
     }
@@ -186,15 +190,26 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
             $"st:{StateChangeType} " +
             $"own:{OwnerUID}:{(Owner == null ? "null" : Owner.ToString())} " +
             $"l:{IsOwnedByLocalPlayer} " +
-            $"m:{IsOwnedByMasterClient}";
+            $"m:{IsOwnedByMasterClient} " +
+            $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
 
 
     public int CompareTo(NetObjectState other) => UID.CompareTo(other.UID);
     public bool Equals(NetObjectState other) => UID.Equals(other.UID);
 
     public void ScheduleRPCWithoutAuthority(RPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent) =>
-        m_RPCRequests.Add(new RPCWithoutAuthorityRequest(type, hashCode, data, deliveryIntent));
+        ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(type, hashCode, data, deliveryIntent)));
+        
+    public void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryIntent deliveryIntent) =>
+        ScheduleOnUpdate(() =>
+        {
+            m_RPCBuffer.AddOrUpdate(hashCode, data, persistent, bufferChangeMethod);
+            if (deliveryIntent == DeliveryIntent.Reliable)
+                ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
+        });
 
+    public void ScheduleRemovePersistentRPC(int hashCode) =>
+        ScheduleOnUpdate(() => m_RPCBuffer.RemovePersistent(hashCode));
 }
 
 public struct RPCWithoutAuthorityRequest

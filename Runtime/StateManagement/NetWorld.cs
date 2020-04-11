@@ -52,7 +52,6 @@ public abstract class NetWorld
 
         //Finalize iteration;
         PlayersInternal.FinalizeIteration();
-        ForEachStates((UID, state) => state.FinalizeIteration());
     }
 
     protected virtual void OnBeforeUpdateWorldState(float worldDelta) => ForEachStates((UID, state) => state.OnBeforeUpdateWorldState(worldDelta));
