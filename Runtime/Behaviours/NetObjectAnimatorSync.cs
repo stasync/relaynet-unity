@@ -80,13 +80,8 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
         Set, Reset,
     }
 
-    [SerializeField, Range(0.01f, 1f)]
-    float m_MinSendRate = 0.1f;
-
     [SerializeField]
     Animator m_Animator;
-
-    float m_NextSendEventTime;
 
     List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new List<IAnimatorValueProxy>();
 
@@ -211,11 +206,6 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
     public override void OnUpdate()
     {
         base.OnUpdate();
-
-        if (m_NextSendEventTime > Time.fixedUnscaledTime)
-            return;
-
-        m_NextSendEventTime = Time.fixedUnscaledTime + m_MinSendRate;
 
         foreach (var p in m_AnimatorParameterValueProxyCollection)
             p.OnUpdate();

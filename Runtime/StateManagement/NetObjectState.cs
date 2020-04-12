@@ -43,7 +43,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         hash = (hash * 7) + StateChangeType.GetHashCode();
         foreach (var d in Data)
             hash = (hash * 7) + d.GetHashCode();
-        hash = m_RPCBuffer.GetHashCode();
+        hash = (hash * 7) + m_RPCBuffer.GetHashCode();
         return hash;
     }
 
