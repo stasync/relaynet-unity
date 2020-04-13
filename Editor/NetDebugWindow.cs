@@ -1,10 +1,29 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using System.Collections.Generic;
 
 public class NetWorldDebugWindow : EditorWindow
 {
+    class ObjectViewDrawer
+    {
+        readonly NetObjectState m_State;
+        bool m_Show;
+
+        public ObjectViewDrawer(NetObjectState objectState)
+        {
+            m_State = objectState;
+        }
+        public void Draw()
+        {
+            m_Show = EditorGUILayout.Foldout(m_Show, m_State.ToString());
+            if(m_Show)
+                EditorGUILayout.HelpBox("TODO: Some info here", MessageType.None);
+        }
+    }
+
     bool m_ShowHistoryBuffer;
     ServiceProvider<GSNetwork> m_NetworkProvider;
+    Dictionary<NetObjectUID, ObjectViewDrawer> m_ObjectViews;
 
     [MenuItem("Network/World debug")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
@@ -33,6 +52,9 @@ public class NetWorldDebugWindow : EditorWindow
 
         if (m_NetworkProvider.Instance == null)
             return;
+
+        if (m_ObjectViews == null)
+            m_ObjectViews = new Dictionary<NetObjectUID, ObjectViewDrawer>();
 
         var world = m_NetworkProvider.Instance.Realtime.MainWorld;
         if(world == null)
@@ -84,11 +106,22 @@ public class NetWorldDebugWindow : EditorWindow
 
         //Obejcts
         {
+            foreach (var UID in m_ObjectViews.Keys)
+                if (!world.ObjectExists(UID))
+                    m_ObjectViews.Remove(UID);
+
             EditorGUILayout.Space();
             var objStates = world.ObjectStates;
             EditorGUILayout.LabelField($"Objects: {objStates.Count}", EditorStyles.boldLabel);
-            foreach(var obj in objStates)
-                EditorGUILayout.LabelField(obj.Value.ToString());
+            foreach(var kvp in objStates)
+            {
+                if(!m_ObjectViews.TryGetValue(kvp.Key, out var drawer))
+                {
+                    drawer = new ObjectViewDrawer(kvp.Value);
+                    m_ObjectViews.Add(kvp.Key, drawer);
+                }
+                drawer.Draw();
+            }
         }
 
         //Register equests
