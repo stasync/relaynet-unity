@@ -7,6 +7,8 @@ public class NetWorldView : MonoBehaviour
 {
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
+    public bool ForceRenderingOff { get; private set; }
+
     NetWorld m_World;
     NetObjectFactory m_ObjectFactory;
 
@@ -67,7 +69,7 @@ public class NetWorldView : MonoBehaviour
                     netObjectView.Deserialize(state.Data, false, false);
             }
             else
-                InitializeView(netObjectView, state, null);
+                InitializeObjectView(netObjectView, state, null);
         });
     }
 
@@ -88,24 +90,24 @@ public class NetWorldView : MonoBehaviour
     public NetObjectIdentity CreateImmidiate(NetObjectState state, Vector3 position, Quaternion rotation, object[] additionalData)
     {
         var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
-        InitializeView(netObjectView, state, additionalData);
+        InitializeObjectView(netObjectView, state, additionalData);
         m_PendingObjectViews.Add(state.UID, netObjectView);
         return netObjectView;
     }
 
-    public void InitializeView(NetObjectIdentity identity, NetObjectState state, object[] additionalData)
+    public void InitializeObjectView(NetObjectIdentity identity, NetObjectState state, object[] additionalData)
     {
         if (identity.Initialized)
             throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{state.UID} already initialized");
-
-        //Put to world view;
-        DontDestroyOnLoad(identity.gameObject);
 
         //Set world as view parent;
         ResetViewParent(identity.transform);
 
         //Init;
         identity.Initialze(state, m_World, additionalData);
+
+        //Update visibility
+        UpdateVisibilityFor(identity);
 
         //Push event;
         NewObjectInitialized(identity);
@@ -142,6 +144,18 @@ public class NetWorldView : MonoBehaviour
             m_PendingObjectViews.Remove(uid);
             Destroy(pView.gameObject);
         }
+    }
+
+    public void SetVisibleImmediate(bool visible)
+    {
+        ForceRenderingOff = !visible;
+        ForEachViews((UID, v) => UpdateVisibilityFor(v));
+    }
+
+    void UpdateVisibilityFor(NetObjectIdentity identity)
+    {
+        foreach (var r in identity.GetComponentsInChildren<Renderer>())
+            r.forceRenderingOff = ForceRenderingOff;
     }
 
     public void Destroy()

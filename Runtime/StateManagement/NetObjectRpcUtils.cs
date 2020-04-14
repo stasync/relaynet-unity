@@ -27,7 +27,7 @@ public sealed class RPCUtils
             if (kvp.Value == hash)
                 return kvp.Key;
 
-        return null;
+        return string.Empty;
     }
 
     /// <summary>
@@ -40,10 +40,10 @@ public sealed class RPCUtils
         if (s == null)
             return 0;
 
-        var hash = s.Length;
-        if (s_RPCHashMap.TryGetValue(s, out hash))
+        if (s_RPCHashMap.TryGetValue(s, out var hash))
             return hash;
 
+        hash = s.Length;
         for (var i = 0; i != s.Length; ++i)
             hash = (hash << 5) - hash + s[i];
 

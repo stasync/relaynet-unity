@@ -432,7 +432,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
 
         //Initialize immidiatlty on master client;
         if (m_InternalNetwork.IsMasterClient)
-            View.InitializeView(sceneIdentity.Identity, newState, null);
+            View.InitializeObjectView(sceneIdentity.Identity, newState, null);
 
         //Add view to be used in future;
         View.RegisterAsPending(newState.UID, sceneIdentity.Identity);

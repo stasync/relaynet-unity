@@ -407,7 +407,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (m_RPCHandlers.ContainsKey(hashCode))
             m_RPCHandlers[hashCode].Invoke(data);
         else
-            Debug.LogErrorFormat("Handler for RPC with hash {0} doesn't registred on object {1}", hashCode, gameObject.name);
+            Debug.LogErrorFormat($"Handler for RPC with hash {hashCode} '{RPCUtils.TryFindStringByHash(hashCode)}' doesn't registred on object {gameObject.name}");
     }
 
     public void DestroyViaNetwork()
