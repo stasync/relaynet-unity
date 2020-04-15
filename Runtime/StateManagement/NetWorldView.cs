@@ -101,19 +101,30 @@ public class NetWorldView : MonoBehaviour
             throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{state.UID} already initialized");
 
         //Set world as view parent;
-        ResetViewParent(identity.transform);
+        UpdateTransformInView(identity.transform);
 
         //Init;
         identity.Initialze(state, m_World, additionalData);
-
-        //Update visibility
-        UpdateVisibilityFor(identity);
 
         //Push event;
         NewObjectInitialized(identity);
     }
 
-    public void ResetViewParent(Transform targetTransform) => targetTransform.SetParent(transform);
+    public GameObject InstantiateInView(GameObject original, Vector3 position, Quaternion rotation, Transform parent = null)
+    {
+        var newInstance = Instantiate(original, position, rotation);
+        UpdateTransformInView(newInstance.transform);
+        if (parent != null)
+            newInstance.transform.SetParent(parent);
+
+        return newInstance;
+    }
+
+    public void UpdateTransformInView(Transform targetTransform)
+    {
+        targetTransform.SetParent(transform);
+        UpdateVisibilityFor(targetTransform);
+    }
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => m_PendingObjectViews.Add(uid, identity);
 
@@ -149,12 +160,12 @@ public class NetWorldView : MonoBehaviour
     public void SetVisibleImmediate(bool visible)
     {
         ForceRenderingOff = !visible;
-        ForEachViews((UID, v) => UpdateVisibilityFor(v));
+        ForEachViews((UID, v) => UpdateVisibilityFor(v.transform));
     }
 
-    void UpdateVisibilityFor(NetObjectIdentity identity)
+    void UpdateVisibilityFor(Transform targetTransform)
     {
-        foreach (var r in identity.GetComponentsInChildren<Renderer>())
+        foreach (var r in targetTransform.GetComponentsInChildren<Renderer>(true))
             r.forceRenderingOff = ForceRenderingOff;
     }
 

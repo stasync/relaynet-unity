@@ -464,7 +464,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         return networkObject == null ? null : networkObject.GetComponent<T>();
     } 
 
-    public string ToJSONProperty() => RealtimeJSONUtils.ToJSONCollection(View.CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray());
+    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue("objects") + ":" + RealtimeJSONUtils.ToJSONCollection(View.CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray()) + "}";
 
     public int GetHistoryBufferSize() => m_HistoryBuffer.Sum(s => s.GetSize());
 }
