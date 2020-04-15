@@ -8,14 +8,18 @@ public class NetWorldDebugWindow : EditorWindow
     class ObjectViewDrawer
     {
         readonly NetObjectState m_State;
+        readonly NetWorld m_World;
+
         bool m_Draw;
 
         public void SetDrawingEnabled(bool value) => m_Draw = value;
 
-        public ObjectViewDrawer(NetObjectState objectState)
+        public ObjectViewDrawer(NetObjectState objectState, NetWorld world)
         {
             m_State = objectState;
+            m_World = world;
         }
+
         public void Draw()
         {
             m_Draw = EditorGUILayout.Foldout(m_Draw, $"UID: {m_State.UID} Prefab: {m_State.PrefabId}");
@@ -48,6 +52,13 @@ public class NetWorldDebugWindow : EditorWindow
                     foreach (var rpc in persistentBuffer)
                         DrawRPC(rpc);
                     EditorGUI.indentLevel--;
+                }
+
+                if(m_World.View != null)
+                {
+                    EditorGUI.BeginDisabledGroup(true);
+                    EditorGUILayout.ObjectField("View", m_World.FindObjectView(m_State.UID), typeof(GameObject), true);
+                    EditorGUI.EndDisabledGroup();
                 }
             }
             EditorGUI.indentLevel--;
@@ -183,7 +194,7 @@ public class NetWorldDebugWindow : EditorWindow
             {
                 if(!m_ObjectViews.TryGetValue(kvp.Key, out var drawer))
                 {
-                    drawer = new ObjectViewDrawer(kvp.Value);
+                    drawer = new ObjectViewDrawer(kvp.Value, world);
                     m_ObjectViews.Add(kvp.Key, drawer);
                 }
                 drawer.Draw();
