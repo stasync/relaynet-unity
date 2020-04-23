@@ -86,6 +86,7 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
 
     void UpdateMasterUID() => MasterPlayerUID = AllUIDs.Any() ? AllUIDs.Min() : ClientUID.Invalid;
 
+    [Obsolete]
     public void FinalizeIteration()
     {
         m_AddedPlayers.Clear();

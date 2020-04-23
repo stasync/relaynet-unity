@@ -106,8 +106,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         {
             m_LastParent = transform.parent;
             ResetTemporaryData();
-
-            TrySetDirty();
         }
 
         if (IsLocal)
@@ -119,8 +117,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             {
                 m_LastSendedPosition = transform.position;
                 m_LastSendedRotation = transform.rotation;
-
-                SetDirty();
             }
         }
         else

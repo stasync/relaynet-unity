@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
 
 public enum NetWorldViewInitMode
@@ -53,6 +54,8 @@ public class NetWorldView : MonoBehaviour
 
     public void Execute()
     {
+        Profiler.BeginSample($"{m_World.Name} View.Execute");
+
         //Remove invalid views;
         ForEachViews((UID, view) =>
         {
@@ -95,6 +98,8 @@ public class NetWorldView : MonoBehaviour
             else
                 InitializeObjectView(netObjectView, state, null);
         });
+
+        Profiler.EndSample();
     }
 
     public NetObjectIdentity GetView(NetObjectUID uid)

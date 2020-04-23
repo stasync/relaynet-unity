@@ -6,8 +6,6 @@ using System.Linq;
 
 public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>, IDictionary<TKey, TValue>, ICollectionWithCount
 {
-    protected override bool WriteWithDirtyCheck => true;
-
     public SerializableDictionary(
         Dictionary<TKey, TValue> defaultValue,
         Func<bool> writePermission,
@@ -37,7 +35,6 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
                 throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
 
             InternalValue[key] = value;
-            SetDirty();
         }
     }
 
@@ -55,7 +52,6 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
             throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
 
         InternalValue.Add(key, value);
-        SetDirty();
     }
 
     public void Add(KeyValuePair<TKey, TValue> item)
@@ -64,7 +60,6 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
             throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
 
         InternalValue.Add(item.Key, item.Value);
-        SetDirty();
     }
 
     public void Clear()
@@ -76,7 +71,6 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
             return;
 
         InternalValue.Clear();
-        SetDirty();
     }
 
     public bool Contains(KeyValuePair<TKey, TValue> item) => InternalValue.Contains(item);
@@ -109,9 +103,7 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
         if (!HasPermission)
             throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
 
-        var removed = InternalValue.Remove(key);
-        SetDirty();
-        return removed;
+        return InternalValue.Remove(key);
     }
 
     public bool Remove(KeyValuePair<TKey, TValue> item) => Remove(item.Key);

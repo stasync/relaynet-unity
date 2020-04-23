@@ -6,8 +6,6 @@ using System.Linq;
 
 public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>, ICollectionWithCount
 {
-    protected override bool WriteWithDirtyCheck => true;
-
     public SerializableList(
         List<TValue> defaultValue, 
         Func<bool> writePermission, 
@@ -44,7 +42,6 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
             return;
 
         InternalValue[index] = value;
-        SetDirty();
     }
 
     #region IList
@@ -64,7 +61,6 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
             throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
         InternalValue.Add(item);
-        SetDirty();
     }
 
     public void Clear()
@@ -76,7 +72,6 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
             return;
 
         InternalValue.Clear();
-        SetDirty();
     }
 
     public bool Contains(TValue item) => Value.Contains(item);
@@ -91,7 +86,6 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
             throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
         InternalValue.Insert(index, item);
-        SetDirty();
     }
 
     public bool Remove(TValue item)
@@ -99,11 +93,7 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
         if (!HasPermission)
             throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
-        var removed = InternalValue.Remove(item);
-        if (removed)
-            SetDirty();
-
-        return removed;
+        return InternalValue.Remove(item);
     }
 
     public void RemoveAt(int index)
@@ -112,7 +102,6 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
             throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
 
         InternalValue.RemoveAt(index);
-        SetDirty();
     }
 
     public IEnumerator<TValue> GetEnumerator() => Value.GetEnumerator();

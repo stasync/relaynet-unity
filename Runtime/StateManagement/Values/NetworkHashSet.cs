@@ -6,8 +6,6 @@ using System.Linq;
 
 public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>, ICollectionWithCount
 {
-    protected override bool WriteWithDirtyCheck => true;
-
     public SerializableHashSet(
         HashSet<TValue> defaultValue,
         Func<bool> writePermission,
@@ -30,10 +28,7 @@ public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<T
         if (!HasPermission)
             throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
 
-        var changed = InternalValue.Add(value);
-        if (changed)
-            SetDirty();
-        return changed;
+        return InternalValue.Add(value);
     }
 
     public bool Remove(TValue value)
@@ -41,10 +36,7 @@ public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<T
         if (!HasPermission)
             throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
 
-        var changed = InternalValue.Remove(value);
-        if (changed)
-            SetDirty();
-        return changed;
+        return InternalValue.Remove(value);
     }
 
     public bool Contains(TValue value) => InternalValue.Contains(value);
@@ -58,7 +50,6 @@ public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<T
             return;
 
         InternalValue.Clear();
-        SetDirty();
     }
 
     public IEnumerator<TValue> GetEnumerator() => InternalValue.GetEnumerator();

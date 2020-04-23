@@ -89,8 +89,6 @@ public class SerializableValueCollection : ISerializableValue
     protected readonly Func<bool> CollectionChangePermission;
     readonly Dictionary<string, ISerializableValue> m_InternalCollection;
 
-    public bool IsDirty => m_InternalCollection.Values.Any(v => v.IsDirty);
-
     public void Add(string valueName, ISerializableValue value)
     {
         if (!CollectionChangePermission())
@@ -102,7 +100,7 @@ public class SerializableValueCollection : ISerializableValue
             m_InternalCollection.Add(valueName, value);
     }
 
-    public void AddRange(string valueName, Dictionary<string, ISerializableValue> values)
+    public void AddRange(Dictionary<string, ISerializableValue> values)
     {
         if (!CollectionChangePermission())
             throw new InvalidOperationException("No permission to change collection");
@@ -121,12 +119,6 @@ public class SerializableValueCollection : ISerializableValue
     {
         foreach (var v in m_InternalCollection.Values)
             v.Serialize(writer);
-    }
-
-    public void SetDirty()
-    {
-        foreach (var v in m_InternalCollection.Values)
-            v.SetDirty();
     }
 
     public string ToJSONProperty() =>

@@ -33,8 +33,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
 
     public bool IsSceneObject => Identity.IsSceneObject;
 
-    public virtual bool IsDirty => Data.IsDirty;
-
     public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
 
     protected virtual void OnBeforeDataInitialized() { }
@@ -42,28 +40,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     protected virtual void OnDataValuesCollected() { }
 
     protected virtual void OnAfterDataInitialized() { }
-
-    /// <summary>
-    /// Calls IGSInstanceObservable.SetDirty() with IsLocal check.
-    /// </summary>
-    protected void TrySetDirty()
-    {
-        if (IsLocal)
-            SetDirty();
-    }
-
-    /// <summary>
-    /// Calls IGSInstanceObservable.SetDirty().
-    /// </summary>
-    protected void SetDirty()
-    {
-        if (!IsLocal)
-            throw new Exception("Trying to set dirty remote obect behaviour, this is not allowed");
-
-        Data.SetDirty();
-    }
-
-    void ISerializable.SetDirty() => SetDirty();
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NOT AUTHORITY on this object.
@@ -105,11 +81,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// <param name="writer"></param>
     void ISerializable.Serialize(NetWriter writer)
     {
-        var needSerialize = IsDirty;
-        writer.Write(needSerialize);
-        if (!needSerialize)
-            return;
-
         SerializeDirtyChecked(writer);
         Data.Serialize(writer);
 
@@ -124,10 +95,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// <param name="reader"></param>
     void ISerializable.Deserialize(NetReader reader, bool firtsTime)
     {
-        //Check if sended object was dirty
-        if (!reader.ReadBoolean())
-            return;
-
         DeserializeDirtyChecked(reader, firtsTime);
         Data.Deserialize(reader, firtsTime);
         OnDataDeserialized(firtsTime);
@@ -137,7 +104,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
         var hash = typeName.GetHashCode();
         var serializedHash = reader.ReadInt32();
 
-        if (hash != serializedHash)
+        if (!hash.Equals(serializedHash))
             Debug.LogError($"Potential serialization problem in {typeName} on {gameObject.name}");
 #endif
     }

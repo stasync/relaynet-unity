@@ -99,25 +99,12 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     protected virtual void OnValuesCollected() { }
     protected virtual void OnInitialized() { }
 
-    public bool IsDirty => SerializeableValues != null && SerializeableValues.Any(kvp => kvp.Value.IsDirty);
-    public virtual void SetDirty()
-    {
-        if (SerializeableValues != null)
-            foreach (var kvp in SerializeableValues)
-                kvp.Value.SetDirty();
-    }
-
     /// <summary>
     /// Serialization called by GSInstanceIdentity.
     /// </summary>
     /// <param name="writer"></param>
     public virtual void Serialize(NetWriter writer)
     {
-        var needSerialize = IsDirty;
-        writer.Write(needSerialize);
-        if (!needSerialize)
-            return;
-
         foreach (var kvp in SerializeableValues)
             kvp.Value.Serialize(writer);
     }
@@ -128,10 +115,6 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     /// <param name="reader"></param>
     public virtual void Deserialize(NetReader reader, bool firtsTime)
     {
-        //Check if sended object was dirty
-        if (!reader.ReadBoolean())
-            return;
-
         foreach (var kvp in SerializeableValues)
             kvp.Value.Deserialize(reader, firtsTime);
     }

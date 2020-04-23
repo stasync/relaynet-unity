@@ -28,7 +28,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
             return localPlayer != null && localPlayer.TagObjectUID.IsValid && localPlayer.TagObjectUID.Equals(State.UID);
         }
     }
-    public bool IsDirty => m_Observables.Any(o => o.IsDirty);
 
     public NetWorldPlayer Owner => State?.Owner;
 
@@ -144,14 +143,10 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (!IsLocal)
             return;
 
-        if (forced)
-            SetDirtyIfLocal();
-
         foreach (var b in m_Observables)
             b.OnUpdate();
 
-        if (forced || IsDirty)
-            State.ChangeObjectDataLocaly(Serialize());
+        State.ChangeObjectDataLocaly(Serialize());
     }
 
     /// <summary>
@@ -178,22 +173,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         State.ScheduleOwnerChanged(World.Players.LocalPlayerUID);
     }
 
-    /// <summary>
-    /// Sets all behaviours dirty, if object is local.
-    /// </summary>
-    public void SetDirtyIfLocal()
-    {
-        if (!IsLocal)
-            return;
-
-        //Set components dirty;
-        foreach (var o in m_Observables)
-            o.SetDirty();
-    }
-
     byte[] Serialize()
     {
-        //Serialize object if it becomes dirty;
+        //Serialize object;
         if (m_ObjectWriter == null)
             m_ObjectWriter = new NetWriter();
 
