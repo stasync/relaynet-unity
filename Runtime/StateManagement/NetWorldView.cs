@@ -2,6 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public enum NetWorldViewInitMode
+{
+    Default, SeparateScene,
+}
 
 public class NetWorldView : MonoBehaviour
 {
@@ -11,20 +17,38 @@ public class NetWorldView : MonoBehaviour
 
     NetWorld m_World;
     NetObjectFactory m_ObjectFactory;
+    bool m_Initialized;
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> CurrentObjectViews => m_CurrentObjectViews;
     Dictionary<NetObjectUID, NetObjectIdentity> m_CurrentObjectViews;
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> PendingObjectViews => m_PendingObjectViews;
     Dictionary<NetObjectUID, NetObjectIdentity> m_PendingObjectViews;
 
-    public void Init(NetWorld world)
+    Scene m_WorldScene;
+
+    public void Init(NetWorld world, NetWorldViewInitMode initMode)
     {
-        DontDestroyOnLoad(gameObject);
+        if (m_Initialized)
+            throw new InvalidOperationException($"View for world {world.Name} already initialized");
+
+        m_Initialized = true;
 
         m_World = world;
         m_ObjectFactory = new NetObjectFactory();
         m_CurrentObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
         m_PendingObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
+
+        switch (initMode)
+        {
+            case NetWorldViewInitMode.Default:
+                DontDestroyOnLoad(gameObject);
+                break;
+
+            case NetWorldViewInitMode.SeparateScene:
+                m_WorldScene = SceneManager.CreateScene($"{m_World.Name} scene", new CreateSceneParameters(LocalPhysicsMode.Physics3D));
+                SceneManager.MoveGameObjectToScene(gameObject, m_WorldScene);
+                break;
+        }
     }
 
     public void Execute()
@@ -187,5 +211,8 @@ public class NetWorldView : MonoBehaviour
         m_World = null;
 
         Destroy(gameObject);
+
+        if(m_WorldScene.IsValid())
+            SceneManager.UnloadSceneAsync(m_WorldScene);
     }
 }

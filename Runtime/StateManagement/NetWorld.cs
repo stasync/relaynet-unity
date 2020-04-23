@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public abstract class NetWorld
+public abstract class NetWorld : IJSONSerializable
 {
     public bool IsValid => UID.IsValid;
     public NetWorldUID UID { get; private set; }
+    public float Time { get; private set; }
+    public float LocalTime { get; private set; }
+    public string Name { get; private set; }
     public NetWorldView View { get; private set; }
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
     Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
@@ -16,16 +19,20 @@ public abstract class NetWorld
 
     Queue<Action> m_UpdateQueue;
 
-    protected NetWorld(NetWorldUID uid, string worldName)
+    protected NetWorld(NetWorldUID uid, string worldName, NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
     {        
         UID = uid;
+        Time = 0f;
+        LocalTime = 0f;
+
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         PlayersInternal = new NetWorldPlayersCollection();
 
         m_UpdateQueue = new Queue<Action>();
 
-        View = new GameObject($"{UID}:{worldName}").AddComponent<NetWorldView>();
-        View.Init(this);
+        Name = $"{UID}:{worldName}";
+        View = new GameObject(Name).AddComponent<NetWorldView>();
+        View.Init(this, viewInitMode);
     }
 
     public void FixedUpdate()
@@ -56,7 +63,11 @@ public abstract class NetWorld
 
     protected virtual void OnBeforeUpdateWorldState(float worldDelta) => ForEachStates((UID, state) => state.OnBeforeUpdateWorldState(worldDelta));
 
-    protected abstract void OnUpdateWorldState(float worldDelta);
+    protected virtual void OnUpdateWorldState(float worldDelta)
+    {
+        Time += worldDelta;
+        LocalTime += worldDelta;
+    }
 
     protected virtual void OnBeforeExecuteView(float worldDelta) { }
 
@@ -143,6 +154,10 @@ public abstract class NetWorld
 
     public void RestoreFromSnapshot(NetWorldSnapshot snapshot)
     {
+        //Update time;
+        Time = snapshot.Time;
+        LocalTime = snapshot.LocalTime;
+
         //Restore players;
         PlayersInternal.RestoreFromSnapshot(snapshot.Players);
 
@@ -167,6 +182,8 @@ public abstract class NetWorld
     {
         var hash = 13;
         hash = (hash * 7) + UID.GetHashCode();
+        hash = (hash * 7) + Time.GetHashCode();
+        hash = (hash * 7) + LocalTime.GetHashCode(); //Do we need local time in hash code?
         foreach (var kvp in m_CurrentObjectStates)
         {
             hash += kvp.Key.GetHashCode();
@@ -175,4 +192,6 @@ public abstract class NetWorld
         hash = (hash * 7) + PlayersInternal.GetHashCode();
         return hash;
     }
+
+    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue("objects") + ":" + RealtimeJSONUtils.ToJSONCollection(View.CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray()) + "}";
 }

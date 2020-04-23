@@ -77,15 +77,12 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public NetObjectState(ObjectUpdateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
         this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvier) => ChangeObjectRemotely(snapshot);
 
-    public bool ChangedLocaly { get; private set; }
     public void ChangeObjectDataLocaly(byte[] data)
     {
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
-        var hashCode = GetHashCode();
         Data = data;
-        ChangedLocaly = hashCode != GetHashCode();
     }
 
     public void RequestUpdate()
@@ -144,8 +141,8 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
         //Return object to regular UDP pipeline;
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
-        ChangedLocaly = false;
 
+        //Invoke update queue;
         while (m_UpdateQueue.Count > 0)
             m_UpdateQueue.Dequeue()();
     }

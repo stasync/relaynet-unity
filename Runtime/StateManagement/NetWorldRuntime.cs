@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class NetWorldRuntime : NetWorld, IJSONSerializable
+public class NetWorldRuntime : NetWorld
 {
     public Action<NetWorldPlayer, bool> NewPlayerRegisterd = delegate { };
 
@@ -23,18 +23,16 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     HashSet<ClientUID> m_PlayerUnregisterQueue;
 
     INetwork m_InternalNetwork;
-    Action<byte[], DeliveryIntent> m_ObjectSender;
 
     const float c_HistoryBufferSecondsLength = 10f; //Record last 30 seconds;
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
     float m_LastUpdateTime;
 
-    public float FixedTime => Time.fixedUnscaledTime;
+    public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
 
-    public NetWorldRuntime(INetwork network, Action<byte[], DeliveryIntent> objectSender, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
+    public NetWorldRuntime(INetwork network, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
     {
         m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
-        m_ObjectSender = objectSender ?? throw new ArgumentNullException(nameof(objectSender));
 
         NetObjectUID.Reset();
 
@@ -95,8 +93,12 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
     }
 
     #region Loop
-    protected override void OnUpdateWorldState(float deltaTime)
+    protected override void OnUpdateWorldState(float worldDelta)
     {
+        base.OnUpdateWorldState(worldDelta);
+
+        //TODO: Send world time;
+
         UpdatePlayerStates();
         UpdateStateBasedOnRemovedPlayers();
         UpdateStateBasedOnRemoteData();
@@ -298,8 +300,7 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
                     deliveryIntent = DeliveryIntent.Reliable;
 
                 state.RequestUpdate();
-                if (state.ChangedLocaly || deliveryIntent == DeliveryIntent.Reliable)
-                    m_ObjectSender(state.Serialize(), deliveryIntent);
+                m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
 
                 if (state.RequireRemoving)
                     RemoveObject(UID);
@@ -463,8 +464,6 @@ public class NetWorldRuntime : NetWorld, IJSONSerializable
         var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
         return networkObject == null ? null : networkObject.GetComponent<T>();
     } 
-
-    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue("objects") + ":" + RealtimeJSONUtils.ToJSONCollection(View.CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray()) + "}";
 
     public int GetHistoryBufferSize() => m_HistoryBuffer.Sum(s => s.GetSize());
 }

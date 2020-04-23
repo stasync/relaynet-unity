@@ -25,7 +25,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
                 return false;
 
             var localPlayer = World.Players.LocalPlayer;
-            return localPlayer.TagObjectUID.IsValid && localPlayer.TagObjectUID.Equals(State.UID);
+            return localPlayer != null && localPlayer.TagObjectUID.IsValid && localPlayer.TagObjectUID.Equals(State.UID);
         }
     }
     public bool IsDirty => m_Observables.Any(o => o.IsDirty);

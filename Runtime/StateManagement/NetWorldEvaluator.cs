@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
 
 public class NetWorldEvaluator : NetWorld
 {
@@ -10,7 +9,7 @@ public class NetWorldEvaluator : NetWorld
     bool m_Finished;
     bool m_AutoDestroy;
 
-    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.UID, $"World {runtime.UID} evaluator")
+    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.UID, $"World {runtime.UID} evaluator", NetWorldViewInitMode.SeparateScene)
     {
         m_HistoryBuffer = new Queue<NetWorldSnapshot>(runtime.HistroyBuffer);
         m_CurrentTime = 0f;
@@ -43,7 +42,7 @@ public class NetWorldEvaluator : NetWorld
             return;
         }
 
-        m_CurrentTime += Time.fixedUnscaledDeltaTime;
+        m_CurrentTime += UnityEngine.Time.fixedUnscaledDeltaTime;
         if (m_CurrentTime < m_NextSnapshotTime)
             return;
 
@@ -51,6 +50,9 @@ public class NetWorldEvaluator : NetWorld
         NextSnapshot();
     }
 
-    protected override void OnUpdateWorldState(float worldDelta) =>
+    protected override void OnUpdateWorldState(float worldDelta)
+    {
+        base.OnUpdateWorldState(worldDelta);
         RestoreFromSnapshot(m_CurrentSnapshot);
+    }
 }
