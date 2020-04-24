@@ -53,7 +53,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
-    public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCRequests => m_RPCWithoutAuthorityRequests;
+    public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
     List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
 
     NetWriter m_Writer;
@@ -195,8 +195,8 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public int CompareTo(NetObjectState other) => UID.CompareTo(other.UID);
     public bool Equals(NetObjectState other) => UID.Equals(other.UID);
 
-    public void ScheduleRPCWithoutAuthority(RPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent) =>
-        ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(type, hashCode, data, deliveryIntent)));
+    public void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent) =>
+        ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryIntent)));
         
     public void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryIntent deliveryIntent) =>
         ScheduleOnUpdate(() =>
@@ -210,18 +210,53 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         ScheduleOnUpdate(() => m_RPCBuffer.RemovePersistent(hashCode));
 }
 
+public struct RPCWithoutAuthorityState
+{
+    public readonly NetObjectUID ObjectUID;
+    public readonly NoAuthorityRPCType Type;
+    public readonly RPCState RPCState;
+
+    public bool IsValid => ObjectUID.IsValid && !RPCState.Hash.Equals(0) && RPCState.Payload != null;
+
+    public RPCWithoutAuthorityState(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload)
+    {
+        ObjectUID = objectUID;
+        Type = type;
+        RPCState = new RPCState(hashCode, RPCStateUIDAllocator.AllocateUID(), payload);
+    }
+
+    public RPCWithoutAuthorityState(NetReader reader)
+    {
+        ObjectUID = reader.ReadInstanceId();
+        Type = (NoAuthorityRPCType)reader.ReadByte();
+        RPCState = RPCState.FromSnapshot(RPCStateSnapshot.FromReader(reader));
+    }
+
+    public void Serialize(NetWriter writer)
+    {
+        writer.WriteInstanceId(ObjectUID);
+        writer.Write((byte)Type);
+        RPCState.ToSnapshot().Serialize(writer);
+    }
+
+    public byte[] ToData()
+    {
+        var writer = new NetWriter();
+        Serialize(writer);
+        return writer.ToArray();
+    }
+
+    public static RPCWithoutAuthorityState FromReader(NetReader reader) => new RPCWithoutAuthorityState(reader);
+}
+
 public struct RPCWithoutAuthorityRequest
 {
-    public readonly RPCType Type;
-    public readonly int HashCode;
-    public readonly byte[] Data;
+    public readonly RPCWithoutAuthorityState State;
     public readonly DeliveryIntent DeliveryIntent;
 
-    public RPCWithoutAuthorityRequest(RPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent)
+    public RPCWithoutAuthorityRequest(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload, DeliveryIntent deliveryIntent)
     {
-        Type = type;
-        HashCode = hashCode;
-        Data = data;
+        State = new RPCWithoutAuthorityState(objectUID, type, hashCode, payload);
         DeliveryIntent = deliveryIntent;
     }
 }

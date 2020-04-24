@@ -23,6 +23,7 @@ public class NetWorldRuntime : NetWorld
     HashSet<ClientUID> m_PlayerUnregisterQueue;
 
     INetwork m_InternalNetwork;
+    Action<uint, DeliveryIntent, byte[]> m_Communicator;
 
     const float c_HistoryBufferSecondsLength = 10f; //Record last 30 seconds;
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
@@ -30,9 +31,10 @@ public class NetWorldRuntime : NetWorld
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
 
-    public NetWorldRuntime(INetwork network, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
+    public NetWorldRuntime(INetwork network, Action<uint, DeliveryIntent, byte[]> communicator, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
     {
         m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
+        m_Communicator = communicator ?? throw new ArgumentNullException(nameof(communicator));
 
         NetObjectUID.Reset();
 
@@ -257,8 +259,8 @@ public class NetWorldRuntime : NetWorld
         {
             ForEachRemoteStates((UID, state) => 
             {
-                foreach (var r in state.RPCRequests)
-                    m_InternalNetwork.RPC(r.Type, UID, r.HashCode, r.Data, r.DeliveryIntent);
+                foreach (var r in state.RPCWithoutAuthorityRequests)
+                    m_Communicator(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
             });
         }
 

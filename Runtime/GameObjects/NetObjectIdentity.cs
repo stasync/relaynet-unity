@@ -12,7 +12,7 @@ public enum RPCBufferChangeMethod : byte
 }
 
 [DisallowMultipleComponent]
-public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerializable
+public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, IJSONSerializable
 {
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
@@ -287,7 +287,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (invokeLocaly)
             InvokeRpcHandler(hashCode, data);
 
-        //Add to sending buffeR;
+        //Add to sending buffer;
         State.ScheduleRPC(hashCode, data, persistent, bufferChangeMethod, deliveryIntent);
     }
 
@@ -323,7 +323,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
         else
-            State.ScheduleRPCWithoutAuthority(RPCType.ToOwner, hashCode, data, deliveryIntent);
+            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToOwner, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -338,7 +338,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
         if (IsOwnedByMasterClient)
             InvokeRpcHandler(hashCode, data);
         else
-            State.ScheduleRPCWithoutAuthority(RPCType.ToMaster, hashCode, data, deliveryIntent);
+            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToMaster, hashCode, data, deliveryIntent);
     }
 
     /// <summary>
@@ -363,25 +363,25 @@ public sealed class NetObjectIdentity : MonoBehaviour, IRPCReciever, IJSONSerial
     /// <summary>
     /// Recieve rpc on object with authority. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCLocaly(int hashCode, byte[] data) => RecieveRPCLocaly(hashCode, data);
-    void RecieveRPCLocaly(int hashCode, byte[] data)
+    void NoAuthorityIRPCReciever.RecieveRPCLocaly(RPCWithoutAuthorityState state) => RecieveRPCLocaly(state);
+    void RecieveRPCLocaly(RPCWithoutAuthorityState state)
     {
         if (!IsLocal)
             throw new Exception("Trying to recieve AUTHORITY RPC on remote object behaviour, this is not allowed");
 
-        InvokeRpcHandler(hashCode, data);
+        InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
     }
 
     /// <summary>
     /// Recieve rpc on master clent. (Called from GSTransport).
     /// </summary>
-    void IRPCReciever.RecieveRPCOnMasterClient(int hashCode, byte[] data) => RecieveRPCOnMasterClient(hashCode, data);
-    void RecieveRPCOnMasterClient(int hashCode, byte[] data)
+    void NoAuthorityIRPCReciever.RecieveRPCOnMasterClient(RPCWithoutAuthorityState state) => RecieveRPCOnMasterClient(state);
+    void RecieveRPCOnMasterClient(RPCWithoutAuthorityState state)
     {
         if (!IsOwnedByMasterClient)
             throw new Exception("Trying to recieve MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
 
-        InvokeRpcHandler(hashCode, data);
+        InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
     }
 
     void InvokeRpcHandler(int hashCode, byte[] data)

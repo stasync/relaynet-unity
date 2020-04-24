@@ -10,12 +10,15 @@ public interface IReadOnlyNetObjectRPCState
     void Receive(bool receivePersistent, Action<int, byte[]> reciever);
 }
 
-public struct RPCState
+public struct RPCStateUIDAllocator
 {
     public static uint AllocateUID() => ++UIDCounter;
 
     static uint UIDCounter = 0;
+}
 
+public struct RPCState
+{
     public int Hash { get; private set; }
     public uint UID { get; private set; }
     public byte[] Payload { get; private set; }
@@ -54,7 +57,7 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
 
     public void AddOrUpdate(int hash, byte[] payload, bool persistent, RPCBufferChangeMethod changeMethod)
     {
-        var uid = RPCState.AllocateUID();
+        var uid = RPCStateUIDAllocator.AllocateUID();
         var data = new RPCState(hash, uid, payload);
 
         PushTo(data, m_TemporalBuffer, changeMethod);
