@@ -33,6 +33,8 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     NetObjectRPCState m_RPCBuffer;
     #endregion
 
+    int m_LastHashCode;
+
     public override int GetHashCode()
     {
         var hash = 13;
@@ -85,12 +87,18 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         Data = data;
     }
 
-    public void RequestUpdate()
+    public bool PrepareForSerialization()
     {
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
         LocalUpdateRequest(StateChangeType == ObjectStateChangeRequestType.InitializationUpdate);
+
+        var newHashCode = GetHashCode();
+        var changed = !newHashCode.Equals(m_LastHashCode);
+        m_LastHashCode = newHashCode;
+
+        return changed;
     }
 
     public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;

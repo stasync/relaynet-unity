@@ -3,16 +3,14 @@ using UnityEngine;
 
 public static class HLNetReaderExtention
 {
-    static ServiceProvider<GSNetwork> m_NetworkProvider = new ServiceProvider<GSNetwork>();
-
     public static ClientUID ReadConnectionUID(this NetReader reader) =>
         reader.ReadPackedUInt32();
 
     public static NetObjectUID ReadInstanceId(this NetReader reader) =>
         reader.ReadPackedUInt32();
 
-    public static NetWorldPlayer ReadPlayer(this NetReader reader) =>
-        m_NetworkProvider.Instance.Realtime.FindPlayer(reader.ReadConnectionUID());
+    public static NetWorldPlayer ReadPlayer(this NetReader reader, NetWorld targetWorld) =>
+        targetWorld.Players.Find(reader.ReadConnectionUID());
 
     public static NetObjectIdentity ReadObject(this NetReader reader, NetWorld targetWorld) =>
         targetWorld.FindObjectView(reader.ReadPackedUInt32());

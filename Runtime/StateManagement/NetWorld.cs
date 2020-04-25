@@ -7,7 +7,7 @@ public abstract class NetWorld : IJSONSerializable
 {
     public bool IsValid => UID.IsValid;
     public NetWorldUID UID { get; private set; }
-    public float Time { get; private set; }
+    public float Time { get; protected set; }
     public float LocalTime { get; private set; }
     public string Name { get; private set; }
     public NetWorldView View { get; private set; }

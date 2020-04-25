@@ -16,6 +16,8 @@ public class NetWorldRuntime : NetWorld
     public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> RemotePlayersUpdateRequests => m_RemotePlayersUpdateRequests;
     Dictionary<ClientUID, NetWorldPlayerSnapshot> m_RemotePlayersUpdateRequests;
 
+    Queue<byte[]> m_RemoteWorldDataUpdateRequests;
+
     public IReadOnlyCollection<NetWorldSnapshot> HistroyBuffer => m_HistoryBuffer;
     HistoryBiffer m_HistoryBuffer;
 
@@ -45,6 +47,7 @@ public class NetWorldRuntime : NetWorld
             m_RemoteObjectUpdateRequests = new Dictionary<NetObjectUID, ObjectUpdateSnapshot>();
             m_RemotePlayersUpdateRequests = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
             m_ObjectsRegisterRequests = new Dictionary<NetObjectUID, NetObjectState>();
+            m_RemoteWorldDataUpdateRequests = new Queue<byte[]>();
         }
 
         m_LocalPlayerRegisterQueue = new HashSet<ClientUID>();
@@ -75,7 +78,6 @@ public class NetWorldRuntime : NetWorld
             m_RemoteObjectUpdateRequests.Add(snapshot.ObjectUID, snapshot);
     }
 
-
     public void ScheduleUpdateForRemotePlayer(NetWorldPlayerSnapshot snapshot)
     {
         if (m_RemotePlayersUpdateRequests.ContainsKey(snapshot.PlayerUID))
@@ -83,6 +85,8 @@ public class NetWorldRuntime : NetWorld
         else
             m_RemotePlayersUpdateRequests.Add(snapshot.PlayerUID, snapshot);
     }
+
+    public void ScheduleRemoteWorldDataUpdate(byte[] data) => m_RemoteWorldDataUpdateRequests.Enqueue(data);
 
     protected override void UpdateImplementation()
     {
@@ -99,7 +103,8 @@ public class NetWorldRuntime : NetWorld
     {
         base.OnUpdateWorldState(worldDelta);
 
-        //TODO: Send world time;
+        TrySendWorldData();
+        TryReceiveWorldData();
 
         UpdatePlayerStates();
         UpdateStateBasedOnRemovedPlayers();
@@ -108,6 +113,26 @@ public class NetWorldRuntime : NetWorld
         UpdateLocalObjectState();
 
         #region Internal
+        void TrySendWorldData()
+        {
+            if (!PlayersInternal.LocalPlayerIsMaster)
+                return;
+
+            var writer = new Core.Networking.NetWriter();
+            writer.Write(Time);
+            m_Communicator(MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, writer.ToArray());
+        }
+
+        void TryReceiveWorldData()
+        {
+            var reader = new Core.Networking.NetReader();
+            while(m_RemoteWorldDataUpdateRequests.Count > 0)
+            {
+                reader.Replace(m_RemoteWorldDataUpdateRequests.Dequeue());
+                Time = reader.ReadSingle();
+            }
+        }
+
         void UpdatePlayerStates()
         {
             //Add local
@@ -301,8 +326,8 @@ public class NetWorldRuntime : NetWorld
                 if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
                     deliveryIntent = DeliveryIntent.Reliable;
 
-                state.RequestUpdate();
-                m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
+                if(state.PrepareForSerialization())
+                    m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
 
                 if (state.RequireRemoving)
                     RemoveObject(UID);
@@ -345,6 +370,9 @@ public class NetWorldRuntime : NetWorld
 
         m_ObjectsRegisterRequests.Clear();
         m_ObjectsRegisterRequests = null;
+
+        m_RemoteWorldDataUpdateRequests.Clear();
+        m_RemoteWorldDataUpdateRequests = null;
 
         m_LocalPlayerRegisterQueue.Clear();
         m_LocalPlayerRegisterQueue = null;
@@ -418,9 +446,7 @@ public class NetWorldRuntime : NetWorld
         if (ObjectExists(sceneIdentity.SceneObjectId))
         {
 #if NETWORK_DEBUG
-            Debug.LogErrorFormat("Trying to register scene identity {0}: but object with id {1} already registered",
-                sceneIdentity.gameObject.name,
-                sceneIdentity.SceneObjectId);
+            Debug.LogError($"Trying to register scene identity {sceneIdentity.gameObject.name} {sceneIdentity.PrefabID}: but object with id {sceneIdentity.SceneObjectId} already registered");
 #endif
             return;
         }
@@ -430,7 +456,7 @@ public class NetWorldRuntime : NetWorld
 
         //Create state from scen object identity;
         //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        var newState = new NetObjectState(sceneIdentity.SceneObjectId, "SceneObject", true, m_InternalNetwork.MasterClientConnection, PlayersInternal.Find);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, true, m_InternalNetwork.MasterClientConnection, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(newState.UID, newState);
 
         //Initialize immidiatlty on master client;

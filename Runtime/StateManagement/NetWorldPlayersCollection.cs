@@ -29,6 +29,7 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
     Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
     #endregion
 
+    public bool LocalPlayerIsMaster => MasterPlayerUID.IsValid && MasterPlayerUID.Equals(LocalPlayerUID);
     public NetWorldPlayer LocalPlayer => Find(LocalPlayerUID);
     public NetWorldPlayer MasterPlayer => Find(MasterPlayerUID);
     public NetWorldPlayer Find(ClientUID uid) => m_PlayersCollection.TryGetValue(uid, out var player) ? player : null;

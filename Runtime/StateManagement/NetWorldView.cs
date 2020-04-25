@@ -15,6 +15,7 @@ public class NetWorldView : MonoBehaviour
     public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 
     public bool ForceRenderingOff { get; private set; }
+    public bool ForceMute { get; private set; }
 
     NetWorld m_World;
     NetObjectFactory m_ObjectFactory;
@@ -76,18 +77,13 @@ public class NetWorldView : MonoBehaviour
                 }
                 else
                 {
-                    if (!state.UID.IsSceneObjectSpaceId)
-                    {
-                        netObjectView = m_ObjectFactory.Create(state.PrefabId, Vector3.zero, Quaternion.identity);
-                        m_CurrentObjectViews.Add(UID, netObjectView);
-                    }
-                    //else
-                    //    Debug.LogError($"Unable to replicate state {state.ToString()} becase it is a scene object");
+                    if (string.IsNullOrWhiteSpace(state.PrefabId))
+                        return;
+
+                    netObjectView = m_ObjectFactory.Create(state.PrefabId, Vector3.zero, Quaternion.identity);
+                    m_CurrentObjectViews.Add(UID, netObjectView);
                 }
             }
-
-            if (netObjectView == null)
-                return;
 
             //Initialize new view;
             if (netObjectView.Initialized)
@@ -153,6 +149,7 @@ public class NetWorldView : MonoBehaviour
     {
         targetTransform.SetParent(transform);
         UpdateVisibilityFor(targetTransform);
+        UpdateSoundFor(targetTransform);
     }
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => m_PendingObjectViews.Add(uid, identity);
@@ -186,16 +183,34 @@ public class NetWorldView : MonoBehaviour
         }
     }
 
-    public void SetVisibleImmediate(bool visible)
+    public void SetEnabledImmidiate(bool enabled)
     {
-        ForceRenderingOff = !visible;
+        SetVisibleImmediate(enabled);
+        SetSoundEnabledImmediate(enabled);
+    }
+
+    public void SetVisibleImmediate(bool enabled)
+    {
+        ForceRenderingOff = !enabled;
         ForEachViews((UID, v) => UpdateVisibilityFor(v.transform));
+    }
+
+    public void SetSoundEnabledImmediate(bool enabled)
+    {
+        ForceMute = !enabled;
+        ForEachViews((UID, v) => UpdateSoundFor(v.transform));
     }
 
     void UpdateVisibilityFor(Transform targetTransform)
     {
         foreach (var r in targetTransform.GetComponentsInChildren<Renderer>(true))
             r.forceRenderingOff = ForceRenderingOff;
+    }
+
+    void UpdateSoundFor(Transform targetTransform)
+    {
+        foreach (var s in targetTransform.GetComponentsInChildren<AudioSource>(true))
+            s.mute = ForceMute;
     }
 
     public void Destroy()

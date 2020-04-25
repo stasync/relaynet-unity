@@ -77,8 +77,8 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     #endregion
 
     public bool IsValid => UID.IsValid;
-    public bool IsLocal => UID == m_LocalPlayer();
-    public bool IsMaster => UID == m_MasterPlayer();
+    public bool IsLocal => IsValid && UID.Equals(m_LocalPlayer());
+    public bool IsMaster => IsValid && UID.Equals(m_MasterPlayer());
 
     readonly Func<ClientUID> m_LocalPlayer;
     readonly Func<ClientUID> m_MasterPlayer;

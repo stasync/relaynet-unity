@@ -9,24 +9,32 @@ public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
     int m_SceneObjectId;
     public NetObjectUID SceneObjectId => (uint)m_SceneObjectId;
 
+    [SerializeField]
+    string m_PrefabId;
+    public string PrefabID => m_PrefabId;
+
     /// <summary>
     /// We needs to register this object in object factory, if it placed in scene by default.
     /// </summary>
-    void Awake()
+    void Start()
     {
         // Register scene object.
         // Initialize object if we on master client, so new clents will not initialize this objects, but will recieve updates.
         // TODO: fix situations when object can be not initialized.
-        Network.Realtime.TryRegisterOrInitializeSceneObject(this);
+        TryRegisterOrInitialize();
     }
 
     public override void OnDisconnected(ClientUID peedId)
     {
         base.OnDisconnected(peedId);
-        if (Identity.Initialized || !Network.Realtime.IsMasterPlayer)
-            return;
+        if (Network.Realtime.IsMasterPlayer)
+            TryRegisterOrInitialize();
+    }
 
-        Network.Realtime.TryRegisterOrInitializeSceneObject(this);
+    void TryRegisterOrInitialize()
+    {
+        if(!Identity.Initialized)
+            Network.Realtime.TryRegisterOrInitializeSceneObject(this);
     }
 
     public override void OnPostInitialize()
@@ -65,7 +73,9 @@ public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
     }
 
     [UnityEditor.MenuItem("Network/Fix scene objects")]
+#pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
     static void FixSceneObjects()
+#pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены
     {
         if (UnityEditor.EditorApplication.isPlaying)
         {
