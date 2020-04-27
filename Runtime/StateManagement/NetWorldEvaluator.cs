@@ -2,52 +2,105 @@
 
 public class NetWorldEvaluator : NetWorld
 {
-    Queue<NetWorldSnapshot> m_HistoryBuffer;
+    List<NetWorldSnapshot> m_HistoryBuffer;
     NetWorldSnapshot m_CurrentSnapshot;
+
     float m_CurrentTime;
     float m_NextSnapshotTime;
-    bool m_Finished;
     bool m_AutoDestroy;
+
+    public int CurrentSnapshotIndex { get; private set; }
+    public bool Paused { get; private set; }
+    public int BufferSize => m_HistoryBuffer.Count;
 
     public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.UID, $"World {runtime.UID} evaluator", NetWorldViewInitMode.SeparateScene)
     {
-        m_HistoryBuffer = new Queue<NetWorldSnapshot>(runtime.HistroyBuffer);
+        m_HistoryBuffer = new List<NetWorldSnapshot>(runtime.HistroyBuffer);
+
         m_CurrentTime = 0f;
+        CurrentSnapshotIndex = 0;
         m_AutoDestroy = autoDestroy;
+        Paused = false;
 
         UpdateCurrentSnapshotInfo();
     }
 
-    void NextSnapshot()
+    void PeekNextSnapshot()
     {
-        if (m_HistoryBuffer.Count > 0)
-            UpdateCurrentSnapshotInfo();
-        else 
-            m_Finished = true;
+        CurrentSnapshotIndex++;
+        if(CurrentSnapshotIndex >= m_HistoryBuffer.Count)
+            CurrentSnapshotIndex = m_HistoryBuffer.Count - 1;
+
+        UpdateCurrentSnapshotInfo();
+    }
+
+    public void MoveToPreviousSnapshot()
+    {
+        CurrentSnapshotIndex--;
+        MoveToSnapshot(CurrentSnapshotIndex);
+    }
+
+    public void MoveToNextSnapshot()
+    {
+        CurrentSnapshotIndex++;
+        MoveToSnapshot(CurrentSnapshotIndex);
+    }
+
+    public void MoveToSnapshot(int snapshotIndex)
+    {
+        CurrentSnapshotIndex = UnityEngine.Mathf.Clamp(snapshotIndex, 0, m_HistoryBuffer.Count - 1);
+
+        UpdateCurrentSnapshotInfo();
+        GetSnapshotTime(CurrentSnapshotIndex);
+
+        Evaluate(m_CurrentSnapshot.DeltaTime);
+    }
+
+    public void SetPaused(bool paused) => Paused = paused;
+
+    float GetSnapshotTime(int snapshotIndex)
+    {
+        var result = 0f;
+        for(var i = 0; i < m_HistoryBuffer.Count; i++)
+        {
+            var s = m_HistoryBuffer[i];
+            result += s.DeltaTime;
+            if (i.Equals(snapshotIndex))
+                return result;
+        }
+
+        UnityEngine.Debug.LogError($"Unabled to calculate time for snapshot with index {snapshotIndex}");
+        return result;
     }
 
     void UpdateCurrentSnapshotInfo()
     {
-        m_CurrentSnapshot = m_HistoryBuffer.Dequeue();
+        if (CurrentSnapshotIndex >= m_HistoryBuffer.Count || CurrentSnapshotIndex < 0)
+            return;
+
+        m_CurrentSnapshot = m_HistoryBuffer[CurrentSnapshotIndex];
         m_NextSnapshotTime = m_CurrentTime + m_CurrentSnapshot.DeltaTime;
     }
 
     protected override void UpdateImplementation()
     {
-        if (m_Finished)
-        {
-            if (m_AutoDestroy)
-                Destroy();
-
+        if (Paused)
             return;
-        }
 
         m_CurrentTime += UnityEngine.Time.fixedUnscaledDeltaTime;
         if (m_CurrentTime < m_NextSnapshotTime)
             return;
 
         Evaluate(m_CurrentSnapshot.DeltaTime);
-        NextSnapshot();
+
+        //Do not pick next snapshot if this is a last snapshot;
+        if (CurrentSnapshotIndex.Equals(m_HistoryBuffer.Count - 1))
+        {
+            if (m_AutoDestroy)
+                Destroy();
+        }
+        else
+            PeekNextSnapshot();
     }
 
     protected override void OnUpdateWorldState(float worldDelta)

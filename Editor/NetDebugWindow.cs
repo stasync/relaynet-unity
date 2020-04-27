@@ -192,6 +192,7 @@ public class NetWorldDebugWindow : EditorWindow
 
     WorldDrawer m_MainWorldDrawer;
     WorldDrawer m_CurrentWorldReplicaDrawer;
+    NetWorldEvaluator m_CurrentReplica;
 
     [MenuItem("Network/World debug")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
@@ -245,23 +246,47 @@ public class NetWorldDebugWindow : EditorWindow
             EditorGUI.BeginDisabledGroup(m_CurrentWorldReplicaDrawer != null);
             if (GUILayout.Button("Playback"))
             {
-                var currentReplica = m_NetworkProvider.Instance.Realtime.MainWorld.Replicate();
-                m_CurrentWorldReplicaDrawer = new WorldDrawer(currentReplica);
+                m_CurrentReplica = m_NetworkProvider.Instance.Realtime.MainWorld.Replicate();
+                m_CurrentWorldReplicaDrawer = new WorldDrawer(m_CurrentReplica);
 
                 var unityService = new ServiceProvider<IUnityService>();
                 unityService.Instance.UnityFixedUpdate += OnFixedUpdate;
 
                 void OnFixedUpdate()
                 {
-                    currentReplica.FixedUpdate();
-                    if (!currentReplica.IsValid)
+                    m_CurrentReplica.FixedUpdate();
+                    if (!m_CurrentReplica.IsValid)
                     {
                         m_CurrentWorldReplicaDrawer = null;
+                        m_CurrentReplica = null;
                         unityService.Instance.UnityFixedUpdate -= OnFixedUpdate;
                     }
                 }
             }
             EditorGUI.EndDisabledGroup();
+
+            if(m_CurrentReplica != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button(m_CurrentReplica.Paused ? "Play" : "Pause"))
+                    m_CurrentReplica.SetPaused(!m_CurrentReplica.Paused);
+
+                EditorGUI.BeginDisabledGroup(!m_CurrentReplica.Paused);
+
+                if (GUILayout.Button("Next"))
+                    m_CurrentReplica.MoveToNextSnapshot();
+
+                if (GUILayout.Button("Previous"))
+                    m_CurrentReplica.MoveToPreviousSnapshot();
+
+                EditorGUILayout.EndHorizontal();
+                EditorGUI.BeginChangeCheck();
+                var targetSnapshot = EditorGUILayout.IntSlider(m_CurrentReplica.CurrentSnapshotIndex, 0, m_CurrentReplica.BufferSize - 1);
+                if (EditorGUI.EndChangeCheck() && targetSnapshot != m_CurrentReplica.CurrentSnapshotIndex)
+                    m_CurrentReplica.MoveToSnapshot(targetSnapshot);
+
+                EditorGUI.EndDisabledGroup();
+            }
 
             m_ShowMainWorldBuffer = EditorGUILayout.Foldout(m_ShowMainWorldBuffer, "Show buffer");
             if (m_ShowMainWorldBuffer)
