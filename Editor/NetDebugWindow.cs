@@ -1,10 +1,11 @@
-﻿using UnityEngine;
-using UnityEditor;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
+using UnityEngine;
 
 public class NetWorldDebugWindow : EditorWindow
 {
+    #region Drawers
     class ObjectDrawer
     {
         readonly NetObjectState m_State;
@@ -68,15 +69,15 @@ public class NetWorldDebugWindow : EditorWindow
             EditorGUILayout.LabelField($"{rpc.UID} Hash: {rpc.Hash} '{RPCUtils.TryFindStringByHash(rpc.Hash)}' Payload size: {rpc.Payload.Length}");
     }
 
-    class WorldDrawer
+    abstract class WorldDrawer<T> where T : NetWorld
     {
-        readonly NetWorld m_World;
+        protected readonly T m_World;
 
         bool m_Draw;
         Dictionary<NetObjectUID, ObjectDrawer> m_ObjectViews;
         string m_LastJSONState;
 
-        public WorldDrawer(NetWorld world)
+        public WorldDrawer(T world)
         {
             m_World = world;
             m_Draw = true;
@@ -92,11 +93,11 @@ public class NetWorldDebugWindow : EditorWindow
                 m_ObjectViews = new Dictionary<NetObjectUID, ObjectDrawer>();
 
             EditorGUI.indentLevel++;
-            DrawWorld();
+            OnDrawWorld();
             EditorGUI.indentLevel--;
         }
 
-        void DrawWorld()
+        protected virtual void OnDrawWorld()
         {
             EditorGUILayout.LabelField($"Time: {m_World.Time.ToString("f1")}", EditorStyles.boldLabel);
             EditorGUILayout.LabelField($"Local Time: {m_World.LocalTime.ToString("f1")}", EditorStyles.boldLabel);
@@ -159,13 +160,37 @@ public class NetWorldDebugWindow : EditorWindow
                     drawer.Draw();
                 }
             }
+        }
+        void DrawPlayer(string prefix, NetWorldPlayer p) => EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");
+    }
 
-            if (m_World is NetWorldRuntime realtimeWorld)
+    class BaseWorldDrawer : WorldDrawer<NetWorld>
+    {
+        public BaseWorldDrawer(NetWorld world) : base(world) { }
+    }
+
+    class MainWorldDrawer : WorldDrawer<NetWorldRuntime>
+    {
+        bool m_DrawCommon;
+
+        public MainWorldDrawer(NetWorldRuntime runtimeWorld) : base(runtimeWorld) { }
+
+        protected override void OnDrawWorld()
+        {
+            base.OnDrawWorld();
+
+            EditorGUILayout.Space();
+
+            m_DrawCommon = EditorGUILayout.Foldout(m_DrawCommon, "Common");
+            if (!m_DrawCommon)
+                return;
+
+            EditorGUI.indentLevel++;
             {
                 //Register equests
                 {
                     EditorGUILayout.Space();
-                    var registerRequests = realtimeWorld.ObjectsRegisterRequests;
+                    var registerRequests = m_World.ObjectsRegisterRequests;
                     EditorGUILayout.LabelField($"Objects register request: {registerRequests.Count}", EditorStyles.boldLabel);
                     foreach (var obj in registerRequests)
                         EditorGUILayout.LabelField(obj.Value.ToString());
@@ -175,24 +200,56 @@ public class NetWorldDebugWindow : EditorWindow
                 {
                     EditorGUILayout.Separator();
                     EditorGUILayout.Space();
-                    var remoteRequests = realtimeWorld.RemoteObjectUpdateRequests;
+                    var remoteRequests = m_World.RemoteObjectUpdateRequests;
                     EditorGUILayout.LabelField($"Objects remote request: {remoteRequests.Count}", EditorStyles.boldLabel);
                     foreach (var obj in remoteRequests)
                         EditorGUILayout.LabelField(obj.Value.ToString());
                 }
             }
+            EditorGUI.indentLevel--;
         }
-        void DrawPlayer(string prefix, NetWorldPlayer p) => EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");
     }
+
+    class ReplicaWorldDrawer : WorldDrawer<NetWorldEvaluator>
+    {
+        public ReplicaWorldDrawer(NetWorldEvaluator replicaWorld) : base(replicaWorld) { }
+
+        protected override void OnDrawWorld()
+        {
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(m_World.Paused ? "Play >" : "Pause ||"))
+                m_World.SetPaused(!m_World.Paused);
+
+            EditorGUI.BeginDisabledGroup(!m_World.Paused);
+
+            if (GUILayout.Button("<< Previous"))
+                m_World.MoveToPreviousSnapshot();
+
+            if (GUILayout.Button("Next >>"))
+                m_World.MoveToNextSnapshot();
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUI.BeginChangeCheck();
+            var targetSnapshot = EditorGUILayout.IntSlider(m_World.CurrentSnapshotIndex, 0, m_World.BufferSize - 1);
+            if (EditorGUI.EndChangeCheck() && targetSnapshot != m_World.CurrentSnapshotIndex)
+                m_World.MoveToSnapshot(targetSnapshot);
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.Space();
+
+            base.OnDrawWorld();
+        }
+    }
+    #endregion
 
     bool m_ShowMainWorldHistoryInfo;
     bool m_ShowMainWorldBuffer;
     ServiceProvider<GSNetwork> m_NetworkProvider;
     Vector2 m_GlobalScrollPosition;
 
-    WorldDrawer m_MainWorldDrawer;
-    WorldDrawer m_CurrentWorldReplicaDrawer;
-    NetWorldEvaluator m_CurrentReplica;
+    MainWorldDrawer m_MainWorldDrawer;
+    ReplicaWorldDrawer m_CurrentWorldReplicaDrawer;
 
     [MenuItem("Network/World debug")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
@@ -231,7 +288,7 @@ public class NetWorldDebugWindow : EditorWindow
         }
 
         if (m_MainWorldDrawer == null)
-            m_MainWorldDrawer = new WorldDrawer(mainWorld);
+            m_MainWorldDrawer = new MainWorldDrawer(mainWorld);
 
         EditorGUILayout.Space();
         m_GlobalScrollPosition = EditorGUILayout.BeginScrollView(m_GlobalScrollPosition);
@@ -246,47 +303,23 @@ public class NetWorldDebugWindow : EditorWindow
             EditorGUI.BeginDisabledGroup(m_CurrentWorldReplicaDrawer != null);
             if (GUILayout.Button("Playback"))
             {
-                m_CurrentReplica = m_NetworkProvider.Instance.Realtime.MainWorld.Replicate();
-                m_CurrentWorldReplicaDrawer = new WorldDrawer(m_CurrentReplica);
+                var currentReplica = m_NetworkProvider.Instance.Realtime.MainWorld.Replicate();
+                m_CurrentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
 
                 var unityService = new ServiceProvider<IUnityService>();
                 unityService.Instance.UnityFixedUpdate += OnFixedUpdate;
 
                 void OnFixedUpdate()
                 {
-                    m_CurrentReplica.FixedUpdate();
-                    if (!m_CurrentReplica.IsValid)
+                    currentReplica.FixedUpdate();
+                    if (!currentReplica.IsValid)
                     {
                         m_CurrentWorldReplicaDrawer = null;
-                        m_CurrentReplica = null;
                         unityService.Instance.UnityFixedUpdate -= OnFixedUpdate;
                     }
                 }
             }
             EditorGUI.EndDisabledGroup();
-
-            if(m_CurrentReplica != null)
-            {
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button(m_CurrentReplica.Paused ? "Play" : "Pause"))
-                    m_CurrentReplica.SetPaused(!m_CurrentReplica.Paused);
-
-                EditorGUI.BeginDisabledGroup(!m_CurrentReplica.Paused);
-
-                if (GUILayout.Button("Next"))
-                    m_CurrentReplica.MoveToNextSnapshot();
-
-                if (GUILayout.Button("Previous"))
-                    m_CurrentReplica.MoveToPreviousSnapshot();
-
-                EditorGUILayout.EndHorizontal();
-                EditorGUI.BeginChangeCheck();
-                var targetSnapshot = EditorGUILayout.IntSlider(m_CurrentReplica.CurrentSnapshotIndex, 0, m_CurrentReplica.BufferSize - 1);
-                if (EditorGUI.EndChangeCheck() && targetSnapshot != m_CurrentReplica.CurrentSnapshotIndex)
-                    m_CurrentReplica.MoveToSnapshot(targetSnapshot);
-
-                EditorGUI.EndDisabledGroup();
-            }
 
             m_ShowMainWorldBuffer = EditorGUILayout.Foldout(m_ShowMainWorldBuffer, "Show buffer");
             if (m_ShowMainWorldBuffer)

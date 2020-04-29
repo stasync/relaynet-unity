@@ -231,8 +231,8 @@ public class NetWorldRuntime : NetWorld
         {
             ForEachRemoteRequests((UID, snapshot) =>
             {
-                if (!snapshot.ObjectUID.IsValid || string.IsNullOrWhiteSpace(snapshot.PrefabId) || snapshot.Data == null)
-                    throw new InvalidOperationException($"UID: {snapshot.ObjectUID}  Prefab: {snapshot.PrefabId} Data: {snapshot.Data != null}");
+                if (!snapshot.ObjectUID.IsValid)
+                    throw new InvalidOperationException($"Invalid UID: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}' Data size: '{snapshot.Data.Length}'");
 
                 /// Object exists, just update;
                 if (ObjectStates.TryGetValue(snapshot.ObjectUID, out var objState))

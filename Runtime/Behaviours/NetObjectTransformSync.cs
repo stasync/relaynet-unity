@@ -190,7 +190,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour
             SetRotation(m_TargetRotation);
         }
         else if (m_Prediction)
-            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.Time - remoteSessionTime) * m_PredictionMultipler;
+            m_TargetPosition += remoteMovementDirection.normalized * (Network.Realtime.ServerTime - remoteSessionTime) * m_PredictionMultipler;
     }
 
     protected override void SerializeDirtyChecked(NetWriter writer)
@@ -209,6 +209,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour
         }
 
         writer.Write(m_MovementDirection);
-        writer.Write(Network.Realtime.Time);
+        writer.Write(Network.Realtime.ServerTime);
     }
 }
