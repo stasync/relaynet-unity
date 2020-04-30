@@ -26,7 +26,7 @@ public abstract class NetWorld : IJSONSerializable
         LocalTime = 0f;
 
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
-        PlayersInternal = new NetWorldPlayersCollection();
+        PlayersInternal = new NetWorldPlayersCollection(() => IsValid);
 
         m_UpdateQueue = new Queue<Action>();
 

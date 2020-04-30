@@ -29,11 +29,11 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
     Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
     #endregion
 
-    public bool LocalPlayerIsMaster => MasterPlayerUID.IsValid && MasterPlayerUID.Equals(LocalPlayerUID);
+    public bool LocalPlayerIsMaster => IsValid && MasterPlayerUID.IsValid && MasterPlayerUID.Equals(LocalPlayerUID);
     public NetWorldPlayer LocalPlayer => Find(LocalPlayerUID);
     public NetWorldPlayer MasterPlayer => Find(MasterPlayerUID);
-    public NetWorldPlayer Find(ClientUID uid) => m_PlayersCollection.TryGetValue(uid, out var player) ? player : null;
-    public bool Contains(ClientUID uid) => m_PlayersCollection.ContainsKey(uid);
+    public NetWorldPlayer Find(ClientUID uid) => IsValid ? (m_PlayersCollection.TryGetValue(uid, out var player) ? player : null) : null;
+    public bool Contains(ClientUID uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
 
     public IReadOnlyCollection<ClientUID> AddedPlayers => m_AddedPlayers;
     HashSet<ClientUID> m_AddedPlayers;
@@ -41,8 +41,13 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
     public IReadOnlyCollection<ClientUID> RemovedPlayers => m_RemovedPlayers;
     HashSet<ClientUID> m_RemovedPlayers;
 
-    public NetWorldPlayersCollection()
+    Func<bool> m_Validator;
+    bool IsValid => m_Validator != null && m_Validator();
+
+    public NetWorldPlayersCollection(Func<bool> validator)
     {
+        m_Validator = validator;
+
         LocalPlayerUID = ClientUID.Invalid;
         MasterPlayerUID = ClientUID.Invalid;
 
@@ -96,6 +101,8 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
 
     public void Clear()
     {
+        m_Validator = null;
+
         LocalPlayerUID = ClientUID.Invalid;
         MasterPlayerUID = ClientUID.Invalid;
 
@@ -112,6 +119,7 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
     public NetWorldPlayersCollectionsSnapshot ToSnapshot() => NetWorldPlayersCollectionsSnapshot.FormCollection(this);
     public void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
     {
+        //Use invalid id for local and master player while snapshots if only used for world replication.
         //LocalPlayerUID = snapshot.LocalPlayerUID;
         //MasterPlayerUID = snapshot.MasterClientUID;
 

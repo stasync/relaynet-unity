@@ -73,6 +73,8 @@ public class NetWorldDebugWindow : EditorWindow
     {
         protected readonly T m_World;
 
+        public bool IsValid => m_World != null && m_World.IsValid;
+
         bool m_Draw;
         Dictionary<NetObjectUID, ObjectDrawer> m_ObjectViews;
         string m_LastJSONState;
@@ -85,6 +87,12 @@ public class NetWorldDebugWindow : EditorWindow
 
         public void Draw()
         {
+            if(!IsValid)
+            {
+                EditorGUILayout.HelpBox("World is invalid", MessageType.Error);
+                return;
+            }
+
             m_Draw = EditorGUILayout.Foldout(m_Draw, m_World.Name);
             if (!m_Draw)
                 return;
@@ -287,7 +295,7 @@ public class NetWorldDebugWindow : EditorWindow
             return;
         }
 
-        if (m_MainWorldDrawer == null)
+        if (m_MainWorldDrawer == null || !m_MainWorldDrawer.IsValid)
             m_MainWorldDrawer = new MainWorldDrawer(mainWorld);
 
         EditorGUILayout.Space();
