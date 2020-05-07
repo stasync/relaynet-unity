@@ -6,8 +6,8 @@ public struct NetWorldSnapshot
     public readonly NetWorldUID UID;
     public readonly float Time;
     public readonly float LocalTime;
-    public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> Objects => m_ObjectStates;
-    readonly Dictionary<NetObjectUID, ObjectUpdateSnapshot> m_ObjectStates;
+    public IReadOnlyDictionary<NetObjectUID, NetObjectUpdateSnapshot> Objects => m_ObjectStates;
+    readonly Dictionary<NetObjectUID, NetObjectUpdateSnapshot> m_ObjectStates;
 
     public readonly NetWorldPlayersCollectionsSnapshot Players;
 
@@ -18,7 +18,7 @@ public struct NetWorldSnapshot
         Time = world.Time;
         LocalTime = world.LocalTime;
 
-        m_ObjectStates = new Dictionary<NetObjectUID, ObjectUpdateSnapshot>();
+        m_ObjectStates = new Dictionary<NetObjectUID, NetObjectUpdateSnapshot>();
         foreach (var kvp in world.ObjectStates)
             m_ObjectStates.Add(kvp.Key, kvp.Value.ToSnapshot());
 

@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System.Linq;
 
-public struct ObjectUpdateSnapshot
+public struct NetObjectUpdateSnapshot
 {
     public ClientUID OwnerUID { get; private set; }
     public NetObjectUID ObjectUID { get; private set; }
@@ -33,15 +33,15 @@ public struct ObjectUpdateSnapshot
         RPCState.Serialize(writer);
     }
 
-    public static ObjectUpdateSnapshot FormReader(NetReader reader)
+    public static NetObjectUpdateSnapshot FormReader(NetReader reader)
     {
-        var snapshot = new ObjectUpdateSnapshot();
+        var snapshot = new NetObjectUpdateSnapshot();
         snapshot.Restore(reader);
         return snapshot;
     }
 
-    public static ObjectUpdateSnapshot FormState(NetObjectState state) =>
-        new ObjectUpdateSnapshot
+    public static NetObjectUpdateSnapshot FormState(NetObjectState state) =>
+        new NetObjectUpdateSnapshot
         {
             OwnerUID = state.OwnerUID,
             ObjectUID = state.UID,

@@ -10,8 +10,8 @@ public class NetWorldRuntime : NetWorld
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
 
-    public IReadOnlyDictionary<NetObjectUID, ObjectUpdateSnapshot> RemoteObjectUpdateRequests => m_RemoteObjectUpdateRequests;    
-    Dictionary<NetObjectUID, ObjectUpdateSnapshot> m_RemoteObjectUpdateRequests;
+    public IReadOnlyDictionary<NetObjectUID, NetObjectUpdateSnapshot> RemoteObjectUpdateRequests => m_RemoteObjectUpdateRequests;    
+    Dictionary<NetObjectUID, NetObjectUpdateSnapshot> m_RemoteObjectUpdateRequests;
 
     public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> RemotePlayersUpdateRequests => m_RemotePlayersUpdateRequests;
     Dictionary<ClientUID, NetWorldPlayerSnapshot> m_RemotePlayersUpdateRequests;
@@ -44,7 +44,7 @@ public class NetWorldRuntime : NetWorld
 
         /// Must be cleaned, when player disconnects;
         {
-            m_RemoteObjectUpdateRequests = new Dictionary<NetObjectUID, ObjectUpdateSnapshot>();
+            m_RemoteObjectUpdateRequests = new Dictionary<NetObjectUID, NetObjectUpdateSnapshot>();
             m_RemotePlayersUpdateRequests = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
             m_ObjectsRegisterRequests = new Dictionary<NetObjectUID, NetObjectState>();
             m_RemoteWorldDataUpdateRequests = new Queue<byte[]>();
@@ -58,7 +58,7 @@ public class NetWorldRuntime : NetWorld
 
     public NetWorldEvaluator Replicate() => new NetWorldEvaluator(this);
 
-    public void ScheduleUpdateForRemoteObject(ObjectUpdateSnapshot snapshot)
+    public void ScheduleUpdateForRemoteObject(NetObjectUpdateSnapshot snapshot)
     {
         if(!snapshot.ObjectUID.IsValid)
         {
@@ -412,7 +412,7 @@ public class NetWorldRuntime : NetWorld
                 player.IsInGameScene = true;
         });
 
-    protected void ForEachRemoteRequests(Action<NetObjectUID, ObjectUpdateSnapshot> processor)
+    protected void ForEachRemoteRequests(Action<NetObjectUID, NetObjectUpdateSnapshot> processor)
     {
         foreach (var UID in m_RemoteObjectUpdateRequests.Keys.ToArray())
             processor(UID, m_RemoteObjectUpdateRequests[UID]);

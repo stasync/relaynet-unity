@@ -76,7 +76,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         m_RPCBuffer = new NetObjectRPCState();
     }
 
-    public NetObjectState(ObjectUpdateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
+    public NetObjectState(NetObjectUpdateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
         this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvier) => ChangeObjectRemotely(snapshot);
 
     public void ChangeObjectDataLocaly(byte[] data)
@@ -103,7 +103,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
     public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
 
-    public void ChangeObjectRemotely(ObjectUpdateSnapshot snapshot)
+    public void ChangeObjectRemotely(NetObjectUpdateSnapshot snapshot)
     {
         var checkOwner = snapshot.StateChangeType < ObjectStateChangeRequestType.ReliableUpdateOwnerChange;
 
@@ -126,7 +126,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
             OnOwnerChanged();
     }
 
-    public ObjectUpdateSnapshot ToSnapshot() => ObjectUpdateSnapshot.FormState(this);
+    public NetObjectUpdateSnapshot ToSnapshot() => NetObjectUpdateSnapshot.FormState(this);
 
     void ScheduleStateChange(ObjectStateChangeRequestType requestType) => 
         ScheduleOnUpdate(() =>
