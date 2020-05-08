@@ -13,7 +13,13 @@ public enum ObjectStateChangeRequestType : byte
     RemoveUpdate,
 }
 
-public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectState>
+// TODO;
+public interface IReadOnlyNetObjectState
+{
+
+}
+
+public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectState>, IEquatable<NetObjectState>
 {
     public event Action OnOwnerChanged = delegate { };
     public event Action<bool> LocalUpdateRequest = delegate { };

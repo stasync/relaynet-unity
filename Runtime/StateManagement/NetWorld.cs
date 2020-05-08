@@ -5,6 +5,8 @@ using UnityEngine;
 
 public abstract class NetWorld : IJSONSerializable
 {
+    public event Action Evaluated = delegate { };
+
     public bool IsValid => UID.IsValid;
     public NetWorldUID UID { get; private set; }
     public float Time { get; protected set; }
@@ -59,6 +61,8 @@ public abstract class NetWorld : IJSONSerializable
 
         //Finalize iteration;
         PlayersInternal.FinalizeIteration();
+
+        Evaluated();
     }
 
     protected virtual void OnBeforeUpdateWorldState(float worldDelta) => ForEachStates((UID, state) => state.OnBeforeUpdateWorldState(worldDelta));
@@ -74,6 +78,7 @@ public abstract class NetWorld : IJSONSerializable
     public virtual void Destroy()
     {
         UID = NetWorldUID.Invalid;
+        Evaluated = delegate { };
 
         m_CurrentObjectStates.Clear();
         m_CurrentObjectStates = null;
