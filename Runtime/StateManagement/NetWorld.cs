@@ -59,13 +59,14 @@ public abstract class NetWorld : IJSONSerializable
         OnBeforeExecuteView(worldDelta);
         View.Execute();
 
-        //Finalize iteration;
-        PlayersInternal.FinalizeIteration();
-
         Evaluated();
     }
 
-    protected virtual void OnBeforeUpdateWorldState(float worldDelta) => ForEachStates((UID, state) => state.OnBeforeUpdateWorldState(worldDelta));
+    protected virtual void OnBeforeUpdateWorldState(float worldDelta)
+    {
+        ForEachStates((UID, state) => state.OnBeforeUpdateWorldState(worldDelta));
+        PlayersInternal.OnBeforeUpdateWorldState(worldDelta);
+    }
 
     protected virtual void OnUpdateWorldState(float worldDelta)
     {

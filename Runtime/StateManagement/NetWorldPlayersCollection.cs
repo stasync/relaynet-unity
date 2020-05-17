@@ -63,6 +63,12 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
             processor(UID, m_PlayersCollection[UID]);
     }
 
+    public void OnBeforeUpdateWorldState(float worldDelta)
+    {
+        m_AddedPlayers.Clear();
+        m_RemovedPlayers.Clear();
+    }
+
     public NetWorldPlayer RegisterImmidiate(ClientUID uid, bool isLocal)
     {
         if (m_PlayersCollection.ContainsKey(uid))
@@ -91,13 +97,6 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
     }
 
     void UpdateMasterUID() => MasterPlayerUID = AllUIDs.Any() ? AllUIDs.Min() : ClientUID.Invalid;
-
-    [Obsolete]
-    public void FinalizeIteration()
-    {
-        m_AddedPlayers.Clear();
-        m_RemovedPlayers.Clear();
-    }
 
     public void Clear()
     {
