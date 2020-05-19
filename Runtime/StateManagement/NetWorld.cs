@@ -3,6 +3,50 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+public class UpdateQueue
+{
+    Queue<Action> m_UpdateQueue;
+    Queue<Action> m_RepeatUpdateQueue;
+
+    public UpdateQueue()
+    {
+        m_UpdateQueue = new Queue<Action>();
+        m_RepeatUpdateQueue = new Queue<Action>();
+    }
+
+    public void Enqueue(Action a) => m_UpdateQueue.Enqueue(a);
+    public void EnqueueUntil(Func<bool> condition, Action a)
+    {
+        m_UpdateQueue.Enqueue(InternalAction);
+
+        void InternalAction()
+        {
+            if (condition())
+                a();
+            else
+                m_RepeatUpdateQueue.Enqueue(InternalAction);
+        }
+    }
+
+    public void ProcessQueue()
+    {
+        while (m_UpdateQueue.Count > 0)
+            m_UpdateQueue.Dequeue()();
+
+        while (m_RepeatUpdateQueue.Count > 0)
+            m_UpdateQueue.Enqueue(m_RepeatUpdateQueue.Dequeue());
+    }
+
+    public void Clear()
+    {
+        m_UpdateQueue.Clear();
+        m_UpdateQueue = null;
+
+        m_RepeatUpdateQueue.Clear();
+        m_RepeatUpdateQueue = null;
+    }
+}
+
 public abstract class NetWorld : IJSONSerializable
 {
     public event Action Evaluated = delegate { };
@@ -19,20 +63,25 @@ public abstract class NetWorld : IJSONSerializable
     public IReadOnlyNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
-    Queue<Action> m_UpdateQueue;
+    UpdateQueue m_UpdateQueue;
 
-    protected NetWorld(NetWorldUID uid, string worldName, NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
+    protected NetWorld(NetWorldUID uid, string worldName)
     {        
         UID = uid;
         Time = 0f;
         LocalTime = 0f;
+        Name = $"{UID}:{worldName}";
 
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         PlayersInternal = new NetWorldPlayersCollection(() => IsValid);
+        m_UpdateQueue = new UpdateQueue();
+    }
 
-        m_UpdateQueue = new Queue<Action>();
+    public void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
+    {
+        if (View != null)
+            throw new InvalidOperationException($"View for world {Name} already initialized");
 
-        Name = $"{UID}:{worldName}";
         View = new GameObject(Name).AddComponent<NetWorldView>();
         View.Init(this, viewInitMode);
     }
@@ -42,9 +91,7 @@ public abstract class NetWorld : IJSONSerializable
         if (!IsValid)
             return;
 
-        while (m_UpdateQueue.Count > 0)
-            m_UpdateQueue.Dequeue()();
-
+        m_UpdateQueue.ProcessQueue();
         UpdateImplementation();
     }
 
@@ -56,8 +103,12 @@ public abstract class NetWorld : IJSONSerializable
     {
         OnBeforeUpdateWorldState(worldDelta);
         OnUpdateWorldState(worldDelta);
-        OnBeforeExecuteView(worldDelta);
-        View.Execute();
+
+        if(View != null)
+        {
+            OnBeforeExecuteView(worldDelta);
+            View.Execute();
+        }
 
         Evaluated();
     }
@@ -100,11 +151,11 @@ public abstract class NetWorld : IJSONSerializable
         }
     }
 
-    public void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
-
+    public void ScheduleOnUpdate(Action action) => m_UpdateQueue.Enqueue(action);
+    public void ScheduleOnUpdateUntil(Func<bool> condition, Action action) => m_UpdateQueue.EnqueueUntil(condition, action);
     public void ScheduleOnUpdateIfObejctExists(NetObjectUID objectUID, Action<NetObjectState> a) => ScheduleOnUpdate(() => 
     {
-        if(!TryGetObject(objectUID, out var state))
+        if(!TryGetState(objectUID, out var state))
         {
             Debug.LogError($"Skipping scheduled action for absent object {objectUID}");
             return;
@@ -132,7 +183,7 @@ public abstract class NetWorld : IJSONSerializable
     public NetObjectState FindObject(NetObjectUID instanceId) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out NetObjectState state) ? state : null;
 
-    public bool TryGetObject(NetObjectUID instanceId, out NetObjectState state) =>
+    public bool TryGetState(NetObjectUID instanceId, out NetObjectState state) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out state);
 
     public void ForEachStates(Action<NetObjectUID, NetObjectState> processor)

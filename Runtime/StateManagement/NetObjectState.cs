@@ -10,7 +10,8 @@ public enum ObjectStateChangeRequestType : byte
     ReliableUpdate,
     ReliableUpdateOwnerChange,
     InitializationUpdate,
-    RemoveUpdate,
+    RemoveUpdateSoft,
+    RemoveUpdateHard,
 }
 
 //TODO;
@@ -32,7 +33,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public readonly bool IsSceneObject;
     public ClientUID OwnerUID { get; private set; }
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
-    public bool RequireRemoving => StateChangeType == ObjectStateChangeRequestType.RemoveUpdate;
     public byte[] Data { get; private set; }
     public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
     NetObjectRPCState m_RPCBuffer;

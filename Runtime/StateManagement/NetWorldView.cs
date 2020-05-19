@@ -154,12 +154,6 @@ public class NetWorldView : MonoBehaviour
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => m_PendingObjectViews.Add(uid, identity);
 
-    public void OnRemotePlayerBecomesReady(ClientUID peerId)
-    {
-        foreach (var obj in m_CurrentObjectViews.Values)
-            obj.OnBecomesReady(peerId);
-    }
-
     void ForEachViews(Action<NetObjectUID, NetObjectIdentity> processor)
     {
         foreach (var UID in m_CurrentObjectViews.Keys.ToArray())

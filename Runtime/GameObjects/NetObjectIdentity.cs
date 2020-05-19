@@ -118,15 +118,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     }
 
     /// <summary>
-    /// Other client connected and loaded game scene, set all component as dirty to send valid object state to other clients.
-    /// </summary>
-    public void OnBecomesReady(ClientUID peerId)
-    {
-        if (IsLocal)
-            State.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-    }
-
-    /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
     /// </summary>
     public void OnDisconnected(ClientUID peerId)
@@ -397,7 +388,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
         if (!IsLocal)
             throw new Exception("Trying to destroy remote object, this is not allowed");
 
-        State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdate);
+        State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }
 
     #if UNITY_EDITOR

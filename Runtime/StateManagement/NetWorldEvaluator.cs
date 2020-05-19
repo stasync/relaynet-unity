@@ -13,13 +13,15 @@ public class NetWorldEvaluator : NetWorld
     public bool Paused { get; private set; }
     public int BufferSize => m_HistoryBuffer.Count;
 
-    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.UID, $"World {runtime.UID} evaluator", NetWorldViewInitMode.SeparateScene)
+    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.UID, $"World {runtime.UID} evaluator")
     {
-        m_HistoryBuffer = new List<NetWorldSnapshot>(runtime.HistroyBuffer);
+        InitializeView(NetWorldViewInitMode.SeparateScene);
 
+        m_HistoryBuffer = new List<NetWorldSnapshot>(runtime.HistroyBuffer);
         m_CurrentTime = 0f;
         CurrentSnapshotIndex = 0;
         m_AutoDestroy = autoDestroy;
+
         Paused = false;
 
         UpdateCurrentSnapshotInfo();

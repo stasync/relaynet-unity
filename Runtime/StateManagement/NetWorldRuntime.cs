@@ -166,6 +166,12 @@ public class NetWorldRuntime : NetWorld
 
                         //Notify player registred;
                         NewPlayerRegisterd(player, false);
+
+                        ForEachStates((stateUID, state) => 
+                        {
+                            if (state.IsOwnedByLocalPlayer)
+                                state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
+                        });
                     }
 
                     var wasInGameScene = player.IsInGameScene;
@@ -173,7 +179,9 @@ public class NetWorldRuntime : NetWorld
                     player.RestoreFromSnapshot(snapshot);
 
                     if (player.IsInGameScene && !wasInGameScene)
-                        View.OnRemotePlayerBecomesReady(player.UID);
+                    {
+                        //Remote player loads scene
+                    }
                 }
                 m_RemotePlayersUpdateRequests.Clear();
             }
@@ -234,20 +242,27 @@ public class NetWorldRuntime : NetWorld
                 if (!snapshot.ObjectUID.IsValid)
                     throw new InvalidOperationException($"Invalid UID: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}' Data size: '{snapshot.Data.Length}'");
 
+                /// Check if owner exists;
+                if(!PlayersInternal.Contains(snapshot.OwnerUID))
+                {
+                    m_RemoteObjectUpdateRequests.Remove(UID);
+                    return;
+                }
+
                 /// Object exists, just update;
                 if (ObjectStates.TryGetValue(snapshot.ObjectUID, out var objState))
                 {
                     objState.ChangeObjectRemotely(snapshot);
                     m_RemoteObjectUpdateRequests.Remove(UID);
 
-                    if (objState.RequireRemoving)
+                    if (objState.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateHard)
                         RemoveObject(snapshot.ObjectUID);
 
                     return;
                 }
 
                 /// Object doesn't exists;
-                if (snapshot.StateChangeType == ObjectStateChangeRequestType.RemoveUpdate)
+                if (snapshot.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateHard || snapshot.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateSoft)
                 {
                     Debug.LogError($"Remote update snapshot form object with UID: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
                     m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
@@ -314,23 +329,23 @@ public class NetWorldRuntime : NetWorld
             /// Update and send local objects;
             ForEachLocalStates((UID, state) =>
             {
-                /// We need view to send and serialize objects;
-                var view = View.GetView(UID);
-                if(view == null)
-                {
-                    Debug.LogError($"Unable to find view for object with UID {state.UID}");
-                    return;
-                }
-
                 var deliveryIntent = DeliveryIntent.Unreliable;
                 if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
                     deliveryIntent = DeliveryIntent.Reliable;
 
-                if(state.PrepareForSerialization())
-                    m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
+                state.PrepareForSerialization();
+                m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
 
-                if (state.RequireRemoving)
-                    RemoveObject(UID);
+                switch (state.StateChangeType)
+                {
+                    case ObjectStateChangeRequestType.RemoveUpdateHard:
+                        RemoveObject(UID);
+                        break;
+
+                    case ObjectStateChangeRequestType.RemoveUpdateSoft:
+                        state.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateHard);
+                        break;
+                }
             });
         }
         #endregion
@@ -406,6 +421,9 @@ public class NetWorldRuntime : NetWorld
     public void OnSceneLoaded() => 
         ScheduleOnUpdate(() => 
         {
+            //Create view
+            InitializeView();
+
             //Check for player exists;
             var player = PlayersInternal.LocalPlayer; 
             if (player != null)
@@ -458,13 +476,21 @@ public class NetWorldRuntime : NetWorld
         //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
         var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, true, m_InternalNetwork.MasterClientConnection, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(newState.UID, newState);
+        var newStateUID = newState.UID;
 
-        //Initialize immidiatlty on master client;
-        if (m_InternalNetwork.IsMasterClient)
-            View.InitializeObjectView(sceneIdentity.Identity, newState, null);
+        //Wait for view initialization;
+        ScheduleOnUpdateUntil(() => View != null, () =>
+        {
+            if(TryGetState(newStateUID, out var state))
+            {
+                //Initialize immidiatlty on master client;
+                if (m_InternalNetwork.IsMasterClient)
+                    View.InitializeObjectView(sceneIdentity.Identity, state, null);
 
-        //Add view to be used in future;
-        View.RegisterAsPending(newState.UID, sceneIdentity.Identity);
+                //Add view to be used in future;
+                View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
+            }
+        });
     }
 
     /// <summary>
