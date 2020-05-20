@@ -24,6 +24,8 @@ public class NetWorldRuntime : NetWorld
     HashSet<ClientUID> m_LocalPlayerRegisterQueue;
     HashSet<ClientUID> m_PlayerUnregisterQueue;
 
+    Queue<Action> m_ViewInitQueue;
+
     INetwork m_InternalNetwork;
     Action<uint, DeliveryIntent, byte[]> m_Communicator;
 
@@ -52,6 +54,7 @@ public class NetWorldRuntime : NetWorld
 
         m_LocalPlayerRegisterQueue = new HashSet<ClientUID>();
         m_PlayerUnregisterQueue = new HashSet<ClientUID>();
+        m_ViewInitQueue = new Queue<Action>();
 
         m_HistoryBuffer = new HistoryBiffer();
     }
@@ -395,6 +398,9 @@ public class NetWorldRuntime : NetWorld
         m_PlayerUnregisterQueue.Clear();
         m_PlayerUnregisterQueue = null;
 
+        m_ViewInitQueue.Clear();
+        m_ViewInitQueue = null;
+
         m_HistoryBuffer.Clear();
         m_HistoryBuffer = null;
 
@@ -428,6 +434,9 @@ public class NetWorldRuntime : NetWorld
             var player = PlayersInternal.LocalPlayer; 
             if (player != null)
                 player.IsInGameScene = true;
+
+            while (m_ViewInitQueue.Count > 0)
+                m_ViewInitQueue.Dequeue()();
         });
 
     protected void ForEachRemoteRequests(Action<NetObjectUID, NetObjectStateSnapshot> processor)
@@ -479,7 +488,7 @@ public class NetWorldRuntime : NetWorld
         var newStateUID = newState.UID;
 
         //Wait for view initialization;
-        ScheduleOnUpdateUntil(() => View != null, () =>
+        ScheduleOnViewInit(() =>
         {
             if(TryGetState(newStateUID, out var state))
             {
@@ -520,4 +529,12 @@ public class NetWorldRuntime : NetWorld
     } 
 
     public int GetHistoryBufferSize() => m_HistoryBuffer.Sum(s => s.GetSize());
+
+    public void ScheduleOnViewInit(Action action)
+    {
+        if (View != null)
+            action();
+        else
+            m_ViewInitQueue.Enqueue(action);
+    }
 }

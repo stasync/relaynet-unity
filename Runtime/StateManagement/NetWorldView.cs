@@ -135,7 +135,7 @@ public class NetWorldView : MonoBehaviour
         NewObjectInitialized(identity);
     }
 
-    public GameObject InstantiateInView(GameObject original, Vector3 position, Quaternion rotation, Transform parent = null)
+    public GameObject InstantiateGameObjectInView(GameObject original, Vector3 position, Quaternion rotation, Transform parent = null)
     {
         var newInstance = Instantiate(original, position, rotation);
         UpdateTransformInView(newInstance.transform);
