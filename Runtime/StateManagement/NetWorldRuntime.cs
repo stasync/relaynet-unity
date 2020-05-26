@@ -26,8 +26,7 @@ public class NetWorldRuntime : NetWorld
 
     Queue<Action> m_ViewInitQueue;
 
-    INetwork m_InternalNetwork;
-    Action<uint, DeliveryIntent, byte[]> m_Communicator;
+    Action<uint, DeliveryIntent, byte[]> m_Sender;
 
     const float c_HistoryBufferSecondsLength = 10f; //Record last 30 seconds;
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
@@ -35,10 +34,9 @@ public class NetWorldRuntime : NetWorld
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
 
-    public NetWorldRuntime(INetwork network, Action<uint, DeliveryIntent, byte[]> communicator, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
+    public NetWorldRuntime(Action<uint, DeliveryIntent, byte[]> sender, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
     {
-        m_InternalNetwork = network ?? throw new ArgumentNullException(nameof(network));
-        m_Communicator = communicator ?? throw new ArgumentNullException(nameof(communicator));
+        m_Sender = sender ?? throw new ArgumentNullException(nameof(sender));
 
         NetObjectUID.Reset();
 
@@ -123,7 +121,7 @@ public class NetWorldRuntime : NetWorld
 
             var writer = new Core.Networking.NetWriter();
             writer.Write(Time);
-            m_Communicator(MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, writer.ToArray());
+            m_Sender(MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, writer.ToArray());
         }
 
         void TryReceiveWorldData()
@@ -195,7 +193,7 @@ public class NetWorldRuntime : NetWorld
                 if (locaPlayer == null)
                     Debug.LogError("Unable to send local player: doesn't exists");
                 else
-                    m_InternalNetwork.SendDataToOthers(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
+                    m_Sender(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
             }
         }
 
@@ -303,7 +301,7 @@ public class NetWorldRuntime : NetWorld
             ForEachRemoteStates((UID, state) => 
             {
                 foreach (var r in state.RPCWithoutAuthorityRequests)
-                    m_Communicator(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
+                    m_Sender(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
             });
         }
 
@@ -337,7 +335,7 @@ public class NetWorldRuntime : NetWorld
                     deliveryIntent = DeliveryIntent.Reliable;
 
                 state.PrepareForSerialization();
-                m_InternalNetwork.SendGameObjectStateMessage(state.Serialize(), deliveryIntent);
+                m_Sender(MessageCodes.ObjectStateUpdate, deliveryIntent, state.Serialize());
 
                 switch (state.StateChangeType)
                 {
@@ -405,8 +403,6 @@ public class NetWorldRuntime : NetWorld
         m_HistoryBuffer = null;
 
         NewPlayerRegisterd = null;
-
-        m_InternalNetwork = null;
     }
 
     /// Connect;
@@ -483,7 +479,7 @@ public class NetWorldRuntime : NetWorld
 
         //Create state from scen object identity;
         //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, true, m_InternalNetwork.MasterClientConnection, PlayersInternal.Find);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, true, PlayersInternal.MasterPlayerUID, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(newState.UID, newState);
         var newStateUID = newState.UID;
 
@@ -493,7 +489,7 @@ public class NetWorldRuntime : NetWorld
             if(TryGetState(newStateUID, out var state))
             {
                 //Initialize immidiatlty on master client;
-                if (m_InternalNetwork.IsMasterClient)
+                if (PlayersInternal.LocalPlayerIsMaster)
                     View.InitializeObjectView(sceneIdentity.Identity, state, null);
 
                 //Add view to be used in future;

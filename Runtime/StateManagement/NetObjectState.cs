@@ -25,7 +25,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public event Action<bool> LocalUpdateRequest = delegate { };
 
     readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
-    readonly Queue<Action> m_UpdateQueue;
+    readonly Queue<Action<float>> m_UpdateQueue;
 
     #region SYNCRONIZED STATE
     public readonly NetObjectUID UID;
@@ -68,7 +68,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvier)
     {
         m_PlayerProvider = playerProvier;
-        m_UpdateQueue = new Queue<Action>();
+        m_UpdateQueue = new Queue<Action<float>>();
 
         UID = uid;
         PrefabId = prefabId;
@@ -142,7 +142,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
                 StateChangeType = requestType;
         });
 
-    void ScheduleOnUpdate(Action a) => m_UpdateQueue.Enqueue(a);
+    void ScheduleOnUpdate(Action a) => ScheduleOnUpdate(delta => a());
+    void ScheduleOnUpdate(Action<float> a) => m_UpdateQueue.Enqueue(a);
 
     public void OnBeforeUpdateWorldState(float worldDelta)
     {
@@ -157,7 +158,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         //Invoke update queue;
         while (m_UpdateQueue.Count > 0)
-            m_UpdateQueue.Dequeue()();
+            m_UpdateQueue.Dequeue()(worldDelta);
     }
 
     public void ScheduleUpdate(ObjectStateChangeRequestType requestType)

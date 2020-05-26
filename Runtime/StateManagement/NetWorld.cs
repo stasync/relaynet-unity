@@ -166,7 +166,7 @@ public abstract class NetWorld : IJSONSerializable
 
     public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
 
-    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
+    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) => View == null ? null :
         View.CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
 
     public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase
@@ -175,7 +175,7 @@ public abstract class NetWorld : IJSONSerializable
         return networkObject == null ? null : networkObject.GetComponent<T>();
     }
 
-    public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
+    public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase => View == null ? null :
         View.CurrentObjectViews.Values
             .Select(v => v.GetBehaviour<T>())
             .Where(b => b != null);
