@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Core.Networking;
 
 public class NetWorldRuntime : NetWorld
 {
@@ -486,7 +487,7 @@ public class NetWorldRuntime : NetWorld
         //Wait for view initialization;
         ScheduleOnViewInit(() =>
         {
-            if(TryGetState(newStateUID, out var state))
+            if(TryGetExistedOrPendingState(newStateUID, out var state))
             {
                 //Initialize immidiatlty on master client;
                 if (PlayersInternal.LocalPlayerIsMaster)
@@ -497,6 +498,8 @@ public class NetWorldRuntime : NetWorld
             }
         });
     }
+
+    bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) => TryGetState(instanceId, out state) || m_ObjectsRegisterRequests.TryGetValue(instanceId, out state);
 
     /// <summary>
     /// Get object before in was actually created by transport system.

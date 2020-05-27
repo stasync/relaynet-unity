@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-public class NetWorldDebugWindow : EditorWindow
+public class NetDebugWindow : EditorWindow
 {
     #region Drawers
     class ObjectDrawer
@@ -195,7 +195,7 @@ public class NetWorldDebugWindow : EditorWindow
 
             EditorGUI.indentLevel++;
             {
-                //Register equests
+                //Register requests
                 {
                     EditorGUILayout.Space();
                     var registerRequests = m_World.ObjectsRegisterRequests;
@@ -251,6 +251,7 @@ public class NetWorldDebugWindow : EditorWindow
     }
     #endregion
 
+    bool m_ShowNetworkStatistics;
     bool m_ShowMainWorldHistoryInfo;
     bool m_ShowMainWorldBuffer;
     ServiceProvider<GSNetwork> m_NetworkProvider;
@@ -259,12 +260,12 @@ public class NetWorldDebugWindow : EditorWindow
     MainWorldDrawer m_MainWorldDrawer;
     ReplicaWorldDrawer m_CurrentWorldReplicaDrawer;
 
-    [MenuItem("Network/World debug")]
+    [MenuItem("Network/Debug Window")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
     static void Init()
 #pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены
     {
-        var window = GetWindow<NetWorldDebugWindow>("World info");
+        var window = GetWindow<NetDebugWindow>("Network Debug Info");
         window.Show();
         window.m_ShowMainWorldHistoryInfo = true;
     }
@@ -287,6 +288,17 @@ public class NetWorldDebugWindow : EditorWindow
 
         if (m_NetworkProvider.Instance == null)
             return;
+
+        m_ShowNetworkStatistics = EditorGUILayout.Foldout(m_ShowNetworkStatistics, "Network Statistics");
+        if(m_ShowNetworkStatistics)
+        {
+            var statistics = m_NetworkProvider.Instance.Realtime.CurrentClientStatistics;
+            if (statistics != null)
+                EditorGUILayout.HelpBox(statistics.ToString(), MessageType.None);
+            else
+                EditorGUILayout.HelpBox("Statistics is not avaliable", MessageType.Error);
+        }
+        EditorGUILayout.Space();
 
         var mainWorld = m_NetworkProvider.Instance.Realtime.MainWorld;
         if (mainWorld == null)
