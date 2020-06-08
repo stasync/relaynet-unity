@@ -206,12 +206,17 @@ public class NetDebugWindow : EditorWindow
 
                 //Remote udpate requests
                 {
-                    EditorGUILayout.Separator();
                     EditorGUILayout.Space();
                     var remoteRequests = m_World.RemoteObjectUpdateRequests;
                     EditorGUILayout.LabelField($"Objects remote request: {remoteRequests.Count}", EditorStyles.boldLabel);
                     foreach (var obj in remoteRequests)
                         EditorGUILayout.LabelField(obj.Value.ToString());
+                }
+
+                //Outgoing messages
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField($"Outgoing world message count: {m_World.OutgoingMessageQueueCount}", EditorStyles.boldLabel);
                 }
             }
             EditorGUI.indentLevel--;
@@ -331,7 +336,7 @@ public class NetDebugWindow : EditorWindow
 
                 void OnFixedUpdate()
                 {
-                    currentReplica.FixedUpdate();
+                    currentReplica.Update(Time.fixedDeltaTime);
                     if (!currentReplica.IsValid)
                     {
                         m_CurrentWorldReplicaDrawer = null;

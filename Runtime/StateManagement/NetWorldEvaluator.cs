@@ -84,12 +84,12 @@ public class NetWorldEvaluator : NetWorld
         m_NextSnapshotTime = m_CurrentTime + m_CurrentSnapshot.DeltaTime;
     }
 
-    protected override void UpdateImplementation()
+    protected override void UpdateImplementation(float deltaTime)
     {
         if (Paused)
             return;
 
-        m_CurrentTime += UnityEngine.Time.fixedUnscaledDeltaTime;
+        m_CurrentTime += deltaTime;
         if (m_CurrentTime < m_NextSnapshotTime)
             return;
 

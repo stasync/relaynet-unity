@@ -26,6 +26,8 @@ public class NetWorldRuntime : NetWorld
     HashSet<ClientUID> m_PlayerUnregisterQueue;
 
     Queue<Action> m_ViewInitQueue;
+    public int OutgoingMessageQueueCount => m_OutgoingMessageQueue.Count;
+    Queue<Action> m_OutgoingMessageQueue;
 
     Action<uint, DeliveryIntent, byte[]> m_Sender;
 
@@ -56,6 +58,8 @@ public class NetWorldRuntime : NetWorld
         m_ViewInitQueue = new Queue<Action>();
 
         m_HistoryBuffer = new HistoryBiffer();
+
+        m_OutgoingMessageQueue = new Queue<Action>();
     }
 
     public NetWorldEvaluator Replicate() => new NetWorldEvaluator(this);
@@ -90,14 +94,24 @@ public class NetWorldRuntime : NetWorld
 
     public void ScheduleRemoteWorldDataUpdate(byte[] data) => m_RemoteWorldDataUpdateRequests.Enqueue(data);
 
-    protected override void UpdateImplementation()
+    protected override void UpdateImplementation(float deltaTime)
     {
         var worldDelta = FixedTime - m_LastUpdateTime;
-        if (worldDelta < c_MinUpdateInteraval)
-            return;
+        if (worldDelta >= c_MinUpdateInteraval)
+        {
+            m_LastUpdateTime = FixedTime;
+            Evaluate(worldDelta);
+        }
 
-        m_LastUpdateTime = FixedTime;
-        Evaluate(worldDelta);
+        var deltaRatio = (c_MinUpdateInteraval - (FixedTime - m_LastUpdateTime)) / deltaTime;
+        var messageToSendCount = m_OutgoingMessageQueue.Count / deltaRatio;
+
+        var sended = 0f;
+        while (sended < messageToSendCount && m_OutgoingMessageQueue.Count > 0)
+        {
+            m_OutgoingMessageQueue.Dequeue()();
+            sended++;
+        }
     }
 
     #region Loop
@@ -120,9 +134,9 @@ public class NetWorldRuntime : NetWorld
             if (!PlayersInternal.LocalPlayerIsMaster)
                 return;
 
-            var writer = new Core.Networking.NetWriter();
+            var writer = new NetWriter();
             writer.Write(Time);
-            m_Sender(MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, writer.ToArray());
+            ScheduleSend(MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, writer.ToArray());
         }
 
         void TryReceiveWorldData()
@@ -194,7 +208,7 @@ public class NetWorldRuntime : NetWorld
                 if (locaPlayer == null)
                     Debug.LogError("Unable to send local player: doesn't exists");
                 else
-                    m_Sender(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
+                    ScheduleSend(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
             }
         }
 
@@ -302,7 +316,7 @@ public class NetWorldRuntime : NetWorld
             ForEachRemoteStates((UID, state) => 
             {
                 foreach (var r in state.RPCWithoutAuthorityRequests)
-                    m_Sender(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
+                    ScheduleSend(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
             });
         }
 
@@ -336,7 +350,7 @@ public class NetWorldRuntime : NetWorld
                     deliveryIntent = DeliveryIntent.Reliable;
 
                 state.PrepareForSerialization();
-                m_Sender(MessageCodes.ObjectStateUpdate, deliveryIntent, state.Serialize());
+                ScheduleSend(MessageCodes.ObjectStateUpdate, deliveryIntent, state.Serialize());
 
                 switch (state.StateChangeType)
                 {
@@ -363,6 +377,9 @@ public class NetWorldRuntime : NetWorld
             m_HistoryBuffer.Dequeue();
     }
     #endregion
+
+    void ScheduleSend(uint opCode, DeliveryIntent intent, byte[] data) =>
+        m_OutgoingMessageQueue.Enqueue(() => m_Sender(opCode, intent, data));
 
     protected override void RemoveObject(NetObjectUID stateUID)
     {
@@ -402,6 +419,9 @@ public class NetWorldRuntime : NetWorld
 
         m_HistoryBuffer.Clear();
         m_HistoryBuffer = null;
+
+        m_OutgoingMessageQueue.Clear();
+        m_OutgoingMessageQueue = null;
 
         NewPlayerRegisterd = null;
     }
@@ -491,7 +511,7 @@ public class NetWorldRuntime : NetWorld
             {
                 //Initialize immidiatlty on master client;
                 if (PlayersInternal.LocalPlayerIsMaster)
-                    View.InitializeObjectView(sceneIdentity.Identity, state, null);
+                    View.InitializeObjectView(sceneIdentity.Identity, state.UID, null);
 
                 //Add view to be used in future;
                 View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
@@ -499,7 +519,7 @@ public class NetWorldRuntime : NetWorld
         });
     }
 
-    bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) => TryGetState(instanceId, out state) || m_ObjectsRegisterRequests.TryGetValue(instanceId, out state);
+    bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) => TryGetObject(instanceId, out state) || m_ObjectsRegisterRequests.TryGetValue(instanceId, out state);
 
     /// <summary>
     /// Get object before in was actually created by transport system.

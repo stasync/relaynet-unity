@@ -47,13 +47,14 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     NetWriter m_ObjectWriter;
     NetReader m_ObjectReader;
 
-    public NetObjectState State { get; private set; }
+    public NetObjectState State => World.FindObject(m_StateUID);
+    NetObjectUID m_StateUID;
 
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    public NetObjectIdentity Initialze(NetObjectState state, NetWorld world, object[] additionalData)
+    public NetObjectIdentity Initialze(NetWorld world, NetObjectUID stateUID, object[] additionalData)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -65,7 +66,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
 
         World = world;
 
-        State = state;
+        m_StateUID = stateUID;
+
         State.OnOwnerChanged += OnOwnerChanged;
         State.LocalUpdateRequest += OnLocalUpdateRequest;
         /*

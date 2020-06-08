@@ -92,7 +92,7 @@ public class NetWorldView : MonoBehaviour
                     netObjectView.Deserialize(state.Data, false, false);
             }
             else
-                InitializeObjectView(netObjectView, state, null);
+                InitializeObjectView(netObjectView, state.UID, null);
         });
 
         Profiler.EndSample();
@@ -115,21 +115,21 @@ public class NetWorldView : MonoBehaviour
     public NetObjectIdentity CreateImmidiate(NetObjectState state, Vector3 position, Quaternion rotation, object[] additionalData)
     {
         var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
-        InitializeObjectView(netObjectView, state, additionalData);
+        InitializeObjectView(netObjectView, state.UID, additionalData);
         m_PendingObjectViews.Add(state.UID, netObjectView);
         return netObjectView;
     }
 
-    public void InitializeObjectView(NetObjectIdentity identity, NetObjectState state, object[] additionalData)
+    public void InitializeObjectView(NetObjectIdentity identity, NetObjectUID stateUID, object[] additionalData)
     {
         if (identity.Initialized)
-            throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{state.UID} already initialized");
+            throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{stateUID} already initialized");
 
         //Set world as view parent;
         UpdateTransformInView(identity.transform);
 
         //Init;
-        identity.Initialze(state, m_World, additionalData);
+        identity.Initialze(m_World, stateUID, additionalData);
 
         //Push event;
         NewObjectInitialized(identity);

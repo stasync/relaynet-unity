@@ -86,16 +86,16 @@ public abstract class NetWorld : IJSONSerializable
         View.Init(this, viewInitMode);
     }
 
-    public void FixedUpdate()
+    public void Update(float deltaTime)
     {
         if (!IsValid)
             return;
 
         m_UpdateQueue.ProcessQueue();
-        UpdateImplementation();
+        UpdateImplementation(deltaTime);
     }
 
-    protected abstract void UpdateImplementation();
+    protected abstract void UpdateImplementation(float deltaTime);
 
     protected void AddObject(NetObjectUID uid, NetObjectState state) => m_CurrentObjectStates.Add(uid, state);
 
@@ -155,7 +155,7 @@ public abstract class NetWorld : IJSONSerializable
     public void ScheduleOnUpdateUntil(Func<bool> condition, Action action) => m_UpdateQueue.EnqueueUntil(condition, action);
     public void ScheduleOnUpdateIfObejctExists(NetObjectUID objectUID, Action<NetObjectState> a) => ScheduleOnUpdate(() => 
     {
-        if(!TryGetState(objectUID, out var state))
+        if(!TryGetObject(objectUID, out var state))
         {
             Debug.LogError($"Skipping scheduled action for absent object {objectUID}");
             return;
@@ -180,10 +180,10 @@ public abstract class NetWorld : IJSONSerializable
             .Select(v => v.GetBehaviour<T>())
             .Where(b => b != null);
 
-    public NetObjectState FindObject(NetObjectUID instanceId) =>
+    public virtual NetObjectState FindObject(NetObjectUID instanceId) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out NetObjectState state) ? state : null;
 
-    public bool TryGetState(NetObjectUID instanceId, out NetObjectState state) =>
+    public bool TryGetObject(NetObjectUID instanceId, out NetObjectState state) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out state);
 
     public void ForEachStates(Action<NetObjectUID, NetObjectState> processor)
