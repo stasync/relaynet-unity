@@ -47,7 +47,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     NetWriter m_ObjectWriter;
     NetReader m_ObjectReader;
 
-    public NetObjectState State => World.FindObject(m_StateUID);
+    public NetObjectState State => World?.FindObject(m_StateUID);
     NetObjectUID m_StateUID;
 
     /// <summary>

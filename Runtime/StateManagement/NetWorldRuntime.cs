@@ -521,6 +521,16 @@ public class NetWorldRuntime : NetWorld
 
     bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) => TryGetObject(instanceId, out state) || m_ObjectsRegisterRequests.TryGetValue(instanceId, out state);
 
+    //TODO: Think how to avoid this override;
+    public override NetObjectState FindObject(NetObjectUID instanceId)
+    {
+        var existed = base.FindObject(instanceId);
+        if (existed == null)
+            m_ObjectsRegisterRequests.TryGetValue(instanceId, out existed);
+
+        return existed;
+    }
+
     /// <summary>
     /// Get object before in was actually created by transport system.
     /// Note that this object will not be in valid state, until update happens.
