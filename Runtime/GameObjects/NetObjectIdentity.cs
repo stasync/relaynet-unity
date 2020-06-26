@@ -47,8 +47,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     NetWriter m_ObjectWriter;
     NetReader m_ObjectReader;
 
-    public NetObjectState State => World?.FindObject(m_StateUID);
-    NetObjectUID m_StateUID;
+    public NetObjectState State => m_NetObjectStateReference.State;
+    NetObjectStateReference m_NetObjectStateReference = new NetObjectStateReference();
 
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
@@ -66,7 +66,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
 
         World = world;
 
-        m_StateUID = stateUID;
+        m_NetObjectStateReference.SetTargetUID(stateUID);
+        m_NetObjectStateReference.SetTargetWorld(world);
 
         State.OnOwnerChanged += OnOwnerChanged;
         State.LocalUpdateRequest += OnLocalUpdateRequest;

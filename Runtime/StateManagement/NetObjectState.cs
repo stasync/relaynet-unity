@@ -27,10 +27,12 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
     readonly Queue<Action<float>> m_UpdateQueue;
 
+    public bool IsValid => UID.IsValid;
+
     #region SYNCRONIZED STATE
-    public readonly NetObjectUID UID;
-    public readonly string PrefabId;
-    public readonly bool IsSceneObject;
+    public NetObjectUID UID { get; private set; }
+    public string PrefabId { get; private set; }
+    public bool IsSceneObject { get; private set; }
     public ClientUID OwnerUID { get; private set; }
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
     public byte[] Data { get; private set; }
@@ -84,6 +86,21 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
         this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvier) => ChangeObjectRemotely(snapshot);
 
+    public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
+
+    public void Invalidate()
+    {
+        UID = NetObjectUID.Invalid;
+        OwnerUID = ClientUID.Invalid;
+        PrefabId = string.Empty;
+        IsSceneObject = false;
+        StateChangeType = ObjectStateChangeRequestType.None;
+        Data = null;
+
+        m_UpdateQueue.Clear();
+        m_RPCBuffer.Clear();
+    }
+
     public void ChangeObjectDataLocaly(byte[] data)
     {
         if (!IsOwnedByLocalPlayer)
@@ -105,8 +122,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         return changed;
     }
-
-    public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
 
     public void ChangeObjectRemotely(NetObjectStateSnapshot snapshot)
     {

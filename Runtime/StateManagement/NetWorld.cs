@@ -204,8 +204,15 @@ public abstract class NetWorld : IJSONSerializable
             processor(UID, state);
     });
 
-    protected virtual void RemoveObject(NetObjectUID stateUID) =>
+    protected virtual void RemoveObject(NetObjectUID stateUID)
+    {
+        if (!m_CurrentObjectStates.TryGetValue(stateUID, out var state))
+            return;
+
+        state.Invalidate();
         m_CurrentObjectStates.Remove(stateUID);
+    }
+        
 
     public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => NetWorldSnapshot.FromWorld(deltaTime, this);
 

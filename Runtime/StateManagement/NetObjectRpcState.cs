@@ -98,6 +98,12 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
     public void ClearPersistent() => m_PersistentBuffer.Clear();
     public void ClearTemporal() => m_TemporalBuffer.Clear();
 
+    public void Clear()
+    {
+        ClearPersistent();
+        ClearTemporal();
+    }
+
     public void RemovePersistent(int hashCode) => m_PersistentBuffer.RemoveAll(d => d.Hash.Equals(hashCode));
 
     public void RestoreFormSnapshot(NetObjectRPCStateSnapshot snapshot)
