@@ -190,11 +190,11 @@ public class NetWorldRuntime : NetWorld
                         });
                     }
 
-                    var wasInGameScene = player.IsInGameScene;
+                    var wasInGameScene = player.IsReady;
                     //Restore player;
                     player.RestoreFromSnapshot(snapshot);
 
-                    if (player.IsInGameScene && !wasInGameScene)
+                    if (player.IsReady && !wasInGameScene)
                     {
                         //Remote player loads scene
                     }
@@ -450,7 +450,7 @@ public class NetWorldRuntime : NetWorld
             //Check for player exists;
             var player = PlayersInternal.LocalPlayer; 
             if (player != null)
-                player.IsInGameScene = true;
+                player.IsReady = true;
 
             while (m_ViewInitQueue.Count > 0)
                 m_ViewInitQueue.Dequeue()();

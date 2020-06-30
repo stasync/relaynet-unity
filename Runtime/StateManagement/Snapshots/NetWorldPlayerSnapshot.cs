@@ -16,7 +16,7 @@ public struct NetWorldPlayerSnapshot
     {
         PlayerUID = player.UID;
         Name = player.Name;
-        IsInGameScene = player.IsInGameScene;
+        IsInGameScene = player.IsReady;
         Platform = player.Platform;
         RTT = player.RTT;
         TagObjectUID = player.TagObjectUID;

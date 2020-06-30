@@ -3,50 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class UpdateQueue
-{
-    Queue<Action> m_UpdateQueue;
-    Queue<Action> m_RepeatUpdateQueue;
-
-    public UpdateQueue()
-    {
-        m_UpdateQueue = new Queue<Action>();
-        m_RepeatUpdateQueue = new Queue<Action>();
-    }
-
-    public void Enqueue(Action a) => m_UpdateQueue.Enqueue(a);
-    public void EnqueueUntil(Func<bool> condition, Action a)
-    {
-        m_UpdateQueue.Enqueue(InternalAction);
-
-        void InternalAction()
-        {
-            if (condition())
-                a();
-            else
-                m_RepeatUpdateQueue.Enqueue(InternalAction);
-        }
-    }
-
-    public void ProcessQueue()
-    {
-        while (m_UpdateQueue.Count > 0)
-            m_UpdateQueue.Dequeue()();
-
-        while (m_RepeatUpdateQueue.Count > 0)
-            m_UpdateQueue.Enqueue(m_RepeatUpdateQueue.Dequeue());
-    }
-
-    public void Clear()
-    {
-        m_UpdateQueue.Clear();
-        m_UpdateQueue = null;
-
-        m_RepeatUpdateQueue.Clear();
-        m_RepeatUpdateQueue = null;
-    }
-}
-
 public abstract class NetWorld : IJSONSerializable
 {
     public event Action Evaluated = delegate { };
@@ -63,7 +19,7 @@ public abstract class NetWorld : IJSONSerializable
     public IReadOnlyNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
-    UpdateQueue m_UpdateQueue;
+    NetWorldUpdateQueue m_UpdateQueue;
 
     protected NetWorld(NetWorldUID uid, string worldName)
     {        
@@ -74,7 +30,7 @@ public abstract class NetWorld : IJSONSerializable
 
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         PlayersInternal = new NetWorldPlayersCollection(() => IsValid);
-        m_UpdateQueue = new UpdateQueue();
+        m_UpdateQueue = new NetWorldUpdateQueue();
     }
 
     public void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
@@ -213,7 +169,6 @@ public abstract class NetWorld : IJSONSerializable
         m_CurrentObjectStates.Remove(stateUID);
     }
         
-
     public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => NetWorldSnapshot.FromWorld(deltaTime, this);
 
     public void RestoreFromSnapshot(NetWorldSnapshot snapshot)

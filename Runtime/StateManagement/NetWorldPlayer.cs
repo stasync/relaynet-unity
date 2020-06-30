@@ -22,17 +22,17 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     }
     string m_Name;
 
-    public bool IsInGameScene
+    public bool IsReady
     {
-        get => m_IsInGameScene;
+        get => m_IsReady;
         set
         {
             if (!IsLocal)
-                throw new Exception("Trying to change scene state on remote player, this is not allowed. Player id: " + UID);
-            m_IsInGameScene = value;
+                throw new Exception("Trying to change is ready on remote player, this is not allowed. Player id: " + UID);
+            m_IsReady = value;
         }
     }
-    bool m_IsInGameScene;
+    bool m_IsReady;
 
     public GSDevice.Platform Platform
     {
@@ -100,7 +100,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     {
         UID = snapshot.PlayerUID;
         m_Name = snapshot.Name;
-        m_IsInGameScene = snapshot.IsInGameScene;
+        m_IsReady = snapshot.IsInGameScene;
         m_Platform = snapshot.Platform;
         m_RTT = snapshot.RTT;
         m_TagObjectUID = snapshot.TagObjectUID;
