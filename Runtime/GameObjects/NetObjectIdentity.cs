@@ -17,7 +17,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
     public bool IsLocal => State != null && State.IsOwnedByLocalPlayer;
-    public bool IsLocalPlayerTagObject
+    public bool IsLocalPlayerMainTagObject
     {
         get
         {
@@ -25,7 +25,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
                 return false;
 
             var localPlayer = World.Players.LocalPlayer;
-            return localPlayer != null && localPlayer.TagObjectUID.IsValid && localPlayer.TagObjectUID.Equals(State.UID);
+            return localPlayer != null && localPlayer.MainTagObjectUID.IsValid && localPlayer.MainTagObjectUID.Equals(State.UID);
         }
     }
 
@@ -336,6 +336,27 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     }
 
     /// <summary>
+    /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
+    /// IF we have authority, just invokes locally without sending data.
+    /// </summary>
+    public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocaly, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
+        ToAllRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, invokeLocaly, deliveryIntent);
+
+    /// <summary>
+    /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
+    /// IF we have authority, just invokes locally without sending data.
+    /// </summary>
+    void ToAllRPC(string rpcCode, byte[] data, bool invokeLocaly, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
+    {
+        var hashCode = RPCUtils.NameToHash(rpcCode);
+        //If we have authority on this object, don't need to send this kind of RPC.
+        if (invokeLocaly)
+            InvokeRpcHandler(hashCode, data);
+        else
+            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToAll, hashCode, data, deliveryIntent);
+    }
+
+    /// <summary>
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
@@ -378,6 +399,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
         InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
     }
 
+    void NoAuthorityIRPCReciever.RecieveRPC(RPCWithoutAuthorityState state) => InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
+
+
     void InvokeRpcHandler(int hashCode, byte[] data)
     {
         if (m_RPCHandlers.ContainsKey(hashCode))
@@ -390,6 +414,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     {
         if (!IsLocal)
             throw new Exception("Trying to destroy remote object, this is not allowed");
+
+        foreach (var b in m_Observables)
+            b.OnSoftDestroyRequestedLocaly();
 
         State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }

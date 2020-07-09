@@ -62,6 +62,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
+    public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(UID);
+
     public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
     List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
 

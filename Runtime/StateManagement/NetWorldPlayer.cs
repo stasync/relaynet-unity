@@ -1,5 +1,6 @@
 ﻿using Core.Networking;
 using System;
+using System.Collections.Generic;
 
 public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
 {
@@ -58,17 +59,35 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     }
     int m_RTT;
 
-    public NetObjectUID TagObjectUID
+    public IReadOnlyCollection<NetObjectUID> TagObjectUIDs => m_TagObjectUIDs;
+    HashSet<NetObjectUID> m_TagObjectUIDs;
+    public NetObjectUID MainTagObjectUID { get; private set; } = NetObjectUID.Invalid;
+
+    public void RegisterTagObject(NetObjectUID UID, bool main = false)
     {
-        get => m_TagObjectUID;
-        set
-        {
-            if (!IsLocal)
-                throw new Exception("Trying to change tag object uid value without authority, this is not allowed. Player id: " + UID);
-            m_TagObjectUID = value;
-        }
+        if (!IsLocal)
+            throw new InvalidOperationException("Trying to register tag object without authority, this is not allowed. Player id: " + UID);
+
+        if (!UID.IsValid)
+            throw new InvalidOperationException("Trying to register invalid object UID as tag object");
+
+        m_TagObjectUIDs.Add(UID);
+        if (main)
+            MainTagObjectUID = UID;
     }
-    NetObjectUID m_TagObjectUID;
+
+    public void UnregisterTagObject(NetObjectUID UID)
+    {
+        if (!IsLocal)
+            throw new InvalidOperationException("Trying to unregister tag object without authority, this is not allowed. Player id: " + UID);
+
+        if (!UID.IsValid)
+            throw new InvalidOperationException("Trying to register invalid object UID as tag object");
+
+        m_TagObjectUIDs.Remove(UID);
+        if (MainTagObjectUID == UID)
+            MainTagObjectUID = NetObjectUID.Invalid;
+    }
 
     public IProperties Properties => m_Properties;
     readonly SerializablePropertiesImpl m_Properties;
@@ -94,6 +113,8 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
 
         m_PlayerReader = new NetReader();
         m_PlayerWriter = new NetWriter();
+
+        m_TagObjectUIDs = new HashSet<NetObjectUID>();
     }
 
     public void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
@@ -103,10 +124,13 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         m_IsReady = snapshot.IsInGameScene;
         m_Platform = snapshot.Platform;
         m_RTT = snapshot.RTT;
-        m_TagObjectUID = snapshot.TagObjectUID;
+        m_TagObjectUIDs = snapshot.TagObjectUIDs;
 
         m_Properties.SetData(snapshot.Properties);
     }
+
+    public bool HasTagObject(NetObjectUID uid) => uid.IsValid && m_TagObjectUIDs.Contains(uid);
+    public bool HasTagObject(NetObjectState state) => state != null && HasTagObject(state.UID);
 
     public NetWorldPlayerSnapshot ToSnapshot() => NetWorldPlayerSnapshot.FormPlayer(this, m_Properties.Data);
 
@@ -121,8 +145,5 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         return m_PlayerWriter.ToArray();
     }
 
-    public override int GetHashCode()
-    {
-        return UID.GetHashCode();
-    }
+    public override int GetHashCode() => UID.GetHashCode();
 }

@@ -29,7 +29,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
 
     public bool IsLocal => Identity.IsLocal;
 
-    public bool IsLocalPlayerTagObject => Identity.IsLocalPlayerTagObject;
+    public bool IsLocalPlayerTagObject => Identity.IsLocalPlayerMainTagObject;
 
     public bool IsSceneObject => Identity.IsSceneObject;
 
@@ -74,6 +74,16 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// <param name=""></param>
     public void MasterRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
         Identity.ToMasterRPC(rpcCode, data, deliveryIntent);
+
+    /// <summary>
+    /// Send RPC to all clients with this object;
+    /// </summary>
+    /// <param name="rpcHandlerMethod"></param>
+    /// <param name="data"></param>
+    /// <param name="invokeLocaly"></param>
+    /// <param name="deliveryIntent"></param>
+    public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocaly, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
+        Identity.ToAllRPC(rpcHandlerMethod, data, invokeLocaly, deliveryIntent);
 
     /// <summary>
     /// Serialization called by GSInstanceIdentity.
@@ -147,6 +157,11 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// </summary>
     /// <param name="peedId"></param>
     public virtual void OnDisconnected(ClientUID peedId) { }
+
+    /// <summary>
+    /// Destroy method called localy
+    /// </summary>
+    public virtual void OnSoftDestroyRequestedLocaly() { }
 
     /// <summary>
     /// Serialize method without dirty check.
