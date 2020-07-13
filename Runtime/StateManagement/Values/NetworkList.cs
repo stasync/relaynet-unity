@@ -127,16 +127,16 @@ public class SerializableIntList: SerializableList<int>
     { }
 }
 
-public class SerializableIntBool : SerializableList<bool>
+public class SerializableBoolList : SerializableList<bool>
 {
-    public SerializableIntBool(List<bool> defaultValue, Func<bool> writePermission) :
+    public SerializableBoolList(List<bool> defaultValue, Func<bool> writePermission) :
         base(defaultValue, writePermission, (r, f) => r.ReadBoolean(), (w, v) => w.Write(v))
     { }
 }
 
-public class SerializableStringBool : SerializableList<string>
+public class SerializableStringList : SerializableList<string>
 {
-    public SerializableStringBool(List<string> defaultValue, Func<bool> writePermission) :
+    public SerializableStringList(List<string> defaultValue, Func<bool> writePermission) :
         base(defaultValue, writePermission, (r, f) => r.ReadString(), (w, v) => w.Write(v))
     { }
 }
