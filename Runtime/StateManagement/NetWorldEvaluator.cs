@@ -15,7 +15,7 @@ public class NetWorldEvaluator : NetWorld
 
     public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.UID, $"World {runtime.UID} evaluator")
     {
-        InitializeView(NetWorldViewInitMode.SeparateScene);
+        InitializeView(NetWorldViewInitMode.SeparatePhysicsSimulation);
 
         m_HistoryBuffer = new List<NetWorldSnapshot>(runtime.HistroyBuffer);
         m_CurrentTime = 0f;

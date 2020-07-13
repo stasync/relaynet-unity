@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 
 public enum NetWorldViewInitMode
 {
-    Default, SeparateScene,
+    Default, SeparatePhysicsSimulation,
 }
 
 public class NetWorldView : MonoBehaviour
@@ -40,17 +40,19 @@ public class NetWorldView : MonoBehaviour
         m_CurrentObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
         m_PendingObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
 
+        var sceneName = $"{m_World.Name} scene";
         switch (initMode)
         {
             case NetWorldViewInitMode.Default:
-                DontDestroyOnLoad(gameObject);
+                m_WorldScene = SceneManager.CreateScene(sceneName);
                 break;
 
-            case NetWorldViewInitMode.SeparateScene:
-                m_WorldScene = SceneManager.CreateScene($"{m_World.Name} scene", new CreateSceneParameters(LocalPhysicsMode.Physics3D));
-                SceneManager.MoveGameObjectToScene(gameObject, m_WorldScene);
+            case NetWorldViewInitMode.SeparatePhysicsSimulation:
+                m_WorldScene = SceneManager.CreateScene(sceneName, new CreateSceneParameters(LocalPhysicsMode.Physics3D));
                 break;
         }
+
+        SceneManager.MoveGameObjectToScene(gameObject, m_WorldScene);
     }
 
     public void Execute()
