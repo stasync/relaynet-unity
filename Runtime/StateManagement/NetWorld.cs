@@ -135,6 +135,20 @@ public abstract class NetWorld : IJSONSerializable
         View.CurrentObjectViews.Values
             .Select(v => v.GetBehaviour<T>())
             .Where(b => b != null);
+    
+    public T FindObjectViewOfType<T>() where T : GSInstanceBehaviourBase
+    {
+        if (View == null)
+            return null;
+
+        foreach(var view in View.CurrentObjectViews.Values)
+        {
+            var component = view.GetBehaviour<T>();
+            if (component != null)
+                return component;
+        }
+        return null;
+    }
 
     public virtual NetObjectState FindObject(NetObjectUID instanceId) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out NetObjectState state) ? state : null;
