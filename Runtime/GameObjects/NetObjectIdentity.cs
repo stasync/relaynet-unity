@@ -75,8 +75,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
          * Skip deserialization if it calls on local object.
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
          */
-        if (!IsLocal && State.Data != null)
-            Deserialize(State.Data, true, true); //Force true to allow deseriazation before object initialized.
+        if (!IsLocal && State.ViewData != null)
+            Deserialize(State.ViewData, true, true); //Force true to allow deseriazation before object initialized.
 
         if(additionalData != null && additionalData.Length > 0)
             foreach (var o in m_Observables)
@@ -447,14 +447,4 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
     }
 
     public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue($"obj {InstanceId} {gameObject.name}") + ":" + RealtimeJSONUtils.ToJSONCollection(m_Observables.Select(v => v.ToJSONProperty()).ToArray()) + "}";
-
-    #region STATIC_HELPERS
-    static ServiceProvider<GSNetwork> s_NetworkProvider = new ServiceProvider<GSNetwork>();
-
-    public static NetObjectIdentity Find(NetObjectUID instanceId) => 
-        s_NetworkProvider.Instance.Realtime.MainWorld.FindObjectView(instanceId);
-
-    public static T Find<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase => 
-        s_NetworkProvider.Instance.Realtime.MainWorld.FindObjectView<T>(instanceId);
-    #endregion
 }

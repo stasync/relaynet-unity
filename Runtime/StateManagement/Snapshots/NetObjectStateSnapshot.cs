@@ -10,6 +10,7 @@ public struct NetObjectStateSnapshot
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
     public byte[] Data { get; private set; }
     public NetObjectRPCStateSnapshot RPCState { get; private set; }
+    public PropertiesSnapshot PropertiesState { get; private set; }
 
     void Restore(NetReader reader)
     {
@@ -20,6 +21,7 @@ public struct NetObjectStateSnapshot
         StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
         Data = reader.ReadBytesAndSize();
         RPCState = NetObjectRPCStateSnapshot.FromReader(reader);
+        PropertiesState = PropertiesSnapshot.FromReader(reader);
     }
 
     public void Serialize(NetWriter writer)
@@ -31,6 +33,7 @@ public struct NetObjectStateSnapshot
         writer.Write((byte)StateChangeType);
         writer.WriteBytesAndSize(Data);
         RPCState.Serialize(writer);
+        PropertiesState.Serialize(writer);
     }
 
     public static NetObjectStateSnapshot FormReader(NetReader reader)
@@ -48,8 +51,9 @@ public struct NetObjectStateSnapshot
             PrefabId = state.PrefabId,
             IsSceneObject = state.IsSceneObject,
             StateChangeType = state.StateChangeType,
-            Data = state.Data.ToArray(),
-            RPCState = state.RPCBuffer.ToSnapshot()
+            Data = state.ViewData.ToArray(),
+            RPCState = state.RPCBuffer.ToSnapshot(),
+            PropertiesState = new PropertiesSnapshot(state.Properties),
         };
 
     public override string ToString() => $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
@@ -61,9 +65,10 @@ public struct NetObjectStateSnapshot
         result += sizeof(uint); // ObjectUID
         result += PrefabId.Length;
         result += sizeof(bool); // IsSceneObject
-        result += 1; // StateChangeType
+        result += sizeof(ObjectStateChangeRequestType); // StateChangeType
         result += Data.Length;
         result += RPCState.GetSize();
+        result += PropertiesState.GetSize();
         return result;
     }
 }

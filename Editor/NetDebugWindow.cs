@@ -34,7 +34,7 @@ public class NetDebugWindow : EditorWindow
                 EditorGUILayout.LabelField($"Owner: {m_State.Owner.ToString()}");
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
                 EditorGUILayout.LabelField($"Master: {m_State.IsOwnedByMasterClient}");
-                EditorGUILayout.LabelField($"Data size: {m_State.Data.Length}");
+                EditorGUILayout.LabelField($"Data size: {m_State.ViewData.Length}");
 
                 var temporalBuffer = m_State.RPCBuffer.TemporalBuffer;
                 var persistentBuffer = m_State.RPCBuffer.PersistentBuffer;
@@ -55,7 +55,16 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel--;
                 }
 
-                if(m_World.View != null)
+                var properties = m_State.Properties.Data;
+                EditorGUILayout.LabelField($"Properties: {properties.Count}", EditorStyles.boldLabel);
+                {
+                    EditorGUI.indentLevel++;
+                    foreach (var kvp in properties)
+                        EditorGUILayout.LabelField($"{kvp.Key} Size: {kvp.Value.Length}");
+                    EditorGUI.indentLevel--;
+                }
+
+                if (m_World.View != null)
                 {
                     EditorGUI.BeginDisabledGroup(true);
                     EditorGUILayout.ObjectField("View", m_World.FindObjectView(m_State.UID), typeof(GameObject), true);
@@ -265,7 +274,7 @@ public class NetDebugWindow : EditorWindow
     MainWorldDrawer m_MainWorldDrawer;
     ReplicaWorldDrawer m_CurrentWorldReplicaDrawer;
 
-    [MenuItem("Network/Debug Window")]
+    [MenuItem("System/Network/Debug Window")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
     static void Init()
 #pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены

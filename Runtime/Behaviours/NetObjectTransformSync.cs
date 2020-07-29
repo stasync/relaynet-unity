@@ -65,6 +65,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
             Data.Rotaiton.Set(transform.rotation);
             Data.Velocity.Set(m_Velocity);
             Data.WorldTime.Set(Identity.World.Time);
+
+            Identity.State.Properties.SetVector(0, transform.position);
         }
         else
         {

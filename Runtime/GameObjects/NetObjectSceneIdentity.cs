@@ -44,7 +44,7 @@ public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
     public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => value.Identity;
 
 #if UNITY_EDITOR
-    [UnityEditor.MenuItem("Network/Validate scene objects")]
+    [UnityEditor.MenuItem("System/Network/Validate scene objects")]
     static void ValidateSceneObjects()
     {
         if (UnityEditor.EditorApplication.isPlaying)
@@ -72,7 +72,7 @@ public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
         Debug.LogWarning("Validation finished");
     }
 
-    [UnityEditor.MenuItem("Network/Fix scene objects")]
+    [UnityEditor.MenuItem("System/Network/Fix scene objects")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
     static void FixSceneObjects()
 #pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены

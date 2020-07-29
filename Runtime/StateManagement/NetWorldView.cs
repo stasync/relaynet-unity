@@ -62,13 +62,18 @@ public class NetWorldView : MonoBehaviour
         //Remove invalid views;
         ForEachViews((UID, view) =>
         {
-            if (!m_World.ObjectExists(UID))
+            if(!ShoudUpdateViewForState(UID))
                 RemoveView(UID);
         });
 
         //Create, update, destroy objects;
         ForEachStates((UID, state) =>
         {
+            //Skip state;
+            if (!ShoudUpdateViewForState(UID))
+                return;
+
+
             //Try get or create new state view;
             if (!m_CurrentObjectViews.TryGetValue(UID, out var netObjectView))
             {
@@ -91,13 +96,26 @@ public class NetWorldView : MonoBehaviour
             if (netObjectView.Initialized)
             {
                 if (!state.IsOwnedByLocalPlayer)
-                    netObjectView.Deserialize(state.Data, false, false);
+                    netObjectView.Deserialize(state.ViewData, false, false);
             }
             else
                 InitializeObjectView(netObjectView, state.UID, null);
         });
 
         Profiler.EndSample();
+    }
+
+    bool ShoudUpdateViewForState(NetObjectUID UID)
+    {
+        if (!m_World.TryGetObject(UID, out var netObjectState))
+            return false;
+
+        if(netObjectState.IsOwnedByLocalPlayer)
+            return true;
+
+        var postion = netObjectState.Properties.GetVector(0);
+        var directionToCamera = Camera.main.transform.position - postion;
+        return directionToCamera.sqrMagnitude < 25f;
     }
 
     public NetObjectIdentity GetView(NetObjectUID uid)
