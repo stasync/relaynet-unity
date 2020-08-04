@@ -5,6 +5,7 @@ using UnityEngine;
 
 public abstract class NetWorld : IJSONSerializable
 {
+    public event Action ViewInitialized = delegate { };
     public event Action Evaluated = delegate { };
 
     public bool IsValid => UID.IsValid;
@@ -20,6 +21,7 @@ public abstract class NetWorld : IJSONSerializable
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
     NetWorldUpdateQueue m_UpdateQueue;
+    Queue<Action> m_ViewInitQueue;
 
     protected NetWorld(NetWorldUID uid, string worldName)
     {        
@@ -31,6 +33,7 @@ public abstract class NetWorld : IJSONSerializable
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         PlayersInternal = new NetWorldPlayersCollection(() => IsValid);
         m_UpdateQueue = new NetWorldUpdateQueue();
+        m_ViewInitQueue = new Queue<Action>();
     }
 
     public void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
@@ -40,6 +43,9 @@ public abstract class NetWorld : IJSONSerializable
 
         View = new GameObject(Name).AddComponent<NetWorldView>();
         View.Init(this, viewInitMode);
+
+        while (m_ViewInitQueue.Count > 0)
+            m_ViewInitQueue.Dequeue()();
     }
 
     public void Update(float deltaTime)
@@ -97,6 +103,9 @@ public abstract class NetWorld : IJSONSerializable
         m_UpdateQueue.Clear();
         m_UpdateQueue = null;
 
+        m_ViewInitQueue.Clear();
+        m_ViewInitQueue = null;
+
         if (View == null)
             Debug.LogError($"View already destroyed (Maybe it's done by unity via exiting play mode)");
         else
@@ -122,19 +131,17 @@ public abstract class NetWorld : IJSONSerializable
 
     public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
 
-    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) => View == null ? null :
-        View.CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
+    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) => 
+        View == null ? null :
+        View.FindObjectView(instanceId);
 
-    public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase
-    {
-        var networkObject = FindObjectView(instanceId);
-        return networkObject == null ? null : networkObject.GetComponent<T>();
-    }
+    public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase =>
+        View == null ? null :
+        View.FindObjectView<T>(instanceId);
 
-    public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase => View == null ? null :
-        View.CurrentObjectViews.Values
-            .Select(v => v.GetBehaviour<T>())
-            .Where(b => b != null);
+    public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
+        View == null ? null :
+        View.FindObjectViewsOfType<T>();
     
     public T FindObjectViewOfType<T>() where T : GSInstanceBehaviourBase
     {
@@ -209,6 +216,14 @@ public abstract class NetWorld : IJSONSerializable
             if (!snapshot.Objects.ContainsKey(UID))
                 RemoveObject(UID);
         });
+    }
+
+    public void ScheduleOnViewInit(Action action)
+    {
+        if (View != null)
+            action();
+        else
+            m_ViewInitQueue.Enqueue(action);
     }
 
     public override int GetHashCode()

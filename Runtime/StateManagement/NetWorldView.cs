@@ -113,9 +113,10 @@ public class NetWorldView : MonoBehaviour
         if(netObjectState.IsOwnedByLocalPlayer)
             return true;
 
-        var postion = netObjectState.Properties.GetVector(0);
-        var directionToCamera = Camera.main.transform.position - postion;
-        return directionToCamera.sqrMagnitude < 25f;
+        return true;
+        //var postion = netObjectState.Properties.GetVector(0);
+        //var directionToCamera = Camera.main.transform.position - postion;
+        //return directionToCamera.sqrMagnitude < 25f;
     }
 
     public NetObjectIdentity GetView(NetObjectUID uid)
@@ -249,4 +250,18 @@ public class NetWorldView : MonoBehaviour
         if(m_WorldScene.IsValid())
             SceneManager.UnloadSceneAsync(m_WorldScene);
     }
+
+    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
+       m_CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
+
+    public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase
+    {
+        var networkObject = FindObjectView(instanceId);
+        return networkObject == null ? null : networkObject.GetComponent<T>();
+    }
+
+    public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
+        m_CurrentObjectViews.Values
+            .Select(v => v.GetBehaviour<T>())
+            .Where(b => b != null);
 }

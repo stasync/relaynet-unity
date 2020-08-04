@@ -25,7 +25,6 @@ public class NetWorldRuntime : NetWorld
     HashSet<ClientUID> m_LocalPlayerRegisterQueue;
     HashSet<ClientUID> m_PlayerUnregisterQueue;
 
-    Queue<Action> m_ViewInitQueue;
     public int OutgoingMessageQueueCount => m_OutgoingMessageQueue.Count;
     Queue<Action> m_OutgoingMessageQueue;
 
@@ -55,7 +54,6 @@ public class NetWorldRuntime : NetWorld
 
         m_LocalPlayerRegisterQueue = new HashSet<ClientUID>();
         m_PlayerUnregisterQueue = new HashSet<ClientUID>();
-        m_ViewInitQueue = new Queue<Action>();
 
         m_HistoryBuffer = new HistoryBiffer();
 
@@ -141,7 +139,7 @@ public class NetWorldRuntime : NetWorld
 
         void TryReceiveWorldData()
         {
-            var reader = new Core.Networking.NetReader();
+            var reader = new NetReader();
             while(m_RemoteWorldDataUpdateRequests.Count > 0)
             {
                 reader.Replace(m_RemoteWorldDataUpdateRequests.Dequeue());
@@ -414,9 +412,6 @@ public class NetWorldRuntime : NetWorld
         m_PlayerUnregisterQueue.Clear();
         m_PlayerUnregisterQueue = null;
 
-        m_ViewInitQueue.Clear();
-        m_ViewInitQueue = null;
-
         m_HistoryBuffer.Clear();
         m_HistoryBuffer = null;
 
@@ -442,18 +437,15 @@ public class NetWorldRuntime : NetWorld
 
     /// Scene loaded;
     public void OnSceneLoaded() => 
-        ScheduleOnUpdate(() => 
-        {
-            //Create view
-            InitializeView();
-
+        ScheduleOnUpdate(() =>
+        {            
             //Check for player exists;
-            var player = PlayersInternal.LocalPlayer; 
+            var player = PlayersInternal.LocalPlayer;
             if (player != null)
                 player.IsReady = true;
 
-            while (m_ViewInitQueue.Count > 0)
-                m_ViewInitQueue.Dequeue()();
+            //Create view
+            InitializeView();
         });
 
     protected void ForEachRemoteRequests(Action<NetObjectUID, NetObjectStateSnapshot> processor)
@@ -558,12 +550,4 @@ public class NetWorldRuntime : NetWorld
     } 
 
     public int GetHistoryBufferSize() => m_HistoryBuffer.Sum(s => s.GetSize());
-
-    public void ScheduleOnViewInit(Action action)
-    {
-        if (View != null)
-            action();
-        else
-            m_ViewInitQueue.Enqueue(action);
-    }
 }
