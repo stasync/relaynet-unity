@@ -109,8 +109,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, NoAuthorityIRPCReciever, 
 
     void TryAutoRegisterRPCHandlers(IGSInstanceObservable targetObject)
     {
-        var members = System.Reflection.Find
-                .MethodsWithAttribute<AutoRegisterRPCHandler>(targetObject, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+        var members = Find.MethodsWithAttribute<AutoRegisterRPCHandler>(targetObject, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
 
         foreach (var m in members)
         {

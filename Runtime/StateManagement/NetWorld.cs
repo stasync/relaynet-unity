@@ -7,9 +7,10 @@ public abstract class NetWorld : IJSONSerializable
 {
     public event Action ViewInitialized = delegate { };
     public event Action Evaluated = delegate { };
+    public bool IsValid => ID.IsValid;
 
-    public bool IsValid => UID.IsValid;
-    public NetWorldUID UID { get; private set; }
+    public NetWorldID UID { get; private set; }
+    public NetWorldID ID { get; private set; }
     public float Time { get; protected set; }
     public float LocalTime { get; private set; }
     public string Name { get; private set; }
@@ -23,12 +24,14 @@ public abstract class NetWorld : IJSONSerializable
     NetWorldUpdateQueue m_UpdateQueue;
     Queue<Action> m_ViewInitQueue;
 
-    protected NetWorld(NetWorldUID uid, string worldName)
-    {        
-        UID = uid;
+    protected NetWorld(NetWorldID uid, string worldName)
+    {
+        UID = NetWorldID.Allocate();
+        ID = uid;
+
         Time = 0f;
         LocalTime = 0f;
-        Name = $"{UID}:{worldName}";
+        Name = $"{ID}:{worldName}";
 
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         PlayersInternal = new NetWorldPlayersCollection(() => IsValid);
@@ -91,7 +94,9 @@ public abstract class NetWorld : IJSONSerializable
 
     public virtual void Destroy()
     {
-        UID = NetWorldUID.Invalid;
+        UID = NetWorldID.Invalid;
+        ID = NetWorldID.Invalid;
+
         Evaluated = delegate { };
 
         m_CurrentObjectStates.Clear();
@@ -229,7 +234,7 @@ public abstract class NetWorld : IJSONSerializable
     public override int GetHashCode()
     {
         var hash = 13;
-        hash = (hash * 7) + UID.GetHashCode();
+        hash = (hash * 7) + ID.GetHashCode();
         hash = (hash * 7) + Time.GetHashCode();
         hash = (hash * 7) + LocalTime.GetHashCode(); //Do we need local time in hash code?
         foreach (var kvp in m_CurrentObjectStates)

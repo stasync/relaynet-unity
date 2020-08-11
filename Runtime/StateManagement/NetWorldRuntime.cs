@@ -6,7 +6,8 @@ using Core.Networking;
 
 public class NetWorldRuntime : NetWorld
 {
-    public Action<NetWorldPlayer, bool> NewPlayerRegisterd = delegate { };
+    public Action<NetWorldPlayerSnapshot> PlayerRegisterd = delegate { };
+    public Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
@@ -36,7 +37,7 @@ public class NetWorldRuntime : NetWorld
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
 
-    public NetWorldRuntime(Action<uint, DeliveryIntent, byte[]> sender, string worldName = "NetworkWorldRoot") : base(NetWorldUID.Allocate(), worldName)
+    public NetWorldRuntime(Action<uint, DeliveryIntent, byte[]> sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
     {
         m_Sender = sender ?? throw new ArgumentNullException(nameof(sender));
 
@@ -84,10 +85,10 @@ public class NetWorldRuntime : NetWorld
 
     public void ScheduleUpdateForRemotePlayer(NetWorldPlayerSnapshot snapshot)
     {
-        if (m_RemotePlayersUpdateRequests.ContainsKey(snapshot.PlayerUID))
-             Debug.LogWarning($"Unable to schedule update for remote player {snapshot.PlayerUID}: already scheduled");
+        if (m_RemotePlayersUpdateRequests.ContainsKey(snapshot.UID))
+             Debug.LogWarning($"Unable to schedule update for remote player {snapshot.UID}: already scheduled");
         else
-            m_RemotePlayersUpdateRequests.Add(snapshot.PlayerUID, snapshot);
+            m_RemotePlayersUpdateRequests.Add(snapshot.UID, snapshot);
     }
 
     public void ScheduleRemoteWorldDataUpdate(byte[] data) => m_RemoteWorldDataUpdateRequests.Enqueue(data);
@@ -152,7 +153,7 @@ public class NetWorldRuntime : NetWorld
             //Add local
             {
                 foreach (var p in m_LocalPlayerRegisterQueue)
-                    NewPlayerRegisterd(PlayersInternal.RegisterImmidiate(p, true), true); //Add player and notify;
+                    PlayerRegisterd(PlayersInternal.RegisterImmidiate(p, true).ToSnapshot()); //Add player and notify;
 
                 m_LocalPlayerRegisterQueue.Clear();
             }
@@ -176,10 +177,10 @@ public class NetWorldRuntime : NetWorld
                     if (player == null)
                     {
                         //Create new;
-                        player = PlayersInternal.RegisterImmidiate(snapshot.PlayerUID, false);
+                        player = PlayersInternal.RegisterImmidiate(snapshot.UID, false);
 
                         //Notify player registred;
-                        NewPlayerRegisterd(player, false);
+                        PlayerRegisterd(player.ToSnapshot());
 
                         ForEachStates((stateUID, state) => 
                         {
@@ -192,10 +193,9 @@ public class NetWorldRuntime : NetWorld
                     //Restore player;
                     player.RestoreFromSnapshot(snapshot);
 
+                    //Remote player loads scene
                     if (player.IsReady && !wasInGameScene)
-                    {
-                        //Remote player loads scene
-                    }
+                        PlayerBecomesReady(player.ToSnapshot());
                 }
                 m_RemotePlayersUpdateRequests.Clear();
             }
@@ -418,7 +418,7 @@ public class NetWorldRuntime : NetWorld
         m_OutgoingMessageQueue.Clear();
         m_OutgoingMessageQueue = null;
 
-        NewPlayerRegisterd = null;
+        PlayerRegisterd = null;
     }
 
     /// Connect;

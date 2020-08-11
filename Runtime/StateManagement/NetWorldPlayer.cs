@@ -119,7 +119,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
 
     public void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
     {
-        UID = snapshot.PlayerUID;
+        UID = snapshot.UID;
         m_Name = snapshot.Name;
         m_IsReady = snapshot.IsInGameScene;
         m_Platform = snapshot.Platform;

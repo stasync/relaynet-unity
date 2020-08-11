@@ -138,7 +138,7 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
             if (m_PlayersCollection.TryGetValue(p.Key, out var player))
                 player.RestoreFromSnapshot(p.Value);
             else
-                m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.PlayerUID, p.Value.Name, () => LocalPlayerUID, () => MasterPlayerUID));
+                m_PlayersCollection.Add(p.Key, new NetWorldPlayer(p.Value.UID, p.Value.Name, () => LocalPlayerUID, () => MasterPlayerUID));
         }
     }
 

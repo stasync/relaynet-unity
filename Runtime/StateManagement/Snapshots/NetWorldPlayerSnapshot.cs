@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public struct NetWorldPlayerSnapshot
 {
-    public readonly ClientUID PlayerUID;
+    public readonly ClientUID UID;
     public readonly string Name;
     public readonly bool IsInGameScene;
     public readonly GSDevice.Platform Platform;
@@ -14,7 +14,7 @@ public struct NetWorldPlayerSnapshot
 
     public NetWorldPlayerSnapshot(NetWorldPlayer player)
     {
-        PlayerUID = player.UID;
+        UID = player.UID;
         Name = player.Name;
         IsInGameScene = player.IsReady;
         Platform = player.Platform;
@@ -26,7 +26,7 @@ public struct NetWorldPlayerSnapshot
 
     public NetWorldPlayerSnapshot(NetReader reader)
     {
-        PlayerUID = reader.ReadConnectionUID();
+        UID = reader.ReadConnectionUID();
         Name = reader.ReadString();
         IsInGameScene = reader.ReadBoolean();
         Platform = (GSDevice.Platform)reader.ReadInt32();
@@ -41,7 +41,7 @@ public struct NetWorldPlayerSnapshot
 
     public void Serialize(NetWriter writer)
     {
-        writer.WriteConnectionUID(PlayerUID);
+        writer.WriteConnectionUID(UID);
         writer.Write(Name);
         writer.Write(IsInGameScene);
         writer.Write((int)Platform);
@@ -54,12 +54,16 @@ public struct NetWorldPlayerSnapshot
     public int GetSize()
     {
         var result = 0;
-        result += sizeof(uint); // PlayerUID
+        result += ClientUID.Size; // UID
         result += Name.Length;
         result += sizeof(bool); // IsInGameScene
         result += sizeof(GSDevice.Platform); // Platform
         result += sizeof(int); // RTT
-        result += sizeof(uint); // TagObjectUID
+
+        foreach (var o in TagObjectUIDs)
+            result += NetObjectUID.Size;
+
+        result += NetObjectUID.Size; // Main tag object
         result += Properties.GetSize();
 
         return result;
