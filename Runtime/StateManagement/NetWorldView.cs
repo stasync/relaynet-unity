@@ -73,7 +73,6 @@ public class NetWorldView : MonoBehaviour
             if (!ShoudUpdateViewForState(UID))
                 return;
 
-
             //Try get or create new state view;
             if (!m_CurrentObjectViews.TryGetValue(UID, out var netObjectView))
             {

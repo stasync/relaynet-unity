@@ -124,7 +124,7 @@ public class NetWorldRuntime : NetWorld
         UpdatePlayerStates();
         UpdateStateBasedOnRemovedPlayers();
         UpdateStateBasedOnRemoteData();
-        UpdateRemoteRPCRequests();
+        UpdateRPCRequestsWithoutAuthority();
         UpdateLocalObjectState();
 
         #region Internal
@@ -309,9 +309,9 @@ public class NetWorldRuntime : NetWorld
         }
 
         /// Update RPC requests (Calling rpc without authority);
-        void UpdateRemoteRPCRequests()
+        void UpdateRPCRequestsWithoutAuthority()
         {
-            ForEachRemoteStates((UID, state) => 
+            ForEachStates((UID, state) => 
             {
                 foreach (var r in state.RPCWithoutAuthorityRequests)
                     ScheduleSend(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
