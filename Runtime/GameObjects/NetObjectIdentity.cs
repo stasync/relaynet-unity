@@ -186,13 +186,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
             b.Serialize(writer);
     }
 
-    NetWriter SerializeToNewWriter()
-    {
-        var writer = new NetWriter();
-        SerializeTo(writer);
-        return writer;
-    }
-
     /// <summary>
     /// Deserizlize whole object
     /// </summary>

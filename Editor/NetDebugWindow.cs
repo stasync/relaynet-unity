@@ -189,6 +189,7 @@ public class NetDebugWindow : EditorWindow
     class MainWorldDrawer : WorldDrawer<NetWorldRuntime>
     {
         bool m_DrawCommon;
+        bool m_DrawPendingViews;
 
         public MainWorldDrawer(NetWorldRuntime runtimeWorld) : base(runtimeWorld) { }
 
@@ -197,38 +198,52 @@ public class NetDebugWindow : EditorWindow
             base.OnDrawWorld();
 
             EditorGUILayout.Space();
-
             m_DrawCommon = EditorGUILayout.Foldout(m_DrawCommon, "Common");
-            if (!m_DrawCommon)
-                return;
-
-            EditorGUI.indentLevel++;
+            if (m_DrawCommon)
             {
-                //Register requests
+                EditorGUI.indentLevel++;
                 {
-                    EditorGUILayout.Space();
-                    var registerRequests = m_World.ObjectsRegisterRequests;
-                    EditorGUILayout.LabelField($"Objects register request: {registerRequests.Count}", EditorStyles.boldLabel);
-                    foreach (var obj in registerRequests)
-                        EditorGUILayout.LabelField(obj.Value.ToString());
-                }
+                    //Register requests
+                    {
+                        EditorGUILayout.Space();
+                        var registerRequests = m_World.ObjectsRegisterRequests;
+                        EditorGUILayout.LabelField($"Objects register request: {registerRequests.Count}", EditorStyles.boldLabel);
+                        foreach (var obj in registerRequests)
+                            EditorGUILayout.LabelField(obj.Value.ToString());
+                    }
 
-                //Remote udpate requests
-                {
-                    EditorGUILayout.Space();
-                    var remoteRequests = m_World.RemoteObjectUpdateRequests;
-                    EditorGUILayout.LabelField($"Objects remote request: {remoteRequests.Count}", EditorStyles.boldLabel);
-                    foreach (var obj in remoteRequests)
-                        EditorGUILayout.LabelField(obj.Value.ToString());
-                }
+                    //Remote udpate requests
+                    {
+                        EditorGUILayout.Space();
+                        var remoteRequests = m_World.RemoteObjectUpdateRequests;
+                        EditorGUILayout.LabelField($"Objects remote request: {remoteRequests.Count}", EditorStyles.boldLabel);
+                        foreach (var obj in remoteRequests)
+                            EditorGUILayout.LabelField(obj.Value.ToString());
+                    }
 
-                //Outgoing messages
+                    //Outgoing messages
+                    {
+                        EditorGUILayout.Space();
+                        EditorGUILayout.LabelField($"Outgoing world message count: {m_World.OutgoingMessageQueueCount}", EditorStyles.boldLabel);
+                    }
+                }
+                EditorGUI.indentLevel--;
+            }
+
+            if(m_World.View != null)
+            {
+                EditorGUILayout.Space();
+                m_DrawPendingViews = EditorGUILayout.Foldout(m_DrawPendingViews, $"Pending Views: {m_World.View.PendingObjectViews.Count}") && m_World.View.PendingObjectViews.Count > 0;
+                if (m_DrawPendingViews)
                 {
-                    EditorGUILayout.Space();
-                    EditorGUILayout.LabelField($"Outgoing world message count: {m_World.OutgoingMessageQueueCount}", EditorStyles.boldLabel);
+                    EditorGUI.indentLevel++;
+                    {
+                        foreach (var kvp in m_World.View.PendingObjectViews)
+                            EditorGUILayout.ObjectField($"UID: {kvp.Key}", kvp.Value, typeof(NetObjectIdentity), true);
+                    }
+                    EditorGUI.indentLevel--;
                 }
             }
-            EditorGUI.indentLevel--;
         }
     }
 

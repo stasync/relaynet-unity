@@ -143,13 +143,19 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             return;
         }
 
-        var previousOwner = OwnerUID;
-        OwnerUID = snapshot.OwnerUID;
+        UpdateOwnerInternal(snapshot.OwnerUID);
+
         StateChangeType = snapshot.StateChangeType;
         ViewData = snapshot.Data;
         m_RPCBuffer.RestoreFormSnapshot(snapshot.RPCState);
+    }
 
-        if (previousOwner != snapshot.OwnerUID)
+    void UpdateOwnerInternal(ClientUID newOwner)
+    {
+        var previousOwner = OwnerUID;
+        OwnerUID = newOwner;
+
+        if (previousOwner != OwnerUID)
             OnOwnerChanged();
     }
 
@@ -201,7 +207,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         if(newOwner.IsValid)
         {
-            OwnerUID = newOwner;
+            UpdateOwnerInternal(newOwner);
             ScheduleStateChange(ObjectStateChangeRequestType.ReliableUpdateOwnerChange);
         }
         else

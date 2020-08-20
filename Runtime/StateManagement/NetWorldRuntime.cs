@@ -484,6 +484,7 @@ public class NetWorldRuntime : NetWorld
 #if NETWORK_DEBUG
             Debug.LogError($"Trying to register scene identity {sceneIdentity.gameObject.name} {sceneIdentity.PrefabID}: but object with id {sceneIdentity.SceneObjectId} already registered");
 #endif
+            UnityEngine.Object.Destroy(sceneIdentity.gameObject);
             return;
         }
 
@@ -499,7 +500,7 @@ public class NetWorldRuntime : NetWorld
         //Wait for view initialization;
         ScheduleOnViewInit(() =>
         {
-            if(TryGetExistedOrPendingState(newStateUID, out var state))
+            if (TryGetExistedOrPendingState(newStateUID, out var state))
             {
                 //Initialize immidiatlty on master client;
                 if (PlayersInternal.LocalPlayerIsMaster)
@@ -508,10 +509,13 @@ public class NetWorldRuntime : NetWorld
                 //Add view to be used in future;
                 View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
             }
+            else
+                throw new InvalidOperationException();
         });
     }
 
-    bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) => TryGetObject(instanceId, out state) || m_ObjectsRegisterRequests.TryGetValue(instanceId, out state);
+    bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) => 
+        TryGetObject(instanceId, out state) || m_ObjectsRegisterRequests.TryGetValue(instanceId, out state);
 
     //TODO: Think how to avoid this override;
     public override NetObjectState FindObject(NetObjectUID instanceId)
