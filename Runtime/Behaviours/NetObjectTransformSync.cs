@@ -89,7 +89,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
             if (m_InterpolateRotation > Mathf.Epsilon)
             {
                 transform.rotation = Quaternion.Slerp(
-                        transform.localRotation,
+                        transform.rotation,
                         Data.Rotaiton.Value,
                         Time.fixedDeltaTime * m_InterpolateRotation * 10);
             }
