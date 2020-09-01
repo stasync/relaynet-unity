@@ -16,6 +16,7 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     protected bool Initialized { get; private set; }
 
     protected virtual bool InternalPermnission => true;
+
     public bool HasPermission => WritePemission();
     protected Func<bool> WritePemission { get; private set; }
 
@@ -113,10 +114,14 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     /// Deserialization called by GSInstanceIdentity.
     /// </summary>
     /// <param name="reader"></param>
-    public virtual void Deserialize(NetReader reader, bool firtsTime)
+    public virtual void Deserialize(NetReader reader, bool firtsTime, bool apply)
     {
-        foreach (var kvp in SerializeableValues)
-            kvp.Value.Deserialize(reader, firtsTime);
+        foreach (var value in SerializeableValues.Values)
+        {
+            value.Deserialize(reader, firtsTime);
+            if (apply)
+                value.Apply();
+        }
     }
 
     public string ToJSONProperty() => 

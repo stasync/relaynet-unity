@@ -75,6 +75,13 @@ public class AnimatorSyncData : GSBehaviourAbstractData
 [DisallowMultipleComponent]
 public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 {
+    protected override bool UpdateSquenced => true;
+
+    enum AnimatorStateChangeMethod : byte
+    {
+        Play, CrossFade,
+    }
+
     enum AnimatorTriggerAction : byte
     {
         Set, Reset,
@@ -82,6 +89,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 
     [SerializeField]
     Animator m_Animator;
+
+    [SerializeField]
+    AnimatorStateChangeMethod m_StateChangeMethod = AnimatorStateChangeMethod.CrossFade;
 
     List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new List<IAnimatorValueProxy>();
 
@@ -237,7 +247,15 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
                 m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);
 
             if (targetStateHash != 0 && state.fullPathHash != targetStateHash)
-                m_Animator.Play(targetStateHash, layerIndex, targetStateNormalizedTime);
+                switch (m_StateChangeMethod)
+                {
+                    case AnimatorStateChangeMethod.Play:
+                        m_Animator.Play(targetStateHash, layerIndex, targetStateNormalizedTime);
+                        break;
+                    case AnimatorStateChangeMethod.CrossFade:
+                        m_Animator.CrossFade(targetStateHash, 0.1f, layerIndex, targetStateNormalizedTime);
+                        break;
+                }
         });
 
         bool ValidateCollections(int index, params ICollectionWithCount[] collections)

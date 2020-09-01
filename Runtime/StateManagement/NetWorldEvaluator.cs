@@ -13,7 +13,7 @@ public class NetWorldEvaluator : NetWorld
     public bool Paused { get; private set; }
     public int BufferSize => m_HistoryBuffer.Count;
 
-    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.ID, $"World {runtime.ID} evaluator")
+    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.ID, $"World {runtime.ID} evaluator", runtime.ID)
     {
         InitializeView(NetWorldViewInitMode.SeparatePhysicsSimulation);
 

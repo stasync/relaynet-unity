@@ -34,6 +34,9 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     public bool IsSceneObject => Identity.IsSceneObject;
 
     public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
+    protected virtual bool UpdateSquenced => false;
+
+    uint m_UpdateCounter;
 
     protected virtual void OnBeforeDataInitialized() { }
 
@@ -92,6 +95,9 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     void ISerializable.Serialize(NetWriter writer)
     {
         SerializeDirtyChecked(writer);
+
+        m_UpdateCounter++;
+        writer.WritePackedUInt32(m_UpdateCounter);
         Data.Serialize(writer);
 
 #if NETWORK_DEBUG
@@ -106,7 +112,12 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     void ISerializable.Deserialize(NetReader reader, bool firtsTime)
     {
         DeserializeDirtyChecked(reader, firtsTime);
-        Data.Deserialize(reader, firtsTime);
+
+        var lastUpdateCounter = m_UpdateCounter;
+        m_UpdateCounter = reader.ReadPackedUInt32();
+
+        var requireUpdate = !UpdateSquenced || Identity.World.SourceID.IsValid || m_UpdateCounter > lastUpdateCounter;
+        Data.Deserialize(reader, firtsTime, requireUpdate);
         OnDataDeserialized(firtsTime);
 
 #if NETWORK_DEBUG

@@ -54,6 +54,13 @@ public class SerializableUInt : SerializableValue<uint>
     public void Change(uint value) => Set(InternalValue + value);
 }
 
+public class SerializableObjectUID : SerializableValue<NetObjectUID>
+{
+    public SerializableObjectUID(NetObjectUID defaultValue, Func<bool> writePermission) :
+        base(defaultValue, writePermission, (r, f) => r.ReadInstanceId(), (w, v) => w.WriteInstanceId(v))
+    { }
+}
+
 public class SerializableVector3: SerializableValue<Vector3>
 {
     public SerializableVector3(Vector3 defaultValue, Func<bool> writePermission) :
@@ -109,10 +116,22 @@ public class SerializableValueCollection : ISerializableValue
             Add(kvp.Key, kvp.Value);
     }
 
+    public void DeserializeAndApply(NetReader reader, bool firstTime)
+    {
+        foreach (var v in m_InternalCollection.Values)
+            v.DeserializeAndApply(reader, firstTime);
+    }
+
     public void Deserialize(NetReader reader, bool firstTime)
     {
         foreach (var v in m_InternalCollection.Values)
             v.Deserialize(reader, firstTime);
+    }
+
+    public void Apply()
+    {
+        foreach (var v in m_InternalCollection.Values)
+            v.Apply();
     }
 
     public void Serialize(NetWriter writer)

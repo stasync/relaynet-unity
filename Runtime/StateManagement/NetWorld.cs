@@ -11,6 +11,7 @@ public abstract class NetWorld : IJSONSerializable
 
     public NetWorldID UID { get; private set; }
     public NetWorldID ID { get; private set; }
+    public NetWorldID SourceID { get; private set; }
     public float Time { get; protected set; }
     public float LocalTime { get; private set; }
     public string Name { get; private set; }
@@ -24,10 +25,15 @@ public abstract class NetWorld : IJSONSerializable
     NetWorldUpdateQueue m_UpdateQueue;
     Queue<Action> m_ViewInitQueue;
 
-    protected NetWorld(NetWorldID uid, string worldName)
+    protected NetWorld(NetWorldID uid, string worldName) :
+        this(uid, worldName, NetWorldID.Invalid)
+    { }
+
+    protected NetWorld(NetWorldID uid, string worldName, NetWorldID sourceId)
     {
         UID = NetWorldID.Allocate();
         ID = uid;
+        SourceID = sourceId;
 
         Time = 0f;
         LocalTime = 0f;
@@ -96,6 +102,7 @@ public abstract class NetWorld : IJSONSerializable
     {
         UID = NetWorldID.Invalid;
         ID = NetWorldID.Invalid;
+        SourceID = NetWorldID.Invalid;
 
         Evaluated = delegate { };
 

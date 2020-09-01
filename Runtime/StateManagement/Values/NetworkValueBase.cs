@@ -8,6 +8,8 @@ public interface IJSONSerializable
 
 public interface ISerializableValue : ISerializable, IJSONSerializable
 {
+    void DeserializeAndApply(NetReader reader, bool firstTime);
+    void Apply();
 }
 
 public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializableValue where TValue : TExposed
@@ -34,6 +36,8 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializa
     public void Set(TValue value) => InternalValue = value;
 
     TValue m_InternalValue;
+    TValue m_LastDeserializedValue;
+
     protected TValue InternalValue
     {
         get => m_InternalValue;
@@ -49,7 +53,17 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializa
         }
     }
 
-    public virtual void Deserialize(NetReader reader, bool firstTime) => m_InternalValue = m_Reader(reader, firstTime);
+    public virtual void DeserializeAndApply(NetReader reader, bool firstTime)
+    {
+        Deserialize(reader, firstTime);
+        Apply();
+    }
+
+    public virtual void Apply() =>
+        m_InternalValue = m_LastDeserializedValue;
+
+    public virtual void Deserialize(NetReader reader, bool firstTime) =>
+        m_LastDeserializedValue = m_Reader(reader, firstTime);
 
     public virtual void Serialize(NetWriter writer)
     {
