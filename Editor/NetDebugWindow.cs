@@ -318,10 +318,12 @@ public class NetDebugWindow : EditorWindow
         if (m_NetworkProvider.Instance == null)
             return;
 
+        var realtime = m_NetworkProvider.Instance.Realtime;
+
         m_ShowNetworkStatistics = EditorGUILayout.Foldout(m_ShowNetworkStatistics, "Network Statistics");
         if(m_ShowNetworkStatistics)
         {
-            var statistics = m_NetworkProvider.Instance.Realtime.CurrentClientStatistics;
+            var statistics = realtime.CurrentClientStatistics;
             if (statistics != null)
                 EditorGUILayout.HelpBox(statistics.ToString(), MessageType.None);
             else
@@ -329,7 +331,7 @@ public class NetDebugWindow : EditorWindow
         }
         EditorGUILayout.Space();
 
-        var mainWorld = m_NetworkProvider.Instance.Realtime.MainWorld;
+        var mainWorld = realtime.MainWorld;
         if (mainWorld == null)
         {
             EditorGUILayout.HelpBox("World not represented yet", MessageType.Error);
@@ -352,9 +354,8 @@ public class NetDebugWindow : EditorWindow
             EditorGUI.BeginDisabledGroup(m_CurrentWorldReplicaDrawer != null);
             if (GUILayout.Button("Playback"))
             {
-                var currentReplica = m_NetworkProvider.Instance.Realtime.MainWorld.Replicate();
+                var currentReplica = mainWorld.Replicate();
                 m_CurrentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
-
                 var unityService = new ServiceProvider<IUnityService>();
                 unityService.Instance.UnityFixedUpdate += OnFixedUpdate;
 
@@ -385,9 +386,14 @@ public class NetDebugWindow : EditorWindow
 
         if(m_CurrentWorldReplicaDrawer != null)
         {
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Replica info:", EditorStyles.boldLabel);
-            m_CurrentWorldReplicaDrawer.Draw();
+            if(m_CurrentWorldReplicaDrawer.IsValid)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Replica info:", EditorStyles.boldLabel);
+                m_CurrentWorldReplicaDrawer.Draw();
+            }
+            else
+                m_CurrentWorldReplicaDrawer = null;
         }
 
         EditorGUILayout.EndScrollView();

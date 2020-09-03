@@ -31,7 +31,7 @@ public class NetWorldRuntime : NetWorld
 
     Action<uint, DeliveryIntent, byte[]> m_Sender;
 
-    const float c_HistoryBufferSecondsLength = 10f; //Record last 30 seconds;
+    const float c_HistoryBufferSecondsLength = 10f; //Record last 'N' seconds;
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
     float m_LastUpdateTime;
 
