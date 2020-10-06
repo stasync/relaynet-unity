@@ -70,6 +70,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
     public const int Size = sizeof(uint);
 
     public bool IsValid => m_Value > Invalid.m_Value;
+    public bool IsInvalid => !IsValid;
     public bool IsSceneObjectSpaceId => IsValid && m_Value <= c_SceneObjectReservedIdSpace;
 
     public int CompareTo(NetObjectUID other) => m_Value.CompareTo(other.m_Value);
