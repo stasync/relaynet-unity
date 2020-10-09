@@ -114,14 +114,10 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
     /// Deserialization called by GSInstanceIdentity.
     /// </summary>
     /// <param name="reader"></param>
-    public virtual void Deserialize(NetReader reader, bool firtsTime, bool apply)
+    public virtual void Deserialize(NetReader reader, bool firtsTime)
     {
         foreach (var value in SerializeableValues.Values)
-        {
-            value.Deserialize(reader, firtsTime);
-            if (apply)
-                value.Apply();
-        }
+            value.DeserializeAndApply(reader, firtsTime);
     }
 
     public string ToJSONProperty() => 

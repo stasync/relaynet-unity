@@ -5,8 +5,9 @@ using UnityEngine;
 
 public interface IAnimatorValueProxy
 {
-    void OnUpdate();
+    void OnAuthorityUpdate();
     void OnDataDeserialized();
+    void OnUpdate(float deltaTime, bool hasAuthority);
 }
 
 public abstract class AnimatorPerameterValueProxy<T> : IAnimatorValueProxy where T : struct
@@ -22,8 +23,9 @@ public abstract class AnimatorPerameterValueProxy<T> : IAnimatorValueProxy where
         InternalValue = internalValue;
     }
 
-    public abstract void OnUpdate();
+    public abstract void OnAuthorityUpdate();
     public abstract void OnDataDeserialized();
+    public abstract void OnUpdate(float deltaTime, bool hasAuthority);
 }
 
 public class AnimatorFloatParameterValueProxy : AnimatorPerameterValueProxy<float>
@@ -32,8 +34,13 @@ public class AnimatorFloatParameterValueProxy : AnimatorPerameterValueProxy<floa
         base(animator, parameter, internalValue)
     { }
 
-    public override void OnDataDeserialized() => TargetAnimator.SetFloat(Parameter.nameHash, InternalValue.Value);
-    public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetFloat(Parameter.nameHash));
+    public override void OnDataDeserialized() { }
+    public override void OnAuthorityUpdate() => InternalValue.Set(TargetAnimator.GetFloat(Parameter.nameHash));
+    public override void OnUpdate(float deltaTime, bool hasAuthority) 
+    {
+        if(!hasAuthority)
+            TargetAnimator.SetFloat(Parameter.nameHash, InternalValue.Value, 0.1f, deltaTime);
+    }
 }
 
 public class AnimatorIntParameterValueProxy : AnimatorPerameterValueProxy<int>
@@ -43,7 +50,8 @@ public class AnimatorIntParameterValueProxy : AnimatorPerameterValueProxy<int>
     { }
 
     public override void OnDataDeserialized() => TargetAnimator.SetInteger(Parameter.nameHash, InternalValue.Value);
-    public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetInteger(Parameter.nameHash));
+    public override void OnAuthorityUpdate() => InternalValue.Set(TargetAnimator.GetInteger(Parameter.nameHash));
+    public override void OnUpdate(float deltaTime, bool hasAuthority) { }
 }
 
 public class AnimatorBoolParameterValueProxy : AnimatorPerameterValueProxy<bool>
@@ -53,7 +61,8 @@ public class AnimatorBoolParameterValueProxy : AnimatorPerameterValueProxy<bool>
     { }
 
     public override void OnDataDeserialized() => TargetAnimator.SetBool(Parameter.nameHash, InternalValue.Value);
-    public override void OnUpdate() => InternalValue.Set(TargetAnimator.GetBool(Parameter.nameHash));
+    public override void OnAuthorityUpdate() => InternalValue.Set(TargetAnimator.GetBool(Parameter.nameHash));
+    public override void OnUpdate(float deltaTime, bool hasAuthority) { }
 }
 
 public class AnimatorSyncData : GSBehaviourAbstractData
@@ -75,8 +84,6 @@ public class AnimatorSyncData : GSBehaviourAbstractData
 [DisallowMultipleComponent]
 public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 {
-    protected override bool UpdateSquenced => true;
-
     enum AnimatorStateChangeMethod : byte
     {
         Play, CrossFade,
@@ -93,6 +100,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
     [SerializeField]
     AnimatorStateChangeMethod m_StateChangeMethod = AnimatorStateChangeMethod.CrossFade;
 
+    [SerializeField, Range(0f, 1f)]
+    float m_CrossFadeDuration = 0.1f;
+
     List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new List<IAnimatorValueProxy>();
 
     protected override void OnDataValuesCollected()
@@ -106,20 +116,17 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
             {
                 case AnimatorControllerParameterType.Bool:
                     BuildProxyForParameter(p.name, 
-                        () => new SerializableBool(false, 
-                        () => Data.HasPermission), v => new AnimatorBoolParameterValueProxy(m_Animator, p, v));
+                        () => new SerializableBool(false, () => Data.HasPermission), v => new AnimatorBoolParameterValueProxy(m_Animator, p, v));
                     break;
 
                 case AnimatorControllerParameterType.Float:
                     BuildProxyForParameter(p.name,
-                        () => new SerializableFloat(0f,
-                        () => Data.HasPermission), v => new AnimatorFloatParameterValueProxy(m_Animator, p, v));
+                        () => new SerializableFloat(0f, () => Data.HasPermission), v => new AnimatorFloatParameterValueProxy(m_Animator, p, v));
                     break;
 
                 case AnimatorControllerParameterType.Int:
                     BuildProxyForParameter(p.name,
-                         () => new SerializableInt(0,
-                         () => Data.HasPermission), v => new AnimatorIntParameterValueProxy(m_Animator, p, v));
+                         () => new SerializableInt(0, () => Data.HasPermission), v => new AnimatorIntParameterValueProxy(m_Animator, p, v));
                     break;
             }
         });
@@ -137,9 +144,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
         }
     }
 
-    public override void OnPostInitialize()
-    {
-    }
+    public override void OnPostInitialize() { }
 
     void ForEachLayer(Action<AnimatorStateInfo, float, int> processor)
     {
@@ -213,12 +218,21 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
         }
     }
 
-    public override void OnUpdate()
+    void Update()
     {
-        base.OnUpdate();
+        if (!Identity.Initialized)
+            return;
 
         foreach (var p in m_AnimatorParameterValueProxyCollection)
-            p.OnUpdate();
+            p.OnUpdate(Time.deltaTime, IsLocal);
+    }
+
+    public override void OnAuthorityUpdate()
+    {
+        base.OnAuthorityUpdate();
+
+        foreach (var p in m_AnimatorParameterValueProxyCollection)
+            p.OnAuthorityUpdate();
 
         ForEachLayer((state, layerWeight, layerIndex) =>
         {
@@ -253,7 +267,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
                         m_Animator.Play(targetStateHash, layerIndex, targetStateNormalizedTime);
                         break;
                     case AnimatorStateChangeMethod.CrossFade:
-                        m_Animator.CrossFade(targetStateHash, 0.1f, layerIndex, targetStateNormalizedTime);
+                        m_Animator.CrossFade(targetStateHash, m_CrossFadeDuration, layerIndex, targetStateNormalizedTime);
                         break;
                 }
         });

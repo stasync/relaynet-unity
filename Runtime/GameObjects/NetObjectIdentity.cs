@@ -137,7 +137,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
             return;
 
         foreach (var b in m_Observables)
-            b.OnUpdate();
+            b.OnAuthorityUpdate();
 
         State.ChangeObjectDataLocaly(Serialize());
     }

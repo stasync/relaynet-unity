@@ -9,7 +9,7 @@ public interface IJSONSerializable
 public interface ISerializableValue : ISerializable, IJSONSerializable
 {
     void DeserializeAndApply(NetReader reader, bool firstTime);
-    void Apply();
+    void ApplyLastDeserialized();
 }
 
 public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializableValue where TValue : TExposed
@@ -56,10 +56,10 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializa
     public virtual void DeserializeAndApply(NetReader reader, bool firstTime)
     {
         Deserialize(reader, firstTime);
-        Apply();
+        ApplyLastDeserialized();
     }
 
-    public virtual void Apply() =>
+    public virtual void ApplyLastDeserialized() =>
         m_InternalValue = m_LastDeserializedValue;
 
     public virtual void Deserialize(NetReader reader, bool firstTime) =>

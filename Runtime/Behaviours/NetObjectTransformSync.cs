@@ -58,7 +58,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
             m_NestedTransfromData.Transform.localRotation = m_RotationValue.Value;
         }
     }
-    protected override bool UpdateSquenced => true;
 
     [SerializeField, Range(0f, 1f)]
     float m_InterpolateMovement = 1f;

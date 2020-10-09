@@ -128,10 +128,10 @@ public class SerializableValueCollection : ISerializableValue
             v.Deserialize(reader, firstTime);
     }
 
-    public void Apply()
+    public void ApplyLastDeserialized()
     {
         foreach (var v in m_InternalCollection.Values)
-            v.Apply();
+            v.ApplyLastDeserialized();
     }
 
     public void Serialize(NetWriter writer)

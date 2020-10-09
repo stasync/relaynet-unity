@@ -34,9 +34,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     public bool IsSceneObject => Identity.IsSceneObject;
 
     public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
-    protected virtual bool UpdateSquenced => false;
-
-    uint m_UpdateCounter;
 
     protected virtual void OnBeforeDataInitialized() { }
 
@@ -96,8 +93,6 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     {
         SerializeDirtyChecked(writer);
 
-        m_UpdateCounter++;
-        writer.WritePackedUInt32(m_UpdateCounter);
         Data.Serialize(writer);
 
 #if NETWORK_DEBUG
@@ -113,11 +108,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     {
         DeserializeDirtyChecked(reader, firtsTime);
 
-        var lastUpdateCounter = m_UpdateCounter;
-        m_UpdateCounter = reader.ReadPackedUInt32();
-
-        var requireUpdate = !UpdateSquenced || Identity.World.SourceID.IsValid || m_UpdateCounter > lastUpdateCounter;
-        Data.Deserialize(reader, firtsTime, requireUpdate);
+        Data.Deserialize(reader, firtsTime);
         OnDataDeserialized(firtsTime);
 
 #if NETWORK_DEBUG
@@ -161,7 +152,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// Called, when object needs to be updated, according to <see cref="NetObjectIdentity.m_UpdateRate"/>
     /// Data values can be setted here
     /// </summary>
-    public virtual void OnUpdate() { }
+    public virtual void OnAuthorityUpdate() { }
 
     /// <summary>
     /// Other player disconnected
