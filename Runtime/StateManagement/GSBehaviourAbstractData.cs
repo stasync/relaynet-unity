@@ -69,7 +69,7 @@ public abstract class GSBehaviourAbstractData : IJSONSerializable
         m_InternalValueCollection = new Dictionary<string, ISerializableValue>();
         foreach(var pvp in properties)
         {
-            if(pvp.Key.SetMethod.IsPublic)
+            if(pvp.Key.SetMethod != null && pvp.Key.SetMethod.IsPublic)
             {
                 Debug.LogError($"{GetType().FullName}.{pvp.Key.Name} has public setter and will be ignored by auto collector." +
                     $"Use private setter instead");

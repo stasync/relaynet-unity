@@ -13,19 +13,24 @@ public class GSObjectLifetimeData : GSBehaviourAbstractData
 
 public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
 {
-    public float NormalizedLifetime => CurrentLifetime / m_lifetime;
+    public float NormalizedLifetime => CurrentLifetime / m_Lifetime;
     public float CurrentLifetime => Data.CurrentLifetime.Value;
 
-    [SerializeField]    float m_lifetime = 60f;
-    [SerializeField]    bool m_autoDestroy;
-    [SerializeField]    UnityEvent m_onDestroy;
+    [SerializeField]
+    bool m_UpdateTime = true;
+
+    [SerializeField]    
+    float m_Lifetime = 60f;
+
+    [SerializeField]    
+    bool m_AutoDestroy;
 
     public void SetLifetimeWithAuthority(float lifetime) => Data.CurrentLifetime.Set(lifetime);
 
     public override void OnPostInitialize()
     {
         if (IsLocal)
-            SetLifetimeWithAuthority(m_lifetime);
+            SetLifetimeWithAuthority(m_Lifetime);
     }
 
     void FixedUpdate()
@@ -35,13 +40,13 @@ public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
 
         if (Data.CurrentLifetime.Value > 0f)
         {
-            Data.CurrentLifetime.Change(-Time.fixedDeltaTime);
+            if(m_UpdateTime)
+                Data.CurrentLifetime.Change(-Time.fixedDeltaTime);
 
             if (Data.CurrentLifetime.Value <= 0f)
             {
                 Data.CurrentLifetime.Set(0f);
-                m_onDestroy.Invoke();
-                if (m_autoDestroy)
+                if (m_AutoDestroy)
                     DestroyObjectViaNetwork();
             }
         }
