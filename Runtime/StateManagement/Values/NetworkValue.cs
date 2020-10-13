@@ -9,8 +9,7 @@ public class SerializableValue<TValue> : SerializableValueDefinition<TValue, TVa
         Func<NetReader, bool, TValue> reader, 
         Action<NetWriter, TValue> writer) :
             base(defaultValue, writePermission, reader, writer)
-    {
-    }
+    { }
 
     public override string ToJSONProperty() => 
         RealtimeJSONUtils.ToJSONValue(InternalValue.ToString());

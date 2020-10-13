@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Events;
 
 public class GSObjectLifetimeData : GSBehaviourAbstractData
@@ -13,6 +14,7 @@ public class GSObjectLifetimeData : GSBehaviourAbstractData
 
 public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
 {
+    public event Action TimePassed = delegate { };
     public float NormalizedLifetime => CurrentLifetime / m_Lifetime;
     public float CurrentLifetime => Data.CurrentLifetime.Value;
 
@@ -46,6 +48,8 @@ public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
             if (Data.CurrentLifetime.Value <= 0f)
             {
                 Data.CurrentLifetime.Set(0f);
+                TimePassed();
+
                 if (m_AutoDestroy)
                     DestroyObjectViaNetwork();
             }

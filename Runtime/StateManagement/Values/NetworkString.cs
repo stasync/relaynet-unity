@@ -4,24 +4,39 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-public class SerializableFloat : SerializableValue<float>
+public abstract class SerializableNumeric<TValue> : SerializableValue<TValue> where TValue : struct, IComparable<TValue>
+{
+    public SerializableNumeric(
+        TValue defaultValue,
+        Func<bool> writePermission,
+        Func<NetReader, bool, TValue> reader,
+        Action<NetWriter, TValue> writer) :
+            base(defaultValue, writePermission, reader, writer)
+    { }
+
+    public abstract void Change(TValue value);
+    public abstract void ChangeClamped(TValue value, TValue min, TValue max);
+}
+
+
+public class SerializableFloat : SerializableNumeric<float>
 {
     public SerializableFloat(float defaultValue, Func<bool> writePermission) : 
         base(defaultValue, writePermission, (r, f) => r.ReadSingle(), (w, v) => w.Write(v))
     { }
 
-    public void Change(float value) => Set(InternalValue + value);
-    public void ChangeClamped(float value, float min, float max) => Set(Mathf.Clamp(InternalValue + value, min, max));
+    public override void Change(float value) => Set(InternalValue + value);
+    public override void ChangeClamped(float value, float min, float max) => Set(Mathf.Clamp(InternalValue + value, min, max));
 }
 
-public class SerializableInt : SerializableValue<int>
+public class SerializableInt : SerializableNumeric<int>
 {
     public SerializableInt(int defaultValue, Func<bool> writePermission) :
         base(defaultValue, writePermission, (r, f) => r.ReadInt32(), (w, v) => w.Write(v))
     { }
 
-    public void Change(int value) => Set(InternalValue + value);
-    public void ChangeClamped(int value, int min, int max) => Set(Mathf.Clamp(InternalValue + value, min, max));
+    public override void Change(int value) => Set(InternalValue + value);
+    public override void ChangeClamped(int value, int min, int max) => Set(Mathf.Clamp(InternalValue + value, min, max));
 }
 
 public class SerializableBool : SerializableValue<bool>
@@ -45,13 +60,24 @@ public class SerializableString : SerializableValue<string>
     { }
 }
 
-public class SerializableUInt : SerializableValue<uint>
+public class SerializableUInt : SerializableNumeric<uint>
 {
     public SerializableUInt(uint defaultValue, Func<bool> writePermission) :
         base(defaultValue, writePermission, (r, f) => r.ReadPackedUInt32(), (w, v) => w.WritePackedUInt32(v))
     { }
 
-    public void Change(uint value) => Set(InternalValue + value);
+    public override void Change(uint value) => Set(InternalValue + value);
+
+    public override void ChangeClamped(uint value, uint min, uint max)
+    {
+        var result = InternalValue + value;
+        if (result > max)
+            result = max;
+        else if (result < min)
+            result = min;
+
+        Set(result);
+    }
 }
 
 public class SerializableObjectUID : SerializableValue<NetObjectUID>
