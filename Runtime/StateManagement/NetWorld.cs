@@ -6,7 +6,7 @@ using UnityEngine;
 public abstract class NetWorld : IJSONSerializable
 {
     public event Action ViewInitialized = delegate { };
-    public event Action Evaluated = delegate { };
+    public event Action Updated = delegate { };
     public bool IsValid => ID.IsValid;
 
     public NetWorldID UID { get; private set; }
@@ -70,7 +70,7 @@ public abstract class NetWorld : IJSONSerializable
 
     protected void AddObject(NetObjectUID uid, NetObjectState state) => m_CurrentObjectStates.Add(uid, state);
 
-    protected void Evaluate(float worldDelta)
+    protected void UpdateWorldState(float worldDelta)
     {
         OnBeforeUpdateWorldState(worldDelta);
         OnUpdateWorldState(worldDelta);
@@ -78,10 +78,10 @@ public abstract class NetWorld : IJSONSerializable
         if(View != null)
         {
             OnBeforeExecuteView(worldDelta);
-            View.Execute();
+            View.RebuildAccordingState();
         }
 
-        Evaluated();
+        Updated();
     }
 
     protected virtual void OnBeforeUpdateWorldState(float worldDelta)
@@ -104,7 +104,7 @@ public abstract class NetWorld : IJSONSerializable
         ID = NetWorldID.Invalid;
         SourceID = NetWorldID.Invalid;
 
-        Evaluated = delegate { };
+        Updated = delegate { };
 
         m_CurrentObjectStates.Clear();
         m_CurrentObjectStates = null;

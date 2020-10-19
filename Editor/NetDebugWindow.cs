@@ -260,16 +260,16 @@ public class NetDebugWindow : EditorWindow
             EditorGUI.BeginDisabledGroup(!m_World.Paused);
 
             if (GUILayout.Button("<< Previous"))
-                m_World.MoveToPreviousSnapshot();
+                m_World.MoveToPreviousSnapshot(true);
 
             if (GUILayout.Button("Next >>"))
-                m_World.MoveToNextSnapshot();
+                m_World.MoveToNextSnapshot(true);
 
             EditorGUILayout.EndHorizontal();
             EditorGUI.BeginChangeCheck();
-            var targetSnapshot = EditorGUILayout.IntSlider(m_World.CurrentSnapshotIndex, 0, m_World.BufferSize - 1);
+            var targetSnapshot = EditorGUILayout.IntSlider(m_World.CurrentSnapshotIndex, 0, m_World.BufferCount - 1);
             if (EditorGUI.EndChangeCheck() && targetSnapshot != m_World.CurrentSnapshotIndex)
-                m_World.MoveToSnapshot(targetSnapshot);
+                m_World.MoveToSnapshotSafe(targetSnapshot, true);
 
             EditorGUI.EndDisabledGroup();
 

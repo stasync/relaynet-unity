@@ -99,7 +99,7 @@ public class NetWorldRuntime : NetWorld
         if (worldDelta >= c_MinUpdateInteraval)
         {
             m_LastUpdateTime = FixedTime;
-            Evaluate(worldDelta);
+            UpdateWorldState(worldDelta);
         }
 
         var deltaRatio = (c_MinUpdateInteraval - (FixedTime - m_LastUpdateTime)) / deltaTime;

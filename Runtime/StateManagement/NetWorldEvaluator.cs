@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 public class NetWorldEvaluator : NetWorld
 {
@@ -11,7 +12,7 @@ public class NetWorldEvaluator : NetWorld
 
     public int CurrentSnapshotIndex { get; private set; }
     public bool Paused { get; private set; }
-    public int BufferSize => m_HistoryBuffer.Count;
+    public int BufferCount => m_HistoryBuffer.Count;
 
     public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.ID, $"World {runtime.ID} evaluator", runtime.ID)
     {
@@ -36,31 +37,66 @@ public class NetWorldEvaluator : NetWorld
         UpdateCurrentSnapshotInfo();
     }
 
-    public void MoveToPreviousSnapshot()
+    public void MoveToPreviousSnapshot(bool updateImmidiate = false)
     {
         CurrentSnapshotIndex--;
-        MoveToSnapshot(CurrentSnapshotIndex);
+        MoveToSnapshotSafe(CurrentSnapshotIndex, updateImmidiate);
     }
 
-    public void MoveToNextSnapshot()
+    public void MoveToNextSnapshot(bool updateImmidiate = false)
     {
         CurrentSnapshotIndex++;
-        MoveToSnapshot(CurrentSnapshotIndex);
+        MoveToSnapshotSafe(CurrentSnapshotIndex, updateImmidiate);
     }
 
-    public void MoveToSnapshot(int snapshotIndex)
+    public void MoveToSnapshotSafe(int snapshotIndex, bool updateImmidiate = false) =>
+        MoveToSnapshot(UnityEngine.Mathf.Clamp(snapshotIndex, 0, m_HistoryBuffer.Count - 1), updateImmidiate);
+
+    public void MoveToSnapshot(int snapshotIndex, bool updateImmidiate = false)
     {
-        CurrentSnapshotIndex = UnityEngine.Mathf.Clamp(snapshotIndex, 0, m_HistoryBuffer.Count - 1);
+        if (snapshotIndex < 0 || snapshotIndex >= m_HistoryBuffer.Count)
+            throw new IndexOutOfRangeException();
 
+        m_CurrentTime = GetSnapshotRelativeTime(snapshotIndex);
+
+        CurrentSnapshotIndex = snapshotIndex;
         UpdateCurrentSnapshotInfo();
-        GetSnapshotTime(CurrentSnapshotIndex);
 
-        Evaluate(m_CurrentSnapshot.DeltaTime);
+        if(updateImmidiate)
+            UpdateWorldState(m_CurrentSnapshot.DeltaTime);
     }
 
     public void SetPaused(bool paused) => Paused = paused;
 
-    float GetSnapshotTime(int snapshotIndex)
+    public int FindLastSnapshotIndex(Predicate<NetWorldSnapshot> predicate)
+    {
+        for (var i = m_HistoryBuffer.Count - 1; i >= 0; i--)
+            if (predicate(m_HistoryBuffer[i]))
+                return i;
+        return -1;
+    }
+
+    public int FindLastSnapshotIndexAndPeekNext(Predicate<NetWorldSnapshot> predicate)
+    {
+        var snapshotIndex = FindLastSnapshotIndex(predicate);
+        snapshotIndex++;
+
+        var lastPossibleIndex = m_HistoryBuffer.Count - 1;
+        if (snapshotIndex > lastPossibleIndex)
+            snapshotIndex = lastPossibleIndex;
+
+        return snapshotIndex;
+    }
+
+    public int FindFirstSnapshotIndex(Predicate<NetWorldSnapshot> predicate)
+    {
+        for (var i = 0; i < m_HistoryBuffer.Count; i++)
+            if (predicate(m_HistoryBuffer[i]))
+                return i;
+        return -1;
+    }
+
+    public float GetSnapshotRelativeTime(int snapshotIndex)
     {
         var result = 0f;
         for(var i = 0; i < m_HistoryBuffer.Count; i++)
@@ -73,6 +109,23 @@ public class NetWorldEvaluator : NetWorld
 
         UnityEngine.Debug.LogError($"Unabled to calculate time for snapshot with index {snapshotIndex}");
         return result;
+    }
+
+    public float GetRemainTimeFromShanpshot(int snapshotIndex)
+    {
+        if(m_HistoryBuffer.Count == 0)
+        {
+            UnityEngine.Debug.LogError($"[{Name}] [{UID}] history buffer is empty");
+            return 0f;
+        }
+
+        if (snapshotIndex < 0 || snapshotIndex >= m_HistoryBuffer.Count)
+            throw new IndexOutOfRangeException();
+
+        var lastSnapshot = m_HistoryBuffer[m_HistoryBuffer.Count - 1];
+        var targetSnapshot = m_HistoryBuffer[snapshotIndex];
+
+        return lastSnapshot.LocalTime - targetSnapshot.LocalTime;
     }
 
     void UpdateCurrentSnapshotInfo()
@@ -93,7 +146,7 @@ public class NetWorldEvaluator : NetWorld
         if (m_CurrentTime < m_NextSnapshotTime)
             return;
 
-        Evaluate(m_CurrentSnapshot.DeltaTime);
+        UpdateWorldState(m_CurrentSnapshot.DeltaTime);
 
         //Do not pick next snapshot if this is a last snapshot;
         if (CurrentSnapshotIndex.Equals(m_HistoryBuffer.Count - 1))

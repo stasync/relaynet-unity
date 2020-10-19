@@ -61,8 +61,8 @@ public struct NetObjectStateSnapshot
     public int GetSize()
     {
         var result = 0;
-        result += sizeof(uint); // OwnerUID
-        result += sizeof(uint); // ObjectUID
+        result += ClientUID.Size; // OwnerUID
+        result += NetObjectUID.Size; // ObjectUID
         result += PrefabId.Length;
         result += sizeof(bool); // IsSceneObject
         result += sizeof(ObjectStateChangeRequestType); // StateChangeType

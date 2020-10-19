@@ -55,7 +55,7 @@ public class NetWorldView : MonoBehaviour
         SceneManager.MoveGameObjectToScene(gameObject, m_WorldScene);
     }
 
-    public void Execute()
+    public void RebuildAccordingState()
     {
         Profiler.BeginSample($"{m_World.Name} View.Execute");
 
