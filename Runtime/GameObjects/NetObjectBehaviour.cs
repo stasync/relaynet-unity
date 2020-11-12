@@ -13,9 +13,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
             if (m_Data == null)
             {
                 m_Data = new TData();
-                OnBeforeDataInitialized();
                 Data.Initialize(() => DataWritePermission, OnDataValuesCollected);
-                OnAfterDataInitialized();
             }
             return m_Data;
         }
@@ -35,11 +33,7 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
 
     public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
 
-    protected virtual void OnBeforeDataInitialized() { }
-
     protected virtual void OnDataValuesCollected() { }
-
-    protected virtual void OnAfterDataInitialized() { }
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NOT AUTHORITY on this object.

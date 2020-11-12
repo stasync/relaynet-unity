@@ -22,6 +22,7 @@ public struct RPCState
     public int Hash { get; private set; }
     public uint UID { get; private set; }
     public byte[] Payload { get; private set; }
+    public bool IsValid => !Hash.Equals(0) && Payload != null;
 
     public RPCState(int hash, uint uid, byte[] payload)
     {

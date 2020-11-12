@@ -303,7 +303,7 @@ public class NetWorldRuntime : NetWorld
                 else
                     newState = new NetObjectState(snapshot, PlayersInternal.Find);
 
-                AddObject(snapshot.ObjectUID, newState);
+                AddObjectUnsafe(snapshot.ObjectUID, newState);
                 m_RemoteObjectUpdateRequests.Remove(UID);
             });
         }
@@ -334,7 +334,7 @@ public class NetWorldRuntime : NetWorld
                 else
                 {
                     state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-                    AddObject(state.UID, state);
+                    AddObjectUnsafe(state.UID, state);
                 }
 
                 m_ObjectsRegisterRequests.Remove(UID);

@@ -258,7 +258,7 @@ public struct RPCWithoutAuthorityState
     public readonly NoAuthorityRPCType Type;
     public readonly RPCState RPCState;
 
-    public bool IsValid => ObjectUID.IsValid && !RPCState.Hash.Equals(0) && RPCState.Payload != null;
+    public bool IsValid => ObjectUID.IsValid && RPCState.IsValid;
 
     public RPCWithoutAuthorityState(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload)
     {

@@ -68,7 +68,7 @@ public abstract class NetWorld : IJSONSerializable
 
     protected abstract void UpdateImplementation(float deltaTime);
 
-    protected void AddObject(NetObjectUID uid, NetObjectState state) => m_CurrentObjectStates.Add(uid, state);
+    protected void AddObjectUnsafe(NetObjectUID uid, NetObjectState state) => m_CurrentObjectStates.Add(uid, state);
 
     protected void UpdateWorldState(float worldDelta)
     {
