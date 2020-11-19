@@ -116,3 +116,24 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
     public override string ToJSONProperty() =>
         RealtimeJSONUtils.ToJSONCollection(Value.Select(kvp => "{" + RealtimeJSONUtils.ToJSONValue(kvp.Key.ToString()) + ":" + RealtimeJSONUtils.ToJSONValue(kvp.Value.ToString()) + "}").ToArray());
 }
+
+public class SerializableCollectionDictionary<TKey, TValue> : SerializableDictionary<TKey, List<TValue>>
+{
+    public SerializableCollectionDictionary(
+        Dictionary<TKey, List<TValue>> defaultValue,
+        Func<bool> writePermission,
+        Func<NetReader, bool, TKey> keyReader,
+        Action<NetWriter, TKey> keyWriter,
+        Func<NetReader, bool, TValue> valueReader,
+        Action<NetWriter, TValue> valueWriter) :
+            base(
+                defaultValue,
+                writePermission,
+                keyReader,
+                keyWriter,
+                (vr, f) => 
+                    vr.ReadList(r => valueReader(r, f)), 
+                (vw, collection) => 
+                    vw.WriteCollection(collection, (v, w) => valueWriter(w, v)))
+    { }
+}

@@ -164,9 +164,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     void ScheduleStateChange(ObjectStateChangeRequestType requestType) => 
         ScheduleOnUpdate(() =>
         {
-            if (StateChangeType > requestType)
-                Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
-            else
+            if (StateChangeType < requestType)
                 StateChangeType = requestType;
         });
 
