@@ -7,7 +7,7 @@ public struct NetWorldPlayerSnapshot
     public readonly string Name;
     public readonly bool IsInGameScene;
     public readonly GSDevice.Platform Platform;
-    public readonly int RTT;
+    public readonly int RTTMs;
     public readonly HashSet<NetObjectUID> TagObjectUIDs;
     public readonly NetObjectUID MainTagObjectUID;
     public readonly PropertiesSnapshot Properties;
@@ -18,7 +18,7 @@ public struct NetWorldPlayerSnapshot
         Name = player.Name;
         IsInGameScene = player.IsReady;
         Platform = player.Platform;
-        RTT = player.RTT;
+        RTTMs = player.RTTMs;
         TagObjectUIDs = new HashSet<NetObjectUID>(player.TagObjectUIDs);
         MainTagObjectUID = player.MainTagObjectUID;
         Properties = new PropertiesSnapshot(player.Properties);
@@ -30,7 +30,7 @@ public struct NetWorldPlayerSnapshot
         Name = reader.ReadString();
         IsInGameScene = reader.ReadBoolean();
         Platform = (GSDevice.Platform)reader.ReadInt32();
-        RTT = reader.ReadInt32();
+        RTTMs = reader.ReadInt32();
         TagObjectUIDs = reader.ReadHashSet(r => r.ReadInstanceId());
         MainTagObjectUID = reader.ReadInstanceId();
         Properties = PropertiesSnapshot.FromReader(reader);
@@ -45,7 +45,7 @@ public struct NetWorldPlayerSnapshot
         writer.Write(Name);
         writer.Write(IsInGameScene);
         writer.Write((int)Platform);
-        writer.Write(RTT);
+        writer.Write(RTTMs);
         writer.WriteCollection(TagObjectUIDs, (v, w) => w.WriteInstanceId(v));
         writer.WriteInstanceId(MainTagObjectUID);
         Properties.Serialize(writer);

@@ -47,17 +47,17 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     }
     GSDevice.Platform m_Platform = GSDevice.Platform.Unknown;
 
-    public int RTT
+    public int RTTMs
     {
-        get => m_RTT;
+        get => m_RTTMS;
         set
         {
             if (!IsLocal)
                 throw new Exception("Trying to change RTT value without authority, this is not allowed. Player id: " + UID);
-            m_RTT = value;
+            m_RTTMS = value;
         }
     }
-    int m_RTT;
+    int m_RTTMS;
 
     public IReadOnlyCollection<NetObjectUID> TagObjectUIDs => m_TagObjectUIDs;
     HashSet<NetObjectUID> m_TagObjectUIDs;
@@ -123,7 +123,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         m_Name = snapshot.Name;
         m_IsReady = snapshot.IsInGameScene;
         m_Platform = snapshot.Platform;
-        m_RTT = snapshot.RTT;
+        m_RTTMS = snapshot.RTTMs;
         m_TagObjectUIDs = snapshot.TagObjectUIDs;
 
         m_Properties.SetDataFromSnapshot(snapshot.Properties);
