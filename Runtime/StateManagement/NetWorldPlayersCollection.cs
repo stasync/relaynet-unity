@@ -3,21 +3,34 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-public interface IReadOnlyNetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
+public interface INetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
 {
     IEnumerable<ClientUID> AllUIDs { get; }
-    IReadOnlyCollection<NetWorldPlayer> All { get; }
     ClientUID LocalPlayerUID { get; }
     ClientUID MasterPlayerUID { get; }
-    NetWorldPlayer LocalPlayer { get; }
-    NetWorldPlayer MasterPlayer { get; }
-    NetWorldPlayer Find(ClientUID uid);
     bool Contains(ClientUID uid);
-    void ForEachPlayer(Action<ClientUID, NetWorldPlayer> processor);
+    int GetHashCode();
     NetWorldPlayersCollectionsSnapshot ToSnapshot();
 }
 
-public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
+public interface IReadOnlyNetWorldPlayersCollection : INetWorldPlayersCollection
+{
+    IReadOnlyNetWorldPlayer LocalPlayer { get; }
+    IReadOnlyNetWorldPlayer MasterPlayer { get; }
+    IReadOnlyNetWorldPlayer Find(ClientUID uid);
+    void ForEachPlayer(Action<ClientUID, IReadOnlyNetWorldPlayer> processor);
+}
+
+public interface IExposedyNetWorldPlayersCollection : INetWorldPlayersCollection
+{
+    IReadOnlyCollection<NetWorldPlayer> All { get; }
+    NetWorldPlayer LocalPlayer { get; }
+    NetWorldPlayer MasterPlayer { get; }
+    NetWorldPlayer Find(ClientUID uid);
+    void ForEachPlayer(Action<ClientUID, NetWorldPlayer> processor);
+}
+
+public class NetWorldPlayersCollection : IExposedyNetWorldPlayersCollection, IReadOnlyNetWorldPlayersCollection
 {
     #region State
     public ClientUID LocalPlayerUID { get; private set; }
@@ -27,6 +40,13 @@ public class NetWorldPlayersCollection : IReadOnlyNetWorldPlayersCollection
     public IReadOnlyCollection<NetWorldPlayer> All => m_PlayersCollection.Values;
 
     Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
+    #endregion
+
+    #region IReadOnlyNetWorldPlayersCollection
+    IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.LocalPlayer => LocalPlayer;
+    IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.MasterPlayer => MasterPlayer;
+    IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.Find(ClientUID uid) => Find(uid);
+    void IReadOnlyNetWorldPlayersCollection.ForEachPlayer(Action<ClientUID, IReadOnlyNetWorldPlayer> processor) => ForEachPlayer(processor);
     #endregion
 
     public bool LocalPlayerIsMaster => IsValid && MasterPlayerUID.IsValid && MasterPlayerUID.Equals(LocalPlayerUID);

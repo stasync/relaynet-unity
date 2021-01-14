@@ -2,7 +2,22 @@
 using System;
 using System.Collections.Generic;
 
-public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
+public interface IReadOnlyNetWorldPlayer
+{
+    ClientUID UID { get; }
+    string Name { get; }
+    bool IsReady { get; }
+    bool IsValid { get; }
+    bool IsLocal { get; }
+    bool IsMaster { get; }
+    NetObjectUID MainTagObjectUID { get; }
+    IReadOnlyCollection<NetObjectUID> TagObjectUIDs { get; }
+    NetWorldPlayerSnapshot ToSnapshot();
+    int GetHashCode();
+    string ToString();
+}
+
+public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
 {
     readonly NetWriter m_PlayerWriter;
     readonly NetReader m_PlayerReader;

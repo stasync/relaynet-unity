@@ -17,6 +17,16 @@ public enum ObjectStateChangeRequestType : byte
 //TODO;
 public interface IReadOnlyNetObjectState
 {
+    bool IsValid { get; }
+    IReadOnlyNetWorldPlayer Owner { get; }
+    bool IsOwnedByLocalPlayer { get; }
+    bool IsOwnedByMasterClient { get; }
+    bool IsOwnersTagObject { get; }
+    bool IsOwnedBy(ClientUID uid);
+    IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests { get; }
+    NetObjectStateSnapshot ToSnapshot();
+    int GetHashCode();
+    string ToString();
 }
 
 public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectState>, IEquatable<NetObjectState>
@@ -63,11 +73,13 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public bool IsOwnedByMasterClient => Owner != null && Owner.IsMaster;
 
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
+    IReadOnlyNetWorldPlayer IReadOnlyNetObjectState.Owner => Owner;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
     public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(UID);
 
     public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
+
     List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
 
     NetWriter m_Writer;

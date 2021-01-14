@@ -19,7 +19,7 @@ public abstract class NetWorld : IJSONSerializable
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
     Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
 
-    public IReadOnlyNetWorldPlayersCollection Players => PlayersInternal;
+    public IExposedyNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
     NetWorldUpdateQueue m_UpdateQueue;
