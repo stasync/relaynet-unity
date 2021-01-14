@@ -551,7 +551,49 @@ public class NetWorldRuntime : NetWorld
     {
         var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
         return networkObject == null ? null : networkObject.GetComponent<T>();
-    } 
+    }
+
+    public void ReceiveRPCWithoutAuthority(RPCWithoutAuthorityState state)
+    {
+        if (!state.IsValid)
+            throw new ArgumentException();
+
+        var objectIdentity = FindObjectView(state.ObjectUID);
+
+        // We need to handle rpc recieve for objects, which are doesnt existes.
+        // It is probably already destroyed.
+        // No exceptions here, just warning.
+        if (objectIdentity == null)
+        {
+#if NETWORK_DEBUG
+            var rpcName = RPCUtils.TryFindStringByHash(state.RPCState.Hash);
+            if (string.IsNullOrWhiteSpace(rpcName))
+                rpcName = "empty";
+
+            Debug.LogErrorFormat($"Trying to recive rpc with code {state.RPCState.Hash} '{rpcName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed");
+#endif
+            return;
+        }
+
+        var reciever = objectIdentity as INoAuthorityRPCReciever;
+
+        switch (state.Type)
+        {
+            case NoAuthorityRPCType.ToOwner:
+                //Check if we are this object's owner
+                if (objectIdentity.IsLocal)
+                    reciever.RecieveRPCLocaly(state);
+                break;
+            case NoAuthorityRPCType.ToMaster:
+                if (objectIdentity.IsOwnedByMasterClient)
+                    reciever.RecieveRPCOnMasterClient(state);
+                break;
+
+            case NoAuthorityRPCType.ToAll:
+                reciever.RecieveRPC(state);
+                break;
+        }
+    }
 
     public int GetHistoryBufferSize() => m_HistoryBuffer.Sum(s => s.GetSize());
 }
