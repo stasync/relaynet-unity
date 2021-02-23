@@ -1,7 +1,173 @@
 ﻿using Core.Networking;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
+public abstract class NetObjectStateData
+{
+    protected readonly int HashCode;
+    protected NetObjectStateData()
+    {
+        HashCode = GetType().GetHashCode();
+    }
+
+    public abstract void Serialize(NetWriter writer);
+    public abstract void Deserialize(NetReader reader);
+    public override int GetHashCode() => GetType().GetHashCode();
+    public override string ToString() => GetType().FullName;
+}
+
+public class NetObjectTransformData : NetObjectStateData
+{
+    public NetObjectTransformData() : base() { }
+
+    public Vector3 Position { get; set; }
+    public Quaternion Rotation { get; set; }
+
+    public override void Serialize(NetWriter writer)
+    {
+        writer.Write(Position);
+        writer.Write(Rotation);
+    }
+
+    public override void Deserialize(NetReader reader)
+    {
+        Position = reader.ReadVector3();
+        Rotation = reader.ReadQuaternion();
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = base.GetHashCode();
+        hash = (hash * 7) + Position.GetHashCode();
+        hash = (hash * 7) + Rotation.GetHashCode();
+        return hash;
+    }
+
+    public override string ToString() => $"'{base.ToString()}' Pos: {Position} Rot:{Rotation}";
+}
+
+public interface IReadOnlyNetObjectDataCollection : IReadOnlyCollection<NetObjectStateData>
+{
+    NetObjectDataCollectionSnapshot ToSnapshot();
+    T GetOrCreateData<T>() where T : NetObjectStateData;
+    bool TryGetData<T>(out T data) where T : NetObjectStateData;
+}
+
+public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
+{
+    NetReader m_Reader;
+
+    Dictionary<int, NetObjectStateData> m_InternalCollection;
+
+    public int Count => m_InternalCollection.Count;
+
+    public NetObjectDataCollection()
+    {
+        m_Reader = new NetReader();
+        m_InternalCollection = new Dictionary<int, NetObjectStateData>();
+    }
+
+    public T GetOrCreateData<T>() where T : NetObjectStateData
+    {
+        var typeHashCode = typeof(T).GetHashCode();
+        if (!m_InternalCollection.TryGetValue(typeof(T).GetHashCode(), out var data))
+        {
+            data = System.Reflection.Create.InstanceOf<T>();
+            m_InternalCollection.Add(typeHashCode, data);
+        }
+
+        return data as T;
+    }
+
+    public bool TryGetData<T>(out T data) where T : NetObjectStateData
+    {
+        data = null;
+        var typeHashCode = typeof(T).GetHashCode();
+
+        var dataExists = m_InternalCollection.TryGetValue(typeHashCode, out var internalData);
+        if (dataExists)
+            data = internalData as T;
+
+        return dataExists;
+    }
+
+    public void Clear() => m_InternalCollection.Clear();
+
+    public NetObjectDataCollectionSnapshot ToSnapshot() => new NetObjectDataCollectionSnapshot(m_InternalCollection.Values);
+
+    public void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
+    {
+        m_Reader.Replace(snapshot.Data);
+        var dataCount = m_Reader.ReadInt32();
+        for(var i = 0; i < dataCount; i++)
+        {
+            var typeName = m_Reader.ReadString();
+            var type = Type.GetType(typeName);
+            var typeHashCode = type.GetHashCode();
+
+            if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
+            {
+                data = System.Reflection.Create.InstanceOf<NetObjectStateData>(type);
+                m_InternalCollection.Add(typeHashCode, data);
+            }
+
+            data.Deserialize(m_Reader);
+        }
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = 13;
+        foreach(var kvp in m_InternalCollection)
+        {
+            hash = (hash * 7) + kvp.Key.GetHashCode();
+            hash = (hash * 7) + kvp.Value.GetHashCode();
+        }
+        return hash;
+    }
+
+    public IEnumerator<NetObjectStateData> GetEnumerator() => m_InternalCollection.Values.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => m_InternalCollection.Values.GetEnumerator();
+}
+
+public struct NetObjectDataCollectionSnapshot
+{
+    static NetWriter s_Writer;
+
+    public readonly byte[] Data;
+
+    public NetObjectDataCollectionSnapshot(IReadOnlyCollection<NetObjectStateData> dataCollection)
+    {
+        if (s_Writer == null)
+            s_Writer = new NetWriter();
+        s_Writer.SeekZero();
+
+        s_Writer.Write(dataCollection.Count);
+        foreach (var data in dataCollection)
+        {
+            s_Writer.Write(data.GetType().FullName);
+            data.Serialize(s_Writer);
+        }
+
+        Data = s_Writer.ToArray();
+    }
+
+    public NetObjectDataCollectionSnapshot(NetReader reader)
+    {
+        Data = reader.ReadBytesAndSize();
+    }
+
+    public static NetObjectDataCollectionSnapshot FromState(NetObjectDataCollection data) => data.ToSnapshot();
+
+    public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) => new NetObjectDataCollectionSnapshot(reader);
+
+    public int GetSize() => Data.Length;
+
+    public void Serialize(NetWriter writer) => writer.WriteBytesAndSize(Data);
+}
 
 public enum ObjectStateChangeRequestType : byte
 {
@@ -48,8 +214,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public byte[] ViewData { get; private set; }
     public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
     NetObjectRPCState m_RPCBuffer;
-    public IProperties Properties => m_Properties;
-    Properties m_Properties;
+    public IReadOnlyNetObjectDataCollection DataCollection => m_DataCollection;
+    NetObjectDataCollection m_DataCollection;
     #endregion
 
     int m_LastHashCode;
@@ -65,7 +231,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         foreach (var d in ViewData)
             hash = (hash * 7) + d.GetHashCode();
         hash = (hash * 7) + m_RPCBuffer.GetHashCode();
-        hash = (hash * 7) + m_Properties.GetHashCode();
+        hash = (hash * 7) + m_DataCollection.GetHashCode();
         return hash;
     }
 
@@ -98,7 +264,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         ViewData = new byte[] { };
 
         m_RPCBuffer = new NetObjectRPCState();
-        m_Properties = new Properties(() => IsOwnedByLocalPlayer);
+        m_DataCollection = new NetObjectDataCollection();
     }
 
     public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
@@ -116,8 +282,9 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         ViewData = null;
 
         m_UpdateQueue.Clear();
+
         m_RPCBuffer.Clear();
-        m_Properties.Clear();
+        m_DataCollection.Clear();
     }
 
     public void ChangeObjectDataLocaly(byte[] data)
@@ -160,6 +327,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         StateChangeType = snapshot.StateChangeType;
         ViewData = snapshot.Data;
         m_RPCBuffer.RestoreFormSnapshot(snapshot.RPCState);
+        m_DataCollection.RestoreFromSnapShot(snapshot.DataState);
     }
 
     void UpdateOwnerInternal(ClientUID newOwner)

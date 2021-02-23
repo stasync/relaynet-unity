@@ -126,6 +126,10 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
 
         if (IsLocal)
         {
+            var transformData = Identity.State.DataCollection.GetOrCreateData<NetObjectTransformData>();
+            transformData.Position = transform.position;
+            transformData.Rotation = transform.rotation;
+
             Data.Position.Set(transform.position);
             Data.Rotaiton.Set(transform.rotation);
             Data.Velocity.Set(m_Velocity);
@@ -134,8 +138,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
 
             foreach(var nestedTransformSync in m_NestedTransformSyncData)
                 nestedTransformSync.OnUpdateWithAuthority();
-
-            Identity.State.Properties.SetVector(0, transform.position);
         }
         else
         {

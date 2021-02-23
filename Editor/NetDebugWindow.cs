@@ -55,12 +55,12 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel--;
                 }
 
-                var properties = m_State.Properties.Data;
-                EditorGUILayout.LabelField($"Properties: {properties.Count}", EditorStyles.boldLabel);
+                var dataCollection = m_State.DataCollection;
+                EditorGUILayout.LabelField($"Data: {dataCollection.Count}", EditorStyles.boldLabel);
                 {
                     EditorGUI.indentLevel++;
-                    foreach (var kvp in properties)
-                        EditorGUILayout.LabelField($"{kvp.Key} Size: {kvp.Value.Length}");
+                    foreach (var data in dataCollection)
+                        EditorGUILayout.LabelField($"{data.ToString()}");
                     EditorGUI.indentLevel--;
                 }
 

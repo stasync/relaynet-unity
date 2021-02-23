@@ -26,6 +26,11 @@ public class NetWorldViewEditor : Editor
         if (EditorGUI.EndChangeCheck())
             netWorldView.SetSoundEnabledImmediate(soundEnabled);
 
+        EditorGUI.BeginChangeCheck();
+        var distance = EditorGUILayout.Slider("Draw Distance", netWorldView.DrawDistance, 5f, 100f);
+        if (EditorGUI.EndChangeCheck())
+            netWorldView.SetDrawDistance(distance);
+
         EditorGUILayout.Space();
         EditorGUILayout.HelpBox(
             "API used:\n" +

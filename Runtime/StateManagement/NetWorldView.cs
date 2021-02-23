@@ -16,6 +16,7 @@ public class NetWorldView : MonoBehaviour
 
     public bool ForceRenderingOff { get; private set; }
     public bool ForceMute { get; private set; }
+    public float DrawDistance { get; private set; } = 50f;
 
     NetWorld m_World;
     NetObjectFactory m_ObjectFactory;
@@ -112,10 +113,11 @@ public class NetWorldView : MonoBehaviour
         if(netObjectState.IsOwnedByLocalPlayer)
             return true;
 
-        return true;
-        //var postion = netObjectState.Properties.GetVector(0);
-        //var directionToCamera = Camera.main.transform.position - postion;
-        //return directionToCamera.sqrMagnitude < 25f;
+        if (!netObjectState.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
+            return true;
+
+        var directionToCamera = Camera.main.transform.position - transformData.Position;
+        return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
     }
 
     public NetObjectIdentity GetView(NetObjectUID uid)
@@ -202,6 +204,8 @@ public class NetWorldView : MonoBehaviour
         SetVisibleImmediate(enabled);
         SetSoundEnabledImmediate(enabled);
     }
+
+    public void SetDrawDistance(float value) => DrawDistance = value;
 
     public void SetVisibleImmediate(bool enabled)
     {
