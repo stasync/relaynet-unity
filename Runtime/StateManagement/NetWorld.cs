@@ -122,8 +122,7 @@ public abstract class NetWorld : IJSONSerializable
             Debug.LogError($"View already destroyed (Maybe it's done by unity via exiting play mode)");
         else
         {
-            Debug.LogError($"Destroy world {View.gameObject.name}");
-            View.Destroy(); //Destroy all net object;
+            View.Destroy(); //Destroy all net object views;
             View = null;
         }
     }
