@@ -48,8 +48,8 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     /// </summary>
     /// <param name="rpcCode"></param>
     /// <param name="data"></param>
-    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data) =>
-        Identity.OwnerToOthersRPCBuffered(rpcHandlerMethod, data);
+    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace) =>
+        Identity.OwnerToOthersRPCBuffered(rpcHandlerMethod, data, bufferChangeMethod);
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.

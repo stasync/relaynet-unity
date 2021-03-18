@@ -103,6 +103,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
     [SerializeField, Range(0f, 1f)]
     float m_CrossFadeDuration = 0.1f;
 
+    [SerializeField, Range(0f, 10f)]
+    float m_RemoteLayerWeightChnageSpeed = 5f;
+
     List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new List<IAnimatorValueProxy>();
 
     protected override void OnDataValuesCollected()
