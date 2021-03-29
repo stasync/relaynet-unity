@@ -51,24 +51,28 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
         {
             Debug.LogError($"Callback already registerd for transaction with object '{sender}' on '{gameObject.name}' and will be merged");
             callback(false);
+            return;
         }
 
-        if (CurrentInteraction.IsValid || !InteractionsEnabled)
+        if (!InteractionsEnabled || CurrentInteraction.IsValid && interactionState)
         {
             Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: {CurrentInteraction} Enabled: {InteractionsEnabled}");
             callback(false);
+            return;
         }
 
-        if(!Identity.World.TryGetObject(sender, out var state))
+        if (!Identity.World.TryGetObject(sender, out var state))
         {
             Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' not exists.");
             callback(false);
+            return;
         }
 
         if (!state.IsOwnedByLocalPlayer)
         {
             Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' isn't owned by local player.");
             callback(false);
+            return;
         }
 
         m_InteractionChangeRequestCallbacks.Add(sender, callback);
