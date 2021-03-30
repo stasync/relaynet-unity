@@ -16,6 +16,9 @@ public abstract class NetWorld : IJSONSerializable
     public float LocalTime { get; private set; }
     public string Name { get; private set; }
     public NetWorldView View { get; private set; }
+
+    public bool IsReplica => SourceID.IsValid;
+
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
     Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
 
