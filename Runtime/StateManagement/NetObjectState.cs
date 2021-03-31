@@ -256,7 +256,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         m_UpdateQueue = new Queue<Action<float>>();
 
         UID = uid;
-        PrefabId = prefabId;
+        PrefabId = prefabId ?? string.Empty;
         IsSceneObject = isSceneObject;
         OwnerUID = owner;
 
