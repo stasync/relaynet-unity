@@ -210,13 +210,13 @@ public class NetWorldView : MonoBehaviour
     public void SetVisibleImmediate(bool enabled)
     {
         ForceRenderingOff = !enabled;
-        ForEachViews((UID, v) => UpdateVisibilityFor(v.transform));
+        UpdateVisibilityFor(transform);
     }
 
     public void SetSoundEnabledImmediate(bool enabled)
     {
         ForceMute = !enabled;
-        ForEachViews((UID, v) => UpdateSoundFor(v.transform));
+        UpdateSoundFor(transform);
     }
 
     void UpdateVisibilityFor(Transform targetTransform)
