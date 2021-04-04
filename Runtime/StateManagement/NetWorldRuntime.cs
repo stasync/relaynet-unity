@@ -243,7 +243,7 @@ public class NetWorldRuntime : NetWorld
 
             void TryNotifyViewAboutDisconnectedPlayer(ClientUID clientUID, NetObjectUID objectUID)
             {
-                if (View.CurrentObjectViews.TryGetValue(objectUID, out var view))
+                if (View != null && View.CurrentObjectViews.TryGetValue(objectUID, out var view))
                     view.OnDisconnected(clientUID);
             }
         }
@@ -492,7 +492,7 @@ public class NetWorldRuntime : NetWorld
         if (sceneIdentity.Identity.Initialized)
             throw new InvalidOperationException($"{sceneIdentity.gameObject.name} alredy initialized");
 
-        //Create state from scen object identity;
+        //Create state from scene object identity;
         //We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
         var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, true, PlayersInternal.MasterPlayerUID, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(newState.UID, newState);
@@ -511,7 +511,10 @@ public class NetWorldRuntime : NetWorld
                 View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
             }
             else
+            {
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
+                Debug.LogError($"Unable to initialize {sceneIdentity.gameObject.name}. Object or pending state with UID '{newStateUID}' not exists");
+            }
         });
     }
 
