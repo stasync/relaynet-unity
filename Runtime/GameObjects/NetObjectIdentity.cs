@@ -411,6 +411,18 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
         State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }
 
+    void OnDestroy()
+    {
+        if(State != null)
+        {
+            State.OnOwnerChanged -= OnOwnerChanged;
+            State.LocalUpdateRequest -= OnLocalUpdateRequest;
+
+            m_NetObjectStateReference.SetTargetUID(NetObjectUID.Invalid);
+            m_NetObjectStateReference.SetTargetWorld(null);
+        }
+    }
+
     #if UNITY_EDITOR
     void OnDrawGizmos()
     {

@@ -280,6 +280,7 @@ public class NetWorldRuntime : NetWorld
                 {
                     Debug.LogError($"Remote update snapshot form object with UID: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
                     m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
+                    m_RemoteObjectUpdateRequests.Remove(UID);
                     return;
                 }
 
@@ -510,7 +511,7 @@ public class NetWorldRuntime : NetWorld
                 View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
             }
             else
-                throw new InvalidOperationException();
+                UnityEngine.Object.Destroy(sceneIdentity.gameObject);
         });
     }
 
