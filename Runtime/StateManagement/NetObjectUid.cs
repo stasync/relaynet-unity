@@ -21,6 +21,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
     {
         if (s_UnAllocatedIds.Contains(id))
             throw new Exception("Trying to unallocate id, that already unallocated");
+
         s_UnAllocatedIds.Add(id);
     }
 
@@ -41,7 +42,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
         return PeerStartId(peerId) + s_IdCounter;
     }
 
-    static NetObjectUID PeerStartId(ClientUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 1000;
+    static NetObjectUID PeerStartId(ClientUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 10000;
     #endregion
 
     public NetObjectUID(ClientUID peerId)

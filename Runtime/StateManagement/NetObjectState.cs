@@ -51,7 +51,7 @@ public class NetObjectTransformData : NetObjectStateData
 public interface IReadOnlyNetObjectDataCollection : IReadOnlyCollection<NetObjectStateData>
 {
     NetObjectDataCollectionSnapshot ToSnapshot();
-    T GetOrCreateData<T>() where T : NetObjectStateData;
+    T GetOrCreateData<T>() where T : NetObjectStateData, new();
     bool TryGetData<T>(out T data) where T : NetObjectStateData;
 }
 
@@ -69,12 +69,12 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         m_InternalCollection = new Dictionary<int, NetObjectStateData>();
     }
 
-    public T GetOrCreateData<T>() where T : NetObjectStateData
+    public T GetOrCreateData<T>() where T : NetObjectStateData, new()
     {
         var typeHashCode = typeof(T).GetHashCode();
         if (!m_InternalCollection.TryGetValue(typeof(T).GetHashCode(), out var data))
         {
-            data = System.Reflection.Create.InstanceOf<T>();
+            data = new T();
             m_InternalCollection.Add(typeHashCode, data);
         }
 
@@ -109,7 +109,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 
             if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
             {
-                data = System.Reflection.Create.InstanceOf<NetObjectStateData>(type);
+                data = Activator.CreateInstance(type) as NetObjectStateData;
                 m_InternalCollection.Add(typeHashCode, data);
             }
 
