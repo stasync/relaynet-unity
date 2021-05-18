@@ -228,7 +228,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
     /// <summary>
     /// RPC handlers.
     /// </summary>
-    IDictionary<int, Action<byte[]>> m_RPCHandlers = new Dictionary<int, Action<byte[]>>();
+    readonly IDictionary<int, Action<byte[]>> m_RPCHandlers = new Dictionary<int, Action<byte[]>>();
 
     /// <summary>
     /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
