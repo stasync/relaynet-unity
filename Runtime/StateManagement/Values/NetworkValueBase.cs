@@ -74,5 +74,8 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializa
     }
 
     public abstract string ToJSONProperty();
+
+    public override int GetHashCode() => m_InternalValue.GetHashCode();
+    public override string ToString() => m_InternalValue.ToString();
 }
 

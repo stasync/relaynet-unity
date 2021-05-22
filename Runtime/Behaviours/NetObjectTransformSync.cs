@@ -1,5 +1,29 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
+
+public class NetObjectTransformData : NetObjectStateData
+{
+    public NetObjectTransformData(Func<bool> writePermission) : base(writePermission) { }
+    public SerializableVector3 Position { get; private set; } = null;
+    public SerializableQuaternion Rotation { get; private set; } = null;
+
+    protected override void OnDefineValues()
+    {
+        base.OnDefineValues();
+
+        Position = new SerializableVector3(default, WritePemission);
+        Rotation = new SerializableQuaternion(default, WritePemission);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = base.GetHashCode();
+        hash = (hash * 7) + Position.GetHashCode();
+        hash = (hash * 7) + Rotation.GetHashCode();
+        return hash;
+    }
+}
 
 public class GSTransformSyncData : GSBehaviourAbstractData
 {
@@ -127,8 +151,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
         if (IsLocal)
         {
             var transformData = Identity.State.DataCollection.GetOrCreateData<NetObjectTransformData>();
-            transformData.Position = transform.position;
-            transformData.Rotation = transform.rotation;
+            transformData.Position.Set(transform.position);
+            transformData.Rotation.Set(transform.rotation);
 
             Data.Position.Set(transform.position);
             Data.Rotaiton.Set(transform.rotation);

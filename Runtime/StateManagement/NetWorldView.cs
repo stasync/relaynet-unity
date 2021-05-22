@@ -116,7 +116,7 @@ public class NetWorldView : MonoBehaviour
         if (!netObjectState.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
             return true;
 
-        var directionToCamera = Camera.main.transform.position - transformData.Position;
+        var directionToCamera = Camera.main.transform.position - transformData.Position.Value;
         return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
     }
 
