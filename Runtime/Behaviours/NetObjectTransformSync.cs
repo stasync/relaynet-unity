@@ -103,6 +103,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
     Vector3 m_LastFramePosition;
     Vector3 m_Velocity;
 
+    NetObjectTransformData m_StateData;
+
     protected override void OnDataValuesCollected()
     {
         base.OnDataValuesCollected();
@@ -123,6 +125,11 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
 
     public override void OnPostInitialize()
     {
+        m_StateData = Identity
+            .State
+            .DataCollection
+            .GetOrCreateData<NetObjectTransformData>();
+
         ResetTemporaryData();
     }
 
@@ -150,9 +157,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
 
         if (IsLocal)
         {
-            var transformData = Identity.State.DataCollection.GetOrCreateData<NetObjectTransformData>();
-            transformData.Position.Set(transform.position);
-            transformData.Rotation.Set(transform.rotation);
+            m_StateData.Position.Set(transform.position);
+            m_StateData.Rotation.Set(transform.rotation);
 
             Data.Position.Set(transform.position);
             Data.Rotaiton.Set(transform.rotation);

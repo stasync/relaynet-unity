@@ -33,6 +33,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 {
     public event Action OnOwnerChanged = delegate { };
     public event Action<bool> LocalUpdateRequest = delegate { };
+    public event Action Invalidated = delegate { };
 
     readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
     readonly Queue<Action<float>> m_UpdateQueue;
@@ -47,9 +48,9 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
     public byte[] ViewData { get; private set; }
     public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
-    NetObjectRPCState m_RPCBuffer;
+    readonly NetObjectRPCState m_RPCBuffer;
     public IReadOnlyNetObjectDataCollection DataCollection => m_DataCollection;
-    NetObjectDataCollection m_DataCollection;
+    readonly NetObjectDataCollection m_DataCollection;
     #endregion
 
     int m_LastHashCode;
@@ -108,8 +109,11 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public void Invalidate()
     {
+        var wasValid = IsValid;
+
         UID = NetObjectUID.Invalid;
-        OwnerUID = ClientUID.Invalid;
+        InvalidateOwner();
+
         PrefabId = string.Empty;
         IsSceneObject = false;
         StateChangeType = ObjectStateChangeRequestType.None;
@@ -119,6 +123,13 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         m_RPCBuffer.Clear();
         m_DataCollection.Clear();
+
+        if (wasValid)
+            Invalidated();
+
+        Invalidated = null;
+        LocalUpdateRequest = null;
+        Invalidated = null;
     }
 
     public void ChangeObjectDataLocaly(byte[] data)

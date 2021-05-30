@@ -8,6 +8,7 @@ public interface IReadOnlyNetObjectDataCollection : IReadOnlyCollection<NetObjec
     NetObjectDataCollectionSnapshot ToSnapshot();
     T GetOrCreateData<T>() where T : NetObjectStateData;
     bool TryGetData<T>(out T data) where T : NetObjectStateData;
+    T GetData<T>() where T : NetObjectStateData;
 }
 
 public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
@@ -50,6 +51,12 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
             data = internalData as T;
 
         return dataExists;
+    }
+
+    public T GetData<T>() where T : NetObjectStateData
+    {
+        var typeHashCode = typeof(T).GetHashCode();
+        return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
     }
 
     public void Clear() => m_InternalCollection.Clear();

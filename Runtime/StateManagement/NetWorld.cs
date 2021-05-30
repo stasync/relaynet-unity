@@ -7,6 +7,8 @@ public abstract class NetWorld : IJSONSerializable
 {
     public event Action ViewInitialized = delegate { };
     public event Action Updated = delegate { };
+    public event Action<NetObjectUID> ObjectCreated = delegate { };
+
     public bool IsValid => ID.IsValid;
 
     public NetWorldID UID { get; private set; }
@@ -71,7 +73,17 @@ public abstract class NetWorld : IJSONSerializable
 
     protected abstract void UpdateImplementation(float deltaTime);
 
-    protected void AddObjectUnsafe(NetObjectUID uid, NetObjectState state) => m_CurrentObjectStates.Add(uid, state);
+    protected bool TryAddObject(NetObjectUID uid, NetObjectState state)
+    {
+        var canAddObject = !ObjectExists(uid);
+        if (canAddObject)
+        {
+            m_CurrentObjectStates.Add(uid, state);
+            ObjectCreated(uid);
+        }
+
+        return canAddObject;
+    }
 
     protected void UpdateWorldState(float worldDelta)
     {
@@ -108,6 +120,9 @@ public abstract class NetWorld : IJSONSerializable
         SourceID = NetWorldID.Invalid;
 
         Updated = delegate { };
+
+        foreach (var netObject in m_CurrentObjectStates.Values)
+            netObject.Invalidate();
 
         m_CurrentObjectStates.Clear();
         m_CurrentObjectStates = null;
@@ -221,7 +236,7 @@ public abstract class NetWorld : IJSONSerializable
             if (m_CurrentObjectStates.ContainsKey(kvp.Key))
                 m_CurrentObjectStates[kvp.Key].ChangeObjectRemotely(kvp.Value);
             else
-                m_CurrentObjectStates.Add(kvp.Key, new NetObjectState(kvp.Value, PlayersInternal.Find));
+                TryAddObject(kvp.Key, new NetObjectState(kvp.Value, PlayersInternal.Find));
         }
 
         //Remove absent obejets;

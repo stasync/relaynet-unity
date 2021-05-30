@@ -2,17 +2,17 @@
 using System;
 using UnityEngine;
 
-public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSInstanceBehaviour 
-    where TData : GSBehaviourAbstractData, new()
+public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviourBase, IGSInstanceBehaviour 
+    where TBehaviourData : GSBehaviourAbstractData, new()
 {
-    TData m_Data;
-    protected TData Data
+    TBehaviourData m_Data;
+    protected TBehaviourData Data
     {
         get
         {
             if (m_Data == null)
             {
-                m_Data = new TData();
+                m_Data = new TBehaviourData();
                 Data.Initialize(() => DataWritePermission, OnDataValuesCollected);
             }
             return m_Data;
@@ -180,5 +180,5 @@ public abstract class GSInstanceBehaviour<TData> : GSInstanceBehaviourBase, IGSI
     protected virtual void OnDataDeserialized(bool firstTime) { }
 
     public string ToJSONProperty() => 
-        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TData).Name}") + ":" + Data.ToJSONProperty() + "}";
+        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TBehaviourData).Name}") + ":" + Data.ToJSONProperty() + "}";
 }

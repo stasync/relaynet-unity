@@ -6,8 +6,8 @@ using Core.Networking;
 
 public class NetWorldRuntime : NetWorld
 {
-    public Action<NetWorldPlayerSnapshot> PlayerRegisterd = delegate { };
-    public Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
+    public event Action<NetWorldPlayerSnapshot> PlayerRegisterd = delegate { };
+    public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
@@ -29,7 +29,7 @@ public class NetWorldRuntime : NetWorld
     public int OutgoingMessageQueueCount => m_OutgoingMessageQueue.Count;
     Queue<Action> m_OutgoingMessageQueue;
 
-    Action<uint, DeliveryIntent, byte[]> m_Sender;
+    readonly Action<uint, DeliveryIntent, byte[]> m_Sender;
 
     const float c_HistoryBufferSecondsLength = 10f; //Record last 'N' seconds;
     const float c_MinUpdateInteraval = 0.1f; //10 times per second;
@@ -304,7 +304,7 @@ public class NetWorldRuntime : NetWorld
                 else
                     newState = new NetObjectState(snapshot, PlayersInternal.Find);
 
-                AddObjectUnsafe(snapshot.ObjectUID, newState);
+                TryAddObject(snapshot.ObjectUID, newState);
                 m_RemoteObjectUpdateRequests.Remove(UID);
             });
         }
@@ -335,7 +335,7 @@ public class NetWorldRuntime : NetWorld
                 else
                 {
                     state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-                    AddObjectUnsafe(state.UID, state);
+                    TryAddObject(state.UID, state);
                 }
 
                 m_ObjectsRegisterRequests.Remove(UID);

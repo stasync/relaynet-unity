@@ -65,13 +65,8 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializa
     public virtual void Deserialize(NetReader reader, bool firstTime) =>
         m_LastDeserializedValue = m_Reader(reader, firstTime);
 
-    public virtual void Serialize(NetWriter writer)
-    {
-        if (!HasPermission)
-            throw new InvalidOperationException($"No authority to serialize value {typeof(TValue).FullName}");
-
-        m_Writer(writer, InternalValue);
-    }
+    public virtual void Serialize(NetWriter writer) =>
+         m_Writer(writer, InternalValue);
 
     public abstract string ToJSONProperty();
 
