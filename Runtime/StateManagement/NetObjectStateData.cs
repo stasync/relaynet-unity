@@ -7,6 +7,11 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
+public sealed class NetObjectStateEmptyData : NetObjectStateData
+{
+    public NetObjectStateEmptyData(Func<bool> writePermission) : base(writePermission) { }
+}
+
 public abstract class NetObjectStateData
 {
     public bool HasPermission => WritePemission();

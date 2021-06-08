@@ -34,7 +34,7 @@ public class NetDebugWindow : EditorWindow
                 EditorGUILayout.LabelField($"Owner: {m_State.Owner.ToString()}");
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
                 EditorGUILayout.LabelField($"Master: {m_State.IsOwnedByMasterClient}");
-                EditorGUILayout.LabelField($"Data size: {m_State.ViewData.Length}");
+                EditorGUILayout.LabelField($"Data size: {m_State.ViewData.UnstructuredData.Length}");
 
                 var temporalBuffer = m_State.RPCBuffer.TemporalBuffer;
                 var persistentBuffer = m_State.RPCBuffer.PersistentBuffer;

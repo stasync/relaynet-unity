@@ -254,7 +254,7 @@ public class NetWorldRuntime : NetWorld
             ForEachRemoteRequests((UID, snapshot) =>
             {
                 if (!snapshot.ObjectUID.IsValid)
-                    throw new InvalidOperationException($"Invalid UID: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}' Data size: '{snapshot.Data.Length}'");
+                    throw new InvalidOperationException($"Invalid UID: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}' Data size: '{snapshot.ViewData.UnstructuredData.Length}'");
 
                 /// Check if owner exists;
                 if(!PlayersInternal.Contains(snapshot.OwnerUID))

@@ -32,7 +32,7 @@ public interface IReadOnlyNetObjectState
 public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectState>, IEquatable<NetObjectState>
 {
     public event Action OnOwnerChanged = delegate { };
-    public event Action<bool> LocalUpdateRequest = delegate { };
+    public event Action<ObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
     public event Action Invalidated = delegate { };
 
     readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
@@ -46,7 +46,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public bool IsSceneObject { get; private set; }
     public ClientUID OwnerUID { get; private set; }
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
-    public byte[] ViewData { get; private set; }
+    public IReadOnlyNetObjectViewData ViewData => m_ViewData;
+    readonly NetObjectViewData m_ViewData;
     public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
     readonly NetObjectRPCState m_RPCBuffer;
     public IReadOnlyNetObjectDataCollection DataCollection => m_DataCollection;
@@ -63,8 +64,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         hash = (hash * 7) + IsSceneObject.GetHashCode();
         hash = (hash * 7) + OwnerUID.GetHashCode();
         hash = (hash * 7) + StateChangeType.GetHashCode();
-        foreach (var d in ViewData)
-            hash = (hash * 7) + d.GetHashCode();
+        hash = (hash * 7) + m_ViewData.GetHashCode();
         hash = (hash * 7) + m_RPCBuffer.GetHashCode();
         hash = (hash * 7) + m_DataCollection.GetHashCode();
         return hash;
@@ -96,8 +96,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         OwnerUID = owner;
 
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
-        ViewData = new byte[] { };
 
+        m_ViewData = new NetObjectViewData();
         m_RPCBuffer = new NetObjectRPCState();
         m_DataCollection = new NetObjectDataCollection(() => IsOwnedByLocalPlayer);
     }
@@ -117,12 +117,12 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         PrefabId = string.Empty;
         IsSceneObject = false;
         StateChangeType = ObjectStateChangeRequestType.None;
-        ViewData = null;
 
         m_UpdateQueue.Clear();
 
         m_RPCBuffer.Clear();
         m_DataCollection.Clear();
+        m_ViewData.Clear();
 
         if (wasValid)
             Invalidated();
@@ -132,12 +132,12 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         Invalidated = null;
     }
 
-    public void ChangeObjectDataLocaly(byte[] data)
+    public void ChangeObjectViewDataLocaly(byte[] data, bool initialization = false)
     {
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
-        ViewData = data;
+        m_ViewData.SetData(data, initialization);
     }
 
     public bool PrepareForSerialization()
@@ -145,7 +145,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
-        LocalUpdateRequest(StateChangeType == ObjectStateChangeRequestType.InitializationUpdate);
+        LocalUpdateRequest(StateChangeType);
 
         var newHashCode = GetHashCode();
         var changed = !newHashCode.Equals(m_LastHashCode);
@@ -170,7 +170,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         UpdateOwnerInternal(snapshot.OwnerUID);
 
         StateChangeType = snapshot.StateChangeType;
-        ViewData = snapshot.Data;
+        m_ViewData.RestoreFormSnapshot(snapshot.ViewData);
         m_RPCBuffer.RestoreFormSnapshot(snapshot.RPCState);
         m_DataCollection.RestoreFromSnapShot(snapshot.DataState);
     }

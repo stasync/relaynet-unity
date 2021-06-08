@@ -76,7 +76,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
          */
         if (!IsLocal && State.ViewData != null)
-            Deserialize(State.ViewData, true, true); //Force true to allow deseriazation before object initialized.
+            Deserialize(State.ViewData.UnstructuredData, true, true); //Force true to allow deseriazation before object initialized.
 
         if(additionalData != null && additionalData.Length > 0)
             foreach (var o in m_Observables)
@@ -94,10 +94,16 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
 
         //Tell components abount object was initialized;
         foreach (var o in m_Observables)
-        {
             TryAutoRegisterRPCHandlers(o);
-            o.OnPostInitialize();
+
+        foreach (var o in m_Observables)
+        {
+            if (!State.ViewData.Initialized)
+                o.OnInitializeViewData();
         }
+
+        foreach (var o in m_Observables)
+            o.OnPostInitialize();
 
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
@@ -128,7 +134,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
             b.OnDisconnected(peerId);
     }
 
-    void OnLocalUpdateRequest(bool forced)
+    void OnLocalUpdateRequest(ObjectStateChangeRequestType stateChengeType)
     {
         if (!Initialized)
             throw new InvalidOperationException($"Object {gameObject.name} not initialized");
@@ -139,7 +145,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
         foreach (var b in m_Observables)
             b.OnAuthorityUpdate();
 
-        State.ChangeObjectDataLocaly(Serialize());
+        State.ChangeObjectViewDataLocaly(Serialize(), stateChengeType == ObjectStateChangeRequestType.InitializationUpdate);
     }
 
     /// <summary>

@@ -24,22 +24,18 @@ public class InteractionNetworkData : NetObjectStateData
 public sealed class GSObjectTransaction : GSObjectTransaction<InteractionNetworkData> { }
 
 [DisallowMultipleComponent]
-public abstract class GSObjectTransaction<TData> : GSInstanceEmptyBehaviour where TData : InteractionNetworkData
+public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<GSBehaviourEmptyData, TData> where TData : InteractionNetworkData
 {
-    TData StateData =>
-              Identity
-                  .State
-                  .DataCollection
-                  .GetOrCreateData<TData>();
-
-    public NetObjectUID CurrentInteraction => StateData.CurrentInteraction.Value;
-    public NetObjectUID LastInteraction => StateData.LastInteraction.Value;
-    public bool InteractionsEnabled => StateData.InteractionsEnabled.Value;
+    public NetObjectUID CurrentInteraction => Data.CurrentInteraction.Value;
+    public NetObjectUID LastInteraction => Data.LastInteraction.Value;
+    public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
 
     Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new Dictionary<NetObjectUID, Action<bool>>();
 
-    public override void OnPostInitialize() 
+    public override void OnPostInitialize() { }
+    public override void OnInitializeViewData()
     {
+        base.OnInitializeViewData();
         if (IsLocal)
             SetInteractionsEnabledWithAuthority(true);
     }
@@ -49,7 +45,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceEmptyBehaviour wher
         if (!IsLocal)
             throw new InvalidOperationException("No authority");
 
-        StateData.InteractionsEnabled.Set(value);
+        Data.InteractionsEnabled.Set(value);
     }
 
     public void ChangeTransactrionRequest(NetObjectUID sender, bool interactionState) =>
@@ -100,11 +96,11 @@ public abstract class GSObjectTransaction<TData> : GSInstanceEmptyBehaviour wher
         var sender = reader.ReadInstanceId();
         var state = reader.ReadBoolean();
 
-        var currentInteractionObject = StateData.CurrentInteraction.Value;
+        var currentInteractionObject = Data.CurrentInteraction.Value;
 
         var canChangeInteractionState = 
             state ? 
-            currentInteractionObject.IsInvalid && StateData.InteractionsEnabled.Value :
+            currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value :
             currentInteractionObject.Equals(sender);
 
         var responseWriter = new NetWriter();
@@ -113,9 +109,9 @@ public abstract class GSObjectTransaction<TData> : GSInstanceEmptyBehaviour wher
 
         if (canChangeInteractionState)
         {
-            StateData.CurrentInteraction.Set(state ? sender : NetObjectUID.Invalid);
+            Data.CurrentInteraction.Set(state ? sender : NetObjectUID.Invalid);
             if(state)
-                StateData.LastInteraction.Set(sender);
+                Data.LastInteraction.Set(sender);
         }
 
         OwnerToOthersRPC(ChangeTransactrionResponseRPC, responseWriter.ToArray());

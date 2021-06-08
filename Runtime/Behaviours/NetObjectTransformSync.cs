@@ -47,9 +47,9 @@ public class GSTransformSyncData : GSBehaviourAbstractData
 }
 
 [DisallowMultipleComponent]
-public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
+public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, NetObjectTransformData>
 {
-    [System.Serializable]
+    [Serializable]
     struct NestedTransfromData
     {
         [SerializeField]
@@ -103,8 +103,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
     Vector3 m_LastFramePosition;
     Vector3 m_Velocity;
 
-    NetObjectTransformData m_StateData;
-
     protected override void OnDataValuesCollected()
     {
         base.OnDataValuesCollected();
@@ -113,11 +111,11 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
             if (nestedData.Transform == null)
                 continue;
 
-            var positionValue = new SerializableVector3(default, () => Data.HasPermission);
-            var rotationValue = new SerializableQuaternion(default, () => Data.HasPermission);
+            var positionValue = new SerializableVector3(default, () => BehavourData.HasPermission);
+            var rotationValue = new SerializableQuaternion(default, () => BehavourData.HasPermission);
 
-            Data.NestedTransformUnstructuredData.Add($"{nestedData.Transform.gameObject.name}.localPosition", positionValue);
-            Data.NestedTransformUnstructuredData.Add($"{nestedData.Transform.gameObject.name}.localRotation", rotationValue);
+            BehavourData.NestedTransformUnstructuredData.Add($"{nestedData.Transform.gameObject.name}.localPosition", positionValue);
+            BehavourData.NestedTransformUnstructuredData.Add($"{nestedData.Transform.gameObject.name}.localRotation", rotationValue);
 
             m_NestedTransformSyncData.Add(new NestedTransformSyncData(nestedData, positionValue, rotationValue));
         }
@@ -125,11 +123,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
 
     public override void OnPostInitialize()
     {
-        m_StateData = Identity
-            .State
-            .DataCollection
-            .GetOrCreateData<NetObjectTransformData>();
-
         ResetTemporaryData();
     }
 
@@ -140,8 +133,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
 
         if(!IsLocal)
         {
-            transform.position = Data.Position.Value;
-            transform.rotation = Data.Rotaiton.Value;
+            transform.position = BehavourData.Position.Value;
+            transform.rotation = BehavourData.Rotaiton.Value;
         }
     }
 
@@ -157,28 +150,28 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
 
         if (IsLocal)
         {
-            m_StateData.Position.Set(transform.position);
-            m_StateData.Rotation.Set(transform.rotation);
-
             Data.Position.Set(transform.position);
-            Data.Rotaiton.Set(transform.rotation);
-            Data.Velocity.Set(m_Velocity);
-            Data.WorldTime.Set(Identity.World.Time);
-            Data.HasParent.Set(hasParentLocaly);
+            Data.Rotation.Set(transform.rotation);
+
+            BehavourData.Position.Set(transform.position);
+            BehavourData.Rotaiton.Set(transform.rotation);
+            BehavourData.Velocity.Set(m_Velocity);
+            BehavourData.WorldTime.Set(Identity.World.Time);
+            BehavourData.HasParent.Set(hasParentLocaly);
 
             foreach(var nestedTransformSync in m_NestedTransformSyncData)
                 nestedTransformSync.OnUpdateWithAuthority();
         }
         else
         {
-            if(!hasParentLocaly && !Data.HasParent.Value)
+            if(!hasParentLocaly && !BehavourData.HasParent.Value)
             {
                 //Position interpolation
                 if (m_InterpolateMovement > Mathf.Epsilon)
                 {
-                    var targetPosition = Data.Position.Value;
+                    var targetPosition = BehavourData.Position.Value;
                     if (m_Prediction)
-                        targetPosition += Data.Velocity.Value.normalized * (Identity.World.Time - Data.WorldTime.Value) * m_PredictionMultipler;
+                        targetPosition += BehavourData.Velocity.Value.normalized * (Identity.World.Time - BehavourData.WorldTime.Value) * m_PredictionMultipler;
 
                     transform.position = Vector3.Lerp(
                             transform.position,
@@ -186,18 +179,18 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData>
                             Time.fixedDeltaTime * m_InterpolateMovement * 10);
                 }
                 else
-                    transform.position = Data.Position.Value;
+                    transform.position = BehavourData.Position.Value;
 
                 //Rotation interpolation
                 if (m_InterpolateRotation > Mathf.Epsilon)
                 {
                     transform.rotation = Quaternion.Slerp(
                             transform.rotation,
-                            Data.Rotaiton.Value,
+                            BehavourData.Rotaiton.Value,
                             Time.fixedDeltaTime * m_InterpolateRotation * 10);
                 }
                 else
-                    transform.rotation = Data.Rotaiton.Value;
+                    transform.rotation = BehavourData.Rotaiton.Value;
             }
             
 

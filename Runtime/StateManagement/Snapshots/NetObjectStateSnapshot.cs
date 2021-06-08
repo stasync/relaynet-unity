@@ -8,7 +8,7 @@ public struct NetObjectStateSnapshot
     public string PrefabId { get; private set; }
     public bool IsSceneObject { get; private set; }
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
-    public byte[] Data { get; private set; }
+    public NetObjectViewDataSnapshot ViewData { get; private set; }
     public NetObjectRPCStateSnapshot RPCState { get; private set; }
     public NetObjectDataCollectionSnapshot DataState { get; private set; }
 
@@ -19,7 +19,7 @@ public struct NetObjectStateSnapshot
         PrefabId = reader.ReadString();
         IsSceneObject = reader.ReadBoolean();
         StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
-        Data = reader.ReadBytesAndSize();
+        ViewData = NetObjectViewDataSnapshot.FromReader(reader);
         RPCState = NetObjectRPCStateSnapshot.FromReader(reader);
         DataState = NetObjectDataCollectionSnapshot.FromReader(reader);
     }
@@ -31,7 +31,7 @@ public struct NetObjectStateSnapshot
         writer.Write(PrefabId);
         writer.Write(IsSceneObject);
         writer.Write((byte)StateChangeType);
-        writer.WriteBytesAndSize(Data);
+        ViewData.Serialize(writer);
         RPCState.Serialize(writer);
         DataState.Serialize(writer);
     }
@@ -51,7 +51,7 @@ public struct NetObjectStateSnapshot
             PrefabId = state.PrefabId,
             IsSceneObject = state.IsSceneObject,
             StateChangeType = state.StateChangeType,
-            Data = state.ViewData.ToArray(),
+            ViewData = state.ViewData.ToSnapshot(),
             RPCState = state.RPCBuffer.ToSnapshot(),
             DataState = state.DataCollection.ToSnapshot(),
         };
@@ -66,7 +66,7 @@ public struct NetObjectStateSnapshot
         result += PrefabId.Length;
         result += sizeof(bool); // IsSceneObject
         result += sizeof(ObjectStateChangeRequestType); // StateChangeType
-        result += Data.Length;
+        result += ViewData.GetSize();
         result += RPCState.GetSize();
         result += DataState.GetSize();
         return result;

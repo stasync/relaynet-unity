@@ -119,17 +119,17 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
             {
                 case AnimatorControllerParameterType.Bool:
                     BuildProxyForParameter(p.name, 
-                        () => new SerializableBool(false, () => Data.HasPermission), v => new AnimatorBoolParameterValueProxy(m_Animator, p, v));
+                        () => new SerializableBool(false, () => BehavourData.HasPermission), v => new AnimatorBoolParameterValueProxy(m_Animator, p, v));
                     break;
 
                 case AnimatorControllerParameterType.Float:
                     BuildProxyForParameter(p.name,
-                        () => new SerializableFloat(0f, () => Data.HasPermission), v => new AnimatorFloatParameterValueProxy(m_Animator, p, v));
+                        () => new SerializableFloat(0f, () => BehavourData.HasPermission), v => new AnimatorFloatParameterValueProxy(m_Animator, p, v));
                     break;
 
                 case AnimatorControllerParameterType.Int:
                     BuildProxyForParameter(p.name,
-                         () => new SerializableInt(0, () => Data.HasPermission), v => new AnimatorIntParameterValueProxy(m_Animator, p, v));
+                         () => new SerializableInt(0, () => BehavourData.HasPermission), v => new AnimatorIntParameterValueProxy(m_Animator, p, v));
                     break;
             }
         });
@@ -142,7 +142,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
             var v = valueFactory();
             var p = parameterFactory(v);
 
-            Data.Parameters.Add(valueName, v);
+            BehavourData.Parameters.Add(valueName, v);
             m_AnimatorParameterValueProxyCollection.Add(p);
         }
     }
@@ -239,9 +239,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 
         ForEachLayer((state, layerWeight, layerIndex) =>
         {
-            Data.LayerWeights.SetAt(layerIndex, layerWeight);
-            Data.LayerStates.SetAt(layerIndex, state.fullPathHash);
-            Data.LayerNormalizedTimes.SetAt(layerIndex, state.normalizedTime);
+            BehavourData.LayerWeights.SetAt(layerIndex, layerWeight);
+            BehavourData.LayerStates.SetAt(layerIndex, state.fullPathHash);
+            BehavourData.LayerNormalizedTimes.SetAt(layerIndex, state.normalizedTime);
         });
     }
 
@@ -253,12 +253,12 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 
         ForEachLayer((state, layerWeight, layerIndex) =>
         {
-            if (!ValidateCollections(layerIndex, Data.LayerWeights, Data.LayerStates, Data.LayerNormalizedTimes))
+            if (!ValidateCollections(layerIndex, BehavourData.LayerWeights, BehavourData.LayerStates, BehavourData.LayerNormalizedTimes))
                 return;
 
-            var targetLayerWeight = Data.LayerWeights[layerIndex];
-            var targetStateHash = Data.LayerStates[layerIndex];
-            var targetStateNormalizedTime = Data.LayerNormalizedTimes[layerIndex];
+            var targetLayerWeight = BehavourData.LayerWeights[layerIndex];
+            var targetStateHash = BehavourData.LayerStates[layerIndex];
+            var targetStateNormalizedTime = BehavourData.LayerNormalizedTimes[layerIndex];
 
             if (layerWeight != targetLayerWeight)
                 m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);

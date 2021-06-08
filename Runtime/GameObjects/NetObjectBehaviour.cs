@@ -2,22 +2,29 @@
 using System;
 using UnityEngine;
 
-public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviourBase, IGSInstanceBehaviour 
+public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviour<TBehaviourData, NetObjectStateEmptyData>
+     where TBehaviourData : GSBehaviourAbstractData, new()
+{ }
+
+public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour 
     where TBehaviourData : GSBehaviourAbstractData, new()
+    where TObjectData : NetObjectStateData
 {
-    TBehaviourData m_Data;
-    protected TBehaviourData Data
+    TBehaviourData m_BehaviourData;
+    protected TBehaviourData BehavourData
     {
         get
         {
-            if (m_Data == null)
+            if (m_BehaviourData == null)
             {
-                m_Data = new TBehaviourData();
-                Data.Initialize(() => DataWritePermission, OnDataValuesCollected);
+                m_BehaviourData = new TBehaviourData();
+                BehavourData.Initialize(() => DataWritePermission, OnDataValuesCollected);
             }
-            return m_Data;
+            return m_BehaviourData;
         }
     }
+
+    protected TObjectData Data { get; private set; }
 
     public virtual int SerializationOrder => 0;
 
@@ -87,7 +94,7 @@ public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviourB
     {
         SerializeDirtyChecked(writer);
 
-        Data.Serialize(writer);
+        BehavourData.Serialize(writer);
 
 #if NETWORK_DEBUG
         writer.Write(GetType().FullName.GetHashCode());
@@ -102,7 +109,7 @@ public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviourB
     {
         DeserializeDirtyChecked(reader, firtsTime);
 
-        Data.Deserialize(reader, firtsTime);
+        BehavourData.Deserialize(reader, firtsTime);
         OnDataDeserialized(firtsTime);
 
 #if NETWORK_DEBUG
@@ -124,12 +131,19 @@ public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviourB
     /// <summary>
     /// Consider to use <see cref="OnPostInitialize"/> instead.
     /// </summary>
-    public virtual void OnPreInitialize() { }
+    public virtual void OnPreInitialize()
+    {
+        Data = Identity
+            .State
+            .DataCollection
+            .GetOrCreateData<TObjectData>();
+    }
 
     /// <summary>
     /// Object instantiated and initialized, use it instead of 'Awake'. Called by 'GSInstanceIdentity' after object deserialization.
     /// </summary>
     public abstract void OnPostInitialize();
+    public virtual void OnInitializeViewData() { }
 
     /// <summary>
     /// Called when object crated with additional data.
@@ -180,5 +194,5 @@ public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviourB
     protected virtual void OnDataDeserialized(bool firstTime) { }
 
     public string ToJSONProperty() => 
-        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TBehaviourData).Name}") + ":" + Data.ToJSONProperty() + "}";
+        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TBehaviourData).Name}") + ":" + BehavourData.ToJSONProperty() + "}";
 }
