@@ -7,6 +7,9 @@ public class NetObjectTransformData : NetObjectStateData
     public NetObjectTransformData(Func<bool> writePermission) : base(writePermission) { }
     public SerializableVector3 Position { get; private set; } = null;
     public SerializableQuaternion Rotation { get; private set; } = null;
+    public SerializableVector3 Velocity { get; private set; } = null;
+    public SerializableFloat WorldTime { get; private set; } = null;
+    public SerializableBool HasParent { get; private set; } = null;
 
     protected override void OnDefineValues()
     {
@@ -14,6 +17,9 @@ public class NetObjectTransformData : NetObjectStateData
 
         Position = new SerializableVector3(default, WritePemission);
         Rotation = new SerializableQuaternion(default, WritePemission);
+        Velocity = new SerializableVector3(default, WritePemission);
+        WorldTime = new SerializableFloat(default, WritePemission);
+        HasParent = new SerializableBool(false, WritePemission);
     }
 
     public override int GetHashCode()
@@ -21,27 +27,19 @@ public class NetObjectTransformData : NetObjectStateData
         var hash = base.GetHashCode();
         hash = (hash * 7) + Position.GetHashCode();
         hash = (hash * 7) + Rotation.GetHashCode();
+        hash = (hash * 7) + Velocity.GetHashCode();
+        hash = (hash * 7) + WorldTime.GetHashCode();
+        hash = (hash * 7) + HasParent.GetHashCode();
         return hash;
     }
 }
 
 public class GSTransformSyncData : GSBehaviourAbstractData
 {
-    public SerializableVector3 Position { get; private set; } = null;
-    public SerializableQuaternion Rotaiton { get; private set; } = null;
-    public SerializableVector3 Velocity { get; private set; } = null;
-    public SerializableFloat WorldTime { get; private set; } = null;
-    public SerializableBool HasParent { get; private set; } = null;
     public SerializableValueCollection NestedTransformUnstructuredData { get; private set; } = null;
 
     protected override void OnDefineValues()
     {
-        Position = new SerializableVector3(default, WritePemission);
-        Rotaiton = new SerializableQuaternion(default, WritePemission);
-        Velocity = new SerializableVector3(default, WritePemission);
-        WorldTime = new SerializableFloat(default, WritePemission);
-        HasParent = new SerializableBool(false, WritePemission);
-
         NestedTransformUnstructuredData = new SerializableValueCollection(() => !Initialized);
     }
 }
@@ -126,6 +124,16 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, N
         ResetTemporaryData();
     }
 
+    public override void OnInitializeViewData()
+    {
+        base.OnInitializeViewData();
+        if (IsLocal)
+        {
+            Data.Position.Set(transform.position);
+            Data.Rotation.Set(transform.rotation);
+        }
+    }
+
     void ResetTemporaryData()
     {
         m_LastFramePosition = transform.position;
@@ -133,8 +141,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, N
 
         if(!IsLocal)
         {
-            transform.position = BehavourData.Position.Value;
-            transform.rotation = BehavourData.Rotaiton.Value;
+            transform.position = Data.Position.Value;
+            transform.rotation = Data.Rotation.Value;
         }
     }
 
@@ -153,25 +161,23 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, N
             Data.Position.Set(transform.position);
             Data.Rotation.Set(transform.rotation);
 
-            BehavourData.Position.Set(transform.position);
-            BehavourData.Rotaiton.Set(transform.rotation);
-            BehavourData.Velocity.Set(m_Velocity);
-            BehavourData.WorldTime.Set(Identity.World.Time);
-            BehavourData.HasParent.Set(hasParentLocaly);
+            Data.Velocity.Set(m_Velocity);
+            Data.WorldTime.Set(Identity.World.Time);
+            Data.HasParent.Set(hasParentLocaly);
 
             foreach(var nestedTransformSync in m_NestedTransformSyncData)
                 nestedTransformSync.OnUpdateWithAuthority();
         }
         else
         {
-            if(!hasParentLocaly && !BehavourData.HasParent.Value)
+            if(!hasParentLocaly && !Data.HasParent.Value)
             {
                 //Position interpolation
                 if (m_InterpolateMovement > Mathf.Epsilon)
                 {
-                    var targetPosition = BehavourData.Position.Value;
+                    var targetPosition = Data.Position.Value;
                     if (m_Prediction)
-                        targetPosition += BehavourData.Velocity.Value.normalized * (Identity.World.Time - BehavourData.WorldTime.Value) * m_PredictionMultipler;
+                        targetPosition += Data.Velocity.Value.normalized * (Identity.World.Time - Data.WorldTime.Value) * m_PredictionMultipler;
 
                     transform.position = Vector3.Lerp(
                             transform.position,
@@ -179,18 +185,18 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, N
                             Time.fixedDeltaTime * m_InterpolateMovement * 10);
                 }
                 else
-                    transform.position = BehavourData.Position.Value;
+                    transform.position = Data.Position.Value;
 
                 //Rotation interpolation
                 if (m_InterpolateRotation > Mathf.Epsilon)
                 {
                     transform.rotation = Quaternion.Slerp(
                             transform.rotation,
-                            BehavourData.Rotaiton.Value,
+                            Data.Rotation.Value,
                             Time.fixedDeltaTime * m_InterpolateRotation * 10);
                 }
                 else
-                    transform.rotation = BehavourData.Rotaiton.Value;
+                    transform.rotation = Data.Rotation.Value;
             }
             
 

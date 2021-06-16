@@ -87,7 +87,16 @@ public class NetWorldView : MonoBehaviour
                     if (string.IsNullOrWhiteSpace(state.PrefabId))
                         return;
 
-                    netObjectView = m_ObjectFactory.Create(state.PrefabId, Vector3.zero, Quaternion.identity);
+                    var position = Vector3.zero;
+                    var rotation = Quaternion.identity;
+
+                    if (state.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
+                    {
+                        position = transformData.Position.Value;
+                        rotation = transformData.Rotation.Value;
+                    }
+
+                    netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
                     m_CurrentObjectViews.Add(UID, netObjectView);
                 }
             }
