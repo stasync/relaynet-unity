@@ -187,7 +187,7 @@ public abstract class NetWorld : IJSONSerializable
     }
 
     public virtual NetObjectState FindObject(NetObjectUID instanceId) =>
-        m_CurrentObjectStates.TryGetValue(instanceId, out NetObjectState state) ? state : null;
+        m_CurrentObjectStates.TryGetValue(instanceId, out var state) ? state : null;
 
     public bool TryGetObject(NetObjectUID instanceId, out NetObjectState state) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out state);

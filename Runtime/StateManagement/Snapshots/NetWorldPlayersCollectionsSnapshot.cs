@@ -7,10 +7,10 @@ public struct NetWorldPlayersCollectionsSnapshot
     public readonly ClientUID MasterClientUID;
 
     public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> PlayersCollection => m_PlayersCollection;
-    Dictionary<ClientUID, NetWorldPlayerSnapshot> m_PlayersCollection;
+    readonly Dictionary<ClientUID, NetWorldPlayerSnapshot> m_PlayersCollection;
 
     public IReadOnlyList<ClientUID> RemovedPlayers => m_RemovedPlayers;
-    public List<ClientUID> m_RemovedPlayers;
+    readonly List<ClientUID> m_RemovedPlayers;
 
     public NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
     {

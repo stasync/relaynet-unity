@@ -15,7 +15,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 {
     readonly NetReader m_Reader;
     readonly Dictionary<int, NetObjectStateData> m_InternalCollection;
-    readonly Func<bool> DataWritePemission;
+    readonly Func<bool> m_DataWritePemission;
 
     public int Count => m_InternalCollection.Count;
 
@@ -23,7 +23,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
     {
         m_Reader = new NetReader();
         m_InternalCollection = new Dictionary<int, NetObjectStateData>();
-        DataWritePemission = dataWritePermission;
+        m_DataWritePemission = dataWritePermission;
     }
 
     public T GetOrCreateData<T>() where T : NetObjectStateData
@@ -31,7 +31,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         var typeHashCode = typeof(T).GetHashCode();
         if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
         {
-            data = NetObjectStateData.Provide<T>(DataWritePemission);
+            data = NetObjectStateData.Provide<T>(m_DataWritePemission);
             if (data == null)
                 throw new InvalidOperationException();
 
@@ -76,7 +76,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 
             if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
             {
-                data = NetObjectStateData.Provide(type, DataWritePemission);
+                data = NetObjectStateData.Provide(type, m_DataWritePemission);
                 m_InternalCollection.Add(typeHashCode, data);
             }
 
