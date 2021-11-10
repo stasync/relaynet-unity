@@ -15,17 +15,26 @@ public sealed class NetObjectStateEmptyData : NetObjectStateData
 public abstract class NetObjectStateData
 {
     public bool HasPermission => WritePemission();
+    public readonly int TypeHashCode;
+
     protected readonly Func<bool> WritePemission;
-    protected readonly int HashCode;
     protected bool Initialized { get; private set; }
+
+#if UNITY_EDITOR
+    public IEnumerable<string> GetValuePairs_Editor()
+    {
+        foreach (var kvp in m_InternalValueCollection)
+            yield return $"{kvp.Key}:{kvp.Value}";
+    }
+#endif
 
     protected IReadOnlyDictionary<string, ISerializableValue> SerializeableValues => m_InternalValueCollection;
     Dictionary<string, ISerializableValue> m_InternalValueCollection;
 
     protected NetObjectStateData(Func<bool> writePermission)
     {
-        HashCode = GetType().GetHashCode();
         WritePemission = writePermission;
+        TypeHashCode = GetTypeHashCode(GetType());
 
         OnDefineValues();
         CollectValues();
@@ -87,8 +96,7 @@ public abstract class NetObjectStateData
         {
             if (pvp.Key.SetMethod != null && pvp.Key.SetMethod.IsPublic)
             {
-                Debug.LogError($"{GetType().FullName}.{pvp.Key.Name} has public setter and will be ignored by auto collector." +
-                    $"Use private setter instead");
+                Debug.LogError($"{GetType().FullName}.{pvp.Key.Name} has public setter and will be ignored by auto collector. Use private setter instead");
                 continue;
             }
 
@@ -129,4 +137,14 @@ public abstract class NetObjectStateData
 
         return instance;
     }
+
+
+    static int GetTypeHashCode(Type dataType) =>
+        Core.Main.TypeLookup.HashCodeOf(dataType);
+
+    public static int GetTypeHashCode<TData>() where TData : NetObjectStateData =>
+        GetTypeHashCode(typeof(TData));
+
+    public static bool TryGetType(int typeHashCode, out Type type) =>
+        Core.Main.TypeLookup.TryGetType(typeHashCode, out type);
 }

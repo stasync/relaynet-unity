@@ -28,7 +28,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 
     public T GetOrCreateData<T>() where T : NetObjectStateData
     {
-        var typeHashCode = typeof(T).GetHashCode();
+        var typeHashCode = NetObjectStateData.GetTypeHashCode<T>();
         if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
         {
             data = NetObjectStateData.Provide<T>(m_DataWritePemission);
@@ -44,8 +44,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
     public bool TryGetData<T>(out T data) where T : NetObjectStateData
     {
         data = null;
-        var typeHashCode = typeof(T).GetHashCode();
-
+        var typeHashCode = NetObjectStateData.GetTypeHashCode<T>();
         var dataExists = m_InternalCollection.TryGetValue(typeHashCode, out var internalData);
         if (dataExists)
             data = internalData as T;
@@ -55,7 +54,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 
     public T GetData<T>() where T : NetObjectStateData
     {
-        var typeHashCode = typeof(T).GetHashCode();
+        var typeHashCode = NetObjectStateData.GetTypeHashCode<T>();
         return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
     }
 
@@ -70,9 +69,9 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         var dataCount = m_Reader.ReadInt32();
         for (var i = 0; i < dataCount; i++)
         {
-            var typeName = m_Reader.ReadString();
-            var type = Type.GetType(typeName);
-            var typeHashCode = type.GetHashCode();
+            var typeHashCode = m_Reader.ReadInt32();
+            if (!NetObjectStateData.TryGetType(typeHashCode, out var type))
+                throw new InvalidOperationException();
 
             if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
             {

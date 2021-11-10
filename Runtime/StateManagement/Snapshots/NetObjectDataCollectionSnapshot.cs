@@ -16,7 +16,7 @@ public struct NetObjectDataCollectionSnapshot
         s_Writer.Write(dataCollection.Count);
         foreach (var data in dataCollection)
         {
-            s_Writer.Write(data.GetType().FullName);
+            s_Writer.Write(data.TypeHashCode);
             data.Serialize(s_Writer);
         }
 

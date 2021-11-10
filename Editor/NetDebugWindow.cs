@@ -60,7 +60,14 @@ public class NetDebugWindow : EditorWindow
                 {
                     EditorGUI.indentLevel++;
                     foreach (var data in dataCollection)
-                        EditorGUILayout.LabelField($"{data.ToString()}");
+                    {
+                        EditorGUILayout.LabelField($"{data.GetType().FullName}:");
+                        EditorGUI.indentLevel++;
+                        foreach(var dataValueDefinition in data.GetValuePairs_Editor())
+                            EditorGUILayout.LabelField(dataValueDefinition);
+
+                        EditorGUI.indentLevel--;
+                    }
                     EditorGUI.indentLevel--;
                 }
 
@@ -319,6 +326,10 @@ public class NetDebugWindow : EditorWindow
             return;
 
         var realtime = m_NetworkProvider.Instance.Realtime;
+        EditorGUILayout.LabelField($"RT status: {realtime.ConnectState}", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField($"RT conn: {realtime.LocalConnectionUID}", EditorStyles.boldLabel);
+
+        EditorGUILayout.Space();
 
         m_ShowNetworkStatistics = EditorGUILayout.Foldout(m_ShowNetworkStatistics, "Network Statistics");
         if(m_ShowNetworkStatistics)
