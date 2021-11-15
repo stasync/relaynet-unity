@@ -21,7 +21,7 @@ public abstract class NetObjectStateData
     protected bool Initialized { get; private set; }
 
 #if UNITY_EDITOR
-    public IEnumerable<string> GetValuePairs_Editor()
+    public IEnumerable<string> GetValuesInfo_Editor()
     {
         foreach (var kvp in m_InternalValueCollection)
             yield return $"{kvp.Key}:{kvp.Value}";
@@ -46,7 +46,7 @@ public abstract class NetObjectStateData
 
     public override int GetHashCode()
     {
-        var hash = GetType().GetHashCode();
+        var hash = TypeHashCode;
         foreach (var value in m_InternalValueCollection.Values)
             hash = (hash * 7) + value.GetHashCode();
 
@@ -140,11 +140,11 @@ public abstract class NetObjectStateData
 
 
     static int GetTypeHashCode(Type dataType) =>
-        Core.Main.TypeLookup.HashCodeOf(dataType);
+        Core.Main.IOC.TypeLookup.HashCodeOf(dataType);
 
     public static int GetTypeHashCode<TData>() where TData : NetObjectStateData =>
         GetTypeHashCode(typeof(TData));
 
     public static bool TryGetType(int typeHashCode, out Type type) =>
-        Core.Main.TypeLookup.TryGetType(typeHashCode, out type);
+        Core.Main.IOC.TypeLookup.TryGetType(typeHashCode, out type);
 }

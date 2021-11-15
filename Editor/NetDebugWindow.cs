@@ -61,11 +61,10 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel++;
                     foreach (var data in dataCollection)
                     {
-                        EditorGUILayout.LabelField($"{data.GetType().FullName}:");
+                        EditorGUILayout.LabelField($"{data.GetType().FullName} {data.TypeHashCode}:");
                         EditorGUI.indentLevel++;
-                        foreach(var dataValueDefinition in data.GetValuePairs_Editor())
+                        foreach(var dataValueDefinition in data.GetValuesInfo_Editor())
                             EditorGUILayout.LabelField(dataValueDefinition);
-
                         EditorGUI.indentLevel--;
                     }
                     EditorGUI.indentLevel--;
