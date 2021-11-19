@@ -104,8 +104,8 @@ public class NetWorldView : MonoBehaviour
             //Initialize new view;
             if (netObjectView.Initialized)
             {
-                if (!state.IsOwnedByLocalPlayer)
-                    netObjectView.Deserialize(state.ViewData.UnstructuredData, false, false);
+                if (!state.IsOwnedByLocalPlayer && state.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
+                    netObjectView.Deserialize(viewData.UnstructuredData, false, false);
             }
             else
                 InitializeObjectView(netObjectView, state.UID, null);

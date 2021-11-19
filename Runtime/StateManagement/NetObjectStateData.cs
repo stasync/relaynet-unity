@@ -21,7 +21,7 @@ public abstract class NetObjectStateData
     protected bool Initialized { get; private set; }
 
 #if UNITY_EDITOR
-    public IEnumerable<string> GetValuesInfo_Editor()
+    public virtual IEnumerable<string> GetValuesInfo_Editor()
     {
         foreach (var kvp in m_InternalValueCollection)
             yield return $"{kvp.Key}:{kvp.Value}";

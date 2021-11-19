@@ -75,10 +75,12 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
          * Skip deserialization if it calls on local object.
          * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
          */
-        if (!IsLocal && State.ViewData != null)
-            Deserialize(State.ViewData.UnstructuredData, true, true); //Force true to allow deseriazation before object initialized.
 
-        if(additionalData != null && additionalData.Length > 0)
+        var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
+        if (!IsLocal)
+            Deserialize(viewStateData.UnstructuredData, true, true); //Force true to allow deseriazation before object initialized.
+
+        if (additionalData != null && additionalData.Length > 0)
             foreach (var o in m_Observables)
                 o.OnCreatedWithAdditionalData(additionalData);
 
@@ -98,7 +100,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
 
         foreach (var o in m_Observables)
         {
-            if (!State.ViewData.Initialized)
+            if (!viewStateData.ViewInitialized)
                 o.OnInitializeViewData();
         }
 

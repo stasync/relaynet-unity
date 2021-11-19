@@ -31,10 +31,12 @@ public class NetDebugWindow : EditorWindow
             {
                 EditorGUILayout.LabelField($"UID: {m_State.UID} Scene: {m_State.IsSceneObject} Prefab: {m_State.PrefabId}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Chanage type: {m_State.StateChangeType}", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField($"Owner: {m_State.Owner.ToString()}");
+                EditorGUILayout.LabelField($"Owner: {m_State.Owner}");
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
                 EditorGUILayout.LabelField($"Master: {m_State.IsOwnedByMasterClient}");
-                EditorGUILayout.LabelField($"Data size: {m_State.ViewData.UnstructuredData.Length}");
+
+                if (m_State.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
+                    EditorGUILayout.LabelField($"Data size: {viewData.UnstructuredData.Length}");
 
                 var temporalBuffer = m_State.RPCBuffer.TemporalBuffer;
                 var persistentBuffer = m_State.RPCBuffer.PersistentBuffer;

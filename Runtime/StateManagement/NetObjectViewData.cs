@@ -1,89 +1,65 @@
 using Core.Networking;
 
-public interface IReadOnlyNetObjectViewData
+public class NetObjectViewStateData : NetObjectStateData
 {
-    bool Initialized { get; }
-    byte[] UnstructuredData { get; }
-
-    NetObjectViewDataSnapshot ToSnapshot();
-}
-
-public class NetObjectViewData : IReadOnlyNetObjectViewData
-{
-    public bool Initialized { get; private set; }
+    public bool ViewInitialized { get; private set; }
     public byte[] UnstructuredData { get; private set; }
 
-    public NetObjectViewData()
+    public NetObjectViewStateData(System.Func<bool> writePermission) : base(writePermission) { }
+
+    protected override void OnDefineValues()
     {
-        Clear();
+        base.OnDefineValues();
+
+        ViewInitialized = false;
+        UnstructuredData = new byte[] { };
     }
 
-    public override int GetHashCode()
+#if UNITY_EDITOR
+    public override System.Collections.Generic.IEnumerable<string> GetValuesInfo_Editor()
     {
-        var hash = 13;
+        foreach (var pair in base.GetValuesInfo_Editor())
+            yield return pair;
 
-        hash += Initialized.GetHashCode();
-        foreach (var d in UnstructuredData)
-            hash = (hash * 7) + d.GetHashCode();
+        yield return $"{nameof(ViewInitialized)}:{ViewInitialized}";
+        yield return $"{nameof(UnstructuredData)}:{UnstructuredData.Length}";
+    }
+#endif
 
-        return hash;
+    public override void Serialize(NetWriter writer)
+    {
+        base.Serialize(writer);
+
+        writer.Write(Initialized);
+        writer.WriteBytesAndSize(UnstructuredData);
+    }
+
+    public override void Deserialize(NetReader reader, bool firtsTime)
+    {
+        base.Deserialize(reader, firtsTime);
+
+        ViewInitialized = reader.ReadBoolean();
+        UnstructuredData = reader.ReadBytesAndSize();
     }
 
     public void SetData(byte[] data, bool initialization = false)
     {
+        if (!WritePemission())
+            throw new System.InvalidOperationException();
+
         UnstructuredData = data;
 
         if (initialization)
-            Initialized = true;
+            ViewInitialized = true;
     }
 
-    public void Clear()
+    public override int GetHashCode()
     {
-        Initialized = false;
-        UnstructuredData = new byte[] { };
-    }
+        var hash = base.GetHashCode();
 
-    public void RestoreFormSnapshot(NetObjectViewDataSnapshot snapshot)
-    {
-        Initialized = snapshot.Initalized;
-        UnstructuredData = snapshot.UnstructuredData;
-    }
-
-    public NetObjectViewDataSnapshot ToSnapshot() => NetObjectViewDataSnapshot.FromState(this);
-}
-
-public struct NetObjectViewDataSnapshot
-{
-    public readonly bool Initalized;
-    public readonly byte[] UnstructuredData;
-
-    public NetObjectViewDataSnapshot(IReadOnlyNetObjectViewData state)
-    {
-        Initalized = state.Initialized;
-        UnstructuredData = state.UnstructuredData;
-    }
-
-    public NetObjectViewDataSnapshot(NetReader reader)
-    {
-        Initalized = reader.ReadBoolean();
-        UnstructuredData = reader.ReadBytesAndSize();
-    }
-
-    public void Serialize(NetWriter writer)
-    {
-        writer.Write(Initalized);
-        writer.WriteBytesAndSize(UnstructuredData);
-    }
-
-    public static NetObjectViewDataSnapshot FromState(NetObjectViewData data) => new NetObjectViewDataSnapshot(data);
-
-    public static NetObjectViewDataSnapshot FromReader(NetReader reader) => new NetObjectViewDataSnapshot(reader);
-
-    public int GetSize()
-    {
-        var result = 0;
-        result += sizeof(bool);
-        result += UnstructuredData.Length;
-        return result;
+        hash += ViewInitialized.GetHashCode();
+        foreach (var d in UnstructuredData)
+            hash = (hash * 7) + d.GetHashCode();
+        return hash;
     }
 }
