@@ -232,6 +232,9 @@ public class NetWorldView : MonoBehaviour
     {
         foreach (var r in targetTransform.GetComponentsInChildren<Renderer>(true))
             r.forceRenderingOff = ForceRenderingOff;
+
+        foreach(var l in targetTransform.GetComponentsInChildren<Light>(true))
+            l.enabled = ForceRenderingOff;
     }
 
     void UpdateSoundFor(Transform targetTransform)
