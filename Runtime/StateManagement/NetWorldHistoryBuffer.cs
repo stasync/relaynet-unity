@@ -1,16 +1,18 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 
-public interface IReadOnlyHustoryBuffer : IReadOnlyCollection<NetWorldSnapshot>
+public interface IReadOnlyHistoryBuffer : IReadOnlyCollection<NetWorldSnapshot>
 {
     int Size { get; }
-    int AveregeFrameSize { get;}
+    int AveregeFrameSize { get; }
+    float SizeMB { get; }
 }
 
-public class HistoryBiffer : IReadOnlyHustoryBuffer
+public class HistoryBiffer : IReadOnlyHistoryBuffer
 {
     public int Size { get; private set; } 
     public int AveregeFrameSize { get; private set; }
+    public float SizeMB => Size * 0.000001f;
 
     Queue<NetWorldSnapshot> m_HistoryBuffer;
 

@@ -20,7 +20,7 @@ public class NetWorldRuntime : NetWorld
 
     Queue<byte[]> m_RemoteWorldDataUpdateRequests;
 
-    public IReadOnlyHustoryBuffer HistroyBuffer => m_HistoryBuffer;
+    public IReadOnlyHistoryBuffer HistroyBuffer => m_HistoryBuffer;
     HistoryBiffer m_HistoryBuffer;
 
     HashSet<ClientUID> m_LocalPlayerRegisterQueue;

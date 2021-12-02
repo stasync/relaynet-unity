@@ -63,7 +63,7 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel++;
                     foreach (var data in dataCollection)
                     {
-                        EditorGUILayout.LabelField($"{data.GetType().FullName} {data.TypeHashCode}:");
+                        EditorGUILayout.LabelField($"{data.GetType().FullName}  Size: {data.GetSerializedSize_Editor()}  Type: {data.TypeHashCode}:", EditorStyles.boldLabel);
                         EditorGUI.indentLevel++;
                         foreach(var dataValueDefinition in data.GetValuesInfo_Editor())
                             EditorGUILayout.LabelField(dataValueDefinition);
@@ -361,7 +361,7 @@ public class NetDebugWindow : EditorWindow
         if (m_ShowMainWorldHistoryInfo)
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField($"History size: {mainWorld.HistroyBuffer.Size} [{mainWorld.HistroyBuffer.AveregeFrameSize}] bytes, cnt: {mainWorld.HistroyBuffer.Count} frames", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"History size: {mainWorld.HistroyBuffer.Size} ({mainWorld.HistroyBuffer.SizeMB:f2}mb) [{mainWorld.HistroyBuffer.AveregeFrameSize}] bytes, cnt: {mainWorld.HistroyBuffer.Count} frames", EditorStyles.boldLabel);
 
             EditorGUI.BeginDisabledGroup(m_CurrentWorldReplicaDrawer != null);
             if (GUILayout.Button("Playback"))

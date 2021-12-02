@@ -147,4 +147,13 @@ public abstract class NetObjectStateData
 
     public static bool TryGetType(int typeHashCode, out Type type) =>
         Core.Main.IOC.TypeLookup.TryGetType(typeHashCode, out type);
+
+#if UNITY_EDITOR
+    public int GetSerializedSize_Editor()
+    {
+        var writer = NetWriter.Get();
+        Serialize(writer);
+        return writer.Position;
+    }
+#endif
 }
