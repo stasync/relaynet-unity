@@ -31,8 +31,9 @@ public class NetWorldRuntime : NetWorld
 
     readonly Action<uint, DeliveryIntent, byte[]> m_Sender;
 
-    const float c_HistoryBufferSecondsLength = 10f; //Record last 'N' seconds;
-    const float c_MinUpdateInteraval = 0.1f; //10 times per second;
+    const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 60f; //Record last 'N' seconds;
+    const float MIN_UPDATE_INTRAVAL = 0.1f; //10 times per second;
+
     float m_LastUpdateTime;
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
@@ -96,13 +97,13 @@ public class NetWorldRuntime : NetWorld
     protected override void UpdateImplementation(float deltaTime)
     {
         var worldDelta = FixedTime - m_LastUpdateTime;
-        if (worldDelta >= c_MinUpdateInteraval)
+        if (worldDelta >= MIN_UPDATE_INTRAVAL)
         {
             m_LastUpdateTime = FixedTime;
             UpdateWorldState(worldDelta);
         }
 
-        var deltaRatio = (c_MinUpdateInteraval - (FixedTime - m_LastUpdateTime)) / deltaTime;
+        var deltaRatio = (MIN_UPDATE_INTRAVAL - (FixedTime - m_LastUpdateTime)) / deltaTime;
         var messageToSendCount = m_OutgoingMessageQueue.Count / deltaRatio;
 
         var sended = 0f;
@@ -370,9 +371,8 @@ public class NetWorldRuntime : NetWorld
     {
         base.OnBeforeExecuteView(worldDelta);
 
-        var elementsCount = c_HistoryBufferSecondsLength / c_MinUpdateInteraval;
         m_HistoryBuffer.Enqueue(ToSnapshot(worldDelta));
-        if (m_HistoryBuffer.Count > elementsCount)
+        while (m_HistoryBuffer.LengthInSeconds > HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS)
             m_HistoryBuffer.Dequeue();
     }
     #endregion

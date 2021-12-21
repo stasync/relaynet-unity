@@ -6,6 +6,7 @@ public interface IReadOnlyHistoryBuffer : IReadOnlyCollection<NetWorldSnapshot>
     int Size { get; }
     int AveregeFrameSize { get; }
     float SizeMB { get; }
+    float LengthInSeconds { get; }
 }
 
 public class HistoryBiffer : IReadOnlyHistoryBuffer
@@ -13,6 +14,7 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
     public int Size { get; private set; } 
     public int AveregeFrameSize { get; private set; }
     public float SizeMB => Size * 0.000001f;
+    public float LengthInSeconds { get; private set; }
 
     Queue<NetWorldSnapshot> m_HistoryBuffer;
 
@@ -26,6 +28,8 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
         m_HistoryBuffer.Enqueue(snapshot);
 
         Size += snapshot.GetSize();
+        LengthInSeconds += snapshot.DeltaTime;
+
         RecalculateAveregeSize();
     }
 
@@ -34,6 +38,8 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
         var snapshot = m_HistoryBuffer.Dequeue();
 
         Size -= snapshot.GetSize();
+        LengthInSeconds -= snapshot.DeltaTime;
+
         RecalculateAveregeSize();
     }
 
@@ -44,6 +50,8 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
         m_HistoryBuffer.Clear();
 
         Size = 0;
+        LengthInSeconds = 0f;
+
         RecalculateAveregeSize();
     }
 

@@ -361,7 +361,7 @@ public class NetDebugWindow : EditorWindow
         if (m_ShowMainWorldHistoryInfo)
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField($"History size: {mainWorld.HistroyBuffer.Size} ({mainWorld.HistroyBuffer.SizeMB:f2}mb) [{mainWorld.HistroyBuffer.AveregeFrameSize}] bytes, cnt: {mainWorld.HistroyBuffer.Count} frames", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"History size: {mainWorld.HistroyBuffer.Size} ({mainWorld.HistroyBuffer.SizeMB:f2}mb) [{mainWorld.HistroyBuffer.AveregeFrameSize}] bytes, cnt: {mainWorld.HistroyBuffer.Count} frames, time: {mainWorld.HistroyBuffer.LengthInSeconds:f2} s", EditorStyles.boldLabel);
 
             EditorGUI.BeginDisabledGroup(m_CurrentWorldReplicaDrawer != null);
             if (GUILayout.Button("Playback"))
