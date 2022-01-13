@@ -1,4 +1,4 @@
-﻿using Core.Networking;
+using Core.Networking;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -51,8 +51,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public IReadOnlyNetObjectDataCollection DataCollection => m_DataCollection;
     readonly NetObjectDataCollection m_DataCollection;
     #endregion
-
-    int m_LastHashCode;
 
     public override int GetHashCode()
     {
@@ -141,12 +139,10 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
 
+        var lastHashCode = GetHashCode();
         LocalUpdateRequest(StateChangeType);
-
         var newHashCode = GetHashCode();
-        var changed = !newHashCode.Equals(m_LastHashCode);
-        m_LastHashCode = newHashCode;
-
+        var changed = newHashCode != lastHashCode;
         return changed;
     }
 
