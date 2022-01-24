@@ -16,7 +16,7 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
     public float SizeMB => Size * 0.000001f;
     public float LengthInSeconds { get; private set; }
 
-    Queue<NetWorldSnapshot> m_HistoryBuffer;
+    readonly Queue<NetWorldSnapshot> m_HistoryBuffer;
 
     public HistoryBiffer()
     {

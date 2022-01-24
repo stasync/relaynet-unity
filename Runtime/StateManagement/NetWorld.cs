@@ -73,13 +73,16 @@ public abstract class NetWorld : IJSONSerializable
 
     protected abstract void UpdateImplementation(float deltaTime);
 
-    protected bool TryAddObject(NetObjectUID uid, NetObjectState state)
+    protected bool TryAddObject(NetObjectState state)
     {
-        var canAddObject = !ObjectExists(uid);
+        if (!state.IsValid)
+            throw new InvalidOperationException();
+
+        var canAddObject = !ObjectExists(state.UID);
         if (canAddObject)
         {
-            m_CurrentObjectStates.Add(uid, state);
-            ObjectCreated(uid);
+            m_CurrentObjectStates.Add(state.UID, state);
+            ObjectCreated(state.UID);
         }
 
         return canAddObject;
@@ -236,7 +239,7 @@ public abstract class NetWorld : IJSONSerializable
             if (m_CurrentObjectStates.ContainsKey(kvp.Key))
                 m_CurrentObjectStates[kvp.Key].ChangeObjectRemotely(kvp.Value);
             else
-                TryAddObject(kvp.Key, new NetObjectState(kvp.Value, PlayersInternal.Find));
+                TryAddObject(new NetObjectState(kvp.Value, PlayersInternal.Find));
         }
 
         //Remove absent obejets;

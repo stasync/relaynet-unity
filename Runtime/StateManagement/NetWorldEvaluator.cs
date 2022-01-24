@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class NetWorldEvaluator : NetWorld
 {
-    List<NetWorldSnapshot> m_HistoryBuffer;
+    readonly List<NetWorldSnapshot> m_HistoryBuffer;
     NetWorldSnapshot m_CurrentSnapshot;
 
     float m_CurrentTime;
@@ -103,7 +103,7 @@ public class NetWorldEvaluator : NetWorld
         {
             var s = m_HistoryBuffer[i];
             result += s.DeltaTime;
-            if (i.Equals(snapshotIndex))
+            if (i == snapshotIndex)
                 return result;
         }
 
@@ -122,7 +122,7 @@ public class NetWorldEvaluator : NetWorld
         if (snapshotIndex < 0 || snapshotIndex >= m_HistoryBuffer.Count)
             throw new IndexOutOfRangeException();
 
-        var lastSnapshot = m_HistoryBuffer[m_HistoryBuffer.Count - 1];
+        var lastSnapshot = m_HistoryBuffer[^1];
         var targetSnapshot = m_HistoryBuffer[snapshotIndex];
 
         return lastSnapshot.LocalTime - targetSnapshot.LocalTime;
@@ -149,7 +149,7 @@ public class NetWorldEvaluator : NetWorld
         UpdateWorldState(m_CurrentSnapshot.DeltaTime);
 
         //Do not pick next snapshot if this is a last snapshot;
-        if (CurrentSnapshotIndex.Equals(m_HistoryBuffer.Count - 1))
+        if (CurrentSnapshotIndex == m_HistoryBuffer.Count - 1)
         {
             if (m_AutoDestroy)
                 Destroy();

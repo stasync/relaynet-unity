@@ -300,12 +300,12 @@ public class NetWorldRuntime : NetWorld
                         m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
                     }
                     else
-                        Debug.LogError($"Unable to restore object {newState.ToString()} form {snapshot.ToString()}");
+                        Debug.LogError($"Unable to restore object {newState} form {snapshot}");
                 }
                 else
                     newState = new NetObjectState(snapshot, PlayersInternal.Find);
 
-                TryAddObject(snapshot.ObjectUID, newState);
+                TryAddObject(newState);
                 m_RemoteObjectUpdateRequests.Remove(UID);
             });
         }
@@ -336,7 +336,7 @@ public class NetWorldRuntime : NetWorld
                 else
                 {
                     state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-                    TryAddObject(state.UID, state);
+                    TryAddObject(state);
                 }
 
                 m_ObjectsRegisterRequests.Remove(UID);
