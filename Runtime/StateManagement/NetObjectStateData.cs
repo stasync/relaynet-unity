@@ -3,7 +3,6 @@
 using Core.Networking;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -83,11 +82,11 @@ public abstract class NetObjectStateData
         var fields = Find.FieldReferencesWithInfo<ISerializableValue>(this, bindingFlags);
         foreach (var fvp in fields)
         {
-            if (properties.Any(pvp => fvp.Key.Name.Equals($"<{pvp.Key.Name}>k__BackingField"))) //Skip backing fields;
-                continue;
-
-            Debug.LogError($"{GetType().FullName}.{fvp.Key.Name} is a field and will be ignored by auto collector. " +
-                $"Use property pattern instead: {fvp.Key.Name} {"{ get; private set; }"}");
+            foreach (var pvp in properties)
+            {
+                if(fvp.Key.Name.Equals($"<{pvp.Key.Name}>k__BackingField"))
+                    throw new InvalidOperationException($"{GetType().FullName}.{fvp.Key.Name} is a field and will be ignored by auto collector. Use property pattern instead: {fvp.Key.Name} {"{ get; private set; }"}");
+            }
         }
 #endif
 
@@ -100,7 +99,7 @@ public abstract class NetObjectStateData
                 continue;
             }
 
-            if (pvp.Key.GetCustomAttributes<IgnoreAutoCollection>().Any())
+            if (Attribute.IsDefined(pvp.Key, typeof(IgnoreAutoCollection)))
                 continue;
 
             if (pvp.Value == null)
@@ -132,7 +131,7 @@ public abstract class NetObjectStateData
 
     public static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData
     {
-        if (!(Provide(typeof(T), writePermission) is T instance))
+        if (Provide(typeof(T), writePermission) is not T instance)
             throw new InvalidOperationException($"Unable to produse instance of data of type '{typeof(T).FullName}'");
 
         return instance;
