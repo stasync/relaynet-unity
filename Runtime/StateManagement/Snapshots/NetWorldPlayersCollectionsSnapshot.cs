@@ -24,7 +24,7 @@ public struct NetWorldPlayersCollectionsSnapshot
         m_RemovedPlayers = collection.RemovedPlayers.ToList();
     }
 
-    public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) => new NetWorldPlayersCollectionsSnapshot(collection);
+    public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) => new(collection);
 
     public int GetSize()
     {

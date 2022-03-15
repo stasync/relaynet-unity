@@ -36,8 +36,8 @@ public struct NetWorldPlayerSnapshot
         Properties = PropertiesSnapshot.FromReader(reader);
     }
 
-    public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player) => new NetWorldPlayerSnapshot(player);
-    public static NetWorldPlayerSnapshot FormReader(NetReader reader) => new NetWorldPlayerSnapshot(reader);
+    public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player) => new(player);
+    public static NetWorldPlayerSnapshot FormReader(NetReader reader) => new(reader);
 
     public void Serialize(NetWriter writer)
     {

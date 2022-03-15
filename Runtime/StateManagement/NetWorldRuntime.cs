@@ -62,7 +62,7 @@ public class NetWorldRuntime : NetWorld
         m_OutgoingMessageQueue = new Queue<Action>();
     }
 
-    public NetWorldEvaluator Replicate() => new NetWorldEvaluator(this);
+    public NetWorldEvaluator Replicate() => new(this);
 
     public void ScheduleUpdateForRemoteObject(NetObjectStateSnapshot snapshot)
     {

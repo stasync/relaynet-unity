@@ -19,7 +19,7 @@ public sealed class RPCUtils
         return $"{a.Method.DeclaringType.FullName}.{a.Method.Name}";
     }
 
-    static Dictionary<string, int> s_RPCHashMap = new Dictionary<string, int>();
+    static readonly Dictionary<string, int> s_RPCHashMap = new();
 
     public static string TryFindStringByHash(int hash)
     {

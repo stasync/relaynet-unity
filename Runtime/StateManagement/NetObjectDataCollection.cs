@@ -60,7 +60,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 
     public void Clear() => m_InternalCollection.Clear();
 
-    public NetObjectDataCollectionSnapshot ToSnapshot() => new NetObjectDataCollectionSnapshot(m_InternalCollection.Values);
+    public NetObjectDataCollectionSnapshot ToSnapshot() => new(m_InternalCollection.Values);
 
     public void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
     {

@@ -76,7 +76,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
 
     public int CompareTo(NetObjectUID other) => m_Value.CompareTo(other.m_Value);
     public static implicit operator uint(NetObjectUID value) => value.m_Value;
-    public static implicit operator NetObjectUID(uint value) => new NetObjectUID(value);
+    public static implicit operator NetObjectUID(uint value) => new(value);
 
     public static bool operator ==(NetObjectUID value0, NetObjectUID value1) => value0.m_Value == value1.m_Value;
     public static bool operator !=(NetObjectUID value0, NetObjectUID value1) => value0.m_Value != value1.m_Value;

@@ -30,7 +30,7 @@ public struct NetObjectDataCollectionSnapshot
 
     public static NetObjectDataCollectionSnapshot FromState(NetObjectDataCollection data) => data.ToSnapshot();
 
-    public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) => new NetObjectDataCollectionSnapshot(reader);
+    public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) => new(reader);
 
     public int GetSize() => Data.Length;
 

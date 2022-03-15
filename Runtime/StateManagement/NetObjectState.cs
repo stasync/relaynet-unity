@@ -76,7 +76,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
 
-    List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
+    List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new();
 
     NetWriter m_Writer;
 
@@ -302,7 +302,7 @@ public struct RPCWithoutAuthorityState
         return writer.ToArray();
     }
 
-    public static RPCWithoutAuthorityState FromReader(NetReader reader) => new RPCWithoutAuthorityState(reader);
+    public static RPCWithoutAuthorityState FromReader(NetReader reader) => new(reader);
 }
 
 public struct RPCWithoutAuthorityRequest
