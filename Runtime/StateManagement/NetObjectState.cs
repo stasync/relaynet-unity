@@ -76,7 +76,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
 
-    List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new();
+    readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests;
 
     NetWriter m_Writer;
 
@@ -94,6 +94,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         m_RPCBuffer = new NetObjectRPCState();
         m_DataCollection = new NetObjectDataCollection(() => IsOwnedByLocalPlayer);
+        m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
     }
 
     public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
@@ -116,6 +117,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         m_RPCBuffer.Clear();
         m_DataCollection.Clear();
+        m_RPCWithoutAuthorityRequests.Clear();
 
         if (wasValid)
             Invalidated();
