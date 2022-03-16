@@ -114,7 +114,7 @@ public class SerializableValueCollection : ISerializableValue
     {
         CollectionChangePermission = collectionChangePermission ?? throw new ArgumentNullException(nameof(collectionChangePermission));
         m_InternalCollection = new Dictionary<string, ISerializableValue>();
-        if (baseValues != null && baseValues.Any())
+        if (baseValues != null)
             foreach(var kvp in baseValues)
                 m_InternalCollection.Add(kvp.Key, kvp.Value);
     }

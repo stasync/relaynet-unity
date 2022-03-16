@@ -7,7 +7,7 @@ public interface IReadOnlyNetObjectRPCState
     IReadOnlyCollection<RPCState> TemporalBuffer { get; }
 
     NetObjectRPCStateSnapshot ToSnapshot();
-    void Receive(bool receivePersistent, Action<int, byte[]> reciever);
+    void ExecuteRemotely(bool receivePersistent, Action<int, byte[]> handler);
 }
 
 public struct RPCStateUIDAllocator
@@ -56,32 +56,34 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
 
     readonly HashSet<uint> m_ReceiveCollisions = new();
 
+    public NetObjectRPCState() { }
+
     public void AddOrUpdate(int hash, byte[] payload, bool persistent, RPCBufferChangeMethod changeMethod)
     {
         var uid = RPCStateUIDAllocator.AllocateUID();
         var data = new RPCState(hash, uid, payload);
 
-        PushTo(data, m_TemporalBuffer, changeMethod);
+        PushTo(m_TemporalBuffer, data, changeMethod);
         if (persistent)
-            PushTo(data, m_PersistentBuffer, changeMethod);
+            PushTo(m_PersistentBuffer, data, changeMethod);
     }
 
-    void PushTo(RPCState data, List<RPCState> targetBuffer, RPCBufferChangeMethod changeMethod)
+    void PushTo(List<RPCState> targetBuffer, RPCState newData, RPCBufferChangeMethod changeMethod)
     {
         if (changeMethod == RPCBufferChangeMethod.Replace)
-            targetBuffer.RemoveAll(d => d.Hash.Equals(data.Hash));
+            targetBuffer.RemoveAll(d => d.Hash == newData.Hash);
 
-        targetBuffer.Add(data);
+        targetBuffer.Add(newData);
     }
 
-    public void Receive(bool receivePersistent, Action<int, byte[]> reciever)
+    public void ExecuteRemotely(bool executePersistent, Action<int, byte[]> handler)
     {
         m_ReceiveCollisions.Clear();
 
-        if (receivePersistent)
+        if (executePersistent)
             foreach (var d in m_PersistentBuffer)
             {
-                reciever(d.Hash, d.Payload);
+                handler(d.Hash, d.Payload);
                 m_ReceiveCollisions.Add(d.UID);
             }
 
@@ -91,13 +93,16 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
             if (m_ReceiveCollisions.Contains(d.UID))
                 continue;
 
-            reciever(d.Hash, d.Payload);
+            handler(d.Hash, d.Payload);
             m_ReceiveCollisions.Add(d.UID);
         }
     }
 
-    public void ClearPersistent() => m_PersistentBuffer.Clear();
-    public void ClearTemporal() => m_TemporalBuffer.Clear();
+    public void ClearPersistent() =>
+        m_PersistentBuffer.Clear();
+
+    public void ClearTemporal() =>
+        m_TemporalBuffer.Clear();
 
     public void Clear()
     {
@@ -105,7 +110,8 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
         ClearTemporal();
     }
 
-    public void RemovePersistent(int hashCode) => m_PersistentBuffer.RemoveAll(d => d.Hash.Equals(hashCode));
+    public void RemovePersistent(int hashCode) =>
+        m_PersistentBuffer.RemoveAll(d => d.Hash.Equals(hashCode));
 
     public void RestoreFormSnapshot(NetObjectRPCStateSnapshot snapshot)
     {
@@ -118,7 +124,8 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
             m_TemporalBuffer.Add(RPCState.FromSnapshot(rpcSnapshot));
     }
 
-    public NetObjectRPCStateSnapshot ToSnapshot() => NetObjectRPCStateSnapshot.FromState(this);
+    public NetObjectRPCStateSnapshot ToSnapshot() =>
+        NetObjectRPCStateSnapshot.FromState(this);
 
     public override int GetHashCode()
     {

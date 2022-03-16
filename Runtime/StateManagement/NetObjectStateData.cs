@@ -82,11 +82,18 @@ public abstract class NetObjectStateData
         var fields = Find.FieldReferencesWithInfo<ISerializableValue>(this, bindingFlags);
         foreach (var fvp in fields)
         {
+            var isValidBackingFiled = false;
             foreach (var pvp in properties)
             {
-                if(fvp.Key.Name.Equals($"<{pvp.Key.Name}>k__BackingField"))
-                    throw new InvalidOperationException($"{GetType().FullName}.{fvp.Key.Name} is a field and will be ignored by auto collector. Use property pattern instead: {fvp.Key.Name} {"{ get; private set; }"}");
+                if (!fvp.Key.Name.Equals($"<{pvp.Key.Name}>k__BackingField"))
+                    continue;
+
+                isValidBackingFiled = true;
+                break;
             }
+
+            if (!isValidBackingFiled)
+                throw new InvalidOperationException($"{GetType().FullName}.{fvp.Key.Name} is a field and will be ignored by auto collector. Use property pattern instead: {fvp.Key.Name} {"{ get; private set; }"}");
         }
 #endif
 

@@ -110,7 +110,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
         //Invokes buffered rpc, must be called after deserialization done.
         //Only for remote objects.
         if (!IsLocal)
-            State.RPCBuffer.Receive(true, ReceiveRPCRemotely);
+            State.RPCBuffer.ExecuteRemotely(receivePersistent: true, ReceiveRPCRemotely);
 
         return this;
     }
@@ -228,7 +228,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
 
         //Recieve rpc buffer if object initialized;
         if(Initialized)
-            State.RPCBuffer.Receive(false, ReceiveRPCRemotely);
+            State.RPCBuffer.ExecuteRemotely(receivePersistent: false, ReceiveRPCRemotely);
 
         return this;
     }
@@ -242,7 +242,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
     /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
     /// </summary>
     /// <param name="handler"></param>
-    public void RegisterRPCHandler(Action<byte[]> handler) => RegisterRPCHandler(RPCUtils.ActionToString(handler), handler);
+    public void RegisterRPCHandler(Action<byte[]> handler) =>
+        RegisterRPCHandler(RPCUtils.ActionToString(handler), handler);
 
     public void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
     {

@@ -18,8 +18,7 @@ public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<T
                     cValueReader => valueReader(cValueReader, f)),
                 (w, v) => w.WriteCollection(v,
                     (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
-    {
-    }
+    { }
 
     public int Count => InternalValue.Count;
 

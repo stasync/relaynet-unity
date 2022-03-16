@@ -184,8 +184,11 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
                 StateChangeType = requestType;
         });
 
-    void ScheduleOnUpdate(Action a) => ScheduleOnUpdate(delta => a());
-    void ScheduleOnUpdate(Action<float> a) => m_UpdateQueue.Enqueue(a);
+    void ScheduleOnUpdate(Action a) =>
+        ScheduleOnUpdate(delta => a());
+
+    void ScheduleOnUpdate(Action<float> a) =>
+        m_UpdateQueue.Enqueue(a);
 
     public void OnBeforeUpdateWorldState(float worldDelta)
     {
@@ -302,7 +305,8 @@ public struct RPCWithoutAuthorityState
         return writer.ToArray();
     }
 
-    public static RPCWithoutAuthorityState FromReader(NetReader reader) => new(reader);
+    public static RPCWithoutAuthorityState FromReader(NetReader reader) =>
+        new(reader);
 }
 
 public struct RPCWithoutAuthorityRequest
