@@ -52,18 +52,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     readonly NetObjectDataCollection m_DataCollection;
     #endregion
 
-    public override int GetHashCode()
-    {
-        var hash = 13;
-        hash = (hash * 7) + UID.GetHashCode();
-        hash = (hash * 7) + PrefabId.GetHashCode();
-        hash = (hash * 7) + IsSceneObject.GetHashCode();
-        hash = (hash * 7) + OwnerUID.GetHashCode();
-        hash = (hash * 7) + StateChangeType.GetHashCode();
-        hash = (hash * 7) + m_RPCBuffer.GetHashCode();
-        hash = (hash * 7) + m_DataCollection.GetHashCode();
-        return hash;
-    }
+    public override int GetHashCode() =>
+        HashCode.Combine(UID, PrefabId, IsSceneObject, OwnerUID, StateChangeType, m_RPCBuffer, m_DataCollection);
 
     public bool IsOwnedByLocalPlayer => Owner != null && Owner.IsLocal;
     public bool IsOwnedByMasterClient => Owner != null && Owner.IsMaster;

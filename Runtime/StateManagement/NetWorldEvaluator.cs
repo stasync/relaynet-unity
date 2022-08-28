@@ -99,7 +99,7 @@ public class NetWorldEvaluator : NetWorld
     public float GetSnapshotRelativeTime(int snapshotIndex)
     {
         var result = 0f;
-        for(var i = 0; i < m_HistoryBuffer.Count; i++)
+        for (var i = 0; i < m_HistoryBuffer.Count; i++)
         {
             var s = m_HistoryBuffer[i];
             result += s.DeltaTime;
@@ -113,7 +113,7 @@ public class NetWorldEvaluator : NetWorld
 
     public float GetRemainTimeFromShanpshot(int snapshotIndex)
     {
-        if(m_HistoryBuffer.Count == 0)
+        if (m_HistoryBuffer.Count == 0)
         {
             UnityEngine.Debug.LogError($"[{Name}] [{UID}] history buffer is empty");
             return 0f;

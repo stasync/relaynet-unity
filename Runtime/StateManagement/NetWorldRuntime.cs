@@ -134,17 +134,16 @@ public class NetWorldRuntime : NetWorld
             if (!PlayersInternal.LocalPlayerIsMaster)
                 return;
 
-            var writer = new NetWriter();
+            var writer = NetWriter.Get();
             writer.Write(Time);
             ScheduleSend(MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, writer.ToArray());
         }
 
         void TryReceiveWorldData()
         {
-            var reader = new NetReader();
-            while(m_RemoteWorldDataUpdateRequests.Count > 0)
+            while (m_RemoteWorldDataUpdateRequests.Count > 0)
             {
-                reader.Replace(m_RemoteWorldDataUpdateRequests.Dequeue());
+                var reader = NetReader.Get(m_RemoteWorldDataUpdateRequests.Dequeue());
                 Time = reader.ReadSingle();
             }
         }
@@ -154,7 +153,7 @@ public class NetWorldRuntime : NetWorld
             //Add local
             {
                 foreach (var p in m_LocalPlayerRegisterQueue)
-                    PlayerRegisterd(PlayersInternal.RegisterImmidiate(p, true).ToSnapshot()); //Add player and notify;
+                    PlayerRegisterd(PlayersInternal.RegisterImmidiate(p, isLocal: true).ToSnapshot()); //Add player and notify;
 
                 m_LocalPlayerRegisterQueue.Clear();
             }
