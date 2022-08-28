@@ -109,6 +109,9 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
     IEnumerator IEnumerable.GetEnumerator() => Value.GetEnumerator();
     #endregion
 
+    public override string ToString() =>
+        $"[{string.Join("; ", InternalValue)}]";
+
     public override string ToJSONProperty() =>
         RealtimeJSONUtils.ToJSONCollection(Value.Select(v => RealtimeJSONUtils.ToJSONValue(v.ToString())).ToArray());
 }

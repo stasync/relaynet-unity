@@ -51,6 +51,9 @@ public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<T
         InternalValue.Clear();
     }
 
+    public override string ToString() =>
+        $"[{string.Join("; ", InternalValue)}]";
+
     public IEnumerator<TValue> GetEnumerator() => InternalValue.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => InternalValue.GetEnumerator();
 
