@@ -14,8 +14,8 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
     /// If you create scene object in runtime, they use default peer-based id space.
     /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
     /// </summary>
-    public const uint c_SceneObjectReservedIdSpace = 1000;
-    public const uint c_FirstValidId = 1;
+    public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
+    public const uint FIRST_VALID_UID = 1;
 
     public static void UnAllocateId(NetObjectUID id)
     {
@@ -42,7 +42,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
         return PeerStartId(peerId) + s_IdCounter;
     }
 
-    static NetObjectUID PeerStartId(ClientUID peerId) => c_FirstValidId + c_SceneObjectReservedIdSpace + peerId * 10000;
+    static NetObjectUID PeerStartId(ClientUID peerId) => FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + peerId * 10000;
     #endregion
 
     public NetObjectUID(ClientUID peerId)
@@ -72,7 +72,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
 
     public bool IsValid => m_Value > Invalid.m_Value;
     public bool IsInvalid => !IsValid;
-    public bool IsSceneObjectSpaceId => IsValid && m_Value <= c_SceneObjectReservedIdSpace;
+    public bool IsSceneObjectSpaceId => IsValid && m_Value <= SCENE_OBJECT_RESERVED_UID_SPACE;
 
     public int CompareTo(NetObjectUID other) => m_Value.CompareTo(other.m_Value);
     public static implicit operator uint(NetObjectUID value) => value.m_Value;

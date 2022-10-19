@@ -4,26 +4,13 @@ using UnityEngine;
 
 public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviour<TBehaviourData, NetObjectStateEmptyData>
      where TBehaviourData : GSBehaviourAbstractData, new()
-{ }
+{
+}
 
 public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour 
     where TBehaviourData : GSBehaviourAbstractData, new()
     where TObjectData : NetObjectStateData
 {
-    TBehaviourData m_BehaviourData;
-    protected TBehaviourData BehavourData
-    {
-        get
-        {
-            if (m_BehaviourData == null)
-            {
-                m_BehaviourData = new TBehaviourData();
-                BehavourData.Initialize(() => DataWritePermission, OnDataValuesCollected);
-            }
-            return m_BehaviourData;
-        }
-    }
-
     protected TObjectData Data { get; private set; }
 
     public virtual int SerializationOrder => 0;
@@ -40,6 +27,7 @@ public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInsta
 
     public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
 
+    [Obsolete("Will be removed soon")]
     protected virtual void OnDataValuesCollected() { }
 
     /// <summary>
@@ -94,8 +82,6 @@ public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInsta
     {
         SerializeDirtyChecked(writer);
 
-        BehavourData.Serialize(writer);
-
 #if NETWORK_DEBUG
         writer.Write(GetType().FullName.GetHashCode());
 #endif
@@ -109,7 +95,6 @@ public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInsta
     {
         DeserializeDirtyChecked(reader, firtsTime);
 
-        BehavourData.Deserialize(reader, firtsTime);
         OnDataDeserialized(firtsTime);
 
 #if NETWORK_DEBUG
@@ -133,6 +118,9 @@ public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInsta
     /// </summary>
     public virtual void OnPreInitialize()
     {
+        if (Identity.State.DataCollection.HasData<TObjectData>())
+            Debug.LogError($"'{GetType().FullName}' trying to register network object data of type '{typeof(TObjectData).FullName}', but it's already registered, this mgiht lead to unexpected behaviour");
+
         Data = Identity
             .State
             .DataCollection
@@ -193,6 +181,7 @@ public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInsta
     /// <param name="firstTime"></param>
     protected virtual void OnDataDeserialized(bool firstTime) { }
 
+    [Obsolete]
     public string ToJSONProperty() => 
-        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TBehaviourData).Name}") + ":" + BehavourData.ToJSONProperty() + "}";
+        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TBehaviourData).Name}") + "}";
 }

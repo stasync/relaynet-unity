@@ -9,6 +9,7 @@ public interface IReadOnlyNetObjectDataCollection : IReadOnlyCollection<NetObjec
     T GetOrCreateData<T>() where T : NetObjectStateData;
     bool TryGetData<T>(out T data) where T : NetObjectStateData;
     T GetData<T>() where T : NetObjectStateData;
+    bool HasData<T>() where T : NetObjectStateData;
 }
 
 public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
@@ -40,6 +41,9 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 
         return data as T;
     }
+
+    public bool HasData<T>() where T : NetObjectStateData =>
+        m_InternalCollection.ContainsKey(NetObjectStateData.GetTypeHashCode<T>());
 
     public bool TryGetData<T>(out T data) where T : NetObjectStateData
     {

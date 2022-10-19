@@ -31,7 +31,7 @@ public class NetWorldRuntime : NetWorld
 
     readonly Action<uint, DeliveryIntent, byte[]> m_Sender;
 
-    const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 60f; //Record last 'N' seconds;
+    const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; //Record last 'N' seconds;
     const float MIN_UPDATE_INTRAVAL = 0.1f; //10 times per second;
 
     float m_LastUpdateTime;

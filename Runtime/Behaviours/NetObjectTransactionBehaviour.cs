@@ -67,14 +67,14 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<GSBehavio
             return;
         }
 
-        if (!Identity.World.TryGetObject(sender, out var state))
+        if (!Identity.World.TryGetObject(sender, out var senderState))
         {
             Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' not exists.");
             callback(false);
             return;
         }
 
-        if (!state.IsOwnedByLocalPlayer)
+        if (!senderState.IsOwnedByLocalPlayer)
         {
             Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' isn't owned by local player.");
             callback(false);
@@ -83,7 +83,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<GSBehavio
 
         m_InteractionChangeRequestCallbacks.Add(sender, callback);
 
-        var writer = new NetWriter();
+        var writer = NetWriter.Get();
         writer.WriteInstanceId(sender);
         writer.Write(interactionState);
         ToOwnerRPC(ChangeTransactionStateRequestRPC, writer.ToArray());
@@ -92,7 +92,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<GSBehavio
     [AutoRegisterRPCHandler]
     protected void ChangeTransactionStateRequestRPC(byte[] data)
     {
-        var reader = new NetReader(data);
+        var reader = NetReader.Get(data);
         var sender = reader.ReadInstanceId();
         var state = reader.ReadBoolean();
 
@@ -103,7 +103,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<GSBehavio
             currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value :
             currentInteractionObject.Equals(sender);
 
-        var responseWriter = new NetWriter();
+        var responseWriter = NetWriter.Get();
         responseWriter.WriteInstanceId(sender);
         responseWriter.Write(canChangeInteractionState);
 
@@ -120,7 +120,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<GSBehavio
     [AutoRegisterRPCHandler]
     protected void ChangeTransactrionResponseRPC(byte[] data)
     {
-        var reader = new NetReader(data);
+        var reader = NetReader.Get(data);
         var sender = reader.ReadInstanceId();
         var success = reader.ReadBoolean();
 

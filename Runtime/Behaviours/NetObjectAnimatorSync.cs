@@ -3,66 +3,87 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public interface IAnimatorValueProxy
+public interface IAnimatorValueProxy : ISerializable
 {
-    void OnAuthorityUpdate();
-    void OnDataDeserialized();
     void OnUpdate(float deltaTime, bool hasAuthority);
 }
 
 public abstract class AnimatorPerameterValueProxy<T> : IAnimatorValueProxy where T : struct
 {
-    protected readonly Animator TargetAnimator;
+    protected readonly Animator Animator;
     protected readonly AnimatorControllerParameter Parameter;
-    protected readonly SerializableValue<T> InternalValue;
+    protected T LastDeserializedValue { get; private set; }
 
-    public AnimatorPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<T> internalValue)
+    public AnimatorPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter)
     {
-        TargetAnimator = animator;
+        Animator = animator;
         Parameter = parameter;
-        InternalValue = internalValue;
     }
 
-    public abstract void OnAuthorityUpdate();
-    public abstract void OnDataDeserialized();
-    public abstract void OnUpdate(float deltaTime, bool hasAuthority);
+    public virtual void OnUpdate(float deltaTime, bool hasAuthority) { }
+
+    public abstract void Serialize(NetWriter writer);
+    public virtual void Deserialize(NetReader reader, bool firstTime) =>
+        LastDeserializedValue = DeserializeValue(reader, firstTime);
+
+    protected abstract T DeserializeValue(NetReader reader, bool firstTime);
 }
 
 public class AnimatorFloatParameterValueProxy : AnimatorPerameterValueProxy<float>
 {
-    public AnimatorFloatParameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<float> internalValue) :
-        base(animator, parameter, internalValue)
+    public AnimatorFloatParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
     { }
 
-    public override void OnDataDeserialized() { }
-    public override void OnAuthorityUpdate() => InternalValue.Set(TargetAnimator.GetFloat(Parameter.nameHash));
     public override void OnUpdate(float deltaTime, bool hasAuthority) 
     {
+        base.OnUpdate(deltaTime, hasAuthority);
+
         if(!hasAuthority)
-            TargetAnimator.SetFloat(Parameter.nameHash, InternalValue.Value, 0.1f, deltaTime);
+            Animator.SetFloat(Parameter.nameHash, LastDeserializedValue, 0.1f, deltaTime);
     }
+
+    public override void Serialize(NetWriter writer) =>
+        writer.Write(Animator.GetFloat(Parameter.nameHash));
+
+    protected override float DeserializeValue(NetReader reader, bool firstTime) =>
+        reader.ReadSingle();
+
 }
 
 public class AnimatorIntParameterValueProxy : AnimatorPerameterValueProxy<int>
 {
-    public AnimatorIntParameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<int> internalValue) :
-        base(animator, parameter, internalValue)
+    public AnimatorIntParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
     { }
 
-    public override void OnDataDeserialized() => TargetAnimator.SetInteger(Parameter.nameHash, InternalValue.Value);
-    public override void OnAuthorityUpdate() => InternalValue.Set(TargetAnimator.GetInteger(Parameter.nameHash));
-    public override void OnUpdate(float deltaTime, bool hasAuthority) { }
+    public override void Serialize(NetWriter writer) =>
+        writer.Write(Animator.GetInteger(Parameter.nameHash));
+
+    protected override int DeserializeValue(NetReader reader, bool firstTime) =>
+        reader.ReadInt32();
+
+    public override void Deserialize(NetReader reader, bool firstTime)
+    {
+        base.Deserialize(reader, firstTime);
+        Animator.SetInteger(Parameter.nameHash, LastDeserializedValue);
+    }
 }
 
 public class AnimatorBoolParameterValueProxy : AnimatorPerameterValueProxy<bool>
 {
-    public AnimatorBoolParameterValueProxy(Animator animator, AnimatorControllerParameter parameter, SerializableValue<bool> internalValue) :
-        base(animator, parameter, internalValue)
+    public AnimatorBoolParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
     { }
 
-    public override void OnDataDeserialized() => TargetAnimator.SetBool(Parameter.nameHash, InternalValue.Value);
-    public override void OnAuthorityUpdate() => InternalValue.Set(TargetAnimator.GetBool(Parameter.nameHash));
-    public override void OnUpdate(float deltaTime, bool hasAuthority) { }
+    public override void Serialize(NetWriter writer) =>
+        writer.Write(Animator.GetBool(Parameter.nameHash));
+
+    protected override bool DeserializeValue(NetReader reader, bool firstTime) =>
+        reader.ReadBoolean();
+
+    public override void Deserialize(NetReader reader, bool firstTime)
+    {
+        base.Deserialize(reader, firstTime);
+        Animator.SetBool(Parameter.nameHash, LastDeserializedValue);
+    }
 }
 
 public class AnimatorSyncData : GSBehaviourAbstractData
@@ -106,85 +127,61 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
     [SerializeField, Range(0f, 10f)]
     float m_RemoteLayerWeightChnageSpeed = 5f;
 
-    List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new List<IAnimatorValueProxy>();
+    readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new ();
+    readonly List<float> m_RemoteLayerWeights = new();
 
-    protected override void OnDataValuesCollected()
+    public override void OnPostInitialize()
     {
-        base.OnDataValuesCollected();
-
-        m_AnimatorParameterValueProxyCollection.Clear();
-        ForEachParameter((p, i) => 
+        for (var i = 0; i < m_Animator.parameters.Length; i++)
         {
-            switch(p.type)
+            var p = m_Animator.parameters[i];
+            switch (p.type)
             {
                 case AnimatorControllerParameterType.Bool:
-                    BuildProxyForParameter(p.name, 
-                        () => new SerializableBool(false, () => BehavourData.HasPermission), v => new AnimatorBoolParameterValueProxy(m_Animator, p, v));
+                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorBoolParameterValueProxy(m_Animator, p));
                     break;
 
                 case AnimatorControllerParameterType.Float:
-                    BuildProxyForParameter(p.name,
-                        () => new SerializableFloat(0f, () => BehavourData.HasPermission), v => new AnimatorFloatParameterValueProxy(m_Animator, p, v));
+                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorFloatParameterValueProxy(m_Animator, p));
                     break;
 
                 case AnimatorControllerParameterType.Int:
-                    BuildProxyForParameter(p.name,
-                         () => new SerializableInt(0, () => BehavourData.HasPermission), v => new AnimatorIntParameterValueProxy(m_Animator, p, v));
+                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorIntParameterValueProxy(m_Animator, p));
                     break;
             }
-        });
-
-        void BuildProxyForParameter<T>(
-            string valueName,
-            Func<SerializableValue<T>> valueFactory,
-            Func<SerializableValue<T>, AnimatorPerameterValueProxy<T>> parameterFactory) where T : struct
-        {
-            var v = valueFactory();
-            var p = parameterFactory(v);
-
-            BehavourData.Parameters.Add(valueName, v);
-            m_AnimatorParameterValueProxyCollection.Add(p);
         }
+
+        for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
+            m_RemoteLayerWeights.Add(m_Animator.GetLayerWeight(layerIndex));
     }
 
-    public override void OnPostInitialize() { }
+    public void SetTrigger(string triggerName) =>
+        SetTrigger(Animator.StringToHash(triggerName));
 
-    void ForEachLayer(Action<AnimatorStateInfo, float, int> processor)
-    {
-        for (var i = 0; i < m_Animator.layerCount; i++)
-            processor(
-                m_Animator.IsInTransition(i) ?
-                m_Animator.GetNextAnimatorStateInfo(i) :
-                m_Animator.GetCurrentAnimatorStateInfo(i), m_Animator.GetLayerWeight(i), i);
-    }
-
-    void ForEachParameter(Action<AnimatorControllerParameter, int> processor)
-    {
-        for (var i = 0; i < m_Animator.parameters.Length; i++)
-            processor(m_Animator.parameters[i], i);
-    }
-
-    public void SetTrigger(string triggerName)
+    public void SetTrigger(int triggerNameHash)
     {
         if (!IsLocal)
             throw new InvalidOperationException("No authority");
 
-        AnimatorTrigger(Animator.StringToHash(triggerName), AnimatorTriggerAction.Set);
+        AnimatorTrigger(triggerNameHash, AnimatorTriggerAction.Set);
     }
 
-    public void ResetTrigger(string triggerName)
+    public void ResetTrigger(string triggerName) =>
+        ResetTrigger(Animator.StringToHash(triggerName));
+
+    public void ResetTrigger(int triggerNameHash)
     {
         if (!IsLocal)
             throw new InvalidOperationException("No authority");
 
-        AnimatorTrigger(Animator.StringToHash(triggerName), AnimatorTriggerAction.Reset);
+        AnimatorTrigger(triggerNameHash, AnimatorTriggerAction.Reset);
     }
 
     void AnimatorTrigger(int hash, AnimatorTriggerAction action)
     {
         DoTriggerAction(hash, action);
 
-        var writer = new NetWriter();
+        var writer = NetWriter.Get();
         writer.Write(hash);
         writer.Write((byte)action);
 
@@ -201,7 +198,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
         if (IsLocal)
             return;
 
-        var r = new NetReader(data);
+        var r = NetReader.Get(data);
         var hash = r.ReadInt32();
         var action = (AnimatorTriggerAction)r.ReadByte();
 
@@ -228,59 +225,71 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
 
         foreach (var p in m_AnimatorParameterValueProxyCollection)
             p.OnUpdate(Time.deltaTime, IsLocal);
-    }
 
-    public override void OnAuthorityUpdate()
-    {
-        base.OnAuthorityUpdate();
-
-        foreach (var p in m_AnimatorParameterValueProxyCollection)
-            p.OnAuthorityUpdate();
-
-        ForEachLayer((state, layerWeight, layerIndex) =>
+        if (!IsLocal)
         {
-            BehavourData.LayerWeights.SetAt(layerIndex, layerWeight);
-            BehavourData.LayerStates.SetAt(layerIndex, state.fullPathHash);
-            BehavourData.LayerNormalizedTimes.SetAt(layerIndex, state.normalizedTime);
-        });
-    }
+            for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
+            {
+                var targetLayerWeight = m_RemoteLayerWeights[layerIndex];
+                var currentLayerWeight = m_Animator.GetLayerWeight(layerIndex);
 
-    protected override void OnDataDeserialized(bool firstTime)
-    {
-        base.OnDataDeserialized(firstTime);
-        foreach (var p in m_AnimatorParameterValueProxyCollection)
-            p.OnDataDeserialized();
-
-        ForEachLayer((state, layerWeight, layerIndex) =>
-        {
-            if (!ValidateCollections(layerIndex, BehavourData.LayerWeights, BehavourData.LayerStates, BehavourData.LayerNormalizedTimes))
-                return;
-
-            var targetLayerWeight = BehavourData.LayerWeights[layerIndex];
-            var targetStateHash = BehavourData.LayerStates[layerIndex];
-            var targetStateNormalizedTime = BehavourData.LayerNormalizedTimes[layerIndex];
-
-            if (layerWeight != targetLayerWeight)
+                // Not sure if we should smooth the layer weight, it might be intended to be changed immediately, form 0 to 1 for instance.
+                //m_Animator.SetLayerWeight(layerIndex, Mathf.MoveTowards(currentLayerWeight, targetLayerWeight, Time.deltaTime * m_RemoteLayerWeightChnageSpeed));
                 m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);
+            }
+        }
+    }
 
-            if (targetStateHash != 0 && state.fullPathHash != targetStateHash)
-                switch (m_StateChangeMethod)
-                {
-                    case AnimatorStateChangeMethod.Play:
-                        m_Animator.Play(targetStateHash, layerIndex, targetStateNormalizedTime);
-                        break;
-                    case AnimatorStateChangeMethod.CrossFade:
-                        m_Animator.CrossFade(targetStateHash, m_CrossFadeDuration, layerIndex, targetStateNormalizedTime);
-                        break;
-                }
-        });
+    protected override void SerializeDirtyChecked(NetWriter writer)
+    {
+        base.SerializeDirtyChecked(writer);
 
-        bool ValidateCollections(int index, params ICollectionWithCount[] collections)
+        // Parameters.
+        foreach (var p in m_AnimatorParameterValueProxyCollection)
+            p.Serialize(writer);
+
+        // Layers.
+        for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
         {
-            foreach (var c in collections)
-                if (index >= c.Count)
-                    return false;
-            return true;
+            var stateToSync =
+                m_Animator.IsInTransition(layerIndex) ?
+                m_Animator.GetNextAnimatorStateInfo(layerIndex) :
+                m_Animator.GetCurrentAnimatorStateInfo(layerIndex);
+
+            var layerWeight = m_Animator.GetLayerWeight(layerIndex);
+
+            writer.Write(layerWeight);
+            writer.Write(stateToSync.fullPathHash);
+            writer.Write(stateToSync.normalizedTime);
+        }
+    }
+
+    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
+    {
+        base.DeserializeDirtyChecked(reader, firstTime);
+
+        // Parameters.
+        foreach (var p in m_AnimatorParameterValueProxyCollection)
+            p.Deserialize(reader, firstTime);
+
+        // Layers.
+        for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
+        {
+            var targetLayerWeight = reader.ReadSingle();
+            var targetStateHash = reader.ReadInt32();
+            var targetNormalizedTime = reader.ReadSingle();
+
+            m_RemoteLayerWeights[layerIndex] = targetLayerWeight;
+
+            switch (m_StateChangeMethod)
+            {
+                case AnimatorStateChangeMethod.Play:
+                    m_Animator.Play(targetStateHash, layerIndex, targetNormalizedTime);
+                    break;
+                case AnimatorStateChangeMethod.CrossFade:
+                    m_Animator.CrossFade(targetStateHash, m_CrossFadeDuration, layerIndex, targetNormalizedTime);
+                    break;
+            }
         }
     }
 }

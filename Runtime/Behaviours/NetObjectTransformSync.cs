@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Core.Networking;
 using UnityEngine;
 
 public class NetObjectTransformData : NetObjectStateData
 {
     public NetObjectTransformData(Func<bool> writePermission) : base(writePermission) { }
+
     public SerializableVector3 Position { get; private set; } = null;
     public SerializableQuaternion Rotation { get; private set; } = null;
     public SerializableVector3 Velocity { get; private set; } = null;
@@ -21,66 +23,12 @@ public class NetObjectTransformData : NetObjectStateData
         WorldTime = new SerializableFloat(default, WritePemission);
         HasParent = new SerializableBool(false, WritePemission);
     }
-
-    public override int GetHashCode()
-    {
-        var hash = base.GetHashCode();
-        hash = (hash * 7) + Position.GetHashCode();
-        hash = (hash * 7) + Rotation.GetHashCode();
-        hash = (hash * 7) + Velocity.GetHashCode();
-        hash = (hash * 7) + WorldTime.GetHashCode();
-        hash = (hash * 7) + HasParent.GetHashCode();
-        return hash;
-    }
 }
 
-public class GSTransformSyncData : GSBehaviourAbstractData
-{
-    public SerializableValueCollection NestedTransformUnstructuredData { get; private set; } = null;
-
-    protected override void OnDefineValues()
-    {
-        NestedTransformUnstructuredData = new SerializableValueCollection(() => !Initialized);
-    }
-}
 
 [DisallowMultipleComponent]
-public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, NetObjectTransformData>
+public sealed class GSTransformSync : GSInstanceBehaviour<GSBehaviourEmptyData, NetObjectTransformData>
 {
-    [Serializable]
-    struct NestedTransfromData
-    {
-        [SerializeField]
-        Transform m_Transform;
-        public Transform Transform => m_Transform;
-    }
-
-    class NestedTransformSyncData
-    {
-        readonly NestedTransfromData m_NestedTransfromData;
-        readonly SerializableVector3 m_PositionValue;
-        readonly SerializableQuaternion m_RotationValue;
-
-        public NestedTransformSyncData(NestedTransfromData data, SerializableVector3 positionValue, SerializableQuaternion rotationValue)
-        {
-            m_NestedTransfromData = data;
-            m_PositionValue = positionValue;
-            m_RotationValue = rotationValue;
-        }
-
-        public void OnUpdateWithAuthority()
-        {
-            m_PositionValue.Set(m_NestedTransfromData.Transform.localPosition);
-            m_RotationValue.Set(m_NestedTransfromData.Transform.localRotation);
-        }
-
-        public void OnUpdateWithoutAuthority()
-        {
-            m_NestedTransfromData.Transform.localPosition = m_PositionValue.Value;
-            m_NestedTransfromData.Transform.localRotation = m_RotationValue.Value;
-        }
-    }
-
     [SerializeField, Range(0f, 1f)]
     float m_InterpolateMovement = 1f;
 
@@ -94,30 +42,24 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, N
     float m_PredictionMultipler = 1f;
 
     [SerializeField]
-    List<NestedTransfromData> m_NestedTransformData = new List<NestedTransfromData>();
-
-    List<NestedTransformSyncData> m_NestedTransformSyncData = new List<NestedTransformSyncData>();
+    List<Transform> m_NestedTransforms = new ();
 
     Vector3 m_LastFramePosition;
     Vector3 m_Velocity;
 
-    protected override void OnDataValuesCollected()
+#if UNITY_EDITOR
+    private void OnValidate()
     {
-        base.OnDataValuesCollected();
-        foreach(var nestedData in m_NestedTransformData)
+        for (var i = m_NestedTransforms.Count - 1; i >= 0; i--)
         {
-            if (nestedData.Transform == null)
+            if (m_NestedTransforms[i].IsChildOf(transform))
                 continue;
 
-            var positionValue = new SerializableVector3(default, () => BehavourData.HasPermission);
-            var rotationValue = new SerializableQuaternion(default, () => BehavourData.HasPermission);
-
-            BehavourData.NestedTransformUnstructuredData.Add($"{nestedData.Transform.gameObject.name}.localPosition", positionValue);
-            BehavourData.NestedTransformUnstructuredData.Add($"{nestedData.Transform.gameObject.name}.localRotation", rotationValue);
-
-            m_NestedTransformSyncData.Add(new NestedTransformSyncData(nestedData, positionValue, rotationValue));
+            m_NestedTransforms.RemoveAt(i);
+            Debug.LogError($"'{m_NestedTransforms[i].gameObject.name}' is not a child of '{gameObject.name}'");
         }
     }
+#endif
 
     public override void OnPostInitialize()
     {
@@ -164,9 +106,6 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, N
             Data.Velocity.Set(m_Velocity);
             Data.WorldTime.Set(Identity.World.Time);
             Data.HasParent.Set(hasParentLocaly);
-
-            foreach(var nestedTransformSync in m_NestedTransformSyncData)
-                nestedTransformSync.OnUpdateWithAuthority();
         }
         else
         {
@@ -198,10 +137,28 @@ public sealed class GSTransformSync : GSInstanceBehaviour<GSTransformSyncData, N
                 else
                     transform.rotation = Data.Rotation.Value;
             }
-            
+        }
+    }
 
-            foreach (var nestedTransformSync in m_NestedTransformSyncData)
-                nestedTransformSync.OnUpdateWithoutAuthority();
+    protected override void SerializeDirtyChecked(NetWriter writer)
+    {
+        base.SerializeDirtyChecked(writer);
+
+        foreach (var nestedTransform in m_NestedTransforms)
+        {
+            writer.Write(nestedTransform.localPosition);
+            writer.Write(nestedTransform.localRotation);
+        }
+    }
+
+    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
+    {
+        base.DeserializeDirtyChecked(reader, firstTime);
+
+        foreach (var nestedTransform in m_NestedTransforms)
+        {
+            nestedTransform.localPosition = reader.ReadVector3();
+            nestedTransform.localRotation = reader.ReadQuaternion();
         }
     }
 }
