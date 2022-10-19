@@ -16,7 +16,7 @@ public class GSObjectLifetimeData : NetObjectStateData
     }
 }
 
-public class GSObjectLifetime : GSInstanceBehaviour<GSBehaviourEmptyData, GSObjectLifetimeData>
+public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
 {
     public event Action TimePassed = delegate { };
     public float NormalizedLifetime => Data.NormalizedLifetime;

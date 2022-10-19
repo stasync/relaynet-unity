@@ -86,24 +86,8 @@ public class AnimatorBoolParameterValueProxy : AnimatorPerameterValueProxy<bool>
     }
 }
 
-public class AnimatorSyncData : GSBehaviourAbstractData
-{
-    public SerializableValueCollection Parameters { get; private set; } = null;
-    public SerializableFloatList LayerWeights { get; private set; } = null;
-    public SerializableIntList LayerStates { get; private set; } = null;
-    public SerializableFloatList LayerNormalizedTimes { get; private set; } = null;
-
-    protected override void OnDefineValues()
-    {
-        Parameters = new SerializableValueCollection(() => !Initialized);
-        LayerWeights = new SerializableFloatList(new List<float>(), WritePemission);
-        LayerStates = new SerializableIntList(new List<int>(), WritePemission);
-        LayerNormalizedTimes = new SerializableFloatList(new List<float>(), WritePemission);
-    }
-}
-
 [DisallowMultipleComponent]
-public sealed class GSAnimatorSync : GSInstanceBehaviour<AnimatorSyncData>
+public sealed class GSAnimatorSync : GSInstanceBehaviour<NetObjectStateEmptyData>
 {
     enum AnimatorStateChangeMethod : byte
     {

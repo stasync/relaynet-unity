@@ -27,7 +27,7 @@ public class NetObjectTransformData : NetObjectStateData
 
 
 [DisallowMultipleComponent]
-public sealed class GSTransformSync : GSInstanceBehaviour<GSBehaviourEmptyData, NetObjectTransformData>
+public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData>
 {
     [SerializeField, Range(0f, 1f)]
     float m_InterpolateMovement = 1f;

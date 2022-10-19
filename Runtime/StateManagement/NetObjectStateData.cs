@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
+[Obsolete]
 public sealed class NetObjectStateEmptyData : NetObjectStateData
 {
     public NetObjectStateEmptyData(Func<bool> writePermission) : base(writePermission) { }

@@ -2,14 +2,7 @@
 using System;
 using UnityEngine;
 
-public abstract class GSInstanceBehaviour<TBehaviourData> : GSInstanceBehaviour<TBehaviourData, NetObjectStateEmptyData>
-     where TBehaviourData : GSBehaviourAbstractData, new()
-{
-}
-
-public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour 
-    where TBehaviourData : GSBehaviourAbstractData, new()
-    where TObjectData : NetObjectStateData
+public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour where TObjectData : NetObjectStateData
 {
     protected TObjectData Data { get; private set; }
 
@@ -182,6 +175,5 @@ public abstract class GSInstanceBehaviour<TBehaviourData, TObjectData> : GSInsta
     protected virtual void OnDataDeserialized(bool firstTime) { }
 
     [Obsolete]
-    public string ToJSONProperty() => 
-        "{" + RealtimeJSONUtils.ToJSONValue($"{GetType().Name} {typeof(TBehaviourData).Name}") + "}";
+    public string ToJSONProperty() => string.Empty;
 }

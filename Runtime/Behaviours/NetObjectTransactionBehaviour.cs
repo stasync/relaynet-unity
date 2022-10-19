@@ -24,7 +24,7 @@ public class InteractionNetworkData : NetObjectStateData
 public sealed class GSObjectTransaction : GSObjectTransaction<InteractionNetworkData> { }
 
 [DisallowMultipleComponent]
-public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<GSBehaviourEmptyData, TData> where TData : InteractionNetworkData
+public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> where TData : InteractionNetworkData
 {
     public NetObjectUID CurrentInteraction => Data.CurrentInteraction.Value;
     public NetObjectUID LastInteraction => Data.LastInteraction.Value;
