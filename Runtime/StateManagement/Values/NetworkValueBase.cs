@@ -1,31 +1,39 @@
 ﻿using Core.Networking;
 using System;
+using System.Reflection;
 
-public interface ISerializableValue : ISerializable
+public abstract class SerializableValue : ISerializable
 {
-    void DeserializeAndApply(NetReader reader, bool firstTime);
-    void ApplyLastDeserialized();
+    readonly Func<bool> m_WritePermission = null;
+    protected bool HasPermission => m_WritePermission();
+
+    protected SerializableValue() { }
+
+    public abstract void DeserializeAndApply(NetReader reader, bool firstTime);
+    public abstract void ApplyLastDeserialized();
+    public abstract void Serialize(NetWriter writer);
+    public abstract void Deserialize(NetReader reader, bool firstTime);
+
+    public static readonly FieldInfo WritePermissionFieldInfo;
+
+    static SerializableValue()
+    {
+        WritePermissionFieldInfo = typeof(SerializableValue)
+            .GetField(nameof(m_WritePermission), BindingFlags.Instance | BindingFlags.NonPublic);
+    }
 }
 
-public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializableValue where TValue : TExposed
+public abstract class SerializableValueDefinition<TValue, TExposed> : SerializableValue where TValue : TExposed
 {
-    public SerializableValueDefinition(
-        TValue defaultValue, 
-        Func<bool> writePermission, 
-        Func<NetReader, bool, TValue> reader, 
-        Action<NetWriter, TValue> writer)
+    public SerializableValueDefinition(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) : base()
     {
         m_InternalValue = defaultValue;
-        m_WritePermission = writePermission;
         m_Reader = reader;
         m_Writer = writer;
     }
 
-    readonly Func<bool> m_WritePermission;
     readonly Func<NetReader, bool, TValue> m_Reader;
     readonly Action<NetWriter, TValue> m_Writer;
-
-    protected bool HasPermission => m_WritePermission == null || m_WritePermission();
 
     public TExposed Value => InternalValue;
     public void Set(TValue value) => InternalValue = value;
@@ -48,19 +56,19 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializa
         }
     }
 
-    public virtual void DeserializeAndApply(NetReader reader, bool firstTime)
+    public override void DeserializeAndApply(NetReader reader, bool firstTime)
     {
         Deserialize(reader, firstTime);
         ApplyLastDeserialized();
     }
 
-    public virtual void ApplyLastDeserialized() =>
+    public override void ApplyLastDeserialized() =>
         m_InternalValue = m_LastDeserializedValue;
 
-    public virtual void Deserialize(NetReader reader, bool firstTime) =>
+    public override void Deserialize(NetReader reader, bool firstTime) =>
         m_LastDeserializedValue = m_Reader(reader, firstTime);
 
-    public virtual void Serialize(NetWriter writer) =>
+    public override void Serialize(NetWriter writer) =>
          m_Writer(writer, InternalValue);
 
     public override int GetHashCode() => m_InternalValue.GetHashCode();

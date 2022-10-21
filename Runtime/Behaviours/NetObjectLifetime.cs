@@ -4,16 +4,9 @@ using UnityEngine;
 public class GSObjectLifetimeData : NetObjectStateData
 {
     public GSObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
-    public SerializableFloat Lifetime { get; private set; } = null;
-    public SerializableFloat CurrentLifetime { get; private set; } = null;
+    public SerializableFloat Lifetime { get; private set; } = new();
+    public SerializableFloat CurrentLifetime { get; private set; } = new ();
     public float NormalizedLifetime => CurrentLifetime.Value / Lifetime.Value;
-
-    protected override void OnDefineValues()
-    {
-        base.OnDefineValues();
-        Lifetime = new SerializableFloat(0f, WritePemission);
-        CurrentLifetime = new SerializableFloat(0f, WritePemission);
-    }
 }
 
 public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>

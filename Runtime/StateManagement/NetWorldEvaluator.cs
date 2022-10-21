@@ -62,7 +62,7 @@ public class NetWorldEvaluator : NetWorld
         CurrentSnapshotIndex = snapshotIndex;
         UpdateCurrentSnapshotInfo();
 
-        if(updateImmidiate)
+        if (updateImmidiate)
             UpdateWorldState(m_CurrentSnapshot.DeltaTime);
     }
 
@@ -98,17 +98,16 @@ public class NetWorldEvaluator : NetWorld
 
     public float GetSnapshotRelativeTime(int snapshotIndex)
     {
-        var result = 0f;
-        for (var i = 0; i < m_HistoryBuffer.Count; i++)
+        if (m_HistoryBuffer.Count == 0)
         {
-            var s = m_HistoryBuffer[i];
-            result += s.DeltaTime;
-            if (i == snapshotIndex)
-                return result;
+            UnityEngine.Debug.LogError($"[{Name}] [{UID}] history buffer is empty");
+            return 0f;
         }
 
-        UnityEngine.Debug.LogError($"Unabled to calculate time for snapshot with index {snapshotIndex}");
-        return result;
+        if (snapshotIndex < 0 || snapshotIndex >= m_HistoryBuffer.Count)
+            throw new IndexOutOfRangeException();
+
+        return m_HistoryBuffer[snapshotIndex].LocalTime - m_HistoryBuffer[0].LocalTime;
     }
 
     public float GetRemainTimeFromShanpshot(int snapshotIndex)
@@ -122,10 +121,7 @@ public class NetWorldEvaluator : NetWorld
         if (snapshotIndex < 0 || snapshotIndex >= m_HistoryBuffer.Count)
             throw new IndexOutOfRangeException();
 
-        var lastSnapshot = m_HistoryBuffer[^1];
-        var targetSnapshot = m_HistoryBuffer[snapshotIndex];
-
-        return lastSnapshot.LocalTime - targetSnapshot.LocalTime;
+        return m_HistoryBuffer[^1].LocalTime - m_HistoryBuffer[snapshotIndex].LocalTime;
     }
 
     void UpdateCurrentSnapshotInfo()

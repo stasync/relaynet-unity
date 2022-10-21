@@ -7,18 +7,9 @@ public class InteractionNetworkData : NetObjectStateData
 {
     public InteractionNetworkData(Func<bool> writePermission) : base(writePermission) { }
 
-    public SerializableObjectUID CurrentInteraction { get; private set; } = null;
-    public SerializableObjectUID LastInteraction { get; private set; } = null;
-    public SerializableBool InteractionsEnabled { get; private set; } = null;
-
-    protected override void OnDefineValues()
-    {
-        base.OnDefineValues();
-
-        CurrentInteraction = new SerializableObjectUID(NetObjectUID.Invalid, WritePemission);
-        LastInteraction = new SerializableObjectUID(NetObjectUID.Invalid, WritePemission);
-        InteractionsEnabled = new SerializableBool(false, WritePemission);
-    }
+    public SerializableObjectUID CurrentInteraction { get; private set; } = new ();
+    public SerializableObjectUID LastInteraction { get; private set; } = new ();
+    public SerializableBool InteractionsEnabled { get; private set; } = new ();
 }
 
 public sealed class GSObjectTransaction : GSObjectTransaction<InteractionNetworkData> { }

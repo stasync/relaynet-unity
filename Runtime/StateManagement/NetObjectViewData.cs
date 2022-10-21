@@ -5,12 +5,8 @@ public class NetObjectViewStateData : NetObjectStateData
     public bool ViewInitialized { get; private set; }
     public byte[] UnstructuredData { get; private set; }
 
-    public NetObjectViewStateData(System.Func<bool> writePermission) : base(writePermission) { }
-
-    protected override void OnDefineValues()
+    public NetObjectViewStateData(System.Func<bool> writePermission) : base(writePermission)
     {
-        base.OnDefineValues();
-
         ViewInitialized = false;
         UnstructuredData = new byte[] { };
     }

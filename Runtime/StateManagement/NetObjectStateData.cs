@@ -31,21 +31,17 @@ public abstract class NetObjectStateData
     }
 #endif
 
-    protected IReadOnlyDictionary<string, ISerializableValue> SerializeableValues => m_InternalValueCollection;
-    Dictionary<string, ISerializableValue> m_InternalValueCollection;
+    protected IReadOnlyDictionary<string, SerializableValue> SerializeableValues => m_InternalValueCollection;
+    Dictionary<string, SerializableValue> m_InternalValueCollection;
 
     protected NetObjectStateData(Func<bool> writePermission)
     {
         WritePemission = writePermission;
         TypeHashCode = GetTypeHashCode(GetType());
 
-        OnDefineValues();
         CollectValues();
-
         Initialized = true;
     }
-
-    protected virtual void OnDefineValues() { }
 
     public override int GetHashCode()
     {
@@ -80,10 +76,10 @@ public abstract class NetObjectStateData
     void CollectValues()
     {
         var bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic;
-        var properties = Find.PropertyReferencesWithInfo<ISerializableValue>(this, bindingFlags);
+        var properties = Find.PropertyReferencesWithInfo<SerializableValue>(this, bindingFlags);
 
 #if VALIDATE_COLLECTED_FIELDS
-        var fields = Find.FieldReferencesWithInfo<ISerializableValue>(this, bindingFlags);
+        var fields = Find.FieldReferencesWithInfo<SerializableValue>(this, bindingFlags);
         foreach (var fvp in fields)
         {
             var isValidBackingFiled = false;
@@ -101,7 +97,7 @@ public abstract class NetObjectStateData
         }
 #endif
 
-        m_InternalValueCollection = new Dictionary<string, ISerializableValue>();
+        m_InternalValueCollection = new Dictionary<string, SerializableValue>();
         foreach (var pvp in properties)
         {
             if (pvp.Key.SetMethod != null && pvp.Key.SetMethod.IsPublic)
@@ -120,7 +116,7 @@ public abstract class NetObjectStateData
         }
     }
 
-    protected void AddValueManual(string valueName, ISerializableValue value)
+    protected void AddValueManual(string valueName, SerializableValue value)
     {
         if (Initialized)
             throw new InvalidOperationException("Unable to add new value if data already initialized");
@@ -128,6 +124,7 @@ public abstract class NetObjectStateData
         if (m_InternalValueCollection.ContainsKey(valueName))
             throw new InvalidOperationException($"{GetType().FullName} already contains value with name {valueName}");
 
+        SerializableValue.WritePermissionFieldInfo.SetValue(value, WritePemission);
         m_InternalValueCollection.Add(valueName, value);
     }
 

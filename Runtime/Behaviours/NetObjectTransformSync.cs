@@ -7,22 +7,11 @@ public class NetObjectTransformData : NetObjectStateData
 {
     public NetObjectTransformData(Func<bool> writePermission) : base(writePermission) { }
 
-    public SerializableVector3 Position { get; private set; } = null;
-    public SerializableQuaternion Rotation { get; private set; } = null;
-    public SerializableVector3 Velocity { get; private set; } = null;
-    public SerializableFloat WorldTime { get; private set; } = null;
-    public SerializableBool HasParent { get; private set; } = null;
-
-    protected override void OnDefineValues()
-    {
-        base.OnDefineValues();
-
-        Position = new SerializableVector3(default, WritePemission);
-        Rotation = new SerializableQuaternion(default, WritePemission);
-        Velocity = new SerializableVector3(default, WritePemission);
-        WorldTime = new SerializableFloat(default, WritePemission);
-        HasParent = new SerializableBool(false, WritePemission);
-    }
+    public SerializableVector3 Position { get; private set; } = new();
+    public SerializableQuaternion Rotation { get; private set; } = new();
+    public SerializableVector3 Velocity { get; private set; } = new();
+    public SerializableFloat WorldTime { get; private set; } = new();
+    public SerializableBool HasParent { get; private set; } = new();
 }
 
 

@@ -5,14 +5,16 @@ using System.Collections.Generic;
 
 public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>, ICollectionWithCount
 {
+    public SerializableHashSet(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
+       this(new HashSet<TValue>(), valueReader, valueWriter)
+    { }
+
     public SerializableHashSet(
         HashSet<TValue> defaultValue,
-        Func<bool> writePermission,
         Func<NetReader, bool, TValue> valueReader,
         Action<NetWriter, TValue> valueWriter) :
             base(
                 defaultValue,
-                writePermission,
                 (r, f) => r.ReadHashSet(
                     cValueReader => valueReader(cValueReader, f)),
                 (w, v) => w.WriteCollection(v,

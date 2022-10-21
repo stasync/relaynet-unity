@@ -7,15 +7,21 @@ using System.Linq;
 public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>, IDictionary<TKey, TValue>, ICollectionWithCount
 {
     public SerializableDictionary(
+        Func<NetReader, bool, TKey> keyReader,
+        Action<NetWriter, TKey> keyWriter,
+        Func<NetReader, bool, TValue> valueReader,
+        Action<NetWriter, TValue> valueWriter) :
+        this(new Dictionary<TKey, TValue>(), keyReader, keyWriter, valueReader, valueWriter)
+    { }
+
+    public SerializableDictionary(
         Dictionary<TKey, TValue> defaultValue,
-        Func<bool> writePermission,
         Func<NetReader, bool, TKey> keyReader,
         Action<NetWriter, TKey> keyWriter,
         Func<NetReader, bool, TValue> valueReader,
         Action<NetWriter, TValue> valueWriter) :
             base(
                 defaultValue,
-                writePermission,
                 (r, f) => r.ReadDictionary(
                     cKeyReader => keyReader(cKeyReader, f), 
                     cValueReader => valueReader(cValueReader, f)),
@@ -118,14 +124,12 @@ public class SerializableCollectionDictionary<TKey, TValue> : SerializableDictio
 {
     public SerializableCollectionDictionary(
         Dictionary<TKey, List<TValue>> defaultValue,
-        Func<bool> writePermission,
         Func<NetReader, bool, TKey> keyReader,
         Action<NetWriter, TKey> keyWriter,
         Func<NetReader, bool, TValue> valueReader,
         Action<NetWriter, TValue> valueWriter) :
             base(
                 defaultValue,
-                writePermission,
                 keyReader,
                 keyWriter,
                 (vr, f) => 

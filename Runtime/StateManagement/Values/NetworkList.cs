@@ -6,18 +6,14 @@ using System.Linq;
 
 public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>, ICollectionWithCount
 {
-    public SerializableList(
-        List<TValue> defaultValue, 
-        Func<bool> writePermission, 
-        Func<NetReader, bool, TValue> valueReader, 
-        Action<NetWriter, TValue> valueWriter) :
-            base(
-                defaultValue, 
-                writePermission, 
-                (r, f) => r.ReadList(
-                    cValueReader => valueReader(cValueReader, f)), 
-                (w, v) => w.WriteCollection(v, 
-                    (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
+    public SerializableList(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
+        this(new List<TValue>(), valueReader, valueWriter)
+    { }
+
+    public SerializableList(List<TValue> defaultValue, Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
+            base(defaultValue, 
+                (r, f) => r.ReadList(cValueReader => valueReader(cValueReader, f)), 
+                (w, v) => w.WriteCollection(v, (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
     {
     }
 
@@ -115,28 +111,24 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
 
 public class SerializableFloatList : SerializableList<float>
 {
-    public SerializableFloatList(List<float> defaultValue, Func<bool> writePermission) :
-        base(defaultValue, writePermission, (r, f) => r.ReadSingle(), (w, v) => w.Write(v))
-    { }
+    public SerializableFloatList() : this(new List<float>()) { }
+    public SerializableFloatList(List<float> defaultValue) : base(defaultValue, (r, f) => r.ReadSingle(), (w, v) => w.Write(v)) { }
 }
 
 public class SerializableIntList: SerializableList<int>
 {
-    public SerializableIntList(List<int> defaultValue, Func<bool> writePermission) :
-        base(defaultValue, writePermission, (r, f) => r.ReadInt32(), (w, v) => w.Write(v))
-    { }
+    public SerializableIntList() : this(new List<int>()) { }
+    public SerializableIntList(List<int> defaultValue) : base(defaultValue, (r, f) => r.ReadInt32(), (w, v) => w.Write(v)) { }
 }
 
 public class SerializableBoolList : SerializableList<bool>
 {
-    public SerializableBoolList(List<bool> defaultValue, Func<bool> writePermission) :
-        base(defaultValue, writePermission, (r, f) => r.ReadBoolean(), (w, v) => w.Write(v))
-    { }
+    public SerializableBoolList() : this(new List<bool>()) { }
+    public SerializableBoolList(List<bool> defaultValue) : base(defaultValue, (r, f) => r.ReadBoolean(), (w, v) => w.Write(v)) { }
 }
 
 public class SerializableStringList : SerializableList<string>
 {
-    public SerializableStringList(List<string> defaultValue, Func<bool> writePermission) :
-        base(defaultValue, writePermission, (r, f) => r.ReadString(), (w, v) => w.Write(v))
-    { }
+    public SerializableStringList() : this(new List<string>()) { }
+    public SerializableStringList(List<string> defaultValue) : base(defaultValue, (r, f) => r.ReadString(), (w, v) => w.Write(v)) { }
 }
