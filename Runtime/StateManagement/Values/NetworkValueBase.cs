@@ -1,12 +1,7 @@
 ﻿using Core.Networking;
 using System;
 
-public interface IJSONSerializable
-{
-    string ToJSONProperty();
-}
-
-public interface ISerializableValue : ISerializable, IJSONSerializable
+public interface ISerializableValue : ISerializable
 {
     void DeserializeAndApply(NetReader reader, bool firstTime);
     void ApplyLastDeserialized();
@@ -67,8 +62,6 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : ISerializa
 
     public virtual void Serialize(NetWriter writer) =>
          m_Writer(writer, InternalValue);
-
-    public abstract string ToJSONProperty();
 
     public override int GetHashCode() => m_InternalValue.GetHashCode();
     public override string ToString() => m_InternalValue.ToString();

@@ -94,7 +94,6 @@ public class NetDebugWindow : EditorWindow
 
         bool m_Draw;
         Dictionary<NetObjectUID, ObjectDrawer> m_ObjectViews;
-        string m_LastJSONState;
 
         public WorldDrawer(T world)
         {
@@ -127,16 +126,6 @@ public class NetDebugWindow : EditorWindow
             EditorGUILayout.LabelField($"Time: {m_World.Time.ToString("f1")}", EditorStyles.boldLabel);
             EditorGUILayout.LabelField($"Local Time: {m_World.LocalTime.ToString("f1")}", EditorStyles.boldLabel);
             EditorGUILayout.LabelField($"Hash: {m_World.GetHashCode()}", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-
-            //JSON State
-            {
-                EditorGUILayout.Space();
-                if (GUILayout.Button("Aggregate JSON state"))
-                    m_LastJSONState = m_World.ToJSONProperty();
-                EditorGUILayout.TextField(m_LastJSONState);
-            }
-
             EditorGUILayout.Space();
 
             //Players

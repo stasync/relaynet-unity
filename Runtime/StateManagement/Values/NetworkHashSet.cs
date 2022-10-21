@@ -2,7 +2,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>, ICollectionWithCount
 {
@@ -52,11 +51,8 @@ public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<T
     }
 
     public override string ToString() =>
-        $"[{string.Join("; ", InternalValue)}]";
+        $"{InternalValue.Count} [{string.Join("; ", InternalValue)}]";
 
     public IEnumerator<TValue> GetEnumerator() => InternalValue.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => InternalValue.GetEnumerator();
-
-    public override string ToJSONProperty() =>
-        RealtimeJSONUtils.ToJSONCollection(Value.Select(v => RealtimeJSONUtils.ToJSONValue(v.ToString())).ToArray());
+        IEnumerator IEnumerable.GetEnumerator() => InternalValue.GetEnumerator();
 }

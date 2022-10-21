@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+public class IgnoreAutoCollection : Attribute { }
+
 [Obsolete]
 public sealed class NetObjectStateEmptyData : NetObjectStateData
 {

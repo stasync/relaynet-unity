@@ -214,7 +214,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        if(newOwner.IsValid)
+        if (newOwner.IsValid)
         {
             UpdateOwnerInternal(newOwner);
             ScheduleStateChange(ObjectStateChangeRequestType.ReliableUpdateOwnerChange);
@@ -292,7 +292,7 @@ public struct RPCWithoutAuthorityState
 
     public byte[] ToData()
     {
-        var writer = new NetWriter();
+        var writer = NetWriter.Get();
         Serialize(writer);
         return writer.ToArray();
     }

@@ -1,7 +1,6 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -12,7 +11,7 @@ public enum RPCBufferChangeMethod : byte
 }
 
 [DisallowMultipleComponent]
-public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, IJSONSerializable
+public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
 {
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
@@ -42,27 +41,25 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
     public bool IsSceneObject => State != null && State.IsSceneObject;
     public bool Initialized { get; private set; }
 
-    IEnumerable<IGSInstanceObservable> m_Observables;
+    IGSInstanceObservable[] m_Observables;
 
     NetWriter m_ObjectWriter;
     NetReader m_ObjectReader;
 
     public NetObjectState State => m_NetObjectStateReference.State;
-    NetObjectStateReference m_NetObjectStateReference = new NetObjectStateReference();
+    readonly NetObjectStateReference m_NetObjectStateReference = new ();
 
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    public NetObjectIdentity Initialze(NetWorld world, NetObjectUID stateUID, object[] additionalData)
+    public NetObjectIdentity Initialze(NetWorld world, NetObjectUID stateUID)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
 
         m_Observables = gameObject
-            .GetComponents<IGSInstanceObservable>()
-            .OrderBy(c => c.SerializationOrder)
-            .ToList();
+            .GetComponents<IGSInstanceObservable>();
 
         World = world;
 
@@ -71,18 +68,10 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
 
         State.OnOwnerChanged += OnOwnerChanged;
         State.LocalUpdateRequest += OnLocalUpdateRequest;
-        /*
-         * Skip deserialization if it calls on local object.
-         * Object can be created with null data (see GSInstanceFactory.CreateObject). Just skip deserialization here.
-         */
 
         var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
         if (!IsLocal)
             Deserialize(viewStateData.UnstructuredData, true, true); //Force true to allow deseriazation before object initialized.
-
-        if (additionalData != null && additionalData.Length > 0)
-            foreach (var o in m_Observables)
-                o.OnCreatedWithAdditionalData(additionalData);
 
         //Tell components abount object pre initialization;
         foreach (var o in m_Observables)
@@ -155,7 +144,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
     /// </summary>
     void OnOwnerChanged()
     {
-        Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner.ToString()}");
+        Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner}");
         foreach (var b in m_Observables)
             b.OnOwnerChanged();
     }
@@ -456,6 +445,4 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever, 
         }
         return behaviour as T;
     }
-
-    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue($"obj {InstanceId} {gameObject.name}") + ":" + RealtimeJSONUtils.ToJSONCollection(m_Observables.Select(v => v.ToJSONProperty()).ToArray()) + "}";
 }

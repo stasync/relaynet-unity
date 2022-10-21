@@ -41,7 +41,7 @@ public class NetWorldView : MonoBehaviour
         m_CurrentObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
         m_PendingObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
 
-        var sceneName = $"{m_World.Name} scene";
+        var sceneName = $"{m_World.Name} {gameObject.GetInstanceID()}";
         switch (initMode)
         {
             case NetWorldViewInitMode.Default:
@@ -63,7 +63,7 @@ public class NetWorldView : MonoBehaviour
         //Remove invalid views;
         ForEachViews((UID, view) =>
         {
-            if(!ShoudUpdateViewForState(UID))
+            if (!ShoudUpdateViewForState(UID))
                 RemoveView(UID);
         });
 
@@ -108,7 +108,7 @@ public class NetWorldView : MonoBehaviour
                     netObjectView.Deserialize(viewData.UnstructuredData, false, false);
             }
             else
-                InitializeObjectView(netObjectView, state.UID, null);
+                InitializeObjectView(netObjectView, state.UID);
         });
 
         Profiler.EndSample();
@@ -119,7 +119,7 @@ public class NetWorldView : MonoBehaviour
         if (!m_World.TryGetObject(UID, out var netObjectState))
             return false;
 
-        if(netObjectState.IsOwnedByLocalPlayer)
+        if (netObjectState.IsOwnedByLocalPlayer)
             return true;
 
         if (!netObjectState.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
@@ -143,15 +143,15 @@ public class NetWorldView : MonoBehaviour
         return netObjectView;
     }
 
-    public NetObjectIdentity CreateImmidiate(NetObjectState state, Vector3 position, Quaternion rotation, object[] additionalData)
+    public NetObjectIdentity CreateImmidiate(NetObjectState state, Vector3 position, Quaternion rotation)
     {
         var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
-        InitializeObjectView(netObjectView, state.UID, additionalData);
+        InitializeObjectView(netObjectView, state.UID);
         m_PendingObjectViews.Add(state.UID, netObjectView);
         return netObjectView;
     }
 
-    public void InitializeObjectView(NetObjectIdentity identity, NetObjectUID stateUID, object[] additionalData)
+    public void InitializeObjectView(NetObjectIdentity identity, NetObjectUID stateUID)
     {
         if (identity.Initialized)
             throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{stateUID} already initialized");
@@ -160,7 +160,7 @@ public class NetWorldView : MonoBehaviour
         UpdateTransformInView(identity.transform);
 
         //Init;
-        identity.Initialze(m_World, stateUID, additionalData);
+        identity.Initialze(m_World, stateUID);
 
         //Push event;
         NewObjectInitialized(identity);
@@ -234,7 +234,7 @@ public class NetWorldView : MonoBehaviour
             r.forceRenderingOff = ForceRenderingOff;
 
         foreach(var l in targetTransform.GetComponentsInChildren<Light>(true))
-            l.enabled = ForceRenderingOff;
+            l.enabled = !ForceRenderingOff;
     }
 
     void UpdateSoundFor(Transform targetTransform)
@@ -262,7 +262,7 @@ public class NetWorldView : MonoBehaviour
 
         Destroy(gameObject);
 
-        if(m_WorldScene.IsValid())
+        if (m_WorldScene.IsValid())
             SceneManager.UnloadSceneAsync(m_WorldScene);
     }
 

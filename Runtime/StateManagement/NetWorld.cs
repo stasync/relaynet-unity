@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public abstract class NetWorld : IJSONSerializable
+public abstract class NetWorld
 {
     public event Action ViewInitialized = delegate { };
     public event Action Updated = delegate { };
@@ -272,6 +272,4 @@ public abstract class NetWorld : IJSONSerializable
         hash = (hash * 7) + PlayersInternal.GetHashCode();
         return hash;
     }
-
-    public string ToJSONProperty() => "{" + RealtimeJSONUtils.ToJSONValue("objects") + ":" + RealtimeJSONUtils.ToJSONCollection(View.CurrentObjectViews.Values.Select(o => o.ToJSONProperty()).ToArray()) + "}";
 }

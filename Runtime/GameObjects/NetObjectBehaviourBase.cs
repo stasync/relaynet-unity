@@ -4,10 +4,10 @@
 public abstract class GSInstanceBehaviourBase : MonoBehaviour
 {
     protected ILocator Locator => m_Locator.Instance;
-    ServiceProvider<ILocator> m_Locator = new ServiceProvider<ILocator>();
+    readonly ServiceProvider<ILocator> m_Locator = new ();
 
     protected GSNetwork Network => m_Network.Instance;
-    ServiceProvider<GSNetwork> m_Network = new ServiceProvider<GSNetwork>();
+    readonly ServiceProvider<GSNetwork> m_Network = new ();
 
     public NetObjectIdentity Identity =>
         m_Identity != null ?

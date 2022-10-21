@@ -6,7 +6,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
 {
     #region STATIC
     public static NetObjectUID Invalid => 0;
-    static IList<NetObjectUID> s_UnAllocatedIds = new List<NetObjectUID>();
+    static readonly List<NetObjectUID> s_UnAllocatedIds = new();
     static uint s_IdCounter = 0;
 
     /// <summary>
@@ -30,7 +30,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
     /// </summary>
     public static void Reset()
     {
-        s_UnAllocatedIds = new List<NetObjectUID>();
+        s_UnAllocatedIds.Clear();
         s_IdCounter = 0;
     }
 
@@ -67,7 +67,7 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
         m_Value = instanceId;
     }
 
-    uint m_Value;
+    readonly uint m_Value;
     public const int Size = sizeof(uint);
 
     public bool IsValid => m_Value > Invalid.m_Value;

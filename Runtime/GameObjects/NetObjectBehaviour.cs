@@ -2,11 +2,14 @@
 using System;
 using UnityEngine;
 
+[Obsolete("Use data based behaviour instead")]
+public abstract class GSInstanceBehaviour : GSInstanceBehaviour<NetObjectStateEmptyData>
+{
+}
+
 public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour where TObjectData : NetObjectStateData
 {
     protected TObjectData Data { get; private set; }
-
-    public virtual int SerializationOrder => 0;
 
     public virtual bool DataWritePermission => IsLocal;
 
@@ -19,9 +22,6 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     public bool IsSceneObject => Identity.IsSceneObject;
 
     public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
-
-    [Obsolete("Will be removed soon")]
-    protected virtual void OnDataValuesCollected() { }
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NOT AUTHORITY on this object.
@@ -111,9 +111,6 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// </summary>
     public virtual void OnPreInitialize()
     {
-        if (Identity.State.DataCollection.HasData<TObjectData>())
-            Debug.LogError($"'{GetType().FullName}' trying to register network object data of type '{typeof(TObjectData).FullName}', but it's already registered, this mgiht lead to unexpected behaviour");
-
         Data = Identity
             .State
             .DataCollection
@@ -125,12 +122,6 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// </summary>
     public abstract void OnPostInitialize();
     public virtual void OnInitializeViewData() { }
-
-    /// <summary>
-    /// Called when object crated with additional data.
-    /// </summary>
-    /// <param name="data"></param>
-    public virtual void OnCreatedWithAdditionalData(object[] data) { }
 
     /// <summary>
     /// Owner changed

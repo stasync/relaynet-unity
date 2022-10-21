@@ -111,9 +111,6 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
 
     public override string ToString() =>
         $"[{string.Join("; ", InternalValue)}]";
-
-    public override string ToJSONProperty() =>
-        RealtimeJSONUtils.ToJSONCollection(Value.Select(v => RealtimeJSONUtils.ToJSONValue(v.ToString())).ToArray());
 }
 
 public class SerializableFloatList : SerializableList<float>

@@ -87,7 +87,7 @@ public class AnimatorBoolParameterValueProxy : AnimatorPerameterValueProxy<bool>
 }
 
 [DisallowMultipleComponent]
-public sealed class GSAnimatorSync : GSInstanceBehaviour<NetObjectStateEmptyData>
+public sealed class GSAnimatorSync : GSInstanceBehaviour
 {
     enum AnimatorStateChangeMethod : byte
     {
@@ -114,7 +114,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<NetObjectStateEmptyData
     readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new ();
     readonly List<float> m_RemoteLayerWeights = new();
 
-    public override void OnPostInitialize()
+    void Awake()
     {
         for (var i = 0; i < m_Animator.parameters.Length; i++)
         {
@@ -137,6 +137,10 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<NetObjectStateEmptyData
 
         for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
             m_RemoteLayerWeights.Add(m_Animator.GetLayerWeight(layerIndex));
+    }
+
+    public override void OnPostInitialize()
+    {
     }
 
     public void SetTrigger(string triggerName) =>

@@ -464,11 +464,11 @@ public class NetWorldRuntime : NetWorld
     /// <param name="rotation"></param>
     /// <param name="baseData"></param>
     /// <returns></returns>
-    public NetObjectIdentity CreateObject(NetWorldPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation, object[] additionalData)
+    public NetObjectIdentity CreateObject(NetWorldPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
         var state = new NetObjectState(new NetObjectUID(owner.UID), prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(state.UID, state);
-        return View.CreateImmidiate(state, position, rotation, additionalData);      
+        return View.CreateImmidiate(state, position, rotation);      
     }
 
     /// <summary>
@@ -504,7 +504,7 @@ public class NetWorldRuntime : NetWorld
             {
                 //Initialize immidiatlty on master client;
                 if (PlayersInternal.LocalPlayerIsMaster)
-                    View.InitializeObjectView(sceneIdentity.Identity, state.UID, null);
+                    View.InitializeObjectView(sceneIdentity.Identity, state.UID);
 
                 //Add view to be used in future;
                 View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
@@ -546,7 +546,7 @@ public class NetWorldRuntime : NetWorld
         {
             var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
             m_ObjectsRegisterRequests.Add(instanceId, state);
-            return View.CreateImmidiate(state, position, rotation, null);
+            return View.CreateImmidiate(state, position, rotation);
         }
     }
 
@@ -598,5 +598,5 @@ public class NetWorldRuntime : NetWorld
         }
     }
 
-    public int GetHistoryBufferSize() => m_HistoryBuffer.Sum(s => s.GetSize());
+    public int GetHistoryBufferSize() => m_HistoryBuffer.Size;
 }

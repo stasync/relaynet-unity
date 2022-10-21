@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class GSSceneObjectIdentity : GSInstanceEmptyBehaviour
+public class GSSceneObjectIdentity : GSInstanceBehaviour
 {
     [SerializeField, Range(NetObjectUID.FIRST_VALID_UID, NetObjectUID.FIRST_VALID_UID + NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE)]
     int m_SceneObjectId;

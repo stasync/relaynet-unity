@@ -165,9 +165,4 @@ public class SerializableValueCollection : ISerializableValue
         foreach (var v in m_InternalCollection.Values)
             v.Serialize(writer);
     }
-
-    public string ToJSONProperty() =>
-            RealtimeJSONUtils
-                .ToJSONCollection(m_InternalCollection.Select(kvp => "{" + RealtimeJSONUtils.ToJSONValue(kvp.Key.ToString()) + ":" + kvp.Value.ToJSONProperty() + "}")
-                .ToArray());
 }
