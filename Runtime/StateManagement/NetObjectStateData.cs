@@ -1,13 +1,8 @@
-﻿#define VALIDATE_COLLECTED_FIELDS
-
-using Core.Networking;
+﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-
-[AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-public class IgnoreAutoCollection : Attribute { }
 
 [Obsolete]
 public sealed class NetObjectStateEmptyData : NetObjectStateData
@@ -17,29 +12,43 @@ public sealed class NetObjectStateEmptyData : NetObjectStateData
 
 public abstract class NetObjectStateData
 {
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    public class IgnoreAutoCollection : Attribute { }
+
     public bool HasPermission => WritePemission();
     public readonly int TypeHashCode;
 
     protected readonly Func<bool> WritePemission;
     protected bool Initialized { get; private set; }
 
-#if UNITY_EDITOR
-    public virtual IEnumerable<string> GetValuesInfo_Editor()
-    {
-        foreach (var kvp in m_InternalValueCollection)
-            yield return $"{kvp.Key}:{kvp.Value}";
-    }
-#endif
-
     protected IReadOnlyDictionary<string, SerializableValue> SerializeableValues => m_InternalValueCollection;
-    Dictionary<string, SerializableValue> m_InternalValueCollection;
+    readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new ();
 
     protected NetObjectStateData(Func<bool> writePermission)
     {
         WritePemission = writePermission;
         TypeHashCode = GetTypeHashCode(GetType());
 
-        CollectValues();
+        // Collect serializable values.
+        {
+            var valueType = typeof(SerializableValue);
+            var fields = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+
+            foreach (var fInfo in fields)
+            {
+                if (!valueType.IsAssignableFrom(fInfo.FieldType))
+                    continue;
+
+                if (Attribute.IsDefined(fInfo, typeof(IgnoreAutoCollection)))
+                    continue;
+
+                if (fInfo.GetValue(this) is SerializableValue value)
+                    AddValueManual(fInfo.Name, value);
+                else
+                    Debug.LogError($"{GetType().FullName}.{fInfo.Name} field is not assigned and will be skipped");
+            }
+        }
+
         Initialized = true;
     }
 
@@ -71,49 +80,6 @@ public abstract class NetObjectStateData
             result += $" {kvp.Key}:{kvp.Value}";
 
         return result;
-    }
-
-    void CollectValues()
-    {
-        var bindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic;
-        var properties = Find.PropertyReferencesWithInfo<SerializableValue>(this, bindingFlags);
-
-#if VALIDATE_COLLECTED_FIELDS
-        var fields = Find.FieldReferencesWithInfo<SerializableValue>(this, bindingFlags);
-        foreach (var fvp in fields)
-        {
-            var isValidBackingFiled = false;
-            foreach (var pvp in properties)
-            {
-                if (!fvp.Key.Name.Equals($"<{pvp.Key.Name}>k__BackingField"))
-                    continue;
-
-                isValidBackingFiled = true;
-                break;
-            }
-
-            if (!isValidBackingFiled)
-                throw new InvalidOperationException($"{GetType().FullName}.{fvp.Key.Name} is a field and will be ignored by auto collector. Use property pattern instead: {fvp.Key.Name} {"{ get; private set; }"}");
-        }
-#endif
-
-        m_InternalValueCollection = new Dictionary<string, SerializableValue>();
-        foreach (var pvp in properties)
-        {
-            if (pvp.Key.SetMethod != null && pvp.Key.SetMethod.IsPublic)
-            {
-                Debug.LogError($"{GetType().FullName}.{pvp.Key.Name} has public setter and will be ignored by auto collector. Use private setter instead");
-                continue;
-            }
-
-            if (Attribute.IsDefined(pvp.Key, typeof(IgnoreAutoCollection)))
-                continue;
-
-            if (pvp.Value == null)
-                Debug.LogError($"{GetType().FullName}.{pvp.Key.Name} value is not assigned and will be skipped");
-            else
-                AddValueManual(pvp.Key.Name, pvp.Value);
-        }
     }
 
     protected void AddValueManual(string valueName, SerializableValue value)
@@ -156,6 +122,12 @@ public abstract class NetObjectStateData
         Core.Main.IOC.TypeLookup.TryGetType(typeHashCode, out type);
 
 #if UNITY_EDITOR
+    public virtual IEnumerable<string> GetValuesInfo_Editor()
+    {
+        foreach (var kvp in m_InternalValueCollection)
+            yield return $"{kvp.Key.Replace("k__BackingField", string.Empty)}:{kvp.Value}";
+    }
+
     public int GetSerializedSize_Editor()
     {
         var writer = NetWriter.Get();

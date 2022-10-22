@@ -7,9 +7,9 @@ public class InteractionNetworkData : NetObjectStateData
 {
     public InteractionNetworkData(Func<bool> writePermission) : base(writePermission) { }
 
-    public SerializableObjectUID CurrentInteraction { get; private set; } = new ();
-    public SerializableObjectUID LastInteraction { get; private set; } = new ();
-    public SerializableBool InteractionsEnabled { get; private set; } = new ();
+    public readonly SerializableObjectUID CurrentInteraction = new ();
+    public readonly SerializableObjectUID LastInteraction = new ();
+    public readonly SerializableBool InteractionsEnabled = new ();
 }
 
 public sealed class GSObjectTransaction : GSObjectTransaction<InteractionNetworkData> { }

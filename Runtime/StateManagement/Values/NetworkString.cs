@@ -4,9 +4,7 @@ using UnityEngine;
 
 public abstract class SerializableNumeric<TValue> : SerializableValue<TValue> where TValue : struct, IComparable<TValue>
 {
-    public SerializableNumeric(TValue defaultValue,Func<NetReader, bool, TValue> reader,Action<NetWriter, TValue> writer) :
-        base(defaultValue, reader, writer)
-    { }
+    public SerializableNumeric(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) : base(defaultValue, reader, writer) { }
 
     public abstract void Change(TValue value);
     public abstract void ChangeClamped(TValue value, TValue min, TValue max);
@@ -71,12 +69,12 @@ public class SerializableObjectUID : SerializableValue<NetObjectUID>
 
 public class SerializableVector3: SerializableValue<Vector3>
 {
-    public SerializableVector3(Vector3 defaultValue = default) :base(defaultValue, (r, f) => r.ReadVector3(), (w, v) => w.Write(v)) { }
+    public SerializableVector3(Vector3 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector3(), (w, v) => w.Write(v)) { }
 }
 
 public class SerializableVector2 : SerializableValue<Vector2>
 {
-    public SerializableVector2(Vector2 defaultValue = default) :base(defaultValue, (r, f) => r.ReadVector2(), (w, v) => w.Write(v)) { }
+    public SerializableVector2(Vector2 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector2(), (w, v) => w.Write(v)) { }
 }
 
 public class SerializableQuaternion : SerializableValue<Quaternion>

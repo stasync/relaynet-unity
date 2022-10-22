@@ -429,11 +429,12 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
 
         UnityEditor.Handles.Label(
             transform.position, 
-            $"Object: {InstanceId.ToString()}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
+            $"Object: {InstanceId}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
     }
     #endif
 
-    Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new Dictionary<Type, GSInstanceBehaviourBase>();
+    readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new ();
+
     public T GetBehaviour<T>() where T : GSInstanceBehaviourBase
     {
         var type = typeof(T);

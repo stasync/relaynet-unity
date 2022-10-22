@@ -7,11 +7,11 @@ public class NetObjectTransformData : NetObjectStateData
 {
     public NetObjectTransformData(Func<bool> writePermission) : base(writePermission) { }
 
-    public SerializableVector3 Position { get; private set; } = new();
-    public SerializableQuaternion Rotation { get; private set; } = new();
-    public SerializableVector3 Velocity { get; private set; } = new();
-    public SerializableFloat WorldTime { get; private set; } = new();
-    public SerializableBool HasParent { get; private set; } = new();
+    public readonly SerializableVector3 Position = new();
+    public readonly SerializableQuaternion Rotation = new();
+    public readonly SerializableVector3 Velocity = new();
+    public readonly SerializableFloat WorldTime = new();
+    public readonly SerializableBool HasParent = new();
 }
 
 
