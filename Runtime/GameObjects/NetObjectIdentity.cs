@@ -73,7 +73,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
         if (!IsLocal)
             Deserialize(viewStateData.UnstructuredData, true, true); //Force true to allow deseriazation before object initialized.
 
-        //Tell components abount object pre initialization;
+        //Pre initialization;
         foreach (var o in m_Observables)
             o.OnPreInitialize();
 

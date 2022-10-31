@@ -120,7 +120,7 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// <summary>
     /// Object instantiated and initialized, use it instead of 'Awake'. Called by 'GSInstanceIdentity' after object deserialization.
     /// </summary>
-    public abstract void OnPostInitialize();
+    public virtual void OnPostInitialize() { }
     public virtual void OnInitializeViewData() { }
 
     /// <summary>

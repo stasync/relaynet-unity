@@ -23,7 +23,6 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
 
     Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new Dictionary<NetObjectUID, Action<bool>>();
 
-    public override void OnPostInitialize() { }
     public override void OnInitializeViewData()
     {
         base.OnInitializeViewData();

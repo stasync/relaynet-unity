@@ -37,10 +37,6 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
             Network.Realtime.TryRegisterOrInitializeSceneObject(this);
     }
 
-    public override void OnPostInitialize()
-    {
-    }
-
     public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => value.Identity;
 
 #if UNITY_EDITOR

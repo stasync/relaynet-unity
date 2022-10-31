@@ -32,8 +32,6 @@ public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
         Data.CurrentLifetime.Set(lifetime);
     }
 
-    public override void OnPostInitialize() { }
-
     public override void OnInitializeViewData()
     {
         base.OnInitializeViewData();

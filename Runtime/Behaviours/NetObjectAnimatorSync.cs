@@ -139,10 +139,6 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
             m_RemoteLayerWeights.Add(m_Animator.GetLayerWeight(layerIndex));
     }
 
-    public override void OnPostInitialize()
-    {
-    }
-
     public void SetTrigger(string triggerName) =>
         SetTrigger(Animator.StringToHash(triggerName));
 

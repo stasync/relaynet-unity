@@ -50,14 +50,10 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
     }
 #endif
 
-    public override void OnPostInitialize()
-    {
-        ResetTemporaryData();
-    }
-
     public override void OnInitializeViewData()
     {
         base.OnInitializeViewData();
+        ResetTemporaryData();
         if (IsLocal)
         {
             Data.Position.Set(transform.position);
