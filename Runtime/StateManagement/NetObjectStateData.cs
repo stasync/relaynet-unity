@@ -12,8 +12,11 @@ public sealed class NetObjectStateEmptyData : NetObjectStateData
 
 public abstract class NetObjectStateData
 {
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class IgnoreAutoCollection : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+    public class SyncValue : Attribute { }
 
     public bool HasPermission => WritePemission();
     public readonly int TypeHashCode;
@@ -34,18 +37,32 @@ public abstract class NetObjectStateData
             var valueType = typeof(SerializableValue);
             var fields = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
 
-            foreach (var fInfo in fields)
+            foreach (var filedInfo in fields)
             {
-                if (!valueType.IsAssignableFrom(fInfo.FieldType))
+                if (Attribute.IsDefined(filedInfo, typeof(SyncValue)))
+                {
+                    if (filedInfo.FieldType == typeof(float))
+                    {
+                        AddValueManual(filedInfo.Name, new SerializabeFloatObserver(() => (float)filedInfo.GetValue(this), v => filedInfo.SetValue(this, v)));
+                    }
+                    else
+                    {
+                        Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'");
+                    }
+
+                    continue;
+                }
+
+                if (!valueType.IsAssignableFrom(filedInfo.FieldType))
                     continue;
 
-                if (Attribute.IsDefined(fInfo, typeof(IgnoreAutoCollection)))
+                if (Attribute.IsDefined(filedInfo, typeof(IgnoreAutoCollection)))
                     continue;
 
-                if (fInfo.GetValue(this) is SerializableValue value)
-                    AddValueManual(fInfo.Name, value);
+                if (filedInfo.GetValue(this) is SerializableValue value)
+                    AddValueManual(filedInfo.Name, value);
                 else
-                    Debug.LogError($"{GetType().FullName}.{fInfo.Name} field is not assigned and will be skipped");
+                    Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped");
             }
         }
 

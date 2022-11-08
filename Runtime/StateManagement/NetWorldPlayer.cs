@@ -19,9 +19,6 @@ public interface IReadOnlyNetWorldPlayer
 
 public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
 {
-    readonly NetWriter m_PlayerWriter;
-    readonly NetReader m_PlayerReader;
-
     #region STATE
     public ClientUID UID { get; private set; }
 
@@ -125,10 +122,6 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         m_MasterPlayer = masterPlayer;
 
         m_Properties = new Properties(() => IsLocal);
-
-        m_PlayerReader = new NetReader();
-        m_PlayerWriter = new NetWriter();
-
         m_TagObjectUIDs = new HashSet<NetObjectUID>();
     }
 
@@ -155,9 +148,9 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
 
     public byte[] Serialize()
     {
-        m_PlayerWriter.SeekZero();
-        ToSnapshot().Serialize(m_PlayerWriter);
-        return m_PlayerWriter.ToArray();
+        var writer = NetWriter.Get();
+        ToSnapshot().Serialize(writer);
+        return writer.ToArray();
     }
 
     public override int GetHashCode() => UID.GetHashCode();

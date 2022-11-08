@@ -31,6 +31,17 @@ public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<
     {
     }
 
+
+    public override string ToString()
+    {
+        var result = string.Empty;
+        foreach (var kvp in InternalValue)
+            result += $"[{kvp.Key}:{kvp.Value}] ";
+
+        return result.TrimEnd();
+
+    }
+
     #region IDictionary
     public TValue this[TKey key]
     {

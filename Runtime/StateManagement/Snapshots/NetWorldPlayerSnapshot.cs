@@ -21,7 +21,7 @@ public struct NetWorldPlayerSnapshot
         RTTMs = player.RTTMs;
         TagObjectUIDs = new HashSet<NetObjectUID>(player.TagObjectUIDs);
         MainTagObjectUID = player.MainTagObjectUID;
-        Properties = new PropertiesSnapshot(player.Properties);
+        Properties = PropertiesSnapshot.FromProperties(player.Properties);
     }
 
     public NetWorldPlayerSnapshot(NetReader reader)
@@ -48,7 +48,7 @@ public struct NetWorldPlayerSnapshot
         writer.Write(RTTMs);
         writer.WriteCollection(TagObjectUIDs, (v, w) => w.WriteInstanceId(v));
         writer.WriteInstanceId(MainTagObjectUID);
-        Properties.Serialize(writer);
+        writer.WriteBytesAndSize(Properties.Data);
     }
 
     public int GetSize()

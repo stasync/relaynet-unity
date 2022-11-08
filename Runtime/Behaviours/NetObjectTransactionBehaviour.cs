@@ -21,7 +21,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
     public NetObjectUID LastInteraction => Data.LastInteraction.Value;
     public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
 
-    Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new Dictionary<NetObjectUID, Action<bool>>();
+    Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new ();
 
     public override void OnInitializeViewData()
     {

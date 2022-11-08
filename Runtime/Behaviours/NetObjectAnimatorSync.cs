@@ -8,13 +8,13 @@ public interface IAnimatorValueProxy : ISerializable
     void OnUpdate(float deltaTime, bool hasAuthority);
 }
 
-public abstract class AnimatorPerameterValueProxy<T> : IAnimatorValueProxy where T : struct
+public abstract class AnimatorParameterValueProxy<T> : IAnimatorValueProxy where T : struct
 {
     protected readonly Animator Animator;
     protected readonly AnimatorControllerParameter Parameter;
     protected T LastDeserializedValue { get; private set; }
 
-    public AnimatorPerameterValueProxy(Animator animator, AnimatorControllerParameter parameter)
+    public AnimatorParameterValueProxy(Animator animator, AnimatorControllerParameter parameter)
     {
         Animator = animator;
         Parameter = parameter;
@@ -29,7 +29,7 @@ public abstract class AnimatorPerameterValueProxy<T> : IAnimatorValueProxy where
     protected abstract T DeserializeValue(NetReader reader, bool firstTime);
 }
 
-public class AnimatorFloatParameterValueProxy : AnimatorPerameterValueProxy<float>
+public class AnimatorFloatParameterValueProxy : AnimatorParameterValueProxy<float>
 {
     public AnimatorFloatParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
     { }
@@ -50,7 +50,7 @@ public class AnimatorFloatParameterValueProxy : AnimatorPerameterValueProxy<floa
 
 }
 
-public class AnimatorIntParameterValueProxy : AnimatorPerameterValueProxy<int>
+public class AnimatorIntParameterValueProxy : AnimatorParameterValueProxy<int>
 {
     public AnimatorIntParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
     { }
@@ -68,7 +68,7 @@ public class AnimatorIntParameterValueProxy : AnimatorPerameterValueProxy<int>
     }
 }
 
-public class AnimatorBoolParameterValueProxy : AnimatorPerameterValueProxy<bool>
+public class AnimatorBoolParameterValueProxy : AnimatorParameterValueProxy<bool>
 {
     public AnimatorBoolParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
     { }
