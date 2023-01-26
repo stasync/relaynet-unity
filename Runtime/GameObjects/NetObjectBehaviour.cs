@@ -49,15 +49,6 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
         Identity.ToOwnerRPC(rpcHandlerMethod, data, deliveryIntent);
 
     /// <summary>
-    /// RPC variation, sends RPC to MASTER client.
-    /// It does not matter whether MASTER client is a owner of this object or not.
-    /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name=""></param>
-    public void MasterRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
-        Identity.ToMasterRPC(rpcCode, data, deliveryIntent);
-
-    /// <summary>
     /// Send RPC to all clients with this object;
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>

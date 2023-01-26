@@ -3,6 +3,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum RPCBufferChangeMethod : byte
+{
+    Replace,
+    Add,
+}
+
 public enum ObjectStateChangeRequestType : byte
 {
     None,
@@ -14,7 +20,6 @@ public enum ObjectStateChangeRequestType : byte
     RemoveUpdateHard,
 }
 
-//TODO;
 public interface IReadOnlyNetObjectState
 {
     bool IsValid { get; }

@@ -4,11 +4,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-public enum RPCBufferChangeMethod : byte
-{
-    Replace, 
-    Add,
-}
 
 [DisallowMultipleComponent]
 public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
@@ -234,7 +229,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
     public void RegisterRPCHandler(Action<byte[]> handler) =>
         RegisterRPCHandler(RPCUtils.ActionToString(handler), handler);
 
-    public void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
+    void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
     {
         var rpcHash = RPCUtils.NameToHash(rpcCode);
         /// WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
