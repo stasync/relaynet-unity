@@ -456,7 +456,7 @@ public class NetWorldRuntime : NetWorld
 
     /// <summary>
     /// Create object with position and rotation input.
-    /// Sould be called on local client to create object across network.
+    /// Should be called on local client to create object across network.
     /// </summary>
     /// <param name="owner"></param>
     /// <param name="prefabId"></param>

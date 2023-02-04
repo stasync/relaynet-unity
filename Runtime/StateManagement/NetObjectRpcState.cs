@@ -33,7 +33,7 @@ public struct RPCState
 
     public RPCStateSnapshot ToSnapshot() => RPCStateSnapshot.FromState(this);
 
-    public static RPCState FromSnapshot(RPCStateSnapshot snapshot) => new RPCState(snapshot.Hash, snapshot.UID, snapshot.Payload);
+    public static RPCState FromSnapshot(RPCStateSnapshot snapshot) => new (snapshot.Hash, snapshot.UID, snapshot.Payload);
 
     public override int GetHashCode()
     {

@@ -39,6 +39,12 @@ public abstract class NetObjectStateData
 
             foreach (var filedInfo in fields)
             {
+                if (!valueType.IsAssignableFrom(filedInfo.FieldType))
+                    continue;
+
+                if (Attribute.IsDefined(filedInfo, typeof(IgnoreAutoCollection)))
+                    continue;
+
                 if (Attribute.IsDefined(filedInfo, typeof(SyncValue)))
                 {
                     if (filedInfo.FieldType == typeof(float))
@@ -52,12 +58,6 @@ public abstract class NetObjectStateData
 
                     continue;
                 }
-
-                if (!valueType.IsAssignableFrom(filedInfo.FieldType))
-                    continue;
-
-                if (Attribute.IsDefined(filedInfo, typeof(IgnoreAutoCollection)))
-                    continue;
 
                 if (filedInfo.GetValue(this) is SerializableValue value)
                     AddValueManual(filedInfo.Name, value);

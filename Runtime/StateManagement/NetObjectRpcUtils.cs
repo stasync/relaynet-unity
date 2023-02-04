@@ -37,7 +37,7 @@ public sealed class RPCUtils
     /// <returns></returns>
     public static int NameToHash(string s)
     {
-        if (string.IsNullOrEmpty(s))
+        if (string.IsNullOrWhiteSpace(s))
             return 0;
 
         if (s_RPCHashMap.TryGetValue(s, out var hash))
