@@ -49,9 +49,6 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : Serializab
             if (!HasPermission)
                 throw new InvalidOperationException($"No authority to change value {typeof(TValue).FullName}");
 
-            if (m_InternalValue.Equals(value))
-                return;
-
             m_InternalValue = value;
         }
     }
@@ -71,7 +68,10 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : Serializab
     public override void Serialize(NetWriter writer) =>
          m_Writer(writer, InternalValue);
 
-    public override int GetHashCode() => m_InternalValue.GetHashCode();
-    public override string ToString() => m_InternalValue.ToString();
+    public override int GetHashCode() =>
+        m_InternalValue.GetHashCode();
+
+    public override string ToString() =>
+        m_InternalValue.ToString();
 }
 
