@@ -16,7 +16,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 {
     readonly NetReader m_Reader;
     readonly Dictionary<int, NetObjectStateData> m_InternalCollection;
-    readonly Func<bool> m_DataWritePemission;
+    readonly Func<bool> m_DataWritePermission;
 
     public int Count => m_InternalCollection.Count;
 
@@ -24,31 +24,31 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
     {
         m_Reader = new NetReader();
         m_InternalCollection = new Dictionary<int, NetObjectStateData>();
-        m_DataWritePemission = dataWritePermission;
+        m_DataWritePermission = dataWritePermission;
     }
 
     public T GetOrCreateData<T>() where T : NetObjectStateData
     {
-        var typeHashCode = NetObjectStateData.GetTypeHashCode<T>();
-        if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
+        var typIndex = NetObjectStateData.GetTypeIndex<T>();
+        if (!m_InternalCollection.TryGetValue(typIndex, out var data))
         {
-            data = NetObjectStateData.Provide<T>(m_DataWritePemission);
+            data = NetObjectStateData.Provide<T>(m_DataWritePermission);
             if (data == null)
                 throw new InvalidOperationException();
 
-            m_InternalCollection.Add(typeHashCode, data);
+            m_InternalCollection.Add(typIndex, data);
         }
 
         return data as T;
     }
 
     public bool HasData<T>() where T : NetObjectStateData =>
-        m_InternalCollection.ContainsKey(NetObjectStateData.GetTypeHashCode<T>());
+        m_InternalCollection.ContainsKey(NetObjectStateData.GetTypeIndex<T>());
 
     public bool TryGetData<T>(out T data) where T : NetObjectStateData
     {
         data = null;
-        var typeHashCode = NetObjectStateData.GetTypeHashCode<T>();
+        var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
         var dataExists = m_InternalCollection.TryGetValue(typeHashCode, out var internalData);
         if (dataExists)
             data = internalData as T;
@@ -58,7 +58,7 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 
     public T GetData<T>() where T : NetObjectStateData
     {
-        var typeHashCode = NetObjectStateData.GetTypeHashCode<T>();
+        var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
         return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
     }
 
@@ -74,12 +74,12 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         for (var i = 0; i < dataCount; i++)
         {
             var typeHashCode = m_Reader.ReadInt32();
-            if (!NetObjectStateData.TryGetType(typeHashCode, out var type))
+            if (!NetObjectStateData.TryGetType((byte)typeHashCode, out var type))
                 throw new InvalidOperationException();
 
             if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
             {
-                data = NetObjectStateData.Provide(type, m_DataWritePemission);
+                data = NetObjectStateData.Provide(type, m_DataWritePermission);
                 m_InternalCollection.Add(typeHashCode, data);
             }
 
@@ -98,7 +98,9 @@ public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         return hash;
     }
 
-    public IEnumerator<NetObjectStateData> GetEnumerator() => m_InternalCollection.Values.GetEnumerator();
+    public IEnumerator<NetObjectStateData> GetEnumerator() => 
+        m_InternalCollection.Values.GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator() => m_InternalCollection.Values.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => 
+        m_InternalCollection.Values.GetEnumerator();
 }

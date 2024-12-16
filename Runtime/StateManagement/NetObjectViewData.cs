@@ -30,9 +30,9 @@ public class NetObjectViewStateData : NetObjectStateData
         writer.WriteBytesAndSize(UnstructuredData);
     }
 
-    public override void Deserialize(NetReader reader, bool firtsTime)
+    public override void Deserialize(NetReader reader, bool firstTime)
     {
-        base.Deserialize(reader, firtsTime);
+        base.Deserialize(reader, firstTime);
 
         ViewInitialized = reader.ReadBoolean();
         UnstructuredData = reader.ReadBytesAndSize();
@@ -40,7 +40,7 @@ public class NetObjectViewStateData : NetObjectStateData
 
     public void SetData(byte[] data, bool initialization = false)
     {
-        if (!WritePemission())
+        if (!WritePermission())
             throw new System.InvalidOperationException();
 
         UnstructuredData = data;

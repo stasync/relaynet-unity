@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System.Collections.Generic;
 
-public struct NetObjectDataCollectionSnapshot
+public readonly struct NetObjectDataCollectionSnapshot
 {
     static NetWriter s_Writer;
 

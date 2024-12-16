@@ -12,25 +12,25 @@ public sealed class NetObjectStateEmptyData : NetObjectStateData
 
 public abstract class NetObjectStateData
 {
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Field)]
     public class IgnoreAutoCollection : Attribute { }
 
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Field)]
     public class SyncValue : Attribute { }
 
-    public bool HasPermission => WritePemission();
+    public bool HasWritePermission => WritePermission();
     public readonly int TypeHashCode;
 
-    protected readonly Func<bool> WritePemission;
+    protected readonly Func<bool> WritePermission;
     protected bool Initialized { get; private set; }
 
-    protected IReadOnlyDictionary<string, SerializableValue> SerializeableValues => m_InternalValueCollection;
+    protected IReadOnlyDictionary<string, SerializableValue> SerializableValues => m_InternalValueCollection;
     readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new ();
 
     protected NetObjectStateData(Func<bool> writePermission)
     {
-        WritePemission = writePermission;
-        TypeHashCode = GetTypeHashCode(GetType());
+        WritePermission = writePermission;
+        TypeHashCode = GetTypeIndex(GetType());
 
         // Collect serializable values.
         {
@@ -80,20 +80,20 @@ public abstract class NetObjectStateData
 
     public virtual void Serialize(NetWriter writer)
     {
-        foreach (var kvp in SerializeableValues)
+        foreach (var kvp in SerializableValues)
             kvp.Value.Serialize(writer);
     }
 
-    public virtual void Deserialize(NetReader reader, bool firtsTime)
+    public virtual void Deserialize(NetReader reader, bool firstTime)
     {
-        foreach (var value in SerializeableValues.Values)
-            value.DeserializeAndApply(reader, firtsTime);
+        foreach (var value in SerializableValues.Values)
+            value.DeserializeAndApply(reader, firstTime);
     }
 
     public override string ToString()
     {
         var result = $"'{GetType().FullName}'";
-        foreach (var kvp in SerializeableValues)
+        foreach (var kvp in SerializableValues)
             result += $" {kvp.Key}:{kvp.Value}";
 
         return result;
@@ -107,7 +107,7 @@ public abstract class NetObjectStateData
         if (m_InternalValueCollection.ContainsKey(valueName))
             throw new InvalidOperationException($"{GetType().FullName} already contains value with name {valueName}");
 
-        SerializableValue.WritePermissionFieldInfo.SetValue(value, WritePemission);
+        SerializableValue.WritePermissionFieldInfo.SetValue(value, WritePermission);
         m_InternalValueCollection.Add(valueName, value);
     }
 
@@ -129,14 +129,14 @@ public abstract class NetObjectStateData
     }
 
 
-    static int GetTypeHashCode(Type dataType) =>
-        Core.Main.IOC.TypeLookup.HashCodeOf(dataType);
+    static int GetTypeIndex(Type dataType) =>
+        Core.Main.IOC.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 
-    public static int GetTypeHashCode<TData>() where TData : NetObjectStateData =>
-        GetTypeHashCode(typeof(TData));
+    public static int GetTypeIndex<TData>() where TData : NetObjectStateData =>
+        GetTypeIndex(typeof(TData));
 
-    public static bool TryGetType(int typeHashCode, out Type type) =>
-        Core.Main.IOC.TypeLookup.TryGetType(typeHashCode, out type);
+    public static bool TryGetType(byte index, out Type type) =>
+        Core.Main.IOC.Types.Lookup<NetObjectPickupData>.WithIndex(index, out type);
 
 #if UNITY_EDITOR
     public virtual IEnumerable<string> GetValuesInfo_Editor()
