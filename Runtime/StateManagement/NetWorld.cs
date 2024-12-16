@@ -197,20 +197,20 @@ public abstract class NetWorld
 
     public void ForEachStates(Action<NetObjectUID, NetObjectState> processor)
     {
-        foreach (var UID in m_CurrentObjectStates.Keys.ToArray())
-            processor(UID, m_CurrentObjectStates[UID]);
+        foreach (var uid in m_CurrentObjectStates.Keys.ToArray())
+            processor(uid, m_CurrentObjectStates[uid]);
     }
 
-    protected void ForEachLocalStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((UID, state) =>
+    protected void ForEachLocalStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((uid, state) =>
     {
         if (state.IsOwnedByLocalPlayer)
-            processor(UID, state);
+            processor(uid, state);
     });
 
-    protected void ForEachRemoteStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((UID, state) =>
+    protected void ForEachRemoteStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((uid, state) =>
     {
         if (!state.IsOwnedByLocalPlayer)
-            processor(UID, state);
+            processor(uid, state);
     });
 
     protected virtual void RemoveObject(NetObjectUID stateUID)
@@ -243,10 +243,10 @@ public abstract class NetWorld
         }
 
         //Remove absent obejets;
-        ForEachStates((UID, state) => 
+        ForEachStates((uid, state) => 
         {
-            if (!snapshot.Objects.ContainsKey(UID))
-                RemoveObject(UID);
+            if (!snapshot.Objects.ContainsKey(uid))
+                RemoveObject(uid);
         });
     }
 

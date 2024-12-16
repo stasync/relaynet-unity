@@ -208,23 +208,23 @@ public class NetWorldView : MonoBehaviour
         }
     }
 
-    public void SetEnabledImmidiate(bool enabled)
+    public void SetEnabledImmediate(bool value)
     {
-        SetVisibleImmediate(enabled);
-        SetSoundEnabledImmediate(enabled);
+        SetVisibleImmediate(value);
+        SetSoundEnabledImmediate(value);
     }
 
     public void SetDrawDistance(float value) => DrawDistance = value;
 
-    public void SetVisibleImmediate(bool enabled)
+    public void SetVisibleImmediate(bool value)
     {
-        ForceRenderingOff = !enabled;
+        ForceRenderingOff = !value;
         UpdateVisibilityFor(transform);
     }
 
-    public void SetSoundEnabledImmediate(bool enabled)
+    public void SetSoundEnabledImmediate(bool value)
     {
-        ForceMute = !enabled;
+        ForceMute = !value;
         UpdateSoundFor(transform);
     }
 
@@ -267,7 +267,7 @@ public class NetWorldView : MonoBehaviour
     }
 
     public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
-       m_CurrentObjectViews.TryGetValue(instanceId, out NetObjectIdentity identity) ? identity : null;
+       m_CurrentObjectViews.GetValueOrDefault(instanceId);
 
     public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase
     {

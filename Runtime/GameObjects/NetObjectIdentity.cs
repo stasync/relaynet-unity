@@ -6,7 +6,7 @@ using UnityEngine;
 
 
 [DisallowMultipleComponent]
-public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
+public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
 {
     public NetObjectUID InstanceId => State == null ? NetObjectUID.Invalid : State.UID;
     public bool IsOwnedByMasterClient => State != null && State.IsOwnedByMasterClient;
@@ -362,7 +362,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
     /// <summary>
     /// Recieve rpc on object with authority. (Called from GSTransport).
     /// </summary>
-    void INoAuthorityRPCReciever.RecieveRPCLocaly(RPCWithoutAuthorityState state) => RecieveRPCLocaly(state);
+    void INoAuthorityRPCReceiver.ReceiveRPCLocally(RPCWithoutAuthorityState state) => RecieveRPCLocaly(state);
     void RecieveRPCLocaly(RPCWithoutAuthorityState state)
     {
         if (!IsLocal)
@@ -374,7 +374,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
     /// <summary>
     /// Recieve rpc on master clent. (Called from GSTransport).
     /// </summary>
-    void INoAuthorityRPCReciever.RecieveRPCOnMasterClient(RPCWithoutAuthorityState state) => RecieveRPCOnMasterClient(state);
+    void INoAuthorityRPCReceiver.ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state) => RecieveRPCOnMasterClient(state);
     void RecieveRPCOnMasterClient(RPCWithoutAuthorityState state)
     {
         if (!IsOwnedByMasterClient)
@@ -383,7 +383,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReciever
         InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
     }
 
-    void INoAuthorityRPCReciever.RecieveRPC(RPCWithoutAuthorityState state) => InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
+    void INoAuthorityRPCReceiver.ReceiveRPC(RPCWithoutAuthorityState state) => InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
 
     void InvokeRpcHandler(int hashCode, byte[] data)
     {

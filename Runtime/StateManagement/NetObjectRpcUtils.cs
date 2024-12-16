@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public sealed class RPCUtils
+public static class RPCUtils
 {
-    RPCUtils() { }
     /// <summary>
     /// Converts action to RPC code.
     /// </summary>
@@ -11,12 +10,12 @@ public sealed class RPCUtils
     /// <returns></returns>
     public static string ActionToString(Action<byte[]> a)
     {
-        /// Anonymous delegate method name usually looks like '<Foo>m__0';
-        /// TODO: More 'beautiful' way to know is delegate is anonymous.
+        // Anonymous delegate method name usually looks like '<Foo>m__0';
+        // TODO: More 'beautiful' way to know is delegate is anonymous.
         if (a.Method.Name.StartsWith("<"))
             throw new InvalidOperationException("Unable to create RPC code with anonymous delegates");
 
-        return $"{a.Method.DeclaringType.FullName}.{a.Method.Name}";
+        return $"{a.Method.DeclaringType!.FullName}.{a.Method.Name}";
     }
 
     static readonly Dictionary<string, int> s_RPCHashMap = new();

@@ -48,13 +48,9 @@ public abstract class NetObjectStateData
                 if (Attribute.IsDefined(filedInfo, typeof(SyncValue)))
                 {
                     if (filedInfo.FieldType == typeof(float))
-                    {
                         AddValueManual(filedInfo.Name, new SerializabeFloatObserver(() => (float)filedInfo.GetValue(this), v => filedInfo.SetValue(this, v)));
-                    }
                     else
-                    {
                         Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'");
-                    }
 
                     continue;
                 }
@@ -73,7 +69,7 @@ public abstract class NetObjectStateData
     {
         var hash = TypeHashCode;
         foreach (var value in m_InternalValueCollection.Values)
-            hash = (hash * 7) + value.GetHashCode();
+            hash = hash * 7 + value.GetHashCode();
 
         return hash;
     }

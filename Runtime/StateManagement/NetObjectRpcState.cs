@@ -17,11 +17,12 @@ public struct RPCStateUIDAllocator
     static uint UIDCounter = 0;
 }
 
-public struct RPCState
+public readonly struct RPCState
 {
-    public int Hash { get; private set; }
-    public uint UID { get; private set; }
-    public byte[] Payload { get; private set; }
+    public readonly int Hash;
+    public readonly uint UID;
+    public readonly byte[] Payload;
+    
     public bool IsValid => !Hash.Equals(0) && Payload != null;
 
     public RPCState(int hash, uint uid, byte[] payload)
@@ -31,17 +32,19 @@ public struct RPCState
         Payload = payload;
     }
 
-    public RPCStateSnapshot ToSnapshot() => RPCStateSnapshot.FromState(this);
+    public RPCStateSnapshot ToSnapshot() => 
+        RPCStateSnapshot.FromState(this);
 
-    public static RPCState FromSnapshot(RPCStateSnapshot snapshot) => new (snapshot.Hash, snapshot.UID, snapshot.Payload);
+    public static RPCState FromSnapshot(RPCStateSnapshot snapshot) => 
+        new (snapshot.Hash, snapshot.UID, snapshot.Payload);
 
     public override int GetHashCode()
     {
         var hash = 13;
-        hash = (hash * 7) + Hash.GetHashCode();
-        hash = (hash * 7) + UID.GetHashCode();
+        hash = hash * 7 + Hash.GetHashCode();
+        hash = hash * 7 + UID.GetHashCode();
         foreach (var d in Payload)
-            hash = (hash * 7) + d.GetHashCode();
+            hash = hash * 7 + d.GetHashCode();
         return hash;
     }
 }
@@ -55,8 +58,6 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
     public IReadOnlyCollection<RPCState> TemporalBuffer => m_TemporalBuffer;
 
     readonly HashSet<uint> m_ReceiveCollisions = new();
-
-    public NetObjectRPCState() { }
 
     public void AddOrUpdate(int hash, byte[] payload, bool persistent, RPCBufferChangeMethod changeMethod)
     {
@@ -81,12 +82,13 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
         m_ReceiveCollisions.Clear();
 
         if (executePersistent)
+        {
             foreach (var d in m_PersistentBuffer)
             {
                 handler(d.Hash, d.Payload);
                 m_ReceiveCollisions.Add(d.UID);
             }
-
+        }
 
         foreach (var d in m_TemporalBuffer)
         {
@@ -131,9 +133,9 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
     {
         var hash = 13;
         foreach (var rpc in m_PersistentBuffer)
-            hash = (hash * 7) + rpc.GetHashCode();
+            hash = hash * 7 + rpc.GetHashCode();
         foreach (var rpc in m_TemporalBuffer)
-            hash = (hash * 7) + rpc.GetHashCode();
+            hash = hash * 7 + rpc.GetHashCode();
         return hash;
     }
 }

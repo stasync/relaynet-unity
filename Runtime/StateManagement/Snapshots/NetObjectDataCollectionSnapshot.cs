@@ -9,8 +9,7 @@ public readonly struct NetObjectDataCollectionSnapshot
 
     public NetObjectDataCollectionSnapshot(IReadOnlyCollection<NetObjectStateData> dataCollection)
     {
-        if (s_Writer == null)
-            s_Writer = new NetWriter();
+        s_Writer ??= new NetWriter();
         s_Writer.SeekZero();
 
         s_Writer.Write(dataCollection.Count);
@@ -23,14 +22,14 @@ public readonly struct NetObjectDataCollectionSnapshot
         Data = s_Writer.ToArray();
     }
 
-    public NetObjectDataCollectionSnapshot(NetReader reader)
+    private NetObjectDataCollectionSnapshot(NetReader reader)
     {
         Data = reader.ReadBytesAndSize();
     }
 
     public static NetObjectDataCollectionSnapshot FromState(NetObjectDataCollection data) => data.ToSnapshot();
 
-    public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) => new(reader);
+    public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) => new (reader);
 
     public int GetSize() => Data.Length;
 

@@ -144,7 +144,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
 
     public override string ToString() => $"{UID}:{Name} l:{IsLocal} m:{IsMaster}";
     public int CompareTo(NetWorldPlayer other) => UID.CompareTo(other.UID);
-    public bool Equals(NetWorldPlayer other) => UID.Equals(other.UID);
+    public bool Equals(NetWorldPlayer other) => other != null && UID.Equals(other.UID);
 
     public byte[] Serialize()
     {

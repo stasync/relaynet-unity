@@ -8,7 +8,7 @@ public class NetWorldEvaluator : NetWorld
 
     float m_CurrentTime;
     float m_NextSnapshotTime;
-    bool m_AutoDestroy;
+    readonly bool m_AutoDestroy;
 
     public int CurrentSnapshotIndex { get; private set; }
     public bool Paused { get; private set; }
@@ -49,10 +49,10 @@ public class NetWorldEvaluator : NetWorld
         MoveToSnapshotSafe(CurrentSnapshotIndex, updateImmidiate);
     }
 
-    public void MoveToSnapshotSafe(int snapshotIndex, bool updateImmidiate = false) =>
-        MoveToSnapshot(UnityEngine.Mathf.Clamp(snapshotIndex, 0, m_HistoryBuffer.Count - 1), updateImmidiate);
+    public void MoveToSnapshotSafe(int snapshotIndex, bool updateImmediate = false) =>
+        MoveToSnapshot(UnityEngine.Mathf.Clamp(snapshotIndex, 0, m_HistoryBuffer.Count - 1), updateImmediate);
 
-    public void MoveToSnapshot(int snapshotIndex, bool updateImmidiate = false)
+    public void MoveToSnapshot(int snapshotIndex, bool updateImmediate = false)
     {
         if (snapshotIndex < 0 || snapshotIndex >= m_HistoryBuffer.Count)
             throw new IndexOutOfRangeException();
@@ -62,7 +62,7 @@ public class NetWorldEvaluator : NetWorld
         CurrentSnapshotIndex = snapshotIndex;
         UpdateCurrentSnapshotInfo();
 
-        if (updateImmidiate)
+        if (updateImmediate)
             UpdateWorldState(m_CurrentSnapshot.DeltaTime);
     }
 

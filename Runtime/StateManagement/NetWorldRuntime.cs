@@ -578,22 +578,22 @@ public class NetWorldRuntime : NetWorld
             return;
         }
 
-        var reciever = objectIdentity as INoAuthorityRPCReciever;
+        var reciever = objectIdentity as INoAuthorityRPCReceiver;
 
         switch (state.Type)
         {
             case NoAuthorityRPCType.ToOwner:
                 //Check if we are this object's owner
                 if (objectIdentity.IsLocal)
-                    reciever.RecieveRPCLocaly(state);
+                    reciever.ReceiveRPCLocally(state);
                 break;
             case NoAuthorityRPCType.ToMaster:
                 if (objectIdentity.IsOwnedByMasterClient)
-                    reciever.RecieveRPCOnMasterClient(state);
+                    reciever.ReceiveRPCOnMasterClient(state);
                 break;
 
             case NoAuthorityRPCType.ToAll:
-                reciever.RecieveRPC(state);
+                reciever.ReceiveRPC(state);
                 break;
         }
     }

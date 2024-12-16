@@ -14,7 +14,7 @@ public class NetWorldViewEditor : Editor
         EditorGUI.BeginChangeCheck();
         var enabled = EditorGUILayout.Toggle("Enabled", !netWorldView.ForceRenderingOff && !netWorldView.ForceMute);
         if (EditorGUI.EndChangeCheck())
-            netWorldView.SetEnabledImmidiate(enabled);
+            netWorldView.SetEnabledImmediate(enabled);
 
         EditorGUI.BeginChangeCheck();
         var renderEnabled = EditorGUILayout.Toggle("Visible", !netWorldView.ForceRenderingOff);

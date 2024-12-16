@@ -1,7 +1,6 @@
 ﻿using System;
 
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Method)]
 public sealed class AutoRegisterRPCHandler : Attribute
 {
-    public AutoRegisterRPCHandler() { }
 }

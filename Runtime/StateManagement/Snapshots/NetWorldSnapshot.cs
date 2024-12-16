@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-public struct NetWorldSnapshot
+public readonly struct NetWorldSnapshot
 {
     public readonly float DeltaTime;
     public readonly NetWorldID UID;
