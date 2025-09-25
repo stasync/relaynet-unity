@@ -6,7 +6,7 @@ using Core.Networking;
 
 public class NetWorldRuntime : NetWorld
 {
-    public event Action<NetWorldPlayerSnapshot> PlayerRegisterd = delegate { };
+    public event Action<NetWorldPlayerSnapshot> PlayerRegistered = delegate { };
     public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
@@ -20,7 +20,7 @@ public class NetWorldRuntime : NetWorld
 
     Queue<byte[]> m_RemoteWorldDataUpdateRequests;
 
-    public IReadOnlyHistoryBuffer HistroyBuffer => m_HistoryBuffer;
+    public IReadOnlyHistoryBuffer HistoryBuffer => m_HistoryBuffer;
     HistoryBiffer m_HistoryBuffer;
 
     HashSet<ClientUID> m_LocalPlayerRegisterQueue;
@@ -32,7 +32,7 @@ public class NetWorldRuntime : NetWorld
     readonly Action<uint, DeliveryIntent, byte[]> m_Sender;
 
     const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; //Record last 'N' seconds;
-    const float MIN_UPDATE_INTRAVAL = 0.1f; //10 times per second;
+    const float MIN_UPDATE_INTERVAL = 0.1f; //10 times per second;
 
     float m_LastUpdateTime;
 
@@ -46,7 +46,7 @@ public class NetWorldRuntime : NetWorld
 
         m_LastUpdateTime = FixedTime;
 
-        /// Must be cleaned, when player disconnects;
+        // Must be cleaned, when player disconnects;
         {
             m_RemoteObjectUpdateRequests = new Dictionary<NetObjectUID, NetObjectStateSnapshot>();
             m_RemotePlayersUpdateRequests = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
@@ -66,13 +66,13 @@ public class NetWorldRuntime : NetWorld
 
     public void ScheduleUpdateForRemoteObject(NetObjectStateSnapshot snapshot)
     {
-        if(!snapshot.ObjectUID.IsValid)
+        if (!snapshot.ObjectUID.IsValid)
         {
             Debug.LogError($"Unable to schedule update for remote object {snapshot.ObjectUID} {snapshot.PrefabId}, invalid UID");
             return;
         }
 
-        if (m_RemoteObjectUpdateRequests.ContainsKey(snapshot.ObjectUID))
+        if (!m_RemoteObjectUpdateRequests.TryAdd(snapshot.ObjectUID, snapshot))
         {
             var current = m_RemoteObjectUpdateRequests[snapshot.ObjectUID];
             if (current.StateChangeType < snapshot.StateChangeType)
@@ -80,16 +80,12 @@ public class NetWorldRuntime : NetWorld
             else
                 Debug.LogWarning($"Unable to schedule update for remote object {snapshot.ObjectUID} {snapshot.PrefabId} with {snapshot.StateChangeType}, already scheduled update witht high priority");
         }
-        else
-            m_RemoteObjectUpdateRequests.Add(snapshot.ObjectUID, snapshot);
     }
 
     public void ScheduleUpdateForRemotePlayer(NetWorldPlayerSnapshot snapshot)
     {
-        if (m_RemotePlayersUpdateRequests.ContainsKey(snapshot.UID))
+        if (!m_RemotePlayersUpdateRequests.TryAdd(snapshot.UID, snapshot))
              Debug.LogWarning($"Unable to schedule update for remote player {snapshot.UID}: already scheduled");
-        else
-            m_RemotePlayersUpdateRequests.Add(snapshot.UID, snapshot);
     }
 
     public void ScheduleRemoteWorldDataUpdate(byte[] data) => m_RemoteWorldDataUpdateRequests.Enqueue(data);
@@ -97,20 +93,20 @@ public class NetWorldRuntime : NetWorld
     protected override void UpdateImplementation(float deltaTime)
     {
         var worldDelta = FixedTime - m_LastUpdateTime;
-        if (worldDelta >= MIN_UPDATE_INTRAVAL)
+        if (worldDelta >= MIN_UPDATE_INTERVAL)
         {
             m_LastUpdateTime = FixedTime;
             UpdateWorldState(worldDelta);
         }
 
-        var deltaRatio = (MIN_UPDATE_INTRAVAL - (FixedTime - m_LastUpdateTime)) / deltaTime;
+        var deltaRatio = (MIN_UPDATE_INTERVAL - (FixedTime - m_LastUpdateTime)) / deltaTime;
         var messageToSendCount = m_OutgoingMessageQueue.Count / deltaRatio;
 
-        var sended = 0f;
-        while (sended < messageToSendCount && m_OutgoingMessageQueue.Count > 0)
+        var sent = 0f;
+        while (sent < messageToSendCount && m_OutgoingMessageQueue.Count > 0)
         {
             m_OutgoingMessageQueue.Dequeue()();
-            sended++;
+            sent++;
         }
     }
 
@@ -150,15 +146,15 @@ public class NetWorldRuntime : NetWorld
 
         void UpdatePlayerStates()
         {
-            //Add local
+            // Add local.
             {
                 foreach (var p in m_LocalPlayerRegisterQueue)
-                    PlayerRegisterd(PlayersInternal.RegisterImmidiate(p, isLocal: true).ToSnapshot()); //Add player and notify;
+                    PlayerRegistered(PlayersInternal.RegisterImmidiate(p, isLocal: true).ToSnapshot()); //Add player and notify;
 
                 m_LocalPlayerRegisterQueue.Clear();
             }
 
-            //Remove all
+            // Remove all.
             {
                 foreach (var p in m_PlayerUnregisterQueue)
                     PlayersInternal.UnregisterImmidiate(p);
@@ -166,21 +162,21 @@ public class NetWorldRuntime : NetWorld
                 m_PlayerUnregisterQueue.Clear();
             }
 
-            //Update remotes;
+            // Update remotes;
             {
-                foreach (var UID in m_RemotePlayersUpdateRequests.Keys.ToArray())
+                foreach (var uid in m_RemotePlayersUpdateRequests.Keys.ToArray())
                 {
-                    var snapshot = m_RemotePlayersUpdateRequests[UID];
-                    var player = Players.Find(UID);
+                    var snapshot = m_RemotePlayersUpdateRequests[uid];
+                    var player = Players.Find(uid);
 
-                    //Player not exists;
+                    //Player not exists.
                     if (player == null)
                     {
                         //Create new;
                         player = PlayersInternal.RegisterImmidiate(snapshot.UID, false);
 
-                        //Notify player registred;
-                        PlayerRegisterd(player.ToSnapshot());
+                        //Notify player registered.
+                        PlayerRegistered(player.ToSnapshot());
 
                         ForEachStates((stateUID, state) => 
                         {
@@ -190,37 +186,37 @@ public class NetWorldRuntime : NetWorld
                     }
 
                     var wasInGameScene = player.IsReady;
-                    //Restore player;
+                    // Restore player.
                     player.RestoreFromSnapshot(snapshot);
 
-                    //Remote player loads scene
+                    // Remote player loads scene.
                     if (player.IsReady && !wasInGameScene)
                         PlayerBecomesReady(player.ToSnapshot());
                 }
                 m_RemotePlayersUpdateRequests.Clear();
             }
 
-            //Send local player;
+            // Send local player.
             {
-                var locaPlayer = Players.LocalPlayer;
-                if (locaPlayer == null)
+                var localPlayer = Players.LocalPlayer;
+                if (localPlayer == null)
                     Debug.LogError("Unable to send local player: doesn't exists");
                 else
-                    ScheduleSend(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, locaPlayer.Serialize());
+                    ScheduleSend(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, localPlayer.Serialize());
             }
         }
 
-        /// Update states based on removed player, if player leave, remove object;
+        // Update states based on removed player, if player leave, remove object.
         void UpdateStateBasedOnRemovedPlayers()
         {
             ForEachStates((stateUID, state) =>
             {
                 foreach (var playerUID in PlayersInternal.RemovedPlayers.ToArray())
                 {
-                    //Object owned by disconnected player;
+                    //Object owned by disconnected player.
                     if (state.IsOwnedBy(playerUID))
                     {
-                        //Change owner, if object is scene obeject;
+                        //Change owner, if object is scene object.
                         if (state.IsSceneObject)
                         {
                             //Is local client becomes master client, set object's owner and sync it.
@@ -231,15 +227,16 @@ public class NetWorldRuntime : NetWorld
 
                             TryNotifyViewAboutDisconnectedPlayer(playerUID, stateUID);
                         }
-                        //Destroy object;
+                        //Destroy object.
                         else
                             RemoveObject(stateUID);
                     }
-                    //Notify view;
+                    //Notify view.
                     else
                         TryNotifyViewAboutDisconnectedPlayer(playerUID, stateUID);
                 }
             });
+            return;
 
             void TryNotifyViewAboutDisconnectedPlayer(ClientUID clientUID, NetObjectUID objectUID)
             {
@@ -248,7 +245,7 @@ public class NetWorldRuntime : NetWorld
             }
         }
 
-        /// Update state based on remote incoming data;
+        // Update state based on remote incoming data.
         void UpdateStateBasedOnRemoteData()
         {
             ForEachRemoteRequests((UID, snapshot) =>
@@ -256,14 +253,14 @@ public class NetWorldRuntime : NetWorld
                 if (!snapshot.ObjectUID.IsValid)
                     throw new InvalidOperationException($"Invalid UID: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
 
-                /// Check if owner exists;
+                // Check if owner exists.
                 if(!PlayersInternal.Contains(snapshot.OwnerUID))
                 {
                     m_RemoteObjectUpdateRequests.Remove(UID);
                     return;
                 }
 
-                /// Object exists, just update;
+                // Object exists, just update.
                 if (ObjectStates.TryGetValue(snapshot.ObjectUID, out var objState))
                 {
                     objState.ChangeObjectRemotely(snapshot);
@@ -275,7 +272,7 @@ public class NetWorldRuntime : NetWorld
                     return;
                 }
 
-                /// Object doesn't exists;
+                // Object doesn't exists.
                 if (snapshot.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateHard || snapshot.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateSoft)
                 {
                     Debug.LogError($"Remote update snapshot form object with UID: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
@@ -284,7 +281,7 @@ public class NetWorldRuntime : NetWorld
                     return;
                 }
 
-                /// Add new or get pending;
+                // Add new or get pending.
                 if (snapshot.StateChangeType != ObjectStateChangeRequestType.InitializationUpdate)
                 {
                     m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
@@ -309,23 +306,23 @@ public class NetWorldRuntime : NetWorld
             });
         }
 
-        /// Update RPC requests (Calling rpc without authority);
+        // Update RPC requests (Calling rpc without authority).
         void UpdateRPCRequestsWithoutAuthority()
         {
-            ForEachStates((UID, state) => 
+            ForEachStates((uid, state) => 
             {
                 foreach (var r in state.RPCWithoutAuthorityRequests)
                     ScheduleSend(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
             });
         }
 
-        /// Update state based on local object changes;
+        // Update state based on local object changes.
         void UpdateLocalObjectState()
         {
             //Register new local object, that was just created;
-            foreach (var UID in m_ObjectsRegisterRequests.Keys.ToArray())
+            foreach (var uid in m_ObjectsRegisterRequests.Keys.ToArray())
             {
-                var state = m_ObjectsRegisterRequests[UID];
+                var state = m_ObjectsRegisterRequests[uid];
                 //Skip remote objects;
                 if (!state.IsOwnedByLocalPlayer)
                     continue;
@@ -338,11 +335,11 @@ public class NetWorldRuntime : NetWorld
                     TryAddObject(state);
                 }
 
-                m_ObjectsRegisterRequests.Remove(UID);
+                m_ObjectsRegisterRequests.Remove(uid);
             }
 
-            /// Update and send local objects;
-            ForEachLocalStates((UID, state) =>
+            // Update and send local objects;
+            ForEachLocalStates((uid, state) =>
             {
                 var deliveryIntent = DeliveryIntent.Unreliable;
                 if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
@@ -354,7 +351,7 @@ public class NetWorldRuntime : NetWorld
                 switch (state.StateChangeType)
                 {
                     case ObjectStateChangeRequestType.RemoveUpdateHard:
-                        RemoveObject(UID);
+                        RemoveObject(uid);
                         break;
 
                     case ObjectStateChangeRequestType.RemoveUpdateSoft:
@@ -418,7 +415,7 @@ public class NetWorldRuntime : NetWorld
         m_OutgoingMessageQueue.Clear();
         m_OutgoingMessageQueue = null;
 
-        PlayerRegisterd = null;
+        PlayerRegistered = null;
     }
 
     /// Connect;
@@ -468,7 +465,7 @@ public class NetWorldRuntime : NetWorld
     {
         var state = new NetObjectState(new NetObjectUID(owner.UID), prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(state.UID, state);
-        return View.CreateImmidiate(state, position, rotation);      
+        return View.CreateImmediate(state, position, rotation);      
     }
 
     /// <summary>
@@ -546,7 +543,7 @@ public class NetWorldRuntime : NetWorld
         {
             var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
             m_ObjectsRegisterRequests.Add(instanceId, state);
-            return View.CreateImmidiate(state, position, rotation);
+            return View.CreateImmediate(state, position, rotation);
         }
     }
 

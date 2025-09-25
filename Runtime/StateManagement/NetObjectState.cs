@@ -75,9 +75,9 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     NetWriter m_Writer;
 
-    public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvier)
+    public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvider)
     {
-        m_PlayerProvider = playerProvier;
+        m_PlayerProvider = playerProvider;
         m_UpdateQueue = new Queue<Action<float>>();
 
         UID = uid;
@@ -92,8 +92,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
     }
 
-    public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvier) :
-        this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvier) => ChangeObjectRemotely(snapshot);
+    public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvider) :
+        this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) => ChangeObjectRemotely(snapshot);
 
     public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
 
@@ -266,7 +266,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         ScheduleOnUpdate(() => m_RPCBuffer.RemovePersistent(hashCode));
 }
 
-public struct RPCWithoutAuthorityState
+public readonly struct RPCWithoutAuthorityState
 {
     public readonly NetObjectUID ObjectUID;
     public readonly NoAuthorityRPCType Type;
@@ -306,7 +306,7 @@ public struct RPCWithoutAuthorityState
         new(reader);
 }
 
-public struct RPCWithoutAuthorityRequest
+public readonly struct RPCWithoutAuthorityRequest
 {
     public readonly RPCWithoutAuthorityState State;
     public readonly DeliveryIntent DeliveryIntent;

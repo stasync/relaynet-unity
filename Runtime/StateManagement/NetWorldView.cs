@@ -134,16 +134,14 @@ public class NetWorldView : MonoBehaviour
         if (m_CurrentObjectViews.TryGetValue(uid, out var netObjectView))
             return netObjectView;
 
-        //Try add pending view;
-        if (m_PendingObjectViews.TryGetValue(uid, out netObjectView))
-        {
-            m_PendingObjectViews.Remove(uid);
+        //Try to add pending view;
+        if (m_PendingObjectViews.Remove(uid, out netObjectView))
             m_CurrentObjectViews.Add(uid, netObjectView);
-        }
+        
         return netObjectView;
     }
 
-    public NetObjectIdentity CreateImmidiate(NetObjectState state, Vector3 position, Quaternion rotation)
+    public NetObjectIdentity CreateImmediate(NetObjectState state, Vector3 position, Quaternion rotation)
     {
         var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
         InitializeObjectView(netObjectView, state.UID);
@@ -154,7 +152,7 @@ public class NetWorldView : MonoBehaviour
     public void InitializeObjectView(NetObjectIdentity identity, NetObjectUID stateUID)
     {
         if (identity.Initialized)
-            throw new InvalidOperationException($"Indentity {identity.gameObject.name}:{stateUID} already initialized");
+            throw new InvalidOperationException($"Identity {identity.gameObject.name}:{stateUID} already initialized.");
 
         //Set world as view parent;
         UpdateTransformInView(identity.transform);
@@ -195,17 +193,11 @@ public class NetWorldView : MonoBehaviour
 
     void RemoveView(NetObjectUID uid)
     {
-        if (m_CurrentObjectViews.TryGetValue(uid, out var cView))
-        {
-            m_CurrentObjectViews.Remove(uid);
+        if (m_CurrentObjectViews.Remove(uid, out var cView))
             Destroy(cView.gameObject);
-        }
 
-        if (m_PendingObjectViews.TryGetValue(uid, out var pView))
-        {
-            m_PendingObjectViews.Remove(uid);
+        if (m_PendingObjectViews.Remove(uid, out var pView))
             Destroy(pView.gameObject);
-        }
     }
 
     public void SetEnabledImmediate(bool value)
@@ -251,8 +243,10 @@ public class NetWorldView : MonoBehaviour
         m_CurrentObjectViews = null;
 
         foreach (var pendingView in m_PendingObjectViews.Values)
+        {
             if (pendingView != null)
                 Destroy(pendingView.gameObject);
+        }
 
         m_PendingObjectViews.Clear();
         m_PendingObjectViews = null;

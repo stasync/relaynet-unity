@@ -12,7 +12,7 @@ public readonly struct NetWorldSnapshot
 
     public readonly NetWorldPlayersCollectionsSnapshot Players;
 
-    public NetWorldSnapshot(float deltaTime, NetWorld world)
+    private NetWorldSnapshot(float deltaTime, NetWorld world)
     {
         DeltaTime = deltaTime;
         UID = world.UID;

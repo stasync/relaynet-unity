@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class NetWorldObjectViewWaiter : IDisposable
+public sealed class NetWorldObjectViewWaiter : IDisposable
 {
     NetWorld m_World;
     Dictionary<NetObjectUID, List<Action<NetObjectIdentity>>> m_NewObjectWaiters;

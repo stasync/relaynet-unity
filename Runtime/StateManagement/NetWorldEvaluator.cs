@@ -14,11 +14,11 @@ public class NetWorldEvaluator : NetWorld
     public bool Paused { get; private set; }
     public int BufferCount => m_HistoryBuffer.Count;
 
-    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(runtime.ID, $"World {runtime.ID} evaluator", runtime.ID)
+    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(uid: runtime.ID, worldName: $"World {runtime.ID} evaluator", runtime.ID)
     {
         InitializeView(NetWorldViewInitMode.SeparatePhysicsSimulation);
 
-        m_HistoryBuffer = new List<NetWorldSnapshot>(runtime.HistroyBuffer);
+        m_HistoryBuffer = new List<NetWorldSnapshot>(runtime.HistoryBuffer);
         m_CurrentTime = 0f;
         CurrentSnapshotIndex = 0;
         m_AutoDestroy = autoDestroy;
@@ -37,20 +37,20 @@ public class NetWorldEvaluator : NetWorld
         UpdateCurrentSnapshotInfo();
     }
 
-    public void MoveToPreviousSnapshot(bool updateImmidiate = false)
+    public void MoveToPreviousSnapshot(bool updateImmediate = false)
     {
         CurrentSnapshotIndex--;
-        MoveToSnapshotSafe(CurrentSnapshotIndex, updateImmidiate);
+        MoveToSnapshotSafe(CurrentSnapshotIndex, updateImmediate);
     }
 
-    public void MoveToNextSnapshot(bool updateImmidiate = false)
+    public void MoveToNextSnapshot(bool updateImmediate = false)
     {
         CurrentSnapshotIndex++;
-        MoveToSnapshotSafe(CurrentSnapshotIndex, updateImmidiate);
+        MoveToSnapshotSafe(CurrentSnapshotIndex, updateImmediate);
     }
 
     public void MoveToSnapshotSafe(int snapshotIndex, bool updateImmediate = false) =>
-        MoveToSnapshot(UnityEngine.Mathf.Clamp(snapshotIndex, 0, m_HistoryBuffer.Count - 1), updateImmediate);
+        MoveToSnapshot(UnityEngine.Mathf.Clamp(snapshotIndex, min: 0, max: m_HistoryBuffer.Count - 1), updateImmediate);
 
     public void MoveToSnapshot(int snapshotIndex, bool updateImmediate = false)
     {
@@ -91,8 +91,11 @@ public class NetWorldEvaluator : NetWorld
     public int FindFirstSnapshotIndex(Predicate<NetWorldSnapshot> predicate)
     {
         for (var i = 0; i < m_HistoryBuffer.Count; i++)
+        {
             if (predicate(m_HistoryBuffer[i]))
                 return i;
+        }
+
         return -1;
     }
 
@@ -110,7 +113,7 @@ public class NetWorldEvaluator : NetWorld
         return m_HistoryBuffer[snapshotIndex].LocalTime - m_HistoryBuffer[0].LocalTime;
     }
 
-    public float GetRemainTimeFromShanpshot(int snapshotIndex)
+    public float GetRemainTimeFromSnapshot(int snapshotIndex)
     {
         if (m_HistoryBuffer.Count == 0)
         {

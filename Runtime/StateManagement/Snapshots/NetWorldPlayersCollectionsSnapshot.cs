@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-public struct NetWorldPlayersCollectionsSnapshot
+public readonly struct NetWorldPlayersCollectionsSnapshot
 {
     public readonly ClientUID LocalPlayerUID;
     public readonly ClientUID MasterClientUID;
@@ -12,7 +12,7 @@ public struct NetWorldPlayersCollectionsSnapshot
     public IReadOnlyList<ClientUID> RemovedPlayers => m_RemovedPlayers;
     readonly List<ClientUID> m_RemovedPlayers;
 
-    public NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
+    private NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
     {
         LocalPlayerUID = collection.LocalPlayer.UID;
         MasterClientUID = collection.MasterPlayer.UID;
@@ -26,7 +26,7 @@ public struct NetWorldPlayersCollectionsSnapshot
 
     public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) => new(collection);
 
-    public int GetSize()
+    public readonly int GetSize()
     {
         var result = 0;
         result += ClientUID.Size; // LocalPlayerUID

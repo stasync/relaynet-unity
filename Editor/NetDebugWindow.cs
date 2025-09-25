@@ -350,7 +350,7 @@ public class NetDebugWindow : EditorWindow
         if (m_ShowMainWorldHistoryInfo)
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField($"History size: {mainWorld.HistroyBuffer.Size} ({mainWorld.HistroyBuffer.SizeMB:f2}mb) [{mainWorld.HistroyBuffer.AveregeFrameSize}] bytes, cnt: {mainWorld.HistroyBuffer.Count} frames, time: {mainWorld.HistroyBuffer.LengthInSeconds:f2} s", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"History size: {mainWorld.HistoryBuffer.Size} ({mainWorld.HistoryBuffer.SizeMB:f2}mb) [{mainWorld.HistoryBuffer.AveregeFrameSize}] bytes, cnt: {mainWorld.HistoryBuffer.Count} frames, time: {mainWorld.HistoryBuffer.LengthInSeconds:f2} s", EditorStyles.boldLabel);
 
             EditorGUI.BeginDisabledGroup(m_CurrentWorldReplicaDrawer != null);
             if (GUILayout.Button("Playback"))
@@ -376,7 +376,7 @@ public class NetDebugWindow : EditorWindow
             if (m_ShowMainWorldBuffer)
             {
                 EditorGUI.indentLevel++;
-                foreach (var s in mainWorld.HistroyBuffer)
+                foreach (var s in mainWorld.HistoryBuffer)
                     EditorGUILayout.LabelField($"t:{s.Time.ToString("f2")} dt:{s.DeltaTime.ToString("f2")} size: {s.GetSize()} obj: {s.Objects.Count} pl: {s.Players.PlayersCollection.Count}", EditorStyles.boldLabel);
                 EditorGUI.indentLevel--;
             }
