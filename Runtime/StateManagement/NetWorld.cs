@@ -5,7 +5,6 @@ using UnityEngine;
 
 public abstract class NetWorld
 {
-    public event Action ViewInitialized = delegate { };
     public event Action Updated = delegate { };
     public event Action<NetObjectUID> ObjectCreated = delegate { };
 
@@ -150,7 +149,7 @@ public abstract class NetWorld
 
     public void ScheduleOnUpdate(Action action) => m_UpdateQueue.Enqueue(action);
     public void ScheduleOnUpdateUntil(Func<bool> condition, Action action) => m_UpdateQueue.EnqueueUntil(condition, action);
-    public void ScheduleOnUpdateIfObejctExists(NetObjectUID objectUID, Action<NetObjectState> a) => ScheduleOnUpdate(() => 
+    public void ScheduleOnUpdateIfObjectExists(NetObjectUID objectUID, Action<NetObjectState> a) => ScheduleOnUpdate(() => 
     {
         if(!TryGetObject(objectUID, out var state))
         {
@@ -190,7 +189,7 @@ public abstract class NetWorld
     }
 
     public virtual NetObjectState FindObject(NetObjectUID instanceId) =>
-        m_CurrentObjectStates.TryGetValue(instanceId, out var state) ? state : null;
+        m_CurrentObjectStates.GetValueOrDefault(instanceId);
 
     public bool TryGetObject(NetObjectUID instanceId, out NetObjectState state) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out state);

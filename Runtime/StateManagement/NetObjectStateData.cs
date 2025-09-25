@@ -123,8 +123,7 @@ public abstract class NetObjectStateData
 
         return instance;
     }
-
-
+    
     static int GetTypeIndex(Type dataType) =>
         Core.Main.IOC.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 

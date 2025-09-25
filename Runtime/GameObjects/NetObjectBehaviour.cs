@@ -26,16 +26,12 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NOT AUTHORITY on this object.
     /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="data"></param>
     public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocally = true) =>
         Identity.OwnerToOthersRPC(rpcHandlerMethod, data, deliveryIntent, invokeLocally);
 
     /// <summary>
     /// Same as OwnerToOthersRPC, but buffered.
     /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="data"></param>
     public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace) =>
         Identity.OwnerToOthersRPCBuffered(rpcHandlerMethod, data, bufferChangeMethod);
 
@@ -43,38 +39,30 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    /// <param name="rpcCode"></param>
-    /// <param name="data"></param>
     public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
         Identity.ToOwnerRPC(rpcHandlerMethod, data, deliveryIntent);
 
     /// <summary>
     /// Send RPC to all clients with this object;
     /// </summary>
-    /// <param name="rpcHandlerMethod"></param>
-    /// <param name="data"></param>
-    /// <param name="invokeLocaly"></param>
-    /// <param name="deliveryIntent"></param>
     public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocaly, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
         Identity.ToAllRPC(rpcHandlerMethod, data, invokeLocaly, deliveryIntent);
 
     /// <summary>
     /// Serialization called by GSInstanceIdentity.
     /// </summary>
-    /// <param name="writer"></param>
     void ISerializable.Serialize(NetWriter writer)
     {
         SerializeDirtyChecked(writer);
 
 #if NETWORK_DEBUG
-        writer.Write(GetType().FullName.GetHashCode());
+        writer.Write(GetType().FullName!.GetHashCode());
 #endif
     }
 
     /// <summary>
     /// Deserialization called by GSInstanceIdentity.
     /// </summary>
-    /// <param name="reader"></param>
     void ISerializable.Deserialize(NetReader reader, bool firtsTime)
     {
         DeserializeDirtyChecked(reader, firtsTime);
@@ -83,7 +71,7 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
 
 #if NETWORK_DEBUG
         var typeName = GetType().FullName;
-        var hash = typeName.GetHashCode();
+        var hash = typeName!.GetHashCode();
         var serializedHash = reader.ReadInt32();
 
         if (!hash.Equals(serializedHash))
@@ -139,21 +127,18 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// <summary>
     /// Serialize method without dirty check.
     /// </summary>
-    /// <param name="writer"></param>
     [Obsolete("Use data based serialization instead")]
     protected virtual void SerializeDirtyChecked(NetWriter writer) { }
 
     /// <summary>
     /// Deserialize method without dirty check.
     /// </summary>
-    /// <param name="reader"></param>
     [Obsolete("Use data based serialization instead")]
     protected virtual void DeserializeDirtyChecked(NetReader reader, bool firstTime) { }
 
     /// <summary>
     /// Called, when network data was deserialized;
     /// </summary>
-    /// <param name="firstTime"></param>
     protected virtual void OnDataDeserialized(bool firstTime) { }
 
     [Obsolete]
