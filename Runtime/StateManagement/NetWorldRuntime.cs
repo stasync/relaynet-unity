@@ -162,7 +162,7 @@ public sealed class NetWorldRuntime : NetWorld
                 m_PlayerUnregisterQueue.Clear();
             }
 
-            // Update remotes;
+            // Update remotes.
             {
                 foreach (var uid in m_RemotePlayersUpdateRequests.Keys.ToArray())
                 {
@@ -524,7 +524,7 @@ public sealed class NetWorldRuntime : NetWorld
     /// <summary>
     /// Get object before in was actually created by transport system.
     /// Note that this object will not be in valid state, until update happens.
-    /// Use in only if its highly necessary.
+    /// Use in only if it's highly necessary.
     /// </summary>
     public NetObjectIdentity FindObjectViewOrCreateMock(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {

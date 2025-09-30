@@ -69,7 +69,7 @@ public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
             PushTo(m_PersistentBuffer, data, changeMethod);
     }
 
-    private void PushTo(List<RPCState> targetBuffer, RPCState newData, RPCBufferChangeMethod changeMethod)
+    private static void PushTo(List<RPCState> targetBuffer, RPCState newData, RPCBufferChangeMethod changeMethod)
     {
         if (changeMethod == RPCBufferChangeMethod.Replace)
             targetBuffer.RemoveAll(d => d.Hash == newData.Hash);

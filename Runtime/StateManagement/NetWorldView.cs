@@ -18,16 +18,16 @@ public class NetWorldView : MonoBehaviour
     public bool ForceMute { get; private set; }
     public float DrawDistance { get; private set; } = 50f;
 
-    NetWorld m_World;
-    NetObjectFactory m_ObjectFactory;
-    bool m_Initialized;
+    private NetWorld m_World;
+    private NetObjectFactory m_ObjectFactory;
+    private bool m_Initialized;
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> CurrentObjectViews => m_CurrentObjectViews;
-    Dictionary<NetObjectUID, NetObjectIdentity> m_CurrentObjectViews;
+    private Dictionary<NetObjectUID, NetObjectIdentity> m_CurrentObjectViews;
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> PendingObjectViews => m_PendingObjectViews;
-    Dictionary<NetObjectUID, NetObjectIdentity> m_PendingObjectViews;
+    private Dictionary<NetObjectUID, NetObjectIdentity> m_PendingObjectViews;
 
-    Scene m_WorldScene;
+    private Scene m_WorldScene;
 
     public void Init(NetWorld world, NetWorldViewInitMode initMode)
     {
@@ -63,18 +63,18 @@ public class NetWorldView : MonoBehaviour
         // Remove invalid views.
         foreach (var UID in m_CurrentObjectViews.Keys.ToArray())
         {
-            if (!ShoudUpdateViewForState(UID))
+            if (!ShouldUpdateViewForState(UID))
                 RemoveView(UID);
         }
 
-        //Create, update, destroy objects;
+        // Create, update, destroy objects.
         ForEachStates((UID, state) =>
         {
             //Skip state;
-            if (!ShoudUpdateViewForState(UID))
+            if (!ShouldUpdateViewForState(UID))
                 return;
 
-            //Try get or create new state view;
+            // Try get or create new state view.
             if (!m_CurrentObjectViews.TryGetValue(UID, out var netObjectView))
             {
                 if (m_PendingObjectViews.Remove(UID, out netObjectView))
@@ -98,7 +98,7 @@ public class NetWorldView : MonoBehaviour
                 }
             }
 
-            //Initialize new view;
+            // Initialize new view.
             if (netObjectView.Initialized)
             {
                 if (!state.IsOwnedByLocalPlayer && state.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
@@ -111,7 +111,7 @@ public class NetWorldView : MonoBehaviour
         Profiler.EndSample();
     }
 
-    private bool ShoudUpdateViewForState(NetObjectUID UID)
+    private bool ShouldUpdateViewForState(NetObjectUID UID)
     {
         if (!m_World.TryGetObject(UID, out var netObjectState))
             return false;
@@ -131,7 +131,7 @@ public class NetWorldView : MonoBehaviour
         if (m_CurrentObjectViews.TryGetValue(uid, out var netObjectView))
             return netObjectView;
 
-        //Try to add pending view;
+        // Try to add pending view.
         if (m_PendingObjectViews.Remove(uid, out netObjectView))
             m_CurrentObjectViews.Add(uid, netObjectView);
         

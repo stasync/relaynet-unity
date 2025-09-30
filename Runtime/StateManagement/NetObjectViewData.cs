@@ -1,6 +1,6 @@
 using Core.Networking;
 
-public class NetObjectViewStateData : NetObjectStateData
+public sealed class NetObjectViewStateData : NetObjectStateData
 {
     public bool ViewInitialized { get; private set; }
     public byte[] UnstructuredData { get; private set; }
@@ -10,17 +10,6 @@ public class NetObjectViewStateData : NetObjectStateData
         ViewInitialized = false;
         UnstructuredData = new byte[] { };
     }
-
-#if UNITY_EDITOR
-    public override System.Collections.Generic.IEnumerable<string> GetValuesInfo_Editor()
-    {
-        foreach (var pair in base.GetValuesInfo_Editor())
-            yield return pair;
-
-        yield return $"{nameof(ViewInitialized)}:{ViewInitialized}";
-        yield return $"{nameof(UnstructuredData)}:{UnstructuredData.Length}";
-    }
-#endif
 
     public override void Serialize(NetWriter writer)
     {
@@ -55,7 +44,18 @@ public class NetObjectViewStateData : NetObjectStateData
 
         hash += ViewInitialized.GetHashCode();
         foreach (var d in UnstructuredData)
-            hash = (hash * 7) + d.GetHashCode();
+            hash = hash * 7 + d.GetHashCode();
         return hash;
     }
+    
+#if UNITY_EDITOR
+    public override System.Collections.Generic.IEnumerable<string> GetValuesInfo_Editor()
+    {
+        foreach (var pair in base.GetValuesInfo_Editor())
+            yield return pair;
+
+        yield return $"{nameof(ViewInitialized)}:{ViewInitialized}";
+        yield return $"{nameof(UnstructuredData)}:{UnstructuredData.Length}";
+    }
+#endif
 }

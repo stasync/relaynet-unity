@@ -19,7 +19,6 @@ public interface IReadOnlyNetWorldPlayer
 
 public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
 {
-    #region STATE
     public ClientUID UID { get; private set; }
 
     #region Values
@@ -33,7 +32,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
             m_Name = value;
         }
     }
-    string m_Name;
+    private string m_Name;
 
     public bool IsReady
     {
@@ -45,7 +44,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
             m_IsReady = value;
         }
     }
-    bool m_IsReady;
+    private bool m_IsReady;
 
     public GSDevice.Platform Platform
     {
@@ -57,7 +56,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
             m_Platform = value;
         }
     }
-    GSDevice.Platform m_Platform = GSDevice.Platform.Unknown;
+    private GSDevice.Platform m_Platform = GSDevice.Platform.Unknown;
 
     public int RTTMs
     {
@@ -70,11 +69,15 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         }
     }
     private int m_RTTMS;
+    
+    public IProperties Properties => m_Properties;
+    private readonly Properties m_Properties;
 
     public IReadOnlyCollection<NetObjectUID> TagObjectUIDs => m_TagObjectUIDs;
     private HashSet<NetObjectUID> m_TagObjectUIDs;
     
     public NetObjectUID MainTagObjectUID { get; private set; } = NetObjectUID.Invalid;
+    #endregion
 
     public void RegisterTagObject(NetObjectUID uid, bool main = false)
     {
@@ -101,19 +104,13 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         if (MainTagObjectUID == uid)
             MainTagObjectUID = NetObjectUID.Invalid;
     }
-
-    public IProperties Properties => m_Properties;
-    readonly Properties m_Properties;
-    #endregion
-
-    #endregion
-
+    
     public bool IsValid => UID.IsValid;
     public bool IsLocal => IsValid && UID.Equals(m_LocalPlayer());
     public bool IsMaster => IsValid && UID.Equals(m_MasterPlayer());
 
-    readonly Func<ClientUID> m_LocalPlayer;
-    readonly Func<ClientUID> m_MasterPlayer;
+    private readonly Func<ClientUID> m_LocalPlayer;
+    private readonly Func<ClientUID> m_MasterPlayer;
 
     public NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayer, Func<ClientUID> masterPlayer)
     {
@@ -122,7 +119,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         m_LocalPlayer = localPlayer;
         m_MasterPlayer = masterPlayer;
 
-        m_Properties = new Properties(() => IsLocal);
+        m_Properties = new Properties(writePermission: () => IsLocal);
         m_TagObjectUIDs = new HashSet<NetObjectUID>();
     }
 

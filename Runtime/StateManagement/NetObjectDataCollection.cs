@@ -62,9 +62,11 @@ public sealed class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
     }
 
-    public void Clear() => m_InternalCollection.Clear();
+    public void Clear() => 
+        m_InternalCollection.Clear();
 
-    public NetObjectDataCollectionSnapshot ToSnapshot() => new(m_InternalCollection.Values);
+    public NetObjectDataCollectionSnapshot ToSnapshot() => 
+        new(m_InternalCollection.Values);
 
     public void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
     {

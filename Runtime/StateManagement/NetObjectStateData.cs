@@ -13,9 +13,6 @@ public sealed class NetObjectStateEmptyData : NetObjectStateData
 public abstract class NetObjectStateData
 {
     [AttributeUsage(AttributeTargets.Field)]
-    public class IgnoreAutoCollection : Attribute { }
-
-    [AttributeUsage(AttributeTargets.Field)]
     public class SyncValue : Attribute { }
 
     public bool HasWritePermission => WritePermission();
@@ -24,8 +21,8 @@ public abstract class NetObjectStateData
     protected readonly Func<bool> WritePermission;
     protected bool Initialized { get; private set; }
 
-    protected IReadOnlyDictionary<string, SerializableValue> SerializableValues => m_InternalValueCollection;
-    readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new ();
+    public IReadOnlyDictionary<string, SerializableValue> SerializableValues => m_InternalValueCollection;
+    private readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new ();
 
     protected NetObjectStateData(Func<bool> writePermission)
     {
@@ -33,32 +30,25 @@ public abstract class NetObjectStateData
         TypeHashCode = GetTypeIndex(GetType());
 
         // Collect serializable values.
+        foreach (var filedInfo in GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
         {
-            var valueType = typeof(SerializableValue);
-            var fields = GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
-
-            foreach (var filedInfo in fields)
+            if (typeof(SerializableValue).IsAssignableFrom(filedInfo.FieldType))
             {
-                if (!valueType.IsAssignableFrom(filedInfo.FieldType))
-                    continue;
-
-                if (Attribute.IsDefined(filedInfo, typeof(IgnoreAutoCollection)))
-                    continue;
-
-                if (Attribute.IsDefined(filedInfo, typeof(SyncValue)))
-                {
-                    if (filedInfo.FieldType == typeof(float))
-                        AddValueManual(filedInfo.Name, new SerializabeFloatObserver(() => (float)filedInfo.GetValue(this), v => filedInfo.SetValue(this, v)));
-                    else
-                        Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'");
-
-                    continue;
-                }
-
                 if (filedInfo.GetValue(this) is SerializableValue value)
                     AddValueManual(filedInfo.Name, value);
                 else
-                    Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped");
+                    Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
+                    
+                continue;
+            }
+
+            // TODO: The following is EXPERIMENTAL.
+            if (Attribute.IsDefined(filedInfo, typeof(SyncValue)))
+            {
+                if (filedInfo.FieldType == typeof(float))
+                    AddValueManual(filedInfo.Name, new SerializabeFloatObserver(() => (float)filedInfo.GetValue(this), v => filedInfo.SetValue(this, v)));
+                else
+                    Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'");
             }
         }
 
@@ -76,20 +66,20 @@ public abstract class NetObjectStateData
 
     public virtual void Serialize(NetWriter writer)
     {
-        foreach (var kvp in SerializableValues)
+        foreach (var kvp in m_InternalValueCollection)
             kvp.Value.Serialize(writer);
     }
 
     public virtual void Deserialize(NetReader reader, bool firstTime)
     {
-        foreach (var value in SerializableValues.Values)
+        foreach (var value in m_InternalValueCollection.Values)
             value.DeserializeAndApply(reader, firstTime);
     }
 
     public override string ToString()
     {
         var result = $"'{GetType().FullName}'";
-        foreach (var kvp in SerializableValues)
+        foreach (var kvp in m_InternalValueCollection)
             result += $" {kvp.Key}:{kvp.Value}";
 
         return result;
@@ -124,7 +114,7 @@ public abstract class NetObjectStateData
         return instance;
     }
     
-    static int GetTypeIndex(Type dataType) =>
+    private static int GetTypeIndex(Type dataType) =>
         Core.Main.IOC.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 
     public static int GetTypeIndex<TData>() where TData : NetObjectStateData =>

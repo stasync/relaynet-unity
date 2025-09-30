@@ -34,6 +34,58 @@ public interface IReadOnlyNetObjectState
     string ToString();
 }
 
+public readonly struct RPCWithoutAuthorityState
+{
+    public readonly NetObjectUID ObjectUID;
+    public readonly NoAuthorityRPCType Type;
+    public readonly RPCState RPCState;
+
+    public bool IsValid => ObjectUID.IsValid && RPCState.IsValid;
+
+    public RPCWithoutAuthorityState(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload)
+    {
+        ObjectUID = objectUID;
+        Type = type;
+        RPCState = new RPCState(hashCode, RPCStateUIDAllocator.AllocateUID(), payload);
+    }
+
+    private RPCWithoutAuthorityState(NetReader reader)
+    {
+        ObjectUID = reader.ReadInstanceId();
+        Type = (NoAuthorityRPCType)reader.ReadByte();
+        RPCState = RPCState.FromSnapshot(RPCStateSnapshot.FromReader(reader));
+    }
+
+    private void Serialize(NetWriter writer)
+    {
+        writer.WriteInstanceId(ObjectUID);
+        writer.Write((byte)Type);
+        RPCState.ToSnapshot().Serialize(writer);
+    }
+
+    public byte[] ToData()
+    {
+        var writer = NetWriter.Get();
+        Serialize(writer);
+        return writer.ToArray();
+    }
+
+    public static RPCWithoutAuthorityState FromReader(NetReader reader) =>
+        new(reader);
+}
+
+public readonly struct RPCWithoutAuthorityRequest
+{
+    public readonly RPCWithoutAuthorityState State;
+    public readonly DeliveryIntent DeliveryIntent;
+
+    public RPCWithoutAuthorityRequest(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload, DeliveryIntent deliveryIntent)
+    {
+        State = new RPCWithoutAuthorityState(objectUID, type, hashCode, payload);
+        DeliveryIntent = deliveryIntent;
+    }
+}
+
 public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectState>, IEquatable<NetObjectState>
 {
     public event Action OnOwnerChanged = delegate { };
@@ -126,7 +178,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public void ChangeObjectViewDataLocally(byte[] data, bool initialization = false)
     {
         if (!IsOwnedByLocalPlayer)
-            throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
+            throw new InvalidOperationException($"No authority to change '{UID}' object with owner '{OwnerUID}'.");
 
         var viewData = DataCollection.GetOrCreateData<NetObjectViewStateData>();
         viewData.SetData(data, initialization);
@@ -135,7 +187,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public bool PrepareForSerialization()
     {
         if (!IsOwnedByLocalPlayer)
-            throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
+            throw new InvalidOperationException($"No authority to change '{UID}' object with owner '{OwnerUID}'.");
 
         var lastHashCode = GetHashCode();
         LocalUpdateRequest(StateChangeType);
@@ -153,7 +205,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         if (checkOwner && IsOwnedByLocalPlayer)
         {
-            Debug.LogError($"Unable to restore local object with {UID} : {PrefabId} Change type: {snapshot.StateChangeType}. This can be normal in some cases");
+            Debug.LogError($"Unable to restore local object with '{UID}' : '{PrefabId}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
             return;
         }
 
@@ -191,16 +243,16 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public void OnBeforeUpdateWorldState(float worldDelta)
     {
-        //Clear rpc request without authority;
+        // Clear rpc request without authority.
         m_RPCWithoutAuthorityRequests.Clear();
 
-        //Clear temporal rpc buffer;
+        // Clear temporal rpc buffer.
         m_RPCBuffer.ClearTemporal();
 
-        //Return object to regular UDP pipeline;
+        // Return object to regular UDP pipeline.
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
 
-        //Invoke update queue;
+        // Invoke update queue.
         while (m_UpdateQueue.Count > 0)
             m_UpdateQueue.Dequeue()(worldDelta);
     }
@@ -268,56 +320,4 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public void ScheduleRemovePersistentRPC(int hashCode) =>
         ScheduleOnUpdate(() => m_RPCBuffer.RemovePersistent(hashCode));
-}
-
-public readonly struct RPCWithoutAuthorityState
-{
-    public readonly NetObjectUID ObjectUID;
-    public readonly NoAuthorityRPCType Type;
-    public readonly RPCState RPCState;
-
-    public bool IsValid => ObjectUID.IsValid && RPCState.IsValid;
-
-    public RPCWithoutAuthorityState(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload)
-    {
-        ObjectUID = objectUID;
-        Type = type;
-        RPCState = new RPCState(hashCode, RPCStateUIDAllocator.AllocateUID(), payload);
-    }
-
-    private RPCWithoutAuthorityState(NetReader reader)
-    {
-        ObjectUID = reader.ReadInstanceId();
-        Type = (NoAuthorityRPCType)reader.ReadByte();
-        RPCState = RPCState.FromSnapshot(RPCStateSnapshot.FromReader(reader));
-    }
-
-    private void Serialize(NetWriter writer)
-    {
-        writer.WriteInstanceId(ObjectUID);
-        writer.Write((byte)Type);
-        RPCState.ToSnapshot().Serialize(writer);
-    }
-
-    public byte[] ToData()
-    {
-        var writer = NetWriter.Get();
-        Serialize(writer);
-        return writer.ToArray();
-    }
-
-    public static RPCWithoutAuthorityState FromReader(NetReader reader) =>
-        new(reader);
-}
-
-public readonly struct RPCWithoutAuthorityRequest
-{
-    public readonly RPCWithoutAuthorityState State;
-    public readonly DeliveryIntent DeliveryIntent;
-
-    public RPCWithoutAuthorityRequest(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload, DeliveryIntent deliveryIntent)
-    {
-        State = new RPCWithoutAuthorityState(objectUID, type, hashCode, payload);
-        DeliveryIntent = deliveryIntent;
-    }
 }

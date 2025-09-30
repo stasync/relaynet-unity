@@ -77,10 +77,20 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         // Owner changed.
         OnOwnerChanged();
 
-        // Tell components about object was initialized.
+        // Register RPC handlers.
         foreach (var o in m_Observables)
-            TryAutoRegisterRPCHandlers(o);
+        {
+            var members = Find.MethodsWithAttribute<AutoRegisterRPCHandler>(o, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
 
+            foreach (var m in members)
+            {
+                var action = Create.DelegateWithSingleParameter<byte[]>(o, m.Key);
+                if (action != null)
+                    RegisterRPCHandler(action);
+            }
+        }
+
+        // Tell components about object was initialized.
         foreach (var o in m_Observables)
         {
             if (!viewStateData.ViewInitialized)
@@ -94,18 +104,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         // Only for remote objects.
         if (!IsLocal)
             State.RPCBuffer.ExecuteRemotely(receivePersistent: true, ReceiveRPCRemotely);
-    }
-
-    private void TryAutoRegisterRPCHandlers(IGSInstanceObservable targetObject)
-    {
-        var members = Find.MethodsWithAttribute<AutoRegisterRPCHandler>(targetObject, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
-
-        foreach (var m in members)
-        {
-            var action = Create.DelegateWithSingleParameter<byte[]>(targetObject, m.Key);
-            if (action != null)
-                RegisterRPCHandler(action);
-        }
     }
 
     /// <summary>
@@ -142,7 +140,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     }
 
     /// <summary>
-    /// Ownership managmet, anyone can change scene object owner.
+    /// Ownership managment, anyone can change scene object owner.
     /// </summary>
     public void OwnObject()
     {
@@ -157,7 +155,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
 
     private byte[] Serialize()
     {
-        //Serialize object;
+        // Serialize object.
         m_ObjectWriter ??= new NetWriter();
 
         SerializeTo(m_ObjectWriter);
@@ -175,7 +173,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     }
 
     /// <summary>
-    /// Deserizlize whole object
+    /// Deserialize whole object.
     /// </summary>
     /// <param name="data"></param>
     /// <param name="force"></param>
@@ -222,7 +220,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     public void RegisterRPCHandler(Action<byte[]> handler) =>
         RegisterRPCHandler(RPCUtils.ActionToString(handler), handler);
 
-    void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
+    private void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
     {
         var rpcHash = RPCUtils.NameToHash(rpcCode);
         // WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
@@ -253,11 +251,11 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
-        //Try to invoke handler locally.
+        // Try to invoke handler locally.
         if (invokeLocaly)
             InvokeRpcHandler(hashCode, data);
 
-        //Add to sending buffer;
+        // Add to sending buffer.
         State.ScheduleRPC(hashCode, data, persistent, bufferChangeMethod, deliveryIntent);
     }
 
@@ -289,7 +287,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     private void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
-        //If we have authority on this object, don't need to send this kind of RPC.
+        // If we have authority on this object, don't need to send this kind of RPC.
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
         else
@@ -322,7 +320,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    void ToAllRPC(string rpcCode, byte[] data, bool invokeLocaly, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
+    private void ToAllRPC(string rpcCode, byte[] data, bool invokeLocaly, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
         if (invokeLocaly)
@@ -342,7 +340,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         State.ScheduleRemovePersistentRPC(RPCUtils.NameToHash(rpcCode));
 
     /// <summary>
-    /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
+    /// Receive rpc on object WITHOUT authority (Called from GSTransport).
     /// </summary>
     private void ReceiveRPCRemotely(int hashCode, byte[] data)
     {
@@ -353,24 +351,24 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     }
 
     /// <summary>
-    /// Recieve rpc on object with authority. (Called from GSTransport).
+    /// Receive rpc on object with authority. (Called from GSTransport).
     /// </summary>
     void INoAuthorityRPCReceiver.ReceiveRPCLocally(RPCWithoutAuthorityState state) => 
         ReceiveRPCLocally(state);
     private void ReceiveRPCLocally(RPCWithoutAuthorityState state)
     {
         if (!IsLocal)
-            throw new Exception("Trying to recieve AUTHORITY RPC on remote object behaviour, this is not allowed");
+            throw new Exception("Trying to receive AUTHORITY RPC on remote object behaviour, this is not allowed");
 
         InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
     }
 
     /// <summary>
-    /// Recieve rpc on master clent. (Called from GSTransport).
+    /// Receive rpc on master client. (Called from GSTransport).
     /// </summary>
     void INoAuthorityRPCReceiver.ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state) => 
         ReceiveRPCOnMasterClient(state);
-    void ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state)
+    private void ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state)
     {
         if (!IsOwnedByMasterClient)
             throw new Exception("Trying to recieve MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");

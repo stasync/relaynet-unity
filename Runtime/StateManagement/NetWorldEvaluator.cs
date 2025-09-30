@@ -72,8 +72,11 @@ public sealed class NetWorldEvaluator : NetWorld
     public int FindLastSnapshotIndex(Predicate<NetWorldSnapshot> predicate)
     {
         for (var i = m_HistoryBuffer.Count - 1; i >= 0; i--)
+        {
             if (predicate(m_HistoryBuffer[i]))
                 return i;
+        }
+
         return -1;
     }
 

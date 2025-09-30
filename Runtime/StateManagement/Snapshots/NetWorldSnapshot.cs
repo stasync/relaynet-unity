@@ -8,7 +8,7 @@ public readonly struct NetWorldSnapshot
     public readonly float Time;
     public readonly float LocalTime;
     public IReadOnlyDictionary<NetObjectUID, NetObjectStateSnapshot> Objects => m_ObjectStates;
-    readonly Dictionary<NetObjectUID, NetObjectStateSnapshot> m_ObjectStates;
+    private readonly Dictionary<NetObjectUID, NetObjectStateSnapshot> m_ObjectStates;
 
     public readonly NetWorldPlayersCollectionsSnapshot Players;
 

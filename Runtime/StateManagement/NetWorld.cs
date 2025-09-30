@@ -21,13 +21,13 @@ public abstract class NetWorld
     public bool IsReplica => SourceID.IsValid;
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
-    Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
+    private Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
 
     public IExposedyNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
-    NetWorldUpdateQueue m_UpdateQueue;
-    Queue<Action> m_ViewInitQueue;
+    private NetWorldUpdateQueue m_UpdateQueue;
+    private Queue<Action> m_ViewInitQueue;
 
     protected NetWorld(NetWorldID uid, string worldName) :
         this(uid, worldName, NetWorldID.Invalid)
