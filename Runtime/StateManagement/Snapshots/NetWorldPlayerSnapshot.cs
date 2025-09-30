@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System.Collections.Generic;
 
-public struct NetWorldPlayerSnapshot
+public readonly struct NetWorldPlayerSnapshot
 {
     public readonly ClientUID UID;
     public readonly string Name;

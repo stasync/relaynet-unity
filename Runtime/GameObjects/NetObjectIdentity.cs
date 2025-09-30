@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-
 [DisallowMultipleComponent]
 public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
 {
@@ -36,19 +35,19 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     public bool IsSceneObject => State != null && State.IsSceneObject;
     public bool Initialized { get; private set; }
 
-    IGSInstanceObservable[] m_Observables;
+    private IGSInstanceObservable[] m_Observables;
 
-    NetWriter m_ObjectWriter;
-    NetReader m_ObjectReader;
+    private NetWriter m_ObjectWriter;
+    private NetReader m_ObjectReader;
 
     public NetObjectState State => m_NetObjectStateReference.State;
-    readonly NetObjectStateReference m_NetObjectStateReference = new ();
+    private readonly NetObjectStateReference m_NetObjectStateReference = new ();
 
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    public NetObjectIdentity Initialze(NetWorld world, NetObjectUID stateUID)
+    public void Initialize(NetWorld world, NetObjectUID stateUID)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -66,19 +65,19 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
 
         var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
         if (!IsLocal)
-            Deserialize(viewStateData.UnstructuredData, true, true); //Force true to allow deseriazation before object initialized.
+            Deserialize(viewStateData.UnstructuredData, force: true, firstTime: true); // Force true to allow deserialization before object initialized.
 
-        //Pre initialization;
+        // Pre initialization.
         foreach (var o in m_Observables)
             o.OnPreInitialize();
 
-        //Mark object as initialized;
+        // Mark object as initialized.
         Initialized = true;
 
-        //Owner changed;
+        // Owner changed.
         OnOwnerChanged();
 
-        //Tell components abount object was initialized;
+        // Tell components about object was initialized.
         foreach (var o in m_Observables)
             TryAutoRegisterRPCHandlers(o);
 
@@ -91,15 +90,13 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         foreach (var o in m_Observables)
             o.OnPostInitialize();
 
-        //Invokes buffered rpc, must be called after deserialization done.
-        //Only for remote objects.
+        // Invokes buffered rpc, must be called after deserialization done.
+        // Only for remote objects.
         if (!IsLocal)
             State.RPCBuffer.ExecuteRemotely(receivePersistent: true, ReceiveRPCRemotely);
-
-        return this;
     }
 
-    void TryAutoRegisterRPCHandlers(IGSInstanceObservable targetObject)
+    private void TryAutoRegisterRPCHandlers(IGSInstanceObservable targetObject)
     {
         var members = Find.MethodsWithAttribute<AutoRegisterRPCHandler>(targetObject, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -120,7 +117,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
             b.OnDisconnected(peerId);
     }
 
-    void OnLocalUpdateRequest(ObjectStateChangeRequestType stateChengeType)
+    private void OnLocalUpdateRequest(ObjectStateChangeRequestType stateChengeType)
     {
         if (!Initialized)
             throw new InvalidOperationException($"Object {gameObject.name} not initialized");
@@ -131,13 +128,13 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         foreach (var b in m_Observables)
             b.OnAuthorityUpdate();
 
-        State.ChangeObjectViewDataLocaly(Serialize(), stateChengeType == ObjectStateChangeRequestType.InitializationUpdate);
+        State.ChangeObjectViewDataLocally(Serialize(), stateChengeType == ObjectStateChangeRequestType.InitializationUpdate);
     }
 
     /// <summary>
     /// Object owner was changed.
     /// </summary>
-    void OnOwnerChanged()
+    private void OnOwnerChanged()
     {
         Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner}");
         foreach (var b in m_Observables)
@@ -147,7 +144,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// Ownership managmet, anyone can change scene object owner.
     /// </summary>
-    public void OwnObejct()
+    public void OwnObject()
     {
         if (!Initialized)
             throw new Exception("You can manage owners only for initialized objects");
@@ -158,17 +155,16 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         State.ScheduleOwnerChanged(World.Players.LocalPlayerUID);
     }
 
-    byte[] Serialize()
+    private byte[] Serialize()
     {
         //Serialize object;
-        if (m_ObjectWriter == null)
-            m_ObjectWriter = new NetWriter();
+        m_ObjectWriter ??= new NetWriter();
 
         SerializeTo(m_ObjectWriter);
         return m_ObjectWriter.ToArray();
     }
 
-    void SerializeTo(NetWriter writer)
+    private void SerializeTo(NetWriter writer)
     {
         if (writer == null)
             throw new ArgumentNullException(nameof(writer));
@@ -185,45 +181,42 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <param name="force"></param>
     /// <param name="firstTime"></param>
     /// <returns></returns>
-    public NetObjectIdentity Deserialize(byte[] data, bool force, bool firstTime)
+    public void Deserialize(byte[] data, bool force, bool firstTime)
     {
         if (IsLocal)
         {
-            // TODO: Need to deserualized this data somehow, or change ownership changing pipeline.
-            Debug.LogErrorFormat("Trying to deserialize local player object {0}, this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was chaged bofore.", gameObject.name);
-            return this;
+            // TODO: Need to deserialize this data somehow, or change ownership changing pipeline.
+            Debug.LogError($"Trying to deserialize local player object '{gameObject.name}', this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was changed before.", gameObject);
+            return;
         }
 
         if (!Initialized && !force)
         {
-            Debug.LogWarningFormat("Trying to deserialize object {0} that is not initialized, this is not allowed. Use 'force' option to do this.", gameObject.name);
-            return null;
+            Debug.LogWarning($"Trying to deserialize object '{gameObject.name}' that is not initialized, this is not allowed. Use 'force' option to do this.", gameObject);
+            return;
         }
 
         if (data == null)
-            return this;
+            return;
 
-        if (m_ObjectReader == null)
-            m_ObjectReader = new NetReader();
+        m_ObjectReader ??= new NetReader();
         m_ObjectReader.Replace(data);
 
         foreach (var b in m_Observables)
             b.Deserialize(m_ObjectReader, firstTime);
 
-        //Recieve rpc buffer if object initialized;
-        if(Initialized)
+        // Receive rpc buffer if object initialized.
+        if (Initialized)
             State.RPCBuffer.ExecuteRemotely(receivePersistent: false, ReceiveRPCRemotely);
-
-        return this;
     }
 
     /// <summary>
     /// RPC handlers.
     /// </summary>
-    readonly IDictionary<int, Action<byte[]>> m_RPCHandlers = new Dictionary<int, Action<byte[]>>();
+    private readonly Dictionary<int, Action<byte[]>> m_RPCHandlers = new();
 
     /// <summary>
-    /// Register handler to recieve RPC (Better to call in OnEnable or OnInit).
+    /// Register handler to receive RPC (Better to call in OnEnable or OnInit).
     /// </summary>
     /// <param name="handler"></param>
     public void RegisterRPCHandler(Action<byte[]> handler) =>
@@ -232,11 +225,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     void RegisterRPCHandler(string rpcCode, Action<byte[]> handler)
     {
         var rpcHash = RPCUtils.NameToHash(rpcCode);
-        /// WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
-        if (m_RPCHandlers.ContainsKey(rpcHash))
+        // WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
+        if (!m_RPCHandlers.TryAdd(rpcHash, handler))
             throw new InvalidOperationException(gameObject.name + " already contains handler for '" + rpcCode + "' rpc code");
-
-        m_RPCHandlers.Add(rpcHash, handler);
     }
 
     /// <summary>
@@ -248,7 +239,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    void OwnerToOthersRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
+    private void OwnerToOthersRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
@@ -257,12 +248,12 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         OwnerToOthersRPC(hashCode, data, false, RPCBufferChangeMethod.Add, deliveryIntent, invokeLocaly);
     }
 
-    void OwnerToOthersRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
+    private void OwnerToOthersRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocaly = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
-        //Try invoke handler locally.
+        //Try to invoke handler locally.
         if (invokeLocaly)
             InvokeRpcHandler(hashCode, data);
 
@@ -281,7 +272,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// Same as AuthRPC, but buffered.
     /// Only works via RELIABLE delivery.
     /// </summary>
-    void OwnerToOthersRPCBuffered(string rpcCode, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocaly = true) =>
+    private void OwnerToOthersRPCBuffered(string rpcCode, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocaly = true) =>
          OwnerToOthersRPC(RPCUtils.NameToHash(rpcCode), data, true, bufferChangeMethod, DeliveryIntent.Reliable, invokeLocaly);
 
     /// <summary>
@@ -295,7 +286,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
+    private void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
         //If we have authority on this object, don't need to send this kind of RPC.
@@ -344,14 +335,16 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
-    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => RemoveRPCFromBuffer(RPCUtils.ActionToString(rpcHandlerMethod));
+    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => 
+        RemoveRPCFromBuffer(RPCUtils.ActionToString(rpcHandlerMethod));
 
-    public void RemoveRPCFromBuffer(string rpcCode) => State.ScheduleRemovePersistentRPC(RPCUtils.NameToHash(rpcCode));
+    public void RemoveRPCFromBuffer(string rpcCode) => 
+        State.ScheduleRemovePersistentRPC(RPCUtils.NameToHash(rpcCode));
 
     /// <summary>
     /// Recieve rpc on object WITHOUT authority (Called from GSTransport).
     /// </summary>
-    void ReceiveRPCRemotely(int hashCode, byte[] data)
+    private void ReceiveRPCRemotely(int hashCode, byte[] data)
     {
         if (IsLocal)
             throw new Exception("Trying to recieve NO-AUTHORITY RPC on local object behaviour, this is not allowed");
@@ -362,8 +355,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// Recieve rpc on object with authority. (Called from GSTransport).
     /// </summary>
-    void INoAuthorityRPCReceiver.ReceiveRPCLocally(RPCWithoutAuthorityState state) => RecieveRPCLocaly(state);
-    void RecieveRPCLocaly(RPCWithoutAuthorityState state)
+    void INoAuthorityRPCReceiver.ReceiveRPCLocally(RPCWithoutAuthorityState state) => 
+        ReceiveRPCLocally(state);
+    private void ReceiveRPCLocally(RPCWithoutAuthorityState state)
     {
         if (!IsLocal)
             throw new Exception("Trying to recieve AUTHORITY RPC on remote object behaviour, this is not allowed");
@@ -374,8 +368,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// Recieve rpc on master clent. (Called from GSTransport).
     /// </summary>
-    void INoAuthorityRPCReceiver.ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state) => RecieveRPCOnMasterClient(state);
-    void RecieveRPCOnMasterClient(RPCWithoutAuthorityState state)
+    void INoAuthorityRPCReceiver.ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state) => 
+        ReceiveRPCOnMasterClient(state);
+    void ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state)
     {
         if (!IsOwnedByMasterClient)
             throw new Exception("Trying to recieve MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
@@ -383,14 +378,15 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
     }
 
-    void INoAuthorityRPCReceiver.ReceiveRPC(RPCWithoutAuthorityState state) => InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
+    void INoAuthorityRPCReceiver.ReceiveRPC(RPCWithoutAuthorityState state) => 
+        InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
 
-    void InvokeRpcHandler(int hashCode, byte[] data)
+    private void InvokeRpcHandler(int hashCode, byte[] data)
     {
-        if (m_RPCHandlers.ContainsKey(hashCode))
-            m_RPCHandlers[hashCode].Invoke(data);
+        if (m_RPCHandlers.TryGetValue(hashCode, out var handler))
+            handler.Invoke(data);
         else
-            Debug.LogErrorFormat($"Handler for RPC with hash {hashCode} '{RPCUtils.TryFindStringByHash(hashCode)}' doesn't registred on object {gameObject.name}");
+            Debug.LogErrorFormat($"Handler for RPC with hash {hashCode} '{RPCUtils.TryFindStringByHashSlow(hashCode)}' doesn't registered on object {gameObject.name}");
     }
 
     public void DestroyViaNetwork()
@@ -399,25 +395,25 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
             throw new Exception("Trying to destroy remote object, this is not allowed");
 
         foreach (var b in m_Observables)
-            b.OnSoftDestroyRequestedLocaly();
+            b.OnSoftDestroyRequestedLocally();
 
         State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
-        if(State != null)
-        {
-            State.OnOwnerChanged -= OnOwnerChanged;
-            State.LocalUpdateRequest -= OnLocalUpdateRequest;
+        if (State == null) 
+            return;
+        
+        State.OnOwnerChanged -= OnOwnerChanged;
+        State.LocalUpdateRequest -= OnLocalUpdateRequest;
 
-            m_NetObjectStateReference.SetTargetUID(NetObjectUID.Invalid);
-            m_NetObjectStateReference.SetTargetWorld(null);
-        }
+        m_NetObjectStateReference.SetTargetUID(NetObjectUID.Invalid);
+        m_NetObjectStateReference.SetTargetWorld(null);
     }
 
     #if UNITY_EDITOR
-    void OnDrawGizmos()
+    private void OnDrawGizmos()
     {
         if (!Initialized)
             return;
@@ -428,7 +424,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     }
     #endif
 
-    readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new ();
+    private readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new ();
 
     public T GetBehaviour<T>() where T : GSInstanceBehaviourBase
     {

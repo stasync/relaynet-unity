@@ -10,7 +10,7 @@ public struct NetObjectStateSnapshot
     public NetObjectRPCStateSnapshot RPCState { get; private set; }
     public NetObjectDataCollectionSnapshot DataState { get; private set; }
 
-    void Restore(NetReader reader)
+    private void Restore(NetReader reader)
     {
         OwnerUID = reader.ReadConnectionUID();
         ObjectUID = reader.ReadInstanceId();
@@ -40,7 +40,7 @@ public struct NetObjectStateSnapshot
     }
 
     public static NetObjectStateSnapshot FormState(NetObjectState state) =>
-        new NetObjectStateSnapshot
+        new()
         {
             OwnerUID = state.OwnerUID,
             ObjectUID = state.UID,
@@ -51,7 +51,8 @@ public struct NetObjectStateSnapshot
             DataState = state.DataCollection.ToSnapshot(),
         };
 
-    public override string ToString() => $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
+    public override string ToString() => 
+        $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
 
     public int GetSize()
     {

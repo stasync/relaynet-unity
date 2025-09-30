@@ -52,9 +52,9 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public ClientUID OwnerUID { get; private set; }
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
     public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
-    readonly NetObjectRPCState m_RPCBuffer;
+    private readonly NetObjectRPCState m_RPCBuffer;
     public IReadOnlyNetObjectDataCollection DataCollection => m_DataCollection;
-    readonly NetObjectDataCollection m_DataCollection;
+    private readonly NetObjectDataCollection m_DataCollection;
     #endregion
 
     public override int GetHashCode() =>
@@ -71,9 +71,9 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
 
-    readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests;
+    private readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests;
 
-    NetWriter m_Writer;
+    private NetWriter m_Writer;
 
     public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvider)
     {
@@ -93,7 +93,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     }
 
     public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvider) :
-        this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) => ChangeObjectRemotely(snapshot);
+        this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) => 
+        ChangeObjectRemotely(snapshot);
 
     public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
 
@@ -122,7 +123,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         Invalidated = null;
     }
 
-    public void ChangeObjectViewDataLocaly(byte[] data, bool initialization = false)
+    public void ChangeObjectViewDataLocally(byte[] data, bool initialization = false)
     {
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
@@ -163,7 +164,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         m_DataCollection.RestoreFromSnapShot(snapshot.DataState);
     }
 
-    void UpdateOwnerInternal(ClientUID newOwner)
+    private void UpdateOwnerInternal(ClientUID newOwner)
     {
         var previousOwner = OwnerUID;
         OwnerUID = newOwner;
@@ -172,19 +173,20 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             OnOwnerChanged();
     }
 
-    public NetObjectStateSnapshot ToSnapshot() => NetObjectStateSnapshot.FormState(this);
+    public NetObjectStateSnapshot ToSnapshot() => 
+        NetObjectStateSnapshot.FormState(this);
 
-    void ScheduleStateChange(ObjectStateChangeRequestType requestType) => 
+    private void ScheduleStateChange(ObjectStateChangeRequestType requestType) => 
         ScheduleOnUpdate(() =>
         {
             if (StateChangeType < requestType)
                 StateChangeType = requestType;
         });
 
-    void ScheduleOnUpdate(Action a) =>
+    private void ScheduleOnUpdate(Action a) =>
         ScheduleOnUpdate(delta => a());
 
-    void ScheduleOnUpdate(Action<float> a) =>
+    private void ScheduleOnUpdate(Action<float> a) =>
         m_UpdateQueue.Enqueue(a);
 
     public void OnBeforeUpdateWorldState(float worldDelta)
@@ -230,8 +232,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public byte[] Serialize()
     {
-        if (m_Writer == null)
-            m_Writer = new NetWriter();
+        m_Writer ??= new NetWriter();
 
         m_Writer.SeekZero();
         ToSnapshot().Serialize(m_Writer);
@@ -248,8 +249,11 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
 
 
-    public int CompareTo(NetObjectState other) => UID.CompareTo(other.UID);
-    public bool Equals(NetObjectState other) => UID.Equals(other.UID);
+    public int CompareTo(NetObjectState other) => 
+        UID.CompareTo(other == null ? NetObjectUID.Invalid : other.UID);
+    
+    public bool Equals(NetObjectState other) => 
+        UID.Equals(other == null ? NetObjectUID.Invalid : other.UID);
 
     public void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent) =>
         ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryIntent)));
@@ -281,14 +285,14 @@ public readonly struct RPCWithoutAuthorityState
         RPCState = new RPCState(hashCode, RPCStateUIDAllocator.AllocateUID(), payload);
     }
 
-    public RPCWithoutAuthorityState(NetReader reader)
+    private RPCWithoutAuthorityState(NetReader reader)
     {
         ObjectUID = reader.ReadInstanceId();
         Type = (NoAuthorityRPCType)reader.ReadByte();
         RPCState = RPCState.FromSnapshot(RPCStateSnapshot.FromReader(reader));
     }
 
-    public void Serialize(NetWriter writer)
+    private void Serialize(NetWriter writer)
     {
         writer.WriteInstanceId(ObjectUID);
         writer.Write((byte)Type);

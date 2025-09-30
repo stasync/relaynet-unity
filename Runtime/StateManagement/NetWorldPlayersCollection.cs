@@ -30,7 +30,7 @@ public interface IExposedyNetWorldPlayersCollection : INetWorldPlayersCollection
     void ForEachPlayer(Action<ClientUID, NetWorldPlayer> processor);
 }
 
-public class NetWorldPlayersCollection : IExposedyNetWorldPlayersCollection, IReadOnlyNetWorldPlayersCollection
+public sealed class NetWorldPlayersCollection : IExposedyNetWorldPlayersCollection, IReadOnlyNetWorldPlayersCollection
 {
     #region State
     public ClientUID LocalPlayerUID { get; private set; }
@@ -89,7 +89,7 @@ public class NetWorldPlayersCollection : IExposedyNetWorldPlayersCollection, IRe
         m_RemovedPlayers.Clear();
     }
 
-    public NetWorldPlayer RegisterImmidiate(ClientUID uid, bool isLocal)
+    public NetWorldPlayer RegisterImmediate(ClientUID uid, bool isLocal)
     {
         if (m_PlayersCollection.ContainsKey(uid))
             throw new InvalidOperationException();
@@ -105,7 +105,7 @@ public class NetWorldPlayersCollection : IExposedyNetWorldPlayersCollection, IRe
         return player;
     }
 
-    public void UnregisterImmidiate(ClientUID uid)
+    public void UnregisterImmediate(ClientUID uid)
     {
         if (LocalPlayerUID == uid)
             LocalPlayerUID = ClientUID.Invalid;
@@ -116,7 +116,8 @@ public class NetWorldPlayersCollection : IExposedyNetWorldPlayersCollection, IRe
         UpdateMasterUID();
     }
 
-    void UpdateMasterUID() => MasterPlayerUID = AllUIDs.Any() ? AllUIDs.Min() : ClientUID.Invalid;
+    private void UpdateMasterUID() => 
+        MasterPlayerUID = AllUIDs.Any() ? AllUIDs.Min() : ClientUID.Invalid;
 
     public void Clear()
     {
@@ -135,7 +136,9 @@ public class NetWorldPlayersCollection : IExposedyNetWorldPlayersCollection, IRe
         m_RemovedPlayers = null;
     }
 
-    public NetWorldPlayersCollectionsSnapshot ToSnapshot() => NetWorldPlayersCollectionsSnapshot.FormCollection(this);
+    public NetWorldPlayersCollectionsSnapshot ToSnapshot() => 
+        NetWorldPlayersCollectionsSnapshot.FormCollection(this);
+    
     public void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
     {
         //Use invalid id for local and master player while snapshots if only used for world replication.

@@ -83,7 +83,7 @@ public class NetDebugWindow : EditorWindow
         }
 
         void DrawRPC(RPCState rpc) =>
-            EditorGUILayout.LabelField($"{rpc.UID} Hash: {rpc.Hash} '{RPCUtils.TryFindStringByHash(rpc.Hash)}' Payload size: {rpc.Payload.Length}");
+            EditorGUILayout.LabelField($"{rpc.UID} Hash: {rpc.Hash} '{RPCUtils.TryFindStringByHashSlow(rpc.Hash)}' Payload size: {rpc.Payload.Length}");
     }
 
     abstract class WorldDrawer<T> where T : NetWorld
@@ -350,7 +350,7 @@ public class NetDebugWindow : EditorWindow
         if (m_ShowMainWorldHistoryInfo)
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField($"History size: {mainWorld.HistoryBuffer.Size} ({mainWorld.HistoryBuffer.SizeMB:f2}mb) [{mainWorld.HistoryBuffer.AveregeFrameSize}] bytes, cnt: {mainWorld.HistoryBuffer.Count} frames, time: {mainWorld.HistoryBuffer.LengthInSeconds:f2} s", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"History size: {mainWorld.HistoryBuffer.Size} ({mainWorld.HistoryBuffer.SizeMB:f2}mb) [{mainWorld.HistoryBuffer.AverageFrameSize}] bytes, cnt: {mainWorld.HistoryBuffer.Count} frames, time: {mainWorld.HistoryBuffer.LengthInSeconds:f2} s", EditorStyles.boldLabel);
 
             EditorGUI.BeginDisabledGroup(m_CurrentWorldReplicaDrawer != null);
             if (GUILayout.Button("Playback"))

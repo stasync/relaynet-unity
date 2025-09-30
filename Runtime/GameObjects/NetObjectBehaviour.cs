@@ -122,7 +122,7 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// <summary>
     /// Destroy method called localy
     /// </summary>
-    public virtual void OnSoftDestroyRequestedLocaly() { }
+    public virtual void OnSoftDestroyRequestedLocally() { }
 
     /// <summary>
     /// Serialize method without dirty check.

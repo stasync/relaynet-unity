@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 public sealed class NetWorldObjectViewWaiter : IDisposable
 {
-    NetWorld m_World;
-    Dictionary<NetObjectUID, List<Action<NetObjectIdentity>>> m_NewObjectWaiters;
+    private NetWorld m_World;
+    private Dictionary<NetObjectUID, List<Action<NetObjectIdentity>>> m_NewObjectWaiters;
 
     public NetWorldObjectViewWaiter(NetWorld world)
     {
@@ -31,7 +31,7 @@ public sealed class NetWorldObjectViewWaiter : IDisposable
         waiters.Add(a);
     }
 
-    void OnNewObjectInitialized(NetObjectIdentity identity)
+    private void OnNewObjectInitialized(NetObjectIdentity identity)
     {
         if (!m_NewObjectWaiters.TryGetValue(identity.InstanceId, out var waiters))
             return;

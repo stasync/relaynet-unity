@@ -12,11 +12,11 @@ public interface IReadOnlyNetObjectDataCollection : IReadOnlyCollection<NetObjec
     bool HasData<T>() where T : NetObjectStateData;
 }
 
-public class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
+public sealed class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
 {
-    readonly NetReader m_Reader;
-    readonly Dictionary<int, NetObjectStateData> m_InternalCollection;
-    readonly Func<bool> m_DataWritePermission;
+    private readonly NetReader m_Reader;
+    private readonly Dictionary<int, NetObjectStateData> m_InternalCollection;
+    private readonly Func<bool> m_DataWritePermission;
 
     public int Count => m_InternalCollection.Count;
 

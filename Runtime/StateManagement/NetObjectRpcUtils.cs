@@ -13,14 +13,14 @@ public static class RPCUtils
         // Anonymous delegate method name usually looks like '<Foo>m__0';
         // TODO: More 'beautiful' way to know is delegate is anonymous.
         if (a.Method.Name.StartsWith("<"))
-            throw new InvalidOperationException("Unable to create RPC code with anonymous delegates");
+            throw new InvalidOperationException("Unable to create RPC code with anonymous delegates.");
 
         return $"{a.Method.DeclaringType!.FullName}.{a.Method.Name}";
     }
 
-    static readonly Dictionary<string, int> s_RPCHashMap = new();
+    private static readonly Dictionary<string, int> s_RPCHashMap = new();
 
-    public static string TryFindStringByHash(int hash)
+    public static string TryFindStringByHashSlow(int hash)
     {
         foreach (var kvp in s_RPCHashMap)
             if (kvp.Value == hash)

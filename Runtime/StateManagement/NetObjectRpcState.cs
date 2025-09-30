@@ -49,15 +49,15 @@ public readonly struct RPCState
     }
 }
 
-public class NetObjectRPCState : IReadOnlyNetObjectRPCState
+public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
 {
-    readonly List<RPCState> m_PersistentBuffer = new();
+    private readonly List<RPCState> m_PersistentBuffer = new();
     public IReadOnlyCollection<RPCState> PersistentBuffer => m_PersistentBuffer;
 
-    readonly List<RPCState> m_TemporalBuffer = new();
+    private readonly List<RPCState> m_TemporalBuffer = new();
     public IReadOnlyCollection<RPCState> TemporalBuffer => m_TemporalBuffer;
 
-    readonly HashSet<uint> m_ReceiveCollisions = new();
+    private readonly HashSet<uint> m_ReceiveCollisions = new();
 
     public void AddOrUpdate(int hash, byte[] payload, bool persistent, RPCBufferChangeMethod changeMethod)
     {
@@ -69,7 +69,7 @@ public class NetObjectRPCState : IReadOnlyNetObjectRPCState
             PushTo(m_PersistentBuffer, data, changeMethod);
     }
 
-    void PushTo(List<RPCState> targetBuffer, RPCState newData, RPCBufferChangeMethod changeMethod)
+    private void PushTo(List<RPCState> targetBuffer, RPCState newData, RPCBufferChangeMethod changeMethod)
     {
         if (changeMethod == RPCBufferChangeMethod.Replace)
             targetBuffer.RemoveAll(d => d.Hash == newData.Hash);

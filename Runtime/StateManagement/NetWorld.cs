@@ -103,7 +103,7 @@ public abstract class NetWorld
 
     protected virtual void OnBeforeUpdateWorldState(float worldDelta)
     {
-        ForEachStates((UID, state) => state.OnBeforeUpdateWorldState(worldDelta));
+        ForEachStates((_, state) => state.OnBeforeUpdateWorldState(worldDelta));
         PlayersInternal.OnBeforeUpdateWorldState(worldDelta);
     }
 
@@ -147,20 +147,26 @@ public abstract class NetWorld
         }
     }
 
-    public void ScheduleOnUpdate(Action action) => m_UpdateQueue.Enqueue(action);
-    public void ScheduleOnUpdateUntil(Func<bool> condition, Action action) => m_UpdateQueue.EnqueueUntil(condition, action);
-    public void ScheduleOnUpdateIfObjectExists(NetObjectUID objectUID, Action<NetObjectState> a) => ScheduleOnUpdate(() => 
-    {
-        if(!TryGetObject(objectUID, out var state))
+    public void ScheduleOnUpdate(Action action) => 
+        m_UpdateQueue.Enqueue(action);
+    
+    public void ScheduleOnUpdateUntil(Func<bool> condition, Action action) => 
+        m_UpdateQueue.EnqueueUntil(condition, action);
+    
+    public void ScheduleOnUpdateIfObjectExists(NetObjectUID objectUID, Action<NetObjectState> a) => 
+        ScheduleOnUpdate(() => 
         {
-            Debug.LogError($"Skipping scheduled action for absent object {objectUID}");
-            return;
-        }
+            if(!TryGetObject(objectUID, out var state))
+            {
+                Debug.LogError($"Skipping scheduled action for absent object {objectUID}");
+                return;
+            }
 
-        a(state);
-    });
+            a(state);
+        });
 
-    public virtual bool ObjectExists(NetObjectUID uid) => m_CurrentObjectStates.ContainsKey(uid);
+    public virtual bool ObjectExists(NetObjectUID uid) => 
+        m_CurrentObjectStates.ContainsKey(uid);
 
     public NetObjectIdentity FindObjectView(NetObjectUID instanceId) => 
         View == null ? null :
@@ -200,17 +206,19 @@ public abstract class NetWorld
             processor(uid, m_CurrentObjectStates[uid]);
     }
 
-    protected void ForEachLocalStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((uid, state) =>
-    {
-        if (state.IsOwnedByLocalPlayer)
-            processor(uid, state);
-    });
+    protected void ForEachLocalStates(Action<NetObjectUID, NetObjectState> processor) => 
+        ForEachStates((uid, state) =>
+        {
+            if (state.IsOwnedByLocalPlayer)
+                processor(uid, state);
+        });
 
-    protected void ForEachRemoteStates(Action<NetObjectUID, NetObjectState> processor) => ForEachStates((uid, state) =>
-    {
-        if (!state.IsOwnedByLocalPlayer)
-            processor(uid, state);
-    });
+    protected void ForEachRemoteStates(Action<NetObjectUID, NetObjectState> processor) => 
+        ForEachStates((uid, state) =>
+        {
+            if (!state.IsOwnedByLocalPlayer)
+                processor(uid, state);
+        });
 
     protected virtual void RemoveObject(NetObjectUID stateUID)
     {
@@ -221,18 +229,19 @@ public abstract class NetWorld
         m_CurrentObjectStates.Remove(stateUID);
     }
         
-    public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => NetWorldSnapshot.FromWorld(deltaTime, this);
+    public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => 
+        NetWorldSnapshot.FromWorld(deltaTime, this);
 
     public void RestoreFromSnapshot(NetWorldSnapshot snapshot)
     {
-        //Update time;
+        // Update time.
         Time = snapshot.Time;
         LocalTime = snapshot.LocalTime;
 
-        //Restore players;
+        // Restore players.
         PlayersInternal.RestoreFromSnapshot(snapshot.Players);
 
-        //Add or update objects;
+        // Add or update objects.
         foreach(var kvp in snapshot.Objects)
         {
             if (m_CurrentObjectStates.ContainsKey(kvp.Key))
@@ -241,8 +250,8 @@ public abstract class NetWorld
                 TryAddObject(new NetObjectState(kvp.Value, PlayersInternal.Find));
         }
 
-        //Remove absent obejets;
-        ForEachStates((uid, state) => 
+        // Remove absent objects.
+        ForEachStates((uid, _) => 
         {
             if (!snapshot.Objects.ContainsKey(uid))
                 RemoveObject(uid);

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class NetWorldEvaluator : NetWorld
+public sealed class NetWorldEvaluator : NetWorld
 {
-    readonly List<NetWorldSnapshot> m_HistoryBuffer;
-    NetWorldSnapshot m_CurrentSnapshot;
+    private readonly List<NetWorldSnapshot> m_HistoryBuffer;
+    private NetWorldSnapshot m_CurrentSnapshot;
 
-    float m_CurrentTime;
-    float m_NextSnapshotTime;
-    readonly bool m_AutoDestroy;
+    private float m_CurrentTime;
+    private float m_NextSnapshotTime;
+    private readonly bool m_AutoDestroy;
 
     public int CurrentSnapshotIndex { get; private set; }
     public bool Paused { get; private set; }
@@ -28,7 +28,7 @@ public class NetWorldEvaluator : NetWorld
         UpdateCurrentSnapshotInfo();
     }
 
-    void PeekNextSnapshot()
+    private void PeekNextSnapshot()
     {
         CurrentSnapshotIndex++;
         if(CurrentSnapshotIndex >= m_HistoryBuffer.Count)
@@ -66,7 +66,8 @@ public class NetWorldEvaluator : NetWorld
             UpdateWorldState(m_CurrentSnapshot.DeltaTime);
     }
 
-    public void SetPaused(bool paused) => Paused = paused;
+    public void SetPaused(bool paused) => 
+        Paused = paused;
 
     public int FindLastSnapshotIndex(Predicate<NetWorldSnapshot> predicate)
     {
@@ -127,7 +128,7 @@ public class NetWorldEvaluator : NetWorld
         return m_HistoryBuffer[^1].LocalTime - m_HistoryBuffer[snapshotIndex].LocalTime;
     }
 
-    void UpdateCurrentSnapshotInfo()
+    private void UpdateCurrentSnapshotInfo()
     {
         if (CurrentSnapshotIndex >= m_HistoryBuffer.Count || CurrentSnapshotIndex < 0)
             return;

@@ -60,12 +60,12 @@ public class NetWorldView : MonoBehaviour
     {
         Profiler.BeginSample($"{m_World.Name} View.Execute");
 
-        //Remove invalid views;
-        ForEachViews((UID, view) =>
+        // Remove invalid views.
+        foreach (var UID in m_CurrentObjectViews.Keys.ToArray())
         {
             if (!ShoudUpdateViewForState(UID))
                 RemoveView(UID);
-        });
+        }
 
         //Create, update, destroy objects;
         ForEachStates((UID, state) =>
@@ -77,11 +77,8 @@ public class NetWorldView : MonoBehaviour
             //Try get or create new state view;
             if (!m_CurrentObjectViews.TryGetValue(UID, out var netObjectView))
             {
-                if (m_PendingObjectViews.TryGetValue(UID, out netObjectView))
-                {
-                    m_PendingObjectViews.Remove(UID);
+                if (m_PendingObjectViews.Remove(UID, out netObjectView))
                     m_CurrentObjectViews.Add(UID, netObjectView);
-                }
                 else
                 {
                     if (string.IsNullOrWhiteSpace(state.PrefabId))
@@ -114,7 +111,7 @@ public class NetWorldView : MonoBehaviour
         Profiler.EndSample();
     }
 
-    bool ShoudUpdateViewForState(NetObjectUID UID)
+    private bool ShoudUpdateViewForState(NetObjectUID UID)
     {
         if (!m_World.TryGetObject(UID, out var netObjectState))
             return false;
@@ -154,13 +151,13 @@ public class NetWorldView : MonoBehaviour
         if (identity.Initialized)
             throw new InvalidOperationException($"Identity {identity.gameObject.name}:{stateUID} already initialized.");
 
-        //Set world as view parent;
+        // Set world as view parent.
         UpdateTransformInView(identity.transform);
 
-        //Init;
-        identity.Initialze(m_World, stateUID);
+        // Init.
+        identity.Initialize(m_World, stateUID);
 
-        //Push event;
+        // Push event.
         NewObjectInitialized(identity);
     }
 
@@ -183,15 +180,10 @@ public class NetWorldView : MonoBehaviour
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => m_PendingObjectViews.Add(uid, identity);
 
-    void ForEachViews(Action<NetObjectUID, NetObjectIdentity> processor)
-    {
-        foreach (var UID in m_CurrentObjectViews.Keys.ToArray())
-            processor(UID, m_CurrentObjectViews[UID]);
-    }
+    private void ForEachStates(Action<NetObjectUID, NetObjectState> processor) => 
+        m_World.ForEachStates(processor);
 
-    void ForEachStates(Action<NetObjectUID, NetObjectState> processor) => m_World.ForEachStates(processor);
-
-    void RemoveView(NetObjectUID uid)
+    private void RemoveView(NetObjectUID uid)
     {
         if (m_CurrentObjectViews.Remove(uid, out var cView))
             Destroy(cView.gameObject);

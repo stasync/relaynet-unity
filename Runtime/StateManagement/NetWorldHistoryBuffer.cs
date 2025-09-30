@@ -4,24 +4,20 @@ using System.Collections.Generic;
 public interface IReadOnlyHistoryBuffer : IReadOnlyCollection<NetWorldSnapshot>
 {
     int Size { get; }
-    int AveregeFrameSize { get; }
+    int AverageFrameSize { get; }
     float SizeMB { get; }
     float LengthInSeconds { get; }
 }
 
-public class HistoryBiffer : IReadOnlyHistoryBuffer
+public sealed class HistoryBuffer : IReadOnlyHistoryBuffer
 {
     public int Size { get; private set; } 
-    public int AveregeFrameSize { get; private set; }
+    public int AverageFrameSize { get; private set; }
     public float SizeMB => Size * 0.000001f;
+    public int Count => m_HistoryBuffer.Count;
     public float LengthInSeconds { get; private set; }
 
-    readonly Queue<NetWorldSnapshot> m_HistoryBuffer;
-
-    public HistoryBiffer()
-    {
-        m_HistoryBuffer = new Queue<NetWorldSnapshot>();
-    }
+    private readonly Queue<NetWorldSnapshot> m_HistoryBuffer = new();
 
     public void Enqueue(NetWorldSnapshot snapshot)
     {
@@ -30,7 +26,7 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
         Size += snapshot.GetSize();
         LengthInSeconds += snapshot.DeltaTime;
 
-        RecalculateAveregeSize();
+        RecalculateAverageSize();
     }
 
     public void Dequeue()
@@ -40,11 +36,9 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
         Size -= snapshot.GetSize();
         LengthInSeconds -= snapshot.DeltaTime;
 
-        RecalculateAveregeSize();
+        RecalculateAverageSize();
     }
-
-    public int Count => m_HistoryBuffer.Count;
-
+    
     public void Clear()
     {
         m_HistoryBuffer.Clear();
@@ -52,12 +46,16 @@ public class HistoryBiffer : IReadOnlyHistoryBuffer
         Size = 0;
         LengthInSeconds = 0f;
 
-        RecalculateAveregeSize();
+        RecalculateAverageSize();
     }
 
-    void RecalculateAveregeSize() => AveregeFrameSize = Count == 0 ? 0 : Size / Count;
+    private void RecalculateAverageSize() => 
+        AverageFrameSize = Count == 0 ? 0 : Size / Count;
 
-    public IEnumerator<NetWorldSnapshot> GetEnumerator() => m_HistoryBuffer.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => m_HistoryBuffer.GetEnumerator();
+    public IEnumerator<NetWorldSnapshot> GetEnumerator() => 
+        m_HistoryBuffer.GetEnumerator();
+    
+    IEnumerator IEnumerable.GetEnumerator() => 
+        m_HistoryBuffer.GetEnumerator();
 }
 

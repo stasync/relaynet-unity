@@ -6,20 +6,20 @@ using UnityEngine;
 public class GSSceneObjectIdentity : GSInstanceBehaviour
 {
     [SerializeField, Range(NetObjectUID.FIRST_VALID_UID, NetObjectUID.FIRST_VALID_UID + NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE)]
-    int m_SceneObjectId;
+    private int m_SceneObjectId;
     public NetObjectUID SceneObjectId => (uint)m_SceneObjectId;
 
     [SerializeField]
-    string m_PrefabId;
+    private string m_PrefabId;
     public string PrefabID => m_PrefabId;
 
     /// <summary>
-    /// We needs to register this object in object factory, if it placed in scene by default.
+    /// We need to register this object in object factory, if it placed in scene by default.
     /// </summary>
-    void Start()
+    private void Start()
     {
         // Register scene object.
-        // Initialize object if we on master client, so new clents will not initialize this objects, but will recieve updates.
+        // Initialize object if we on master client, so new clients will not initialize this objects, but will receive updates.
         // TODO: fix situations when object can be not initialized.
         TryRegisterOrInitialize();
     }
@@ -31,13 +31,14 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
             TryRegisterOrInitialize();
     }
 
-    void TryRegisterOrInitialize()
+    private void TryRegisterOrInitialize()
     {
-        if(!Identity.Initialized)
+        if (!Identity.Initialized)
             Network.Realtime.TryRegisterOrInitializeSceneObject(this);
     }
 
-    public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => value.Identity;
+    public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => 
+        value.Identity;
 
 #if UNITY_EDITOR
     [UnityEditor.MenuItem("System/Network/Validate scene objects")]
@@ -70,7 +71,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
 
     [UnityEditor.MenuItem("System/Network/Fix scene objects")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
-    static void FixSceneObjects()
+    private static void FixSceneObjects()
 #pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены
     {
         if (UnityEditor.EditorApplication.isPlaying)
@@ -90,7 +91,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         ValidateSceneObjects();
     }
 
-    static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> c, GSSceneObjectIdentity obj) => c
+    private static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> c, GSSceneObjectIdentity obj) => c
                 .Where(o => o != obj)
                 .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
 #endif

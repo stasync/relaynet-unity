@@ -69,35 +69,36 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
             m_RTTMS = value;
         }
     }
-    int m_RTTMS;
+    private int m_RTTMS;
 
     public IReadOnlyCollection<NetObjectUID> TagObjectUIDs => m_TagObjectUIDs;
-    HashSet<NetObjectUID> m_TagObjectUIDs;
+    private HashSet<NetObjectUID> m_TagObjectUIDs;
+    
     public NetObjectUID MainTagObjectUID { get; private set; } = NetObjectUID.Invalid;
 
-    public void RegisterTagObject(NetObjectUID UID, bool main = false)
+    public void RegisterTagObject(NetObjectUID uid, bool main = false)
     {
         if (!IsLocal)
-            throw new InvalidOperationException("Trying to register tag object without authority, this is not allowed. Player id: " + UID);
+            throw new InvalidOperationException("Trying to register tag object without authority, this is not allowed. Player id: " + uid);
 
-        if (!UID.IsValid)
+        if (!uid.IsValid)
             throw new InvalidOperationException("Trying to register invalid object UID as tag object");
 
-        m_TagObjectUIDs.Add(UID);
+        m_TagObjectUIDs.Add(uid);
         if (main)
-            MainTagObjectUID = UID;
+            MainTagObjectUID = uid;
     }
 
-    public void UnregisterTagObject(NetObjectUID UID)
+    public void UnregisterTagObject(NetObjectUID uid)
     {
         if (!IsLocal)
-            throw new InvalidOperationException("Trying to unregister tag object without authority, this is not allowed. Player id: " + UID);
+            throw new InvalidOperationException("Trying to unregister tag object without authority, this is not allowed. Player id: " + uid);
 
-        if (!UID.IsValid)
+        if (!uid.IsValid)
             throw new InvalidOperationException("Trying to register invalid object UID as tag object");
 
-        m_TagObjectUIDs.Remove(UID);
-        if (MainTagObjectUID == UID)
+        m_TagObjectUIDs.Remove(uid);
+        if (MainTagObjectUID == uid)
             MainTagObjectUID = NetObjectUID.Invalid;
     }
 

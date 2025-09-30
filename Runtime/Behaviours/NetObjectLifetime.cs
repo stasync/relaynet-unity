@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-public class GSObjectLifetimeData : NetObjectStateData
+public sealed class GSObjectLifetimeData : NetObjectStateData
 {
     public GSObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
 
@@ -11,20 +11,20 @@ public class GSObjectLifetimeData : NetObjectStateData
     public float NormalizedLifetime => CurrentLifetime.Value / Lifetime.Value;
 }
 
-public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
+public sealed class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
 {
     public event Action TimePassed = delegate { };
     public float NormalizedLifetime => Data.NormalizedLifetime;
     public float CurrentLifetime => Data.CurrentLifetime.Value;
 
     [SerializeField]
-    bool m_UpdateTime = true;
+    private bool m_UpdateTime = true;
 
     [SerializeField]    
-    float m_Lifetime = 60f;
+    private float m_Lifetime = 60f;
 
     [SerializeField]    
-    bool m_AutoDestroy;
+    private bool m_AutoDestroy;
 
     public void SetLifetimeWithAuthority(float lifetime)
     {
@@ -40,14 +40,14 @@ public class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
             SetLifetimeWithAuthority(m_Lifetime);
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         if (!IsLocal)
             return;
 
         if (Data.CurrentLifetime.Value > 0f)
         {
-            if(m_UpdateTime)
+            if (m_UpdateTime)
                 Data.CurrentLifetime.Change(-Time.fixedDeltaTime);
 
             if (Data.CurrentLifetime.Value <= 0f)

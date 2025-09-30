@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using Core.Networking;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-public class NetObjectTransformData : NetObjectStateData
+public sealed class NetObjectTransformData : NetObjectStateData
 {
     public NetObjectTransformData(Func<bool> writePermission) : base(writePermission) { }
 
@@ -19,22 +20,23 @@ public class NetObjectTransformData : NetObjectStateData
 public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData>
 {
     [SerializeField, Range(0f, 1f)]
-    float m_InterpolateMovement = 1f;
+    private float m_InterpolateMovement = 1f;
 
     [SerializeField, Range(0f, 1f)]
-    float m_InterpolateRotation = 1f;
+    private float m_InterpolateRotation = 1f;
 
     [SerializeField]
-    bool m_Prediction = true;
+    private bool m_Prediction = true;
 
+    [FormerlySerializedAs("m_PredictionMultipler")] 
     [SerializeField, Range(0.1f, 2f)]
-    float m_PredictionMultipler = 1f;
+    private float m_PredictionMultiplier = 1f;
 
     [SerializeField]
-    List<Transform> m_NestedTransforms = new ();
+    private List<Transform> m_NestedTransforms = new ();
 
-    Vector3 m_LastFramePosition;
-    Vector3 m_Velocity;
+    private Vector3 m_LastFramePosition;
+    private Vector3 m_Velocity;
 
 #if UNITY_EDITOR
     private void OnValidate()
@@ -61,24 +63,24 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
         }
     }
 
-    void ResetTemporaryData()
+    private void ResetTemporaryData()
     {
         m_LastFramePosition = transform.position;
         m_Velocity = Vector3.zero;
 
-        if(!IsLocal)
-        {
-            transform.position = Data.Position.Value;
-            transform.rotation = Data.Rotation.Value;
-        }
+        if (IsLocal) 
+            return;
+        
+        transform.position = Data.Position.Value;
+        transform.rotation = Data.Rotation.Value;
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         if (!Identity.Initialized)
             return;
 
-        var hasParentLocaly = transform.parent != transform.root && transform.parent != null;
+        var hasParentLocally = transform.parent != transform.root && transform.parent != null;
 
         m_Velocity = transform.position - m_LastFramePosition;
         m_LastFramePosition = transform.position;
@@ -90,18 +92,18 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
 
             Data.Velocity.Set(m_Velocity);
             Data.WorldTime.Set(Identity.World.Time);
-            Data.HasParent.Set(hasParentLocaly);
+            Data.HasParent.Set(hasParentLocally);
         }
         else
         {
-            if(!hasParentLocaly && !Data.HasParent.Value)
+            if (!hasParentLocally && !Data.HasParent.Value)
             {
                 //Position interpolation
                 if (m_InterpolateMovement > Mathf.Epsilon)
                 {
                     var targetPosition = Data.Position.Value;
                     if (m_Prediction)
-                        targetPosition += Data.Velocity.Value.normalized * (Identity.World.Time - Data.WorldTime.Value) * m_PredictionMultipler;
+                        targetPosition += Data.Velocity.Value.normalized * ((Identity.World.Time - Data.WorldTime.Value) * m_PredictionMultiplier);
 
                     transform.position = Vector3.Lerp(
                             transform.position,
