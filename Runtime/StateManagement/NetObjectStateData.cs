@@ -48,7 +48,7 @@ public abstract class NetObjectStateData
                 if (filedInfo.FieldType == typeof(float))
                     AddValueManual(filedInfo.Name, new SerializableFloatObserver(() => (float)filedInfo.GetValue(this), v => filedInfo.SetValue(this, v)));
                 else
-                    Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'");
+                    Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'.");
             }
         }
 
@@ -88,10 +88,10 @@ public abstract class NetObjectStateData
     protected void AddValueManual(string valueName, SerializableValue value)
     {
         if (Initialized)
-            throw new InvalidOperationException("Unable to add new value if data already initialized");
+            throw new InvalidOperationException("Unable to add new value if data already initialized.");
 
         if (m_InternalValueCollection.ContainsKey(valueName))
-            throw new InvalidOperationException($"{GetType().FullName} already contains value with name {valueName}");
+            throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{valueName}'.");
 
         SerializableValue.WritePermissionFieldInfo.SetValue(value, WritePermission);
         m_InternalValueCollection.Add(valueName, value);
@@ -101,15 +101,16 @@ public abstract class NetObjectStateData
     {
         var dataType = typeof(NetObjectStateData);
         if (!dataType.IsAssignableFrom(type))
-            throw new InvalidOperationException($"'{type.FullName} must derive '{dataType.FullName}'");
+            throw new InvalidOperationException($"'{type.FullName} must derive '{dataType.FullName}'.");
 
+        // TODO: we need to avoid having to implement default constructor. https://stackoverflow.com/questions/40700550/set-field-or-property-value-before-constructor
         return Activator.CreateInstance(type, writePermission) as NetObjectStateData;
     }
 
     public static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData
     {
         if (Provide(typeof(T), writePermission) is not T instance)
-            throw new InvalidOperationException($"Unable to produse instance of data of type '{typeof(T).FullName}'");
+            throw new InvalidOperationException($"Unable to produce instance of data of type '{typeof(T).FullName}'.");
 
         return instance;
     }
