@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public interface IAnimatorValueProxy : ISerializable
 {
@@ -89,36 +90,36 @@ public class AnimatorBoolParameterValueProxy : AnimatorParameterValueProxy<bool>
 [DisallowMultipleComponent]
 public sealed class GSAnimatorSync : GSInstanceBehaviour
 {
-    enum AnimatorStateChangeMethod : byte
+    private enum AnimatorStateChangeMethod : byte
     {
         Play, CrossFade,
     }
 
-    enum AnimatorTriggerAction : byte
+    private enum AnimatorTriggerAction : byte
     {
         Set, Reset,
     }
 
     [SerializeField]
-    Animator m_Animator;
+    private Animator m_Animator;
 
     [SerializeField]
-    AnimatorStateChangeMethod m_StateChangeMethod = AnimatorStateChangeMethod.CrossFade;
+    private AnimatorStateChangeMethod m_StateChangeMethod = AnimatorStateChangeMethod.CrossFade;
 
     [SerializeField, Range(0f, 1f)]
-    float m_CrossFadeDuration = 0.1f;
+    private float m_CrossFadeDuration = 0.1f;
 
+    [FormerlySerializedAs("m_RemoteLayerWeightChnageSpeed")] 
     [SerializeField, Range(0f, 10f)]
-    float m_RemoteLayerWeightChnageSpeed = 5f;
+    private float m_RemoteLayerWeightChangeSpeed = 5f;
 
-    readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new ();
-    readonly List<float> m_RemoteLayerWeights = new();
+    private readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new ();
+    private readonly List<float> m_RemoteLayerWeights = new();
 
-    void Awake()
+    private void Awake()
     {
-        for (var i = 0; i < m_Animator.parameters.Length; i++)
+        foreach (var p in m_Animator.parameters)
         {
-            var p = m_Animator.parameters[i];
             switch (p.type)
             {
                 case AnimatorControllerParameterType.Bool:
@@ -161,7 +162,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         AnimatorTrigger(triggerNameHash, AnimatorTriggerAction.Reset);
     }
 
-    void AnimatorTrigger(int hash, AnimatorTriggerAction action)
+    private void AnimatorTrigger(int hash, AnimatorTriggerAction action)
     {
         DoTriggerAction(hash, action);
 
@@ -177,7 +178,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     }
 
     [AutoRegisterRPCHandler]
-    void SyncAnimatorTriggersHandler(byte[] data)
+    private void SyncAnimatorTriggersHandler(byte[] data)
     {
         if (IsLocal)
             return;
@@ -189,7 +190,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         DoTriggerAction(hash, action);
     }
 
-    void DoTriggerAction(int hash, AnimatorTriggerAction action)
+    private void DoTriggerAction(int hash, AnimatorTriggerAction action)
     {
         switch (action)
         {
@@ -202,7 +203,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
         if (!Identity.Initialized)
             return;

@@ -94,8 +94,8 @@ public sealed class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         var hash = 13;
         foreach (var kvp in m_InternalCollection)
         {
-            hash = (hash * 7) + kvp.Key.GetHashCode();
-            hash = (hash * 7) + kvp.Value.GetHashCode();
+            hash = hash * 7 + kvp.Key.GetHashCode();
+            hash = hash * 7 + kvp.Value.GetHashCode();
         }
         return hash;
     }

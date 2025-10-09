@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using UnityEngine;
 
-public static class HLNetReaderExtention
+public static class HLNetReaderExtension
 {
     public static ClientUID ReadConnectionUID(this NetReader reader) =>
         reader.ReadPackedUInt32();

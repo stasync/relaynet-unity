@@ -97,50 +97,66 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     }
 
     /// <summary>
-    /// Object instantiated and initialized, use it instead of 'Awake'. Called by 'GSInstanceIdentity' after object deserialization.
+    /// Object instantiated and initialized, use it instead of 'Awake'. Called by <see cref="NetObjectIdentity"/> after object deserialization.
     /// </summary>
-    public virtual void OnPostInitialize() { }
-    public virtual void OnInitializeViewData() { }
+    public virtual void OnPostInitialize()
+    {
+    }
+
+    public virtual void OnInitializeViewData()
+    {
+    }
 
     /// <summary>
     /// Owner changed
     /// </summary>
-    public virtual void OnOwnerChanged() { }
+    public virtual void OnOwnerChanged()
+    {
+    }
 
     /// <summary>
-    /// Called, when object needs to be updated, according to <see cref="NetObjectIdentity.m_UpdateRate"/>
-    /// Data values can be setted here
+    /// Called, when object needs to be updated, according to <see cref="NetObjectIdentity.m_UpdateRate"/>.
+    /// Data values can be set here.
     /// </summary>
-    public virtual void OnAuthorityUpdate() { }
+    public virtual void OnAuthorityUpdate()
+    {
+    }
 
     /// <summary>
-    /// Other player disconnected
+    /// Other player disconnected.
     /// </summary>
-    /// <param name="peedId"></param>
-    public virtual void OnDisconnected(ClientUID peedId) { }
+    /// <param name="clientUid"></param>
+    public virtual void OnDisconnected(ClientUID clientUid)
+    {
+    }
 
     /// <summary>
-    /// Destroy method called localy
+    /// Destroy method called locally.
     /// </summary>
-    public virtual void OnSoftDestroyRequestedLocally() { }
+    public virtual void OnSoftDestroyRequestedLocally()
+    {
+    }
 
     /// <summary>
     /// Serialize method without dirty check.
     /// </summary>
     [Obsolete("Use data based serialization instead")]
-    protected virtual void SerializeDirtyChecked(NetWriter writer) { }
+    protected virtual void SerializeDirtyChecked(NetWriter writer)
+    {
+    }
 
     /// <summary>
     /// Deserialize method without dirty check.
     /// </summary>
     [Obsolete("Use data based serialization instead")]
-    protected virtual void DeserializeDirtyChecked(NetReader reader, bool firstTime) { }
+    protected virtual void DeserializeDirtyChecked(NetReader reader, bool firstTime)
+    {
+    }
 
     /// <summary>
-    /// Called, when network data was deserialized;
+    /// Called, when network data was deserialized.
     /// </summary>
-    protected virtual void OnDataDeserialized(bool firstTime) { }
-
-    [Obsolete]
-    public string ToJSONProperty() => string.Empty;
+    protected virtual void OnDataDeserialized(bool firstTime)
+    {
+    }
 }

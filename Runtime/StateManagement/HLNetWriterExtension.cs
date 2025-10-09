@@ -2,7 +2,7 @@
 using System;
 using UnityEngine;
 
-public static class HLNetWriterExtention
+public static class HLNetWriterExtension
 {
     public static void WriteConnectionUID(this NetWriter writer, ClientUID connectionUID) =>
        writer.WritePackedUInt32(connectionUID);

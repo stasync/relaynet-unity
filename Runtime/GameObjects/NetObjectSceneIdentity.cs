@@ -24,9 +24,9 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
         TryRegisterOrInitialize();
     }
 
-    public override void OnDisconnected(ClientUID peedId)
+    public override void OnDisconnected(ClientUID clientUid)
     {
-        base.OnDisconnected(peedId);
+        base.OnDisconnected(clientUid);
         if (Network.Realtime.IsMasterPlayer)
             TryRegisterOrInitialize();
     }

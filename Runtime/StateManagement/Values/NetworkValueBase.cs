@@ -4,10 +4,8 @@ using System.Reflection;
 
 public abstract class SerializableValue : ISerializable
 {
-    readonly Func<bool> m_WritePermission = null;
+    private readonly Func<bool> m_WritePermission = null;
     protected bool HasPermission => m_WritePermission();
-
-    protected SerializableValue() { }
 
     public abstract void DeserializeAndApply(NetReader reader, bool firstTime);
     public abstract void ApplyLastDeserialized();
@@ -25,21 +23,21 @@ public abstract class SerializableValue : ISerializable
 
 public abstract class SerializableValueDefinition<TValue, TExposed> : SerializableValue where TValue : TExposed
 {
-    public SerializableValueDefinition(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) : base()
+    protected SerializableValueDefinition(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer)
     {
         m_InternalValue = defaultValue;
         m_Reader = reader;
         m_Writer = writer;
     }
 
-    readonly Func<NetReader, bool, TValue> m_Reader;
-    readonly Action<NetWriter, TValue> m_Writer;
+    private readonly Func<NetReader, bool, TValue> m_Reader;
+    private readonly Action<NetWriter, TValue> m_Writer;
 
     public TExposed Value => InternalValue;
     public void Set(TValue value) => InternalValue = value;
 
-    TValue m_InternalValue;
-    TValue m_LastDeserializedValue;
+    private TValue m_InternalValue;
+    private TValue m_LastDeserializedValue;
 
     protected TValue InternalValue
     {
@@ -47,7 +45,7 @@ public abstract class SerializableValueDefinition<TValue, TExposed> : Serializab
         set
         {
             if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change value {typeof(TValue).FullName}");
+                throw new InvalidOperationException($"No authority to change value '{typeof(TValue).FullName}'.");
 
             m_InternalValue = value;
         }

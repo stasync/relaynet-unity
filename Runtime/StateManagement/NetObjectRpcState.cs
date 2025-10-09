@@ -12,9 +12,8 @@ public interface IReadOnlyNetObjectRPCState
 
 public struct RPCStateUIDAllocator
 {
-    public static uint AllocateUID() => ++UIDCounter;
-
-    static uint UIDCounter = 0;
+    public static uint AllocateUID() => ++m_Counter;
+    private static uint m_Counter;
 }
 
 public readonly struct RPCState
