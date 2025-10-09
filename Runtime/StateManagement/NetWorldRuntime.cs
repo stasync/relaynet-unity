@@ -6,8 +6,8 @@ using Core.Networking;
 
 public sealed class NetWorldRuntime : NetWorld
 {
-    const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
-    const float MIN_UPDATE_INTERVAL = 0.1f; // 10 times per second.
+    private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
+    private const float MIN_UPDATE_INTERVAL = 0.1f; // 10 times per second.
     
     public event Action<NetWorldPlayerSnapshot> PlayerRegistered = delegate { };
     public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;

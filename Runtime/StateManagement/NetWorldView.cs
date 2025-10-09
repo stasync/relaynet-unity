@@ -61,24 +61,24 @@ public class NetWorldView : MonoBehaviour
         Profiler.BeginSample($"{m_World.Name} View.Execute");
 
         // Remove invalid views.
-        foreach (var UID in m_CurrentObjectViews.Keys.ToArray())
+        foreach (var uid in m_CurrentObjectViews.Keys.ToArray())
         {
-            if (!ShouldUpdateViewForState(UID))
-                RemoveView(UID);
+            if (!ShouldUpdateViewForState(uid))
+                RemoveView(uid);
         }
 
         // Create, update, destroy objects.
-        ForEachStates((UID, state) =>
+        ForEachStates((uid, state) =>
         {
             //Skip state;
-            if (!ShouldUpdateViewForState(UID))
+            if (!ShouldUpdateViewForState(uid))
                 return;
 
             // Try get or create new state view.
-            if (!m_CurrentObjectViews.TryGetValue(UID, out var netObjectView))
+            if (!m_CurrentObjectViews.TryGetValue(uid, out var netObjectView))
             {
-                if (m_PendingObjectViews.Remove(UID, out netObjectView))
-                    m_CurrentObjectViews.Add(UID, netObjectView);
+                if (m_PendingObjectViews.Remove(uid, out netObjectView))
+                    m_CurrentObjectViews.Add(uid, netObjectView);
                 else
                 {
                     if (string.IsNullOrWhiteSpace(state.PrefabId))
@@ -94,7 +94,7 @@ public class NetWorldView : MonoBehaviour
                     }
 
                     netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
-                    m_CurrentObjectViews.Add(UID, netObjectView);
+                    m_CurrentObjectViews.Add(uid, netObjectView);
                 }
             }
 
@@ -111,9 +111,9 @@ public class NetWorldView : MonoBehaviour
         Profiler.EndSample();
     }
 
-    private bool ShouldUpdateViewForState(NetObjectUID UID)
+    private bool ShouldUpdateViewForState(NetObjectUID uid)
     {
-        if (!m_World.TryGetObject(UID, out var netObjectState))
+        if (!m_World.TryGetObject(uid, out var netObjectState))
             return false;
 
         if (netObjectState.IsOwnedByLocalPlayer)
@@ -146,16 +146,16 @@ public class NetWorldView : MonoBehaviour
         return netObjectView;
     }
 
-    public void InitializeObjectView(NetObjectIdentity identity, NetObjectUID stateUID)
+    public void InitializeObjectView(NetObjectIdentity identity, NetObjectUID uid)
     {
         if (identity.Initialized)
-            throw new InvalidOperationException($"Identity {identity.gameObject.name}:{stateUID} already initialized.");
+            throw new InvalidOperationException($"Identity {identity.gameObject.name}:{uid} already initialized.");
 
         // Set world as view parent.
         UpdateTransformInView(identity.transform);
 
         // Init.
-        identity.Initialize(m_World, stateUID);
+        identity.Initialize(m_World, uid);
 
         // Push event.
         NewObjectInitialized(identity);
@@ -212,7 +212,7 @@ public class NetWorldView : MonoBehaviour
         UpdateSoundFor(transform);
     }
 
-    void UpdateVisibilityFor(Transform targetTransform)
+    private void UpdateVisibilityFor(Transform targetTransform)
     {
         foreach (var r in targetTransform.GetComponentsInChildren<Renderer>(true))
             r.forceRenderingOff = ForceRenderingOff;
@@ -221,7 +221,7 @@ public class NetWorldView : MonoBehaviour
             l.enabled = !ForceRenderingOff;
     }
 
-    void UpdateSoundFor(Transform targetTransform)
+    private void UpdateSoundFor(Transform targetTransform)
     {
         foreach (var s in targetTransform.GetComponentsInChildren<AudioSource>(true))
             s.mute = ForceMute;

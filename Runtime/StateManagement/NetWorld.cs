@@ -29,9 +29,9 @@ public abstract class NetWorld
     private NetWorldUpdateQueue m_UpdateQueue;
     private Queue<Action> m_ViewInitQueue;
 
-    protected NetWorld(NetWorldID uid, string worldName) :
-        this(uid, worldName, NetWorldID.Invalid)
-    { }
+    protected NetWorld(NetWorldID uid, string worldName) : this(uid, worldName, NetWorldID.Invalid)
+    {
+    }
 
     protected NetWorld(NetWorldID uid, string worldName, NetWorldID sourceId)
     {

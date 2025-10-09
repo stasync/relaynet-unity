@@ -26,7 +26,7 @@ public readonly struct NetWorldPlayersCollectionsSnapshot
 
     public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) => new(collection);
 
-    public readonly int GetSize()
+    public int GetSize()
     {
         var result = 0;
         result += ClientUID.Size; // LocalPlayerUID

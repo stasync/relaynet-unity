@@ -169,8 +169,8 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     public override int GetHashCode()
     {
         var hash = 13;
-        hash = (hash * 7) + LocalPlayerUID.GetHashCode();
-        hash = (hash * 7) + MasterPlayerUID.GetHashCode();
+        hash = hash * 7 + LocalPlayerUID.GetHashCode();
+        hash = hash * 7 + MasterPlayerUID.GetHashCode();
         foreach (var kvp in m_PlayersCollection)
         {
             hash += kvp.Key.GetHashCode();

@@ -92,8 +92,8 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public event Action<ObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
     public event Action Invalidated = delegate { };
 
-    readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
-    readonly Queue<Action<float>> m_UpdateQueue;
+    private readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
+    private readonly Queue<Action<float>> m_UpdateQueue;
 
     public bool IsValid => UID.IsValid;
 

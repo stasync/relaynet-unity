@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
-public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
+public readonly struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
 {
     #region STATIC
     public static NetObjectUID Invalid => 0;
-    static readonly List<NetObjectUID> s_UnAllocatedIds = new();
-    static uint s_IdCounter = 0;
+    static readonly List<NetObjectUID> s_DeallocatedIds = new();
+    private static uint s_IdCounter;
 
     /// <summary>
     /// This id's for network objects that located in scene by default.
@@ -17,57 +16,58 @@ public struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
     public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
     public const uint FIRST_VALID_UID = 1;
 
-    public static void UnAllocateId(NetObjectUID id)
+    public static void DeallocateId(NetObjectUID netObjectUid)
     {
-        if (s_UnAllocatedIds.Contains(id))
-            throw new Exception("Trying to unallocate id, that already unallocated");
+        if (s_DeallocatedIds.Contains(netObjectUid))
+            throw new Exception("Trying to deallocate id, that already unallocated");
 
-        s_UnAllocatedIds.Add(id);
+        s_DeallocatedIds.Add(netObjectUid);
     }
 
     /// <summary>
-    /// Reset when stop session
+    /// Reset when stop session.
     /// </summary>
     public static void Reset()
     {
-        s_UnAllocatedIds.Clear();
+        s_DeallocatedIds.Clear();
         s_IdCounter = 0;
     }
 
-    static NetObjectUID AllocateNewId(ClientUID peerId)
+    private static NetObjectUID AllocateNewId(ClientUID clientUid)
     {
-        //Increment internal id
+        // Increment internal id.
         s_IdCounter++;
-        //Apply id offset
-        return PeerStartId(peerId) + s_IdCounter;
+        // Apply id offset.
+        return ClientStartId(clientUid) + s_IdCounter;
     }
 
-    static NetObjectUID PeerStartId(ClientUID peerId) => FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + peerId * 10000;
+    private static NetObjectUID ClientStartId(ClientUID clientUid) => 
+        FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + clientUid * 10000;
     #endregion
 
-    public NetObjectUID(ClientUID peerId)
+    public NetObjectUID(ClientUID clientUid)
     {
-        //Check unallocated id
-        if (s_UnAllocatedIds.Any())
+        // Check unallocated id.
+        if (s_DeallocatedIds.Count > 0)
         {
-            m_Value = s_UnAllocatedIds.FirstOrDefault();
-            s_UnAllocatedIds.Remove(m_Value);
+            m_Value = s_DeallocatedIds[0];
+            s_DeallocatedIds.Remove(m_Value);
         }
-        //Allocate new id
+        // Allocate new id.
         else
-            m_Value = AllocateNewId(peerId);
+            m_Value = AllocateNewId(clientUid);
     }
 
     /// <summary>
     /// This private constructor in use for casting.
     /// </summary>
-    /// <param name="instanceId"></param>
-    NetObjectUID(uint instanceId)
+    /// <param name="value"></param>
+    private NetObjectUID(uint value)
     {
-        m_Value = instanceId;
+        m_Value = value;
     }
 
-    readonly uint m_Value;
+    private readonly uint m_Value;
     public const int Size = sizeof(uint);
 
     public bool IsValid => m_Value > Invalid.m_Value;

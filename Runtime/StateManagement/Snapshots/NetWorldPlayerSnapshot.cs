@@ -12,7 +12,7 @@ public readonly struct NetWorldPlayerSnapshot
     public readonly NetObjectUID MainTagObjectUID;
     public readonly PropertiesSnapshot Properties;
 
-    public NetWorldPlayerSnapshot(NetWorldPlayer player)
+    private NetWorldPlayerSnapshot(NetWorldPlayer player)
     {
         UID = player.UID;
         Name = player.Name;
@@ -24,7 +24,7 @@ public readonly struct NetWorldPlayerSnapshot
         Properties = PropertiesSnapshot.FromProperties(player.Properties);
     }
 
-    public NetWorldPlayerSnapshot(NetReader reader)
+    private NetWorldPlayerSnapshot(NetReader reader)
     {
         UID = reader.ReadConnectionUID();
         Name = reader.ReadString();

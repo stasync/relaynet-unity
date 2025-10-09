@@ -31,7 +31,7 @@ public sealed class NetWorldEvaluator : NetWorld
     private void PeekNextSnapshot()
     {
         CurrentSnapshotIndex++;
-        if(CurrentSnapshotIndex >= m_HistoryBuffer.Count)
+        if (CurrentSnapshotIndex >= m_HistoryBuffer.Count)
             CurrentSnapshotIndex = m_HistoryBuffer.Count - 1;
 
         UpdateCurrentSnapshotInfo();
