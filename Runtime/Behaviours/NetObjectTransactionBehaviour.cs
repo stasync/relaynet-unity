@@ -21,7 +21,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
     public NetObjectUID LastInteraction => Data.LastInteraction.Value;
     public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
 
-    Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new ();
+    private readonly Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new ();
 
     public override void OnInitializeViewData()
     {
@@ -38,14 +38,14 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
         Data.InteractionsEnabled.Set(value);
     }
 
-    public void ChangeTransactrionRequest(NetObjectUID sender, bool interactionState) =>
-        ChangeTransactrionRequest(sender, interactionState, success => { });
+    public void ChangeTransactionRequest(NetObjectUID sender, bool interactionState) =>
+        ChangeTransactionRequest(sender, interactionState, success => { });
 
-    public void ChangeTransactrionRequest(NetObjectUID sender, bool interactionState, Action<bool> callback)
+    public void ChangeTransactionRequest(NetObjectUID sender, bool interactionState, Action<bool> callback)
     {
-        if (m_InteractionChangeRequestCallbacks.TryGetValue(sender, out var callbackCollection))
+        if (m_InteractionChangeRequestCallbacks.TryGetValue(sender, out _))
         {
-            Debug.LogError($"Callback already registerd for transaction with object '{sender}' on '{gameObject.name}' and will be merged");
+            Debug.LogError($"Callback already registered for transaction with object '{sender}' on '{gameObject.name}' and will be merged");
             callback(false);
             return;
         }
@@ -104,11 +104,11 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
                 Data.LastInteraction.Set(sender);
         }
 
-        OwnerToOthersRPC(ChangeTransactrionResponseRPC, responseWriter.ToArray());
+        OwnerToOthersRPC(ChangeTransactionResponseRPC, responseWriter.ToArray());
     }
 
     [AutoRegisterRPCHandler]
-    protected void ChangeTransactrionResponseRPC(byte[] data)
+    protected void ChangeTransactionResponseRPC(byte[] data)
     {
         var reader = NetReader.Get(data);
         var sender = reader.ReadInstanceId();

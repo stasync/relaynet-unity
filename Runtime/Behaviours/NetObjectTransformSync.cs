@@ -98,7 +98,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
         {
             if (!hasParentLocally && !Data.HasParent.Value)
             {
-                //Position interpolation
+                // Position interpolation.
                 if (m_InterpolateMovement > Mathf.Epsilon)
                 {
                     var targetPosition = Data.Position.Value;
@@ -113,7 +113,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
                 else
                     transform.position = Data.Position.Value;
 
-                //Rotation interpolation
+                // Rotation interpolation.
                 if (m_InterpolateRotation > Mathf.Epsilon)
                 {
                     transform.rotation = Quaternion.Slerp(
