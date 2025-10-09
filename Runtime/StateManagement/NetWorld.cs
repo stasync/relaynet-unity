@@ -23,7 +23,7 @@ public abstract class NetWorld
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
     private Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
 
-    public IExposedyNetWorldPlayersCollection Players => PlayersInternal;
+    public IExposedNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
     private NetWorldUpdateQueue m_UpdateQueue;

@@ -4,17 +4,17 @@
 public abstract class GSInstanceBehaviourBase : MonoBehaviour
 {
     protected ILocator Locator => m_Locator.Instance;
-    readonly ServiceProvider<ILocator> m_Locator = new ();
+    private readonly ServiceProvider<ILocator> m_Locator = new ();
 
     protected GSNetwork Network => m_Network.Instance;
-    readonly ServiceProvider<GSNetwork> m_Network = new ();
+    private readonly ServiceProvider<GSNetwork> m_Network = new ();
 
     public NetObjectIdentity Identity =>
         m_Identity != null ?
         m_Identity :
         m_Identity = GetComponent<NetObjectIdentity>();
 
-    NetObjectIdentity m_Identity;
+    private NetObjectIdentity m_Identity;
 
     protected virtual void OnDestroy() { }
 }
