@@ -30,61 +30,61 @@ public static class HLNetWriterExtension
 
     public static void Write(this NetWriter writer, Vector2 value)
     {
-        writer.Write(value.x);
-        writer.Write(value.y);
+        writer.WriteSingle(value.x);
+        writer.WriteSingle(value.y);
     }
 
     public static void Write(this NetWriter writer, Vector3 value)
     {
-        writer.Write(value.x);
-        writer.Write(value.y);
-        writer.Write(value.z);
+        writer.WriteSingle(value.x);
+        writer.WriteSingle(value.y);
+        writer.WriteSingle(value.z);
     }
 
     public static void Write(this NetWriter writer, Vector4 value)
     {
-        writer.Write(value.x);
-        writer.Write(value.y);
-        writer.Write(value.z);
-        writer.Write(value.w);
+        writer.WriteSingle(value.x);
+        writer.WriteSingle(value.y);
+        writer.WriteSingle(value.z);
+        writer.WriteSingle(value.w);
     }
 
     public static void Write(this NetWriter writer, Color value)
     {
-        writer.Write(value.r);
-        writer.Write(value.g);
-        writer.Write(value.b);
-        writer.Write(value.a);
+        writer.WriteSingle(value.r);
+        writer.WriteSingle(value.g);
+        writer.WriteSingle(value.b);
+        writer.WriteSingle(value.a);
     }
 
     public static void Write(this NetWriter writer, Color32 value)
     {
-        writer.Write(value.r);
-        writer.Write(value.g);
-        writer.Write(value.b);
-        writer.Write(value.a);
+        writer.WriteSingle(value.r);
+        writer.WriteSingle(value.g);
+        writer.WriteSingle(value.b);
+        writer.WriteSingle(value.a);
     }
 
     public static void Write(this NetWriter writer, Quaternion value)
     {
-        writer.Write(value.x);
-        writer.Write(value.y);
-        writer.Write(value.z);
-        writer.Write(value.w);
+        writer.WriteSingle(value.x);
+        writer.WriteSingle(value.y);
+        writer.WriteSingle(value.z);
+        writer.WriteSingle(value.w);
     }
 
     public static void Write(this NetWriter writer, Rect value)
     {
-        writer.Write(value.xMin);
-        writer.Write(value.yMin);
-        writer.Write(value.width);
-        writer.Write(value.height);
+        writer.WriteSingle(value.xMin);
+        writer.WriteSingle(value.yMin);
+        writer.WriteSingle(value.width);
+        writer.WriteSingle(value.height);
     }
 
     public static void Write(this NetWriter writer, Plane value)
     {
         writer.Write(value.normal);
-        writer.Write(value.distance);
+        writer.WriteSingle(value.distance);
     }
 
     public static void Write(this NetWriter writer, Ray value)
@@ -95,21 +95,21 @@ public static class HLNetWriterExtension
 
     public static void Write(this NetWriter writer, Matrix4x4 value)
     {
-        writer.Write(value.m00);
-        writer.Write(value.m01);
-        writer.Write(value.m02);
-        writer.Write(value.m03);
-        writer.Write(value.m10);
-        writer.Write(value.m11);
-        writer.Write(value.m12);
-        writer.Write(value.m13);
-        writer.Write(value.m20);
-        writer.Write(value.m21);
-        writer.Write(value.m22);
-        writer.Write(value.m23);
-        writer.Write(value.m30);
-        writer.Write(value.m31);
-        writer.Write(value.m32);
-        writer.Write(value.m33);
+        writer.WriteSingle(value.m00);
+        writer.WriteSingle(value.m01);
+        writer.WriteSingle(value.m02);
+        writer.WriteSingle(value.m03);
+        writer.WriteSingle(value.m10);
+        writer.WriteSingle(value.m11);
+        writer.WriteSingle(value.m12);
+        writer.WriteSingle(value.m13);
+        writer.WriteSingle(value.m20);
+        writer.WriteSingle(value.m21);
+        writer.WriteSingle(value.m22);
+        writer.WriteSingle(value.m23);
+        writer.WriteSingle(value.m30);
+        writer.WriteSingle(value.m31);
+        writer.WriteSingle(value.m32);
+        writer.WriteSingle(value.m33);
     }
 }
