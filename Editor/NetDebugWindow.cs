@@ -35,18 +35,9 @@ public class NetDebugWindow : EditorWindow
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
                 EditorGUILayout.LabelField($"Master: {m_State.IsOwnedByMasterClient}");
 
-                var dataCollection = m_State.DataCollection;
-
-                var totalSize = 0;
-                foreach (var data in dataCollection)
-                    totalSize += data.GetSerializedSize_Editor();
+                EditorGUILayout.LabelField($"Total size: {m_State.Serialize().Length}");
 
                 if (m_State.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
-                    totalSize += viewData.UnstructuredData.Length;
-                
-                EditorGUILayout.LabelField($"Total size: {totalSize} {m_State.Serialize().Length}");
-
-                if (viewData != null)
                     EditorGUILayout.LabelField($"View data size: {viewData.UnstructuredData.Length}");
 
                 var temporalBuffer = m_State.RPCBuffer.TemporalBuffer;
@@ -68,6 +59,7 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel--;
                 }
 
+                var dataCollection = m_State.DataCollection;
                 EditorGUILayout.LabelField($"Data: {dataCollection.Count}", EditorStyles.boldLabel);
                 {
                     EditorGUI.indentLevel++;
