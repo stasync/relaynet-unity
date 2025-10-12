@@ -176,7 +176,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         OwnerToOthersRPC(
             SyncAnimatorTriggersHandler,
             data: m_Writer.ToArray(), 
-            DeliveryIntent.Unreliable, 
+            DeliveryMethod.Unreliable, 
             invokeLocally: false);
     }
 

@@ -77,12 +77,12 @@ public readonly struct RPCWithoutAuthorityState
 public readonly struct RPCWithoutAuthorityRequest
 {
     public readonly RPCWithoutAuthorityState State;
-    public readonly DeliveryIntent DeliveryIntent;
+    public readonly DeliveryMethod DeliveryMethod;
 
-    public RPCWithoutAuthorityRequest(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload, DeliveryIntent deliveryIntent)
+    public RPCWithoutAuthorityRequest(NetObjectUID objectUID, NoAuthorityRPCType type, int hashCode, byte[] payload, DeliveryMethod deliveryMethod)
     {
         State = new RPCWithoutAuthorityState(objectUID, type, hashCode, payload);
-        DeliveryIntent = deliveryIntent;
+        DeliveryMethod = deliveryMethod;
     }
 }
 
@@ -307,14 +307,14 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public bool Equals(NetObjectState other) => 
         UID.Equals(other == null ? NetObjectUID.Invalid : other.UID);
 
-    public void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryIntent deliveryIntent) =>
-        ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryIntent)));
+    public void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
+        ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryMethod)));
         
-    public void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryIntent deliveryIntent) =>
+    public void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod) =>
         ScheduleOnUpdate(() =>
         {
             m_RPCBuffer.AddOrUpdate(hashCode, data, persistent, bufferChangeMethod);
-            if (deliveryIntent == DeliveryIntent.Reliable)
+            if (deliveryMethod == DeliveryMethod.Reliable)
                 ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
         });
 

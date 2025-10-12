@@ -32,7 +32,7 @@ public sealed class NetWorldRuntime : NetWorld
     public int OutgoingMessageQueueCount => m_OutgoingMessageQueue.Count;
     private Queue<Action> m_OutgoingMessageQueue;
 
-    private readonly Action<uint, DeliveryIntent, byte[]> m_Sender;
+    private readonly Action<uint, DeliveryMethod, byte[]> m_Sender;
     private float m_LastUpdateTime;
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
@@ -40,7 +40,7 @@ public sealed class NetWorldRuntime : NetWorld
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
 
-    public NetWorldRuntime(Action<uint, DeliveryIntent, byte[]> sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
+    public NetWorldRuntime(Action<uint, DeliveryMethod, byte[]> sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
     {
         m_Sender = sender ?? throw new ArgumentNullException(nameof(sender));
 
@@ -135,7 +135,7 @@ public sealed class NetWorldRuntime : NetWorld
 
             m_Writer.SeekZero();
             m_Writer.WriteSingle(Time);
-            ScheduleSend(opCode: MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, data: m_Writer.ToArray());
+            ScheduleSend(opCode: MessageCodes.WorldCommunication, DeliveryMethod.Unreliable, data: m_Writer.ToArray());
         }
 
         void TryReceiveWorldData()
@@ -205,7 +205,7 @@ public sealed class NetWorldRuntime : NetWorld
                 if (localPlayer == null)
                     Debug.LogError("Unable to send local player: doesn't exists");
                 else
-                    ScheduleSend(MessageCodes.PlayerStateUpdate, DeliveryIntent.Reliable, localPlayer.Serialize());
+                    ScheduleSend(MessageCodes.PlayerStateUpdate, DeliveryMethod.Reliable, localPlayer.Serialize());
             }
         }
 
@@ -316,7 +316,7 @@ public sealed class NetWorldRuntime : NetWorld
             ForEachStates((_, state) => 
             {
                 foreach (var r in state.RPCWithoutAuthorityRequests)
-                    ScheduleSend(MessageCodes.RPC, r.DeliveryIntent, r.State.ToData());
+                    ScheduleSend(MessageCodes.RPC, r.DeliveryMethod, r.State.ToData());
             });
         }
 
@@ -345,9 +345,9 @@ public sealed class NetWorldRuntime : NetWorld
             // Update and send local objects.
             ForEachLocalStates((uid, state) =>
             {
-                var deliveryIntent = DeliveryIntent.Unreliable;
+                var deliveryIntent = DeliveryMethod.Unreliable;
                 if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
-                    deliveryIntent = DeliveryIntent.Reliable;
+                    deliveryIntent = DeliveryMethod.Reliable;
 
                 state.PrepareForSerialization();
                 ScheduleSend(MessageCodes.ObjectStateUpdate, deliveryIntent, state.Serialize());
@@ -377,8 +377,8 @@ public sealed class NetWorldRuntime : NetWorld
     }
     #endregion
 
-    private void ScheduleSend(uint opCode, DeliveryIntent intent, byte[] data) =>
-        m_OutgoingMessageQueue.Enqueue(() => m_Sender(opCode, intent, data));
+    private void ScheduleSend(uint opCode, DeliveryMethod method, byte[] data) =>
+        m_OutgoingMessageQueue.Enqueue(() => m_Sender(opCode, method, data));
 
     protected override void RemoveObject(NetObjectUID stateUID)
     {

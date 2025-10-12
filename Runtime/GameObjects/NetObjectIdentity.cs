@@ -227,22 +227,22 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocally = true) =>
-        OwnerToOthersRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent, invokeLocally);
+    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
+        OwnerToOthersRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryMethod, invokeLocally);
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    private void OwnerToOthersRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocally = true)
+    private void OwnerToOthersRPC(string rpcCode, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
         var hashCode = RPCUtils.NameToHash(rpcCode);
-        OwnerToOthersRPC(hashCode, data, persistent: false, RPCBufferChangeMethod.Add, deliveryIntent, invokeLocally);
+        OwnerToOthersRPC(hashCode, data, persistent: false, RPCBufferChangeMethod.Add, deliveryMethod, invokeLocally);
     }
 
-    private void OwnerToOthersRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocally = true)
+    private void OwnerToOthersRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
     {
         if (!IsLocal)
             throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
@@ -252,7 +252,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
             InvokeRpcHandler(hashCode, data);
 
         // Add to sending buffer.
-        State.ScheduleRPC(hashCode, data, persistent, bufferChangeMethod, deliveryIntent);
+        State.ScheduleRPC(hashCode, data, persistent, bufferChangeMethod, deliveryMethod);
     }
 
     /// <summary>
@@ -267,27 +267,27 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// Only works via RELIABLE delivery.
     /// </summary>
     private void OwnerToOthersRPCBuffered(string rpcCode, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocally = true) =>
-         OwnerToOthersRPC(RPCUtils.NameToHash(rpcCode), data, persistent: true, bufferChangeMethod, DeliveryIntent.Reliable, invokeLocally);
+         OwnerToOthersRPC(RPCUtils.NameToHash(rpcCode), data, persistent: true, bufferChangeMethod, DeliveryMethod.Reliable, invokeLocally);
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
-        ToOwnerRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryIntent);
+    public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable) =>
+        ToOwnerRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, deliveryMethod);
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    private void ToOwnerRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
+    private void ToOwnerRPC(string rpcCode, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
         // If we have authority on this object, don't need to send this kind of RPC.
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
         else
-            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToOwner, hashCode, data, deliveryIntent);
+            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToOwner, hashCode, data, deliveryMethod);
     }
 
     /// <summary>
@@ -295,34 +295,34 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// It does not matter whether MASTER client is a owner of this object or not.
     /// IF we are master client, just invokes locally without sending data.
     /// </summary>
-    public void ToMasterRPC(string rpcCode, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
+    public void ToMasterRPC(string rpcCode, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
         // If we have authority on this object, don't need to send this kind of RPC.
         if (IsOwnedByMasterClient)
             InvokeRpcHandler(hashCode, data);
         else
-            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToMaster, hashCode, data, deliveryIntent);
+            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToMaster, hashCode, data, deliveryMethod);
     }
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
-        ToAllRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, invokeLocally, deliveryIntent);
+    public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable) =>
+        ToAllRPC(RPCUtils.ActionToString(rpcHandlerMethod), data, invokeLocally, deliveryMethod);
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    private void ToAllRPC(string rpcCode, byte[] data, bool invokeLocally, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable)
+    private void ToAllRPC(string rpcCode, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
         var hashCode = RPCUtils.NameToHash(rpcCode);
         if (invokeLocally)
             InvokeRpcHandler(hashCode, data);
 
-        State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToAll, hashCode, data, deliveryIntent);
+        State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToAll, hashCode, data, deliveryMethod);
     }
 
     /// <summary>

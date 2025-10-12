@@ -26,8 +26,8 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NOT AUTHORITY on this object.
     /// </summary>
-    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable, bool invokeLocally = true) =>
-        Identity.OwnerToOthersRPC(rpcHandlerMethod, data, deliveryIntent, invokeLocally);
+    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
+        Identity.OwnerToOthersRPC(rpcHandlerMethod, data, deliveryMethod, invokeLocally);
 
     /// <summary>
     /// Same as OwnerToOthersRPC, but buffered.
@@ -39,14 +39,14 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
-        Identity.ToOwnerRPC(rpcHandlerMethod, data, deliveryIntent);
+    public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable) =>
+        Identity.ToOwnerRPC(rpcHandlerMethod, data, deliveryMethod);
 
     /// <summary>
     /// Send RPC to all clients with this object;
     /// </summary>
-    public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocaly, DeliveryIntent deliveryIntent = DeliveryIntent.Reliable) =>
-        Identity.ToAllRPC(rpcHandlerMethod, data, invokeLocaly, deliveryIntent);
+    public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocaly, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable) =>
+        Identity.ToAllRPC(rpcHandlerMethod, data, invokeLocaly, deliveryMethod);
 
     /// <summary>
     /// Serialization called by GSInstanceIdentity.
