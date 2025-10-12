@@ -30,13 +30,24 @@ public class NetDebugWindow : EditorWindow
             EditorGUI.indentLevel++;
             {
                 EditorGUILayout.LabelField($"UID: {m_State.UID} Scene: {m_State.IsSceneObject} Prefab: {m_State.PrefabId}", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField($"Chanage type: {m_State.StateChangeType}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Change type: {m_State.StateChangeType}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Owner: {m_State.Owner}");
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
                 EditorGUILayout.LabelField($"Master: {m_State.IsOwnedByMasterClient}");
 
+                var dataCollection = m_State.DataCollection;
+
+                var totalSize = 0;
+                foreach (var data in dataCollection)
+                    totalSize += data.GetSerializedSize_Editor();
+
                 if (m_State.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
-                    EditorGUILayout.LabelField($"Data size: {viewData.UnstructuredData.Length}");
+                    totalSize += viewData.UnstructuredData.Length;
+                
+                EditorGUILayout.LabelField($"Total size: {totalSize} {m_State.Serialize().Length}");
+
+                if (viewData != null)
+                    EditorGUILayout.LabelField($"View data size: {viewData.UnstructuredData.Length}");
 
                 var temporalBuffer = m_State.RPCBuffer.TemporalBuffer;
                 var persistentBuffer = m_State.RPCBuffer.PersistentBuffer;
@@ -57,7 +68,6 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel--;
                 }
 
-                var dataCollection = m_State.DataCollection;
                 EditorGUILayout.LabelField($"Data: {dataCollection.Count}", EditorStyles.boldLabel);
                 {
                     EditorGUI.indentLevel++;

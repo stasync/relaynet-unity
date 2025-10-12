@@ -125,7 +125,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     private readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests;
 
-    private NetWriter m_Writer;
+    private readonly NetWriter m_Writer = new();
 
     public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvider)
     {
@@ -284,8 +284,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public byte[] Serialize()
     {
-        m_Writer ??= new NetWriter();
-
         m_Writer.SeekZero();
         ToSnapshot().Serialize(m_Writer);
 
