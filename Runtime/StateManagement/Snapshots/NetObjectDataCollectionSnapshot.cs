@@ -3,13 +3,12 @@ using System.Collections.Generic;
 
 public readonly struct NetObjectDataCollectionSnapshot
 {
-    private static NetWriter s_Writer;
+    private static readonly NetWriter s_Writer = new ();
 
     public readonly byte[] Data;
 
     public NetObjectDataCollectionSnapshot(IReadOnlyCollection<NetObjectStateData> dataCollection)
     {
-        s_Writer ??= new NetWriter();
         s_Writer.SeekZero();
 
         s_Writer.WriteInt32(dataCollection.Count);

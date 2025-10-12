@@ -77,7 +77,7 @@ public sealed class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         {
             var typeHashCode = m_Reader.ReadInt32();
             if (!NetObjectStateData.TryGetType((byte)typeHashCode, out var type))
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Unknown type with hash code '{typeHashCode}'.");
 
             if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
             {
