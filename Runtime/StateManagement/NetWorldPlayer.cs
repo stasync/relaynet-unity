@@ -111,7 +111,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
 
     private readonly Func<ClientUID> m_LocalPlayer;
     private readonly Func<ClientUID> m_MasterPlayer;
-    private readonly NetWriter m_Writer;
+    private readonly NetWriter m_Writer = new ();
 
     public NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayer, Func<ClientUID> masterPlayer)
     {
