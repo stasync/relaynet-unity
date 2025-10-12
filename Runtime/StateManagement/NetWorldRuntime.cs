@@ -32,7 +32,7 @@ public sealed class NetWorldRuntime : NetWorld
     public int OutgoingMessageQueueCount => m_OutgoingMessageQueue.Count;
     private Queue<Action> m_OutgoingMessageQueue;
 
-    private readonly Action<uint, DeliveryMethod, byte[]> m_Sender;
+    private readonly Action<uint, byte[], DeliveryMethod> m_Sender;
     private float m_LastUpdateTime;
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
@@ -40,7 +40,7 @@ public sealed class NetWorldRuntime : NetWorld
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
 
-    public NetWorldRuntime(Action<uint, DeliveryMethod, byte[]> sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
+    public NetWorldRuntime(Action<uint, byte[], DeliveryMethod> sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
     {
         m_Sender = sender ?? throw new ArgumentNullException(nameof(sender));
 
@@ -378,7 +378,7 @@ public sealed class NetWorldRuntime : NetWorld
     #endregion
 
     private void ScheduleSend(uint opCode, DeliveryMethod method, byte[] data) =>
-        m_OutgoingMessageQueue.Enqueue(() => m_Sender(opCode, method, data));
+        m_OutgoingMessageQueue.Enqueue(() => m_Sender(opCode, data, method));
 
     protected override void RemoveObject(NetObjectUID stateUID)
     {
