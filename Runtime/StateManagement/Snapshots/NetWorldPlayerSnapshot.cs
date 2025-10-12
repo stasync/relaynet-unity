@@ -42,10 +42,10 @@ public readonly struct NetWorldPlayerSnapshot
     public void Serialize(NetWriter writer)
     {
         writer.WriteConnectionUID(UID);
-        writer.Write(Name);
-        writer.Write(IsInGameScene);
-        writer.Write((int)Platform);
-        writer.Write(RTTMs);
+        writer.WriteString(Name);
+        writer.WriteBool(IsInGameScene);
+        writer.WriteInt32((int)Platform);
+        writer.WriteSingle(RTTMs);
         writer.WriteCollection(TagObjectUIDs, (v, w) => w.WriteInstanceId(v));
         writer.WriteInstanceId(MainTagObjectUID);
         writer.WriteBytesAndSize(Properties.Data);
@@ -60,8 +60,7 @@ public readonly struct NetWorldPlayerSnapshot
         result += sizeof(GSDevice.Platform); // Platform
         result += sizeof(int); // RTT
 
-        foreach (var o in TagObjectUIDs)
-            result += NetObjectUID.Size;
+        result += NetObjectUID.Size * TagObjectUIDs.Count;
 
         result += NetObjectUID.Size; // Main tag object
         result += Properties.GetSize();

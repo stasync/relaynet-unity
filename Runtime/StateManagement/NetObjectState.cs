@@ -59,13 +59,13 @@ public readonly struct RPCWithoutAuthorityState
     private void Serialize(NetWriter writer)
     {
         writer.WriteInstanceId(ObjectUID);
-        writer.Write((byte)Type);
+        writer.WriteByte((byte)Type);
         RPCState.ToSnapshot().Serialize(writer);
     }
 
     public byte[] ToData()
     {
-        var writer = NetWriter.Get();
+        var writer = new NetWriter();
         Serialize(writer);
         return writer.ToArray();
     }

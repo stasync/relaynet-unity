@@ -36,6 +36,9 @@ public sealed class NetWorldRuntime : NetWorld
     private float m_LastUpdateTime;
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
+    
+    private readonly NetWriter m_Writer = new();
+    private readonly NetReader m_Reader = new();
 
     public NetWorldRuntime(Action<uint, DeliveryIntent, byte[]> sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
     {
@@ -130,17 +133,17 @@ public sealed class NetWorldRuntime : NetWorld
             if (!PlayersInternal.LocalPlayerIsMaster)
                 return;
 
-            var writer = NetWriter.Get();
-            writer.Write(Time);
-            ScheduleSend(MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, writer.ToArray());
+            m_Writer.SeekZero();
+            m_Writer.WriteSingle(Time);
+            ScheduleSend(opCode: MessageCodes.WorldCommunication, DeliveryIntent.Unreliable, data: m_Writer.ToArray());
         }
 
         void TryReceiveWorldData()
         {
             while (m_RemoteWorldDataUpdateRequests.Count > 0)
             {
-                var reader = NetReader.Get(m_RemoteWorldDataUpdateRequests.Dequeue());
-                Time = reader.ReadSingle();
+                m_Reader.Replace(buffer: m_RemoteWorldDataUpdateRequests.Dequeue());
+                Time = m_Reader.ReadSingle();
             }
         }
 

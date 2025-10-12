@@ -25,9 +25,9 @@ public struct NetObjectStateSnapshot
     {
         writer.WriteConnectionUID(OwnerUID);
         writer.WriteInstanceId(ObjectUID);
-        writer.Write(PrefabId);
-        writer.Write(IsSceneObject);
-        writer.Write((byte)StateChangeType);
+        writer.WriteString(PrefabId);
+        writer.WriteBool(IsSceneObject);
+        writer.WriteByte((byte)StateChangeType);
         RPCState.Serialize(writer);
         DataState.Serialize(writer);
     }

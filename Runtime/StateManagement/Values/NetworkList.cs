@@ -112,23 +112,23 @@ public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>
 public class SerializableFloatList : SerializableList<float>
 {
     public SerializableFloatList() : this(new List<float>()) { }
-    public SerializableFloatList(List<float> defaultValue) : base(defaultValue, (r, f) => r.ReadSingle(), (w, v) => w.Write(v)) { }
+    public SerializableFloatList(List<float> defaultValue) : base(defaultValue, (r, f) => r.ReadSingle(), (w, v) => w.WriteSingle(v)) { }
 }
 
 public class SerializableIntList: SerializableList<int>
 {
     public SerializableIntList() : this(new List<int>()) { }
-    public SerializableIntList(List<int> defaultValue) : base(defaultValue, (r, f) => r.ReadInt32(), (w, v) => w.Write(v)) { }
+    public SerializableIntList(List<int> defaultValue) : base(defaultValue, (r, f) => r.ReadInt32(), (w, v) => w.WriteInt32(v)) { }
 }
 
 public class SerializableBoolList : SerializableList<bool>
 {
     public SerializableBoolList() : this(new List<bool>()) { }
-    public SerializableBoolList(List<bool> defaultValue) : base(defaultValue, (r, f) => r.ReadBoolean(), (w, v) => w.Write(v)) { }
+    public SerializableBoolList(List<bool> defaultValue) : base(defaultValue, (r, f) => r.ReadBoolean(), (w, v) => w.WriteBool(v)) { }
 }
 
 public class SerializableStringList : SerializableList<string>
 {
     public SerializableStringList() : this(new List<string>()) { }
-    public SerializableStringList(List<string> defaultValue) : base(defaultValue, (r, f) => r.ReadString(), (w, v) => w.Write(v)) { }
+    public SerializableStringList(List<string> defaultValue) : base(defaultValue, (r, f) => r.ReadString(), (w, v) => w.WriteString(v)) { }
 }

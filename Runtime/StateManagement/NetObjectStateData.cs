@@ -116,13 +116,13 @@ public abstract class NetObjectStateData
     }
     
     private static int GetTypeIndex(Type dataType) =>
-        Core.Main.IOC.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
+        Core.Utils.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 
     public static int GetTypeIndex<TData>() where TData : NetObjectStateData =>
         GetTypeIndex(typeof(TData));
 
     public static bool TryGetType(byte index, out Type type) =>
-        Core.Main.IOC.Types.Lookup<NetObjectPickupData>.WithIndex(index, out type);
+        Core.Utils.Types.Lookup<NetObjectPickupData>.WithIndex(index, out type);
 
 #if UNITY_EDITOR
     public virtual IEnumerable<string> GetValuesInfo_Editor()
@@ -133,7 +133,7 @@ public abstract class NetObjectStateData
 
     public int GetSerializedSize_Editor()
     {
-        var writer = NetWriter.Get();
+        var writer = new NetWriter();
         Serialize(writer);
         return writer.Position;
     }

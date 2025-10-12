@@ -56,7 +56,7 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
         SerializeDirtyChecked(writer);
 
 #if NETWORK_DEBUG
-        writer.Write(GetType().FullName!.GetHashCode());
+        writer.WriteInt32(GetType().FullName!.GetHashCode());
 #endif
     }
 

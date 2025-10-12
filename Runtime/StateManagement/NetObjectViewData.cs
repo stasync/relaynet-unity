@@ -15,7 +15,7 @@ public sealed class NetObjectViewStateData : NetObjectStateData
     {
         base.Serialize(writer);
 
-        writer.Write(Initialized);
+        writer.WriteBool(Initialized);
         writer.WriteBytesAndSize(UnstructuredData);
     }
 

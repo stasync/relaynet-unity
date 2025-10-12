@@ -44,7 +44,7 @@ public class AnimatorFloatParameterValueProxy : AnimatorParameterValueProxy<floa
     }
 
     public override void Serialize(NetWriter writer) =>
-        writer.Write(Animator.GetFloat(Parameter.nameHash));
+        writer.WriteSingle(Animator.GetFloat(Parameter.nameHash));
 
     protected override float DeserializeValue(NetReader reader, bool firstTime) =>
         reader.ReadSingle();
@@ -57,7 +57,7 @@ public class AnimatorIntParameterValueProxy : AnimatorParameterValueProxy<int>
     { }
 
     public override void Serialize(NetWriter writer) =>
-        writer.Write(Animator.GetInteger(Parameter.nameHash));
+        writer.WriteInt32(Animator.GetInteger(Parameter.nameHash));
 
     protected override int DeserializeValue(NetReader reader, bool firstTime) =>
         reader.ReadInt32();
@@ -75,7 +75,7 @@ public class AnimatorBoolParameterValueProxy : AnimatorParameterValueProxy<bool>
     { }
 
     public override void Serialize(NetWriter writer) =>
-        writer.Write(Animator.GetBool(Parameter.nameHash));
+        writer.WriteBool(Animator.GetBool(Parameter.nameHash));
 
     protected override bool DeserializeValue(NetReader reader, bool firstTime) =>
         reader.ReadBoolean();
@@ -115,7 +115,10 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     private readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new ();
     private readonly List<float> m_RemoteLayerWeights = new();
-
+    
+    private readonly NetWriter m_Writer = new();
+    private readonly NetReader m_Reader = new();
+    
     private void Awake()
     {
         foreach (var p in m_Animator.parameters)
@@ -166,15 +169,15 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
     {
         DoTriggerAction(hash, action);
 
-        var writer = NetWriter.Get();
-        writer.Write(hash);
-        writer.Write((byte)action);
+        m_Writer.SeekZero();
+        m_Writer.WriteInt32(hash);
+        m_Writer.WriteByte((byte)action);
 
         OwnerToOthersRPC(
             SyncAnimatorTriggersHandler,
-            writer.ToArray(), 
+            data: m_Writer.ToArray(), 
             DeliveryIntent.Unreliable, 
-            false);
+            invokeLocally: false);
     }
 
     [AutoRegisterRPCHandler]
@@ -183,9 +186,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         if (IsLocal)
             return;
 
-        var r = NetReader.Get(data);
-        var hash = r.ReadInt32();
-        var action = (AnimatorTriggerAction)r.ReadByte();
+        m_Reader.Replace(data);
+        var hash = m_Reader.ReadInt32();
+        var action = (AnimatorTriggerAction)m_Reader.ReadByte();
 
         DoTriggerAction(hash, action);
     }
@@ -243,9 +246,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
             var layerWeight = m_Animator.GetLayerWeight(layerIndex);
 
-            writer.Write(layerWeight);
-            writer.Write(stateToSync.fullPathHash);
-            writer.Write(stateToSync.normalizedTime);
+            writer.WriteSingle(layerWeight);
+            writer.WriteInt32(stateToSync.fullPathHash);
+            writer.WriteSingle(stateToSync.normalizedTime);
         }
     }
 

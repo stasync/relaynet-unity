@@ -111,6 +111,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
 
     private readonly Func<ClientUID> m_LocalPlayer;
     private readonly Func<ClientUID> m_MasterPlayer;
+    private readonly NetWriter m_Writer;
 
     public NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayer, Func<ClientUID> masterPlayer)
     {
@@ -146,10 +147,11 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
 
     public byte[] Serialize()
     {
-        var writer = NetWriter.Get();
-        ToSnapshot().Serialize(writer);
-        return writer.ToArray();
+        m_Writer.SeekZero();
+        ToSnapshot().Serialize(m_Writer);
+        return m_Writer.ToArray();
     }
 
-    public override int GetHashCode() => UID.GetHashCode();
+    public override int GetHashCode() => 
+        UID.GetHashCode();
 }

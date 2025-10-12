@@ -22,7 +22,10 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
     public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
 
     private readonly Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new ();
-
+    
+    private readonly NetWriter m_Writer = new();
+    private readonly NetReader m_Reader = new();
+    
     public override void OnInitializeViewData()
     {
         base.OnInitializeViewData();
@@ -73,18 +76,18 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
 
         m_InteractionChangeRequestCallbacks.Add(sender, callback);
 
-        var writer = NetWriter.Get();
-        writer.WriteInstanceId(sender);
-        writer.Write(interactionState);
-        ToOwnerRPC(ChangeTransactionStateRequestRPC, writer.ToArray());
+        m_Writer.SeekZero();
+        m_Writer.WriteInstanceId(sender);
+        m_Writer.WriteBool(interactionState);
+        ToOwnerRPC(ChangeTransactionStateRequestRPC, data: m_Writer.ToArray());
     }
 
     [AutoRegisterRPCHandler]
     protected void ChangeTransactionStateRequestRPC(byte[] data)
     {
-        var reader = NetReader.Get(data);
-        var sender = reader.ReadInstanceId();
-        var state = reader.ReadBoolean();
+        m_Reader.Replace(data);
+        var sender = m_Reader.ReadInstanceId();
+        var state = m_Reader.ReadBoolean();
 
         var currentInteractionObject = Data.CurrentInteraction.Value;
 
@@ -93,9 +96,9 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
             currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value :
             currentInteractionObject.Equals(sender);
 
-        var responseWriter = NetWriter.Get();
-        responseWriter.WriteInstanceId(sender);
-        responseWriter.Write(canChangeInteractionState);
+        m_Writer.SeekZero();
+        m_Writer.WriteInstanceId(sender);
+        m_Writer.WriteBool(canChangeInteractionState);
 
         if (canChangeInteractionState)
         {
@@ -104,15 +107,15 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
                 Data.LastInteraction.Set(sender);
         }
 
-        OwnerToOthersRPC(ChangeTransactionResponseRPC, responseWriter.ToArray());
+        OwnerToOthersRPC(ChangeTransactionResponseRPC, data: m_Writer.ToArray());
     }
 
     [AutoRegisterRPCHandler]
     protected void ChangeTransactionResponseRPC(byte[] data)
     {
-        var reader = NetReader.Get(data);
-        var sender = reader.ReadInstanceId();
-        var success = reader.ReadBoolean();
+        m_Reader.Replace(data);
+        var sender = m_Reader.ReadInstanceId();
+        var success = m_Reader.ReadBoolean();
 
         if (m_InteractionChangeRequestCallbacks.TryGetValue(sender, out var callback))
             callback(success);

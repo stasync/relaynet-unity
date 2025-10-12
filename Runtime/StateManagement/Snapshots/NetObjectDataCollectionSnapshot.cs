@@ -12,10 +12,10 @@ public readonly struct NetObjectDataCollectionSnapshot
         s_Writer ??= new NetWriter();
         s_Writer.SeekZero();
 
-        s_Writer.Write(dataCollection.Count);
+        s_Writer.WriteInt32(dataCollection.Count);
         foreach (var data in dataCollection)
         {
-            s_Writer.Write(data.TypeHashCode);
+            s_Writer.WriteInt32(data.TypeHashCode);
             data.Serialize(s_Writer);
         }
 

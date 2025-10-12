@@ -13,7 +13,7 @@ public abstract class SerializableNumeric<TValue> : SerializableValue<TValue> wh
 
 public class SerializableFloat : SerializableNumeric<float>
 {
-    public SerializableFloat(float defaultValue = default) : base(defaultValue, (r, f) => r.ReadSingle(), (w, v) => w.Write(v)) { }
+    public SerializableFloat(float defaultValue = default) : base(defaultValue, (r, f) => r.ReadSingle(), (w, v) => w.WriteSingle(v)) { }
 
     public override void Change(float value) => Set(InternalValue + value);
     public override void ChangeClamped(float value, float min, float max) => Set(Mathf.Clamp(InternalValue + value, min, max));
@@ -21,7 +21,7 @@ public class SerializableFloat : SerializableNumeric<float>
 
 public class SerializableInt : SerializableNumeric<int>
 {
-    public SerializableInt(int defaultValue = default) : base(defaultValue, (r, f) => r.ReadInt32(), (w, v) => w.Write(v)) { }
+    public SerializableInt(int defaultValue = default) : base(defaultValue, (r, f) => r.ReadInt32(), (w, v) => w.WriteInt32(v)) { }
 
     public override void Change(int value) => Set(InternalValue + value);
     public override void ChangeClamped(int value, int min, int max) => Set(Mathf.Clamp(InternalValue + value, min, max));
@@ -29,18 +29,18 @@ public class SerializableInt : SerializableNumeric<int>
 
 public class SerializableBool : SerializableValue<bool>
 {
-    public SerializableBool(bool defaultValue = default) : base(defaultValue, (r, f) => r.ReadBoolean(), (w, v) => w.Write(v)) { }
+    public SerializableBool(bool defaultValue = default) : base(defaultValue, (r, f) => r.ReadBoolean(), (w, v) => w.WriteBool(v)) { }
 }
 
 public class SerializableByte : SerializableValue<byte>
 {
-    public SerializableByte(byte defaultValue = default) : base(defaultValue, (r, f) => r.ReadByte(), (w, v) => w.Write(v)) { }
+    public SerializableByte(byte defaultValue = default) : base(defaultValue, (r, f) => r.ReadByte(), (w, v) => w.WriteByte(v)) { }
 }
 
 public class SerializableString : SerializableValue<string>
 {
     public SerializableString() : this(string.Empty) { }
-    public SerializableString(string defaultValue) : base(defaultValue, (r, f) => r.ReadString(), (w, v) => w.Write(v)) { }
+    public SerializableString(string defaultValue) : base(defaultValue, (r, f) => r.ReadString(), (w, v) => w.WriteString(v)) { }
 }
 
 public class SerializableUInt : SerializableNumeric<uint>
