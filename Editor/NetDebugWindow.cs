@@ -299,7 +299,7 @@ public class NetDebugWindow : EditorWindow
         window.Show();
         window.m_ShowMainWorldHistoryInfo = true;
     }
-
+    
     private void Update()
     {
         Repaint();
@@ -359,8 +359,8 @@ public class NetDebugWindow : EditorWindow
             {
                 var currentReplica = mainWorld.Replicate();
                 m_CurrentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
-                var unityService = new ServiceProvider<IUnityService>();
-                unityService.Instance.UnityFixedUpdate += OnFixedUpdate;
+                var unityServiceProvider = new Core.Main.IOC.IOCProvider<IUnityService>();
+                unityServiceProvider.Instance.UnityFixedUpdate += OnFixedUpdate;
                 
                 void OnFixedUpdate()
                 {
@@ -368,7 +368,7 @@ public class NetDebugWindow : EditorWindow
                     if (!currentReplica.IsValid)
                     {
                         m_CurrentWorldReplicaDrawer = null;
-                        unityService.Instance.UnityFixedUpdate -= OnFixedUpdate;
+                        unityServiceProvider.Instance.UnityFixedUpdate -= OnFixedUpdate;
                     }
                 }
             }
