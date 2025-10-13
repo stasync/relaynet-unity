@@ -6,7 +6,7 @@ using UnityEngine;
 public class NetDebugWindow : EditorWindow
 {
     #region Drawers
-    class ObjectDrawer
+    private class ObjectDrawer
     {
         readonly NetObjectState m_State;
         readonly NetWorld m_World;
@@ -51,7 +51,7 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel--;
                 }
 
-                EditorGUILayout.LabelField($"RPC: Pesistent: {persistentBuffer.Count}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"RPC: Persistent: {persistentBuffer.Count}", EditorStyles.boldLabel);
                 {
                     EditorGUI.indentLevel++;
                     foreach (var rpc in persistentBuffer)
@@ -84,11 +84,11 @@ public class NetDebugWindow : EditorWindow
             EditorGUI.indentLevel--;
         }
 
-        void DrawRPC(RPCState rpc) =>
+        private void DrawRPC(RPCState rpc) =>
             EditorGUILayout.LabelField($"{rpc.UID} Hash: {rpc.Hash} '{RPCUtils.TryFindStringByHashSlow(rpc.Hash)}' Payload size: {rpc.Payload.Length}");
     }
 
-    abstract class WorldDrawer<T> where T : NetWorld
+    private abstract class WorldDrawer<T> where T : NetWorld
     {
         protected readonly T m_World;
 
@@ -177,18 +177,20 @@ public class NetDebugWindow : EditorWindow
                 }
             }
         }
-        void DrawPlayer(string prefix, NetWorldPlayer p) => EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");
+        
+        private void DrawPlayer(string prefix, NetWorldPlayer p) => 
+            EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");
     }
 
-    class BaseWorldDrawer : WorldDrawer<NetWorld>
+    private class BaseWorldDrawer : WorldDrawer<NetWorld>
     {
         public BaseWorldDrawer(NetWorld world) : base(world) { }
     }
 
-    class MainWorldDrawer : WorldDrawer<NetWorldRuntime>
+    private class MainWorldDrawer : WorldDrawer<NetWorldRuntime>
     {
-        bool m_DrawCommon;
-        bool m_DrawPendingViews;
+        private bool m_DrawCommon;
+        private bool m_DrawPendingViews;
 
         public MainWorldDrawer(NetWorldRuntime runtimeWorld) : base(runtimeWorld) { }
 
@@ -202,7 +204,7 @@ public class NetDebugWindow : EditorWindow
             {
                 EditorGUI.indentLevel++;
                 {
-                    //Register requests
+                    // Register requests.
                     {
                         EditorGUILayout.Space();
                         var registerRequests = m_World.ObjectsRegisterRequests;
@@ -211,7 +213,7 @@ public class NetDebugWindow : EditorWindow
                             EditorGUILayout.LabelField(obj.Value.ToString());
                     }
 
-                    //Remote udpate requests
+                    // Remote update requests.
                     {
                         EditorGUILayout.Space();
                         var remoteRequests = m_World.RemoteObjectUpdateRequests;
@@ -220,7 +222,7 @@ public class NetDebugWindow : EditorWindow
                             EditorGUILayout.LabelField(obj.Value.ToString());
                     }
 
-                    //Outgoing messages
+                    // Outgoing messages.
                     {
                         EditorGUILayout.Space();
                         EditorGUILayout.LabelField($"Outgoing world message count: {m_World.OutgoingMessageQueueCount}", EditorStyles.boldLabel);
@@ -229,7 +231,7 @@ public class NetDebugWindow : EditorWindow
                 EditorGUI.indentLevel--;
             }
 
-            if(m_World.View != null)
+            if (m_World.View != null)
             {
                 EditorGUILayout.Space();
                 m_DrawPendingViews = EditorGUILayout.Foldout(m_DrawPendingViews, $"Pending Views: {m_World.View.PendingObjectViews.Count}") && m_World.View.PendingObjectViews.Count > 0;
@@ -246,7 +248,7 @@ public class NetDebugWindow : EditorWindow
         }
     }
 
-    class ReplicaWorldDrawer : WorldDrawer<NetWorldEvaluator>
+    private class ReplicaWorldDrawer : WorldDrawer<NetWorldEvaluator>
     {
         public ReplicaWorldDrawer(NetWorldEvaluator replicaWorld) : base(replicaWorld) { }
 
@@ -279,14 +281,14 @@ public class NetDebugWindow : EditorWindow
     }
     #endregion
 
-    bool m_ShowNetworkStatistics;
-    bool m_ShowMainWorldHistoryInfo;
-    bool m_ShowMainWorldBuffer;
-    ServiceProvider<GSNetwork> m_NetworkProvider;
-    Vector2 m_GlobalScrollPosition;
+    private bool m_ShowNetworkStatistics;
+    private bool m_ShowMainWorldHistoryInfo;
+    private bool m_ShowMainWorldBuffer;
+    private ServiceProvider<GSNetwork> m_NetworkProvider;
+    private Vector2 m_GlobalScrollPosition;
 
-    MainWorldDrawer m_MainWorldDrawer;
-    ReplicaWorldDrawer m_CurrentWorldReplicaDrawer;
+    private MainWorldDrawer m_MainWorldDrawer;
+    private ReplicaWorldDrawer m_CurrentWorldReplicaDrawer;
 
     [MenuItem("System/Network/Debug Window")]
 #pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
@@ -298,12 +300,12 @@ public class NetDebugWindow : EditorWindow
         window.m_ShowMainWorldHistoryInfo = true;
     }
 
-    void Update()
+    private void Update()
     {
         Repaint();
     }
 
-    void OnGUI()
+    private void OnGUI()
     {
         if (!EditorApplication.isPlaying)
         {
@@ -311,9 +313,7 @@ public class NetDebugWindow : EditorWindow
             return;
         }
 
-        if (m_NetworkProvider == null)
-            m_NetworkProvider = new ServiceProvider<GSNetwork>();
-
+        m_NetworkProvider ??= new ServiceProvider<GSNetwork>();
         if (m_NetworkProvider.Instance == null)
             return;
 
@@ -324,7 +324,7 @@ public class NetDebugWindow : EditorWindow
         EditorGUILayout.Space();
 
         m_ShowNetworkStatistics = EditorGUILayout.Foldout(m_ShowNetworkStatistics, "Network Statistics");
-        if(m_ShowNetworkStatistics)
+        if (m_ShowNetworkStatistics)
         {
             var statistics = realtime.CurrentClientStatistics;
             if (statistics != null)
@@ -347,7 +347,7 @@ public class NetDebugWindow : EditorWindow
         EditorGUILayout.Space();
         m_GlobalScrollPosition = EditorGUILayout.BeginScrollView(m_GlobalScrollPosition);
 
-        // Historyy.
+        // History.
         m_ShowMainWorldHistoryInfo = EditorGUILayout.Foldout(m_ShowMainWorldHistoryInfo, "Main World History Info");
         if (m_ShowMainWorldHistoryInfo)
         {
@@ -361,7 +361,7 @@ public class NetDebugWindow : EditorWindow
                 m_CurrentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
                 var unityService = new ServiceProvider<IUnityService>();
                 unityService.Instance.UnityFixedUpdate += OnFixedUpdate;
-
+                
                 void OnFixedUpdate()
                 {
                     currentReplica.Update(Time.fixedDeltaTime);
@@ -378,8 +378,8 @@ public class NetDebugWindow : EditorWindow
             if (m_ShowMainWorldBuffer)
             {
                 EditorGUI.indentLevel++;
-                foreach (var s in mainWorld.HistoryBuffer)
-                    EditorGUILayout.LabelField($"t:{s.Time.ToString("f2")} dt:{s.DeltaTime.ToString("f2")} size: {s.GetSize()} obj: {s.Objects.Count} pl: {s.Players.PlayersCollection.Count}", EditorStyles.boldLabel);
+                foreach (var netWorldSnapshot in mainWorld.HistoryBuffer)
+                    EditorGUILayout.LabelField($"t:{netWorldSnapshot.Time:f2} dt:{netWorldSnapshot.DeltaTime:f2} size: {netWorldSnapshot.GetSize()} obj: {netWorldSnapshot.Objects.Count} pl: {netWorldSnapshot.Players.PlayersCollection.Count}", EditorStyles.boldLabel);
                 EditorGUI.indentLevel--;
             }
         }
@@ -387,7 +387,7 @@ public class NetDebugWindow : EditorWindow
         EditorGUILayout.Space();
         m_MainWorldDrawer.Draw();
 
-        if(m_CurrentWorldReplicaDrawer != null)
+        if (m_CurrentWorldReplicaDrawer != null)
         {
             if(m_CurrentWorldReplicaDrawer.IsValid)
             {
