@@ -45,10 +45,10 @@ public abstract class NetObjectStateData
             // TODO: The following is EXPERIMENTAL.
             if (Attribute.IsDefined(filedInfo, typeof(SyncValue)))
             {
-                if (filedInfo.FieldType == typeof(float))
+                /*if (filedInfo.FieldType == typeof(float))
                     AddValueManual(filedInfo.Name, new SerializableFloatObserver(() => (float)filedInfo.GetValue(this), v => filedInfo.SetValue(this, v)));
                 else
-                    Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'.");
+                    Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'.");*/
             }
         }
 

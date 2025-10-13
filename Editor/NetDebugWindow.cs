@@ -307,7 +307,7 @@ public class NetDebugWindow : EditorWindow
     {
         if (!EditorApplication.isPlaying)
         {
-            EditorGUILayout.HelpBox("Avaliable only in play mode", MessageType.Error);
+            EditorGUILayout.HelpBox("Available only in play mode", MessageType.Error);
             return;
         }
 
@@ -330,7 +330,7 @@ public class NetDebugWindow : EditorWindow
             if (statistics != null)
                 EditorGUILayout.HelpBox(statistics.ToString(), MessageType.None);
             else
-                EditorGUILayout.HelpBox("Statistics is not avaliable", MessageType.Error);
+                EditorGUILayout.HelpBox("Statistics is not available", MessageType.Error);
         }
         EditorGUILayout.Space();
 
@@ -347,7 +347,7 @@ public class NetDebugWindow : EditorWindow
         EditorGUILayout.Space();
         m_GlobalScrollPosition = EditorGUILayout.BeginScrollView(m_GlobalScrollPosition);
 
-        //Hitory
+        // Historyy.
         m_ShowMainWorldHistoryInfo = EditorGUILayout.Foldout(m_ShowMainWorldHistoryInfo, "Main World History Info");
         if (m_ShowMainWorldHistoryInfo)
         {
