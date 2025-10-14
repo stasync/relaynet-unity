@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+﻿using Core.DependencyInjection.Events;
+using UnityEngine;
 
 [RequireComponent(typeof(NetObjectIdentity))]
 public abstract class GSInstanceBehaviourBase : MonoBehaviour
 {
-    protected ILocator Locator => m_Locator.Instance;
-    private readonly Core.Main.IOC.IOCProvider<ILocator> m_Locator = new ();
+    protected IBroadcaster Broadcaster => m_Broadcaster.Instance;
+    private readonly Core.Main.IOC.IOCProvider<IBroadcaster> m_Broadcaster = new ();
 
     protected GSNetwork Network => m_Network.Instance;
     private readonly Core.Main.IOC.IOCProvider<GSNetwork> m_Network = new ();
