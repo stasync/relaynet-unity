@@ -378,7 +378,18 @@ public sealed class NetWorldRuntime : NetWorld
     #endregion
 
     private void ScheduleSend(uint opCode, DeliveryMethod method, byte[] data) =>
-        m_OutgoingMessageQueue.Enqueue(() => m_Sender(opCode, data, method));
+        m_OutgoingMessageQueue.Enqueue(() =>
+        {
+            try
+            {
+                m_Sender(opCode, data, method);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                Debug.LogError($"{data.Length} + {opCode}");
+            }
+        });
 
     protected override void RemoveObject(NetObjectUID stateUID)
     {
