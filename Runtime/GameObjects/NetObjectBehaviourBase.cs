@@ -7,7 +7,7 @@ public abstract class GSInstanceBehaviourBase : MonoBehaviour
     private readonly ServiceProvider<ILocator> m_Locator = new ();
 
     protected GSNetwork Network => m_Network.Instance;
-    private readonly ServiceProvider<GSNetwork> m_Network = new ();
+    private readonly Core.Main.IOC.IOCProvider<GSNetwork> m_Network = new ();
 
     public NetObjectIdentity Identity =>
         m_Identity != null ?

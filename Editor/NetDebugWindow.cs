@@ -284,7 +284,7 @@ public class NetDebugWindow : EditorWindow
     private bool m_ShowNetworkStatistics;
     private bool m_ShowMainWorldHistoryInfo;
     private bool m_ShowMainWorldBuffer;
-    private ServiceProvider<GSNetwork> m_NetworkProvider;
+    private Core.Main.IOC.IOCProvider<GSNetwork> m_NetworkProvider;
     private Vector2 m_GlobalScrollPosition;
 
     private MainWorldDrawer m_MainWorldDrawer;
@@ -313,7 +313,7 @@ public class NetDebugWindow : EditorWindow
             return;
         }
 
-        m_NetworkProvider ??= new ServiceProvider<GSNetwork>();
+        m_NetworkProvider ??= new Core.Main.IOC.IOCProvider<GSNetwork>();
         if (m_NetworkProvider.Instance == null)
             return;
 
