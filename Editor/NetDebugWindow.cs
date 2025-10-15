@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Core.DependencyInjection.Services;
 using UnityEditor;
 using UnityEngine;
 
@@ -284,7 +285,7 @@ public class NetDebugWindow : EditorWindow
     private bool m_ShowNetworkStatistics;
     private bool m_ShowMainWorldHistoryInfo;
     private bool m_ShowMainWorldBuffer;
-    private Core.Main.IOC.IOCProvider<GSNetwork> m_NetworkProvider;
+    private ServiceProvider<GSNetwork> m_NetworkProvider;
     private Vector2 m_GlobalScrollPosition;
 
     private MainWorldDrawer m_MainWorldDrawer;
@@ -313,7 +314,7 @@ public class NetDebugWindow : EditorWindow
             return;
         }
 
-        m_NetworkProvider ??= new Core.Main.IOC.IOCProvider<GSNetwork>();
+        m_NetworkProvider ??= new ServiceProvider<GSNetwork>();
         if (m_NetworkProvider.Instance == null)
             return;
 
@@ -359,7 +360,7 @@ public class NetDebugWindow : EditorWindow
             {
                 var currentReplica = mainWorld.Replicate();
                 m_CurrentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
-                var unityServiceProvider = new Core.Main.IOC.IOCProvider<IUnityService>();
+                var unityServiceProvider = new ServiceProvider<IUnityService>();
                 unityServiceProvider.Instance.UnityFixedUpdate += OnFixedUpdate;
                 
                 void OnFixedUpdate()
