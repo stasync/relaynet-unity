@@ -82,10 +82,16 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         {
             var members = Find.MethodsWithAttribute<AutoRegisterRPCHandler>(o, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
 
-            foreach (var m in members)
+            foreach (var methodInfo in members.Keys)
             {
-                var action = Create.DelegateWithSingleParameter<byte[]>(o, m.Key);
-                if (action != null)
+                var parameters = methodInfo.GetParameters();
+                if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
+                {
+                    Debug.LogError($"Invalid method info parameters for method {methodInfo.Name}");
+                    continue;
+                }
+
+                if (methodInfo.CreateDelegate(typeof(Action<byte[]>), o) is Action<byte[]> action)
                     RegisterRPCHandler(action);
             }
         }
