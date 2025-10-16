@@ -78,10 +78,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         OnOwnerChanged();
 
         // Register RPC handlers.
-        foreach (var o in m_Observables)
+        foreach (var behaviour in m_Observables)
         {
-            var members = Find.MethodsWithAttribute<AutoRegisterRPCHandler>(o, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
-
+            var members = Find.MethodsWithAttribute<AutoRegisterRPCHandler>(behaviour, flags: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
             foreach (var methodInfo in members.Keys)
             {
                 var parameters = methodInfo.GetParameters();
@@ -91,20 +90,20 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
                     continue;
                 }
 
-                if (methodInfo.CreateDelegate(typeof(Action<byte[]>), o) is Action<byte[]> action)
+                if (methodInfo.CreateDelegate(typeof(Action<byte[]>), behaviour) is Action<byte[]> action)
                     RegisterRPCHandler(action);
             }
         }
 
         // Tell components about object was initialized.
-        foreach (var o in m_Observables)
+        foreach (var behaviour in m_Observables)
         {
             if (!viewStateData.ViewInitialized)
-                o.OnInitializeViewData();
+                behaviour.OnInitializeViewData();
         }
 
-        foreach (var o in m_Observables)
-            o.OnPostInitialize();
+        foreach (var behaviour in m_Observables)
+            behaviour.OnPostInitialize();
 
         // Invokes buffered rpc, must be called after deserialization done.
         // Only for remote objects.
