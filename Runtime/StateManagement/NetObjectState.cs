@@ -99,12 +99,18 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     #region SYNCRONIZED STATE
     public NetObjectUID UID { get; private set; }
+    
     public string PrefabId { get; private set; }
+    
     public bool IsSceneObject { get; private set; }
+    
     public ClientUID OwnerUID { get; private set; }
+    
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
+    
     public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
     private readonly NetObjectRPCState m_RPCBuffer;
+    
     public IReadOnlyNetObjectDataCollection DataCollection => m_DataCollection;
     private readonly NetObjectDataCollection m_DataCollection;
     #endregion
@@ -112,10 +118,14 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public override int GetHashCode() =>
         HashCode.Combine(UID, PrefabId, IsSceneObject, OwnerUID, StateChangeType, m_RPCBuffer, m_DataCollection);
 
-    public bool IsOwnedByLocalPlayer => Owner != null && Owner.IsLocal;
-    public bool IsOwnedByMasterClient => Owner != null && Owner.IsMaster;
+    public bool IsOwnedByLocalPlayer => 
+        Owner != null && Owner.IsLocal;
+    
+    public bool IsOwnedByMasterClient => 
+        Owner != null && Owner.IsMaster;
 
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
+    
     IReadOnlyNetWorldPlayer IReadOnlyNetObjectState.Owner => Owner;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
@@ -146,9 +156,10 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvider) :
         this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) => 
-        ChangeObjectRemotely(snapshot);
+            ChangeObjectRemotely(snapshot);
 
-    public void InvalidateOwner() => OwnerUID = ClientUID.Invalid;
+    public void InvalidateOwner() => 
+        OwnerUID = ClientUID.Invalid;
 
     public void Invalidate()
     {
@@ -170,7 +181,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         if (wasValid)
             Invalidated();
 
-        Invalidated = null;
         LocalUpdateRequest = null;
         Invalidated = null;
     }

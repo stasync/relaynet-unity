@@ -1,10 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class GSSceneObjectIdentity : GSInstanceBehaviour
+public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.BehaviourData>
 {
+    public sealed class BehaviourData : NetObjectStateData
+    {
+        public BehaviourData(Func<bool> writePermission) : base(writePermission)
+        {
+        }
+    }
+    
     [SerializeField, Range(NetObjectUID.FIRST_VALID_UID, NetObjectUID.FIRST_VALID_UID + NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE)]
     private int m_SceneObjectId;
     public NetObjectUID SceneObjectId => (uint)m_SceneObjectId;
@@ -42,7 +50,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
 
 #if UNITY_EDITOR
     [UnityEditor.MenuItem("System/Network/Validate scene objects")]
-    static void ValidateSceneObjects()
+    private static void ValidateSceneObjects()
     {
         if (UnityEditor.EditorApplication.isPlaying)
         {
@@ -70,9 +78,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
     }
 
     [UnityEditor.MenuItem("System/Network/Fix scene objects")]
-#pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
     private static void FixSceneObjects()
-#pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены
     {
         if (UnityEditor.EditorApplication.isPlaying)
         {
@@ -80,19 +86,19 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour
             return;
         }
 
-        var sceneObjects = FindObjectsOfType<GSSceneObjectIdentity>();
-
-        foreach (var obj in sceneObjects)
+        var sceneObjects = FindObjectsByType<GSSceneObjectIdentity>(FindObjectsSortMode.None);
+        foreach (var sceneObjectIdentity in sceneObjects)
         {
-            UnityEditor.Undo.RecordObject(obj, "Peek scene instance id");
-            while (ObjectWithSameId(sceneObjects, obj) != null)
-                obj.m_SceneObjectId = RandomExtended.Default.Int(NetObjectUID.FIRST_VALID_UID, NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE);
+            UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
+            while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
+                sceneObjectIdentity.m_SceneObjectId = 
+                    RandomExtended.Default.Int(NetObjectUID.FIRST_VALID_UID, NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE);
         }
         ValidateSceneObjects();
     }
 
     private static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> c, GSSceneObjectIdentity obj) => c
-                .Where(o => o != obj)
-                .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
+        .Where(o => o != obj)
+        .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
 #endif
 }

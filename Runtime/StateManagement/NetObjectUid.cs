@@ -4,8 +4,7 @@ using System.Collections.Generic;
 public readonly struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
 {
     #region STATIC
-    public static NetObjectUID Invalid => 0;
-    static readonly List<NetObjectUID> s_DeallocatedIds = new();
+    public static readonly NetObjectUID Invalid =0;
     private static uint s_IdCounter;
 
     /// <summary>
@@ -16,23 +15,12 @@ public readonly struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetO
     public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
     public const uint FIRST_VALID_UID = 1;
 
-    public static void DeallocateId(NetObjectUID netObjectUid)
-    {
-        if (s_DeallocatedIds.Contains(netObjectUid))
-            throw new Exception("Trying to deallocate id, that already unallocated");
-
-        s_DeallocatedIds.Add(netObjectUid);
-    }
-
     /// <summary>
     /// Reset when stop session.
     /// </summary>
-    public static void Reset()
-    {
-        s_DeallocatedIds.Clear();
+    internal static void Reset() =>
         s_IdCounter = 0;
-    }
-
+    
     private static NetObjectUID AllocateNewId(ClientUID clientUid)
     {
         // Increment internal id.
@@ -45,28 +33,16 @@ public readonly struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetO
         FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + clientUid * 10000;
     #endregion
 
-    public NetObjectUID(ClientUID clientUid)
-    {
-        // Check unallocated id.
-        if (s_DeallocatedIds.Count > 0)
-        {
-            m_Value = s_DeallocatedIds[0];
-            s_DeallocatedIds.Remove(m_Value);
-        }
-        // Allocate new id.
-        else
-            m_Value = AllocateNewId(clientUid);
-    }
+    public NetObjectUID(ClientUID clientUid) =>
+        m_Value = AllocateNewId(clientUid);
 
     /// <summary>
     /// This private constructor in use for casting.
     /// </summary>
     /// <param name="value"></param>
-    private NetObjectUID(uint value)
-    {
+    private NetObjectUID(uint value) =>
         m_Value = value;
-    }
-
+    
     private readonly uint m_Value;
     public const int Size = sizeof(uint);
 

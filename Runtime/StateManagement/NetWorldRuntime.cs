@@ -159,8 +159,8 @@ public sealed class NetWorldRuntime : NetWorld
 
             // Remove all.
             {
-                foreach (var p in m_PlayerUnregisterQueue)
-                    PlayersInternal.UnregisterImmediate(p);
+                foreach (var clientUid in m_PlayerUnregisterQueue)
+                    PlayersInternal.UnregisterImmediate(clientUid);
 
                 m_PlayerUnregisterQueue.Clear();
             }
@@ -172,11 +172,11 @@ public sealed class NetWorldRuntime : NetWorld
                     var snapshot = m_RemotePlayersUpdateRequests[uid];
                     var player = Players.Find(uid);
 
-                    //Player not exists.
+                    // Player not exists.
                     if (player == null)
                     {
-                        //Create new;
-                        player = PlayersInternal.RegisterImmediate(snapshot.UID, false);
+                        // Create new.
+                        player = PlayersInternal.RegisterImmediate(snapshot.UID, isLocal: false);
 
                         //Notify player registered.
                         PlayerRegistered(player.ToSnapshot());
@@ -212,7 +212,7 @@ public sealed class NetWorldRuntime : NetWorld
         // Update states based on removed player, if player leave, remove object.
         void UpdateStateBasedOnRemovedPlayers()
         {
-            ForEachStates((stateUID, state) =>
+            ForEachStates(processor: (stateUID, state) =>
             {
                 foreach (var playerUID in PlayersInternal.RemovedPlayers.ToArray())
                 {

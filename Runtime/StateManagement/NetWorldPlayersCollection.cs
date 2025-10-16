@@ -83,13 +83,13 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
             processor(UID, m_PlayersCollection[UID]);
     }
 
-    public void OnBeforeUpdateWorldState(float worldDelta)
+    internal void OnBeforeUpdateWorldState(float worldDelta)
     {
         m_AddedPlayers.Clear();
         m_RemovedPlayers.Clear();
     }
 
-    public NetWorldPlayer RegisterImmediate(ClientUID uid, bool isLocal)
+    internal NetWorldPlayer RegisterImmediate(ClientUID uid, bool isLocal)
     {
         if (m_PlayersCollection.ContainsKey(uid))
             throw new InvalidOperationException();
@@ -105,7 +105,7 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
         return player;
     }
 
-    public void UnregisterImmediate(ClientUID uid)
+    internal void UnregisterImmediate(ClientUID uid)
     {
         if (LocalPlayerUID == uid)
             LocalPlayerUID = ClientUID.Invalid;
@@ -119,7 +119,7 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     private void UpdateMasterUID() => 
         MasterPlayerUID = AllUIDs.Any() ? AllUIDs.Min() : ClientUID.Invalid;
 
-    public void Clear()
+    internal void Clear()
     {
         m_Validator = null;
 
@@ -139,7 +139,7 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     public NetWorldPlayersCollectionsSnapshot ToSnapshot() => 
         NetWorldPlayersCollectionsSnapshot.FormCollection(collection: this);
     
-    public void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
+    internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
     {
         // Use invalid id for local and master player while snapshots if only used for world replication.
         // LocalPlayerUID = snapshot.LocalPlayerUID;

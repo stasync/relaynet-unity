@@ -47,7 +47,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    public void Initialize(NetWorld world, NetObjectUID stateUID)
+    internal void Initialize(NetWorld world, NetObjectUID stateUID)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -120,13 +120,13 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
     /// </summary>
-    public void OnDisconnected(ClientUID peerId)
+    internal void OnDisconnected(ClientUID peerId)
     {
-        foreach (var b in m_Observables)
-            b.OnDisconnected(peerId);
+        foreach (var behaviour in m_Observables)
+            behaviour.OnDisconnected(peerId);
     }
 
-    private void OnLocalUpdateRequest(ObjectStateChangeRequestType stateChengeType)
+    private void OnLocalUpdateRequest(ObjectStateChangeRequestType stateChangeType)
     {
         if (!Initialized)
             throw new InvalidOperationException($"Object {gameObject.name} not initialized");
@@ -137,7 +137,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         foreach (var b in m_Observables)
             b.OnAuthorityUpdate();
 
-        State.ChangeObjectViewDataLocally(Serialize(), stateChengeType == ObjectStateChangeRequestType.InitializationUpdate);
+        State.ChangeObjectViewDataLocally(Serialize(), stateChangeType == ObjectStateChangeRequestType.InitializationUpdate);
     }
 
     /// <summary>
@@ -186,7 +186,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// Deserialize whole object.
     /// </summary>
-    public void Deserialize(byte[] data, bool force, bool firstTime)
+    internal void Deserialize(byte[] data, bool force, bool firstTime)
     {
         if (IsLocal)
         {
@@ -401,8 +401,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         if (!IsLocal)
             throw new Exception("Trying to destroy remote object, this is not allowed");
 
-        foreach (var b in m_Observables)
-            b.OnSoftDestroyRequestedLocally();
+        foreach (var behaviour in m_Observables)
+            behaviour.OnSoftDestroyRequestedLocally();
 
         State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }
