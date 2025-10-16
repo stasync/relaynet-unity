@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Core;
 using Core.DependencyInjection.Services;
 using UnityEditor;
 using UnityEngine;
@@ -98,7 +99,7 @@ public class NetDebugWindow : EditorWindow
         bool m_Draw;
         Dictionary<NetObjectUID, ObjectDrawer> m_ObjectViews;
 
-        public WorldDrawer(T world)
+        protected WorldDrawer(T world)
         {
             m_World = world;
             m_Draw = true;
@@ -116,8 +117,7 @@ public class NetDebugWindow : EditorWindow
             if (!m_Draw)
                 return;
 
-            if (m_ObjectViews == null)
-                m_ObjectViews = new Dictionary<NetObjectUID, ObjectDrawer>();
+            m_ObjectViews ??= new Dictionary<NetObjectUID, ObjectDrawer>();
 
             EditorGUI.indentLevel++;
             OnDrawWorld();
@@ -126,8 +126,8 @@ public class NetDebugWindow : EditorWindow
 
         protected virtual void OnDrawWorld()
         {
-            EditorGUILayout.LabelField($"Time: {m_World.Time.ToString("f1")}", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField($"Local Time: {m_World.LocalTime.ToString("f1")}", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Time: {m_World.Time:f1}", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Local Time: {m_World.LocalTime:f1}", EditorStyles.boldLabel);
             EditorGUILayout.LabelField($"Hash: {m_World.GetHashCode()}", EditorStyles.boldLabel);
             EditorGUILayout.Space();
 
@@ -210,8 +210,8 @@ public class NetDebugWindow : EditorWindow
                         EditorGUILayout.Space();
                         var registerRequests = m_World.ObjectsRegisterRequests;
                         EditorGUILayout.LabelField($"Objects register request: {registerRequests.Count}", EditorStyles.boldLabel);
-                        foreach (var obj in registerRequests)
-                            EditorGUILayout.LabelField(obj.Value.ToString());
+                        foreach (var netObjectState in registerRequests.Values)
+                            EditorGUILayout.LabelField(netObjectState.ToString());
                     }
 
                     // Remote update requests.
@@ -219,8 +219,8 @@ public class NetDebugWindow : EditorWindow
                         EditorGUILayout.Space();
                         var remoteRequests = m_World.RemoteObjectUpdateRequests;
                         EditorGUILayout.LabelField($"Objects remote request: {remoteRequests.Count}", EditorStyles.boldLabel);
-                        foreach (var obj in remoteRequests)
-                            EditorGUILayout.LabelField(obj.Value.ToString());
+                        foreach (var objectStateSnapshot in remoteRequests.Values)
+                            EditorGUILayout.LabelField(objectStateSnapshot.ToString());
                     }
 
                     // Outgoing messages.
@@ -241,7 +241,7 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel++;
                     {
                         foreach (var kvp in m_World.View.PendingObjectViews)
-                            EditorGUILayout.ObjectField($"UID: {kvp.Key}", kvp.Value, typeof(NetObjectIdentity), true);
+                            EditorGUILayout.ObjectField($"UID: {kvp.Key}", kvp.Value, typeof(NetObjectIdentity), allowSceneObjects: true);
                     }
                     EditorGUI.indentLevel--;
                 }
@@ -360,8 +360,7 @@ public class NetDebugWindow : EditorWindow
             {
                 var currentReplica = mainWorld.Replicate();
                 m_CurrentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
-                var unityServiceProvider = new ServiceProvider<IUnityService>();
-                unityServiceProvider.Instance.UnityFixedUpdate += OnFixedUpdate;
+                Bootstrap.UnityFixedUpdate += OnFixedUpdate;
                 
                 void OnFixedUpdate()
                 {
@@ -369,7 +368,7 @@ public class NetDebugWindow : EditorWindow
                     if (!currentReplica.IsValid)
                     {
                         m_CurrentWorldReplicaDrawer = null;
-                        unityServiceProvider.Instance.UnityFixedUpdate -= OnFixedUpdate;
+                        Bootstrap.UnityFixedUpdate -= OnFixedUpdate;
                     }
                 }
             }
