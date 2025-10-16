@@ -82,20 +82,20 @@ public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
 
         if (executePersistent)
         {
-            foreach (var d in m_PersistentBuffer)
+            foreach (var rpcState in m_PersistentBuffer)
             {
-                handler(d.Hash, d.Payload);
-                m_ReceiveCollisions.Add(d.UID);
+                handler(rpcState.Hash, rpcState.Payload);
+                m_ReceiveCollisions.Add(rpcState.UID);
             }
         }
 
-        foreach (var d in m_TemporalBuffer)
+        foreach (var rpcState in m_TemporalBuffer)
         {
-            if (m_ReceiveCollisions.Contains(d.UID))
+            if (m_ReceiveCollisions.Contains(rpcState.UID))
                 continue;
 
-            handler(d.Hash, d.Payload);
-            m_ReceiveCollisions.Add(d.UID);
+            handler(rpcState.Hash, rpcState.Payload);
+            m_ReceiveCollisions.Add(rpcState.UID);
         }
     }
 

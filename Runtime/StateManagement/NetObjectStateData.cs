@@ -30,6 +30,7 @@ public abstract class NetObjectStateData
         TypeHashCode = GetTypeIndex(GetType());
 
         // Collect serializable values.
+        // TODO: FIELD CACHE.
         foreach (var filedInfo in GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
         {
             if (typeof(SerializableValue).IsAssignableFrom(filedInfo.FieldType))
