@@ -70,7 +70,7 @@ public class NetWorldView : MonoBehaviour
         // Create, update, destroy objects.
         ForEachStates((uid, state) =>
         {
-            //Skip state;
+            // Skip state.
             if (!ShouldUpdateViewForState(uid))
                 return;
 
@@ -178,7 +178,8 @@ public class NetWorldView : MonoBehaviour
         UpdateSoundFor(targetTransform);
     }
 
-    public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => m_PendingObjectViews.Add(uid, identity);
+    public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => 
+        m_PendingObjectViews.Add(uid, identity);
 
     private void ForEachStates(Action<NetObjectUID, NetObjectState> processor) => 
         m_World.ForEachStates(processor);

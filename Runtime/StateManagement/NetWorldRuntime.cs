@@ -515,11 +515,11 @@ public sealed class NetWorldRuntime : NetWorld
         {
             if (TryGetExistedOrPendingState(newStateUID, out var state))
             {
-                //Initialize immateriality on master client.
+                // Initialize immateriality on master client.
                 if (PlayersInternal.LocalPlayerIsMaster)
                     View.InitializeObjectView(sceneIdentity.Identity, state.UID);
 
-                //Add view to be used in the future.
+                // Add view to be used in the future.
                 View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
             }
             else
