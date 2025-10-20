@@ -151,7 +151,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     }
 
     /// <summary>
-    /// Ownership managment, anyone can change scene object owner.
+    /// Ownership management, anyone can change scene object owner.
     /// </summary>
     public void OwnObject()
     {

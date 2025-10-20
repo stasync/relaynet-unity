@@ -292,9 +292,7 @@ public class NetDebugWindow : EditorWindow
     private ReplicaWorldDrawer m_CurrentWorldReplicaDrawer;
 
     [MenuItem("System/Network/Debug Window")]
-#pragma warning disable IDE0051 // Удалите неиспользуемые закрытые члены
-    static void Init()
-#pragma warning restore IDE0051 // Удалите неиспользуемые закрытые члены
+    private static void Init()
     {
         var window = GetWindow<NetDebugWindow>("Network Debug Info");
         window.Show();
