@@ -18,7 +18,6 @@ public interface IReadOnlyNetWorldPlayersCollection : INetWorldPlayersCollection
     IReadOnlyNetWorldPlayer LocalPlayer { get; }
     IReadOnlyNetWorldPlayer MasterPlayer { get; }
     IReadOnlyNetWorldPlayer Find(ClientUID uid);
-    void ForEachPlayer(Action<ClientUID, IReadOnlyNetWorldPlayer> processor);
 }
 
 public interface IExposedNetWorldPlayersCollection : INetWorldPlayersCollection
@@ -27,7 +26,6 @@ public interface IExposedNetWorldPlayersCollection : INetWorldPlayersCollection
     NetWorldPlayer LocalPlayer { get; }
     NetWorldPlayer MasterPlayer { get; }
     NetWorldPlayer Find(ClientUID uid);
-    void ForEachPlayer(Action<ClientUID, NetWorldPlayer> processor);
 }
 
 public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollection, IReadOnlyNetWorldPlayersCollection
@@ -46,7 +44,6 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.LocalPlayer => LocalPlayer;
     IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.MasterPlayer => MasterPlayer;
     IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.Find(ClientUID uid) => Find(uid);
-    void IReadOnlyNetWorldPlayersCollection.ForEachPlayer(Action<ClientUID, IReadOnlyNetWorldPlayer> processor) => ForEachPlayer(processor);
     #endregion
 
     public bool LocalPlayerIsMaster => IsValid && MasterPlayerUID.IsValid && MasterPlayerUID.Equals(LocalPlayerUID);
@@ -75,12 +72,6 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
 
         m_AddedPlayers = new HashSet<ClientUID>();
         m_RemovedPlayers = new HashSet<ClientUID>();
-    }
-
-    public void ForEachPlayer(Action<ClientUID, NetWorldPlayer> processor)
-    {
-        foreach (var UID in m_PlayersCollection.Keys.ToArray())
-            processor(UID, m_PlayersCollection[UID]);
     }
 
     internal void OnBeforeUpdateWorldState(float worldDelta)

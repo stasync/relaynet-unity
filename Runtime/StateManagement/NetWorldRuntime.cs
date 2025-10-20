@@ -91,7 +91,8 @@ public sealed class NetWorldRuntime : NetWorld
              Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.UID}': already scheduled.");
     }
 
-    public void ScheduleRemoteWorldDataUpdate(byte[] data) => m_RemoteWorldDataUpdateRequests.Enqueue(data);
+    public void ScheduleRemoteWorldDataUpdate(byte[] data) => 
+        m_RemoteWorldDataUpdateRequests.Enqueue(data);
 
     protected override void UpdateImplementation(float deltaTime)
     {
@@ -151,8 +152,12 @@ public sealed class NetWorldRuntime : NetWorld
         {
             // Add local.
             {
-                foreach (var p in m_LocalPlayerRegisterQueue)
-                    PlayerRegistered(PlayersInternal.RegisterImmediate(p, isLocal: true).ToSnapshot()); //Add player and notify;
+                foreach (var clientUid in m_LocalPlayerRegisterQueue)
+                {
+                    // Add player and notify.
+                    var player = PlayersInternal.RegisterImmediate(clientUid, isLocal: true);
+                    PlayerRegistered(player.ToSnapshot());
+                }
 
                 m_LocalPlayerRegisterQueue.Clear();
             }
@@ -178,10 +183,10 @@ public sealed class NetWorldRuntime : NetWorld
                         // Create new.
                         player = PlayersInternal.RegisterImmediate(snapshot.UID, isLocal: false);
 
-                        //Notify player registered.
+                        // Notify player registered.
                         PlayerRegistered(player.ToSnapshot());
 
-                        ForEachStates((_, state) => 
+                        ForEachStates(processor: (_, state) => 
                         {
                             if (state.IsOwnedByLocalPlayer)
                                 state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
@@ -205,7 +210,7 @@ public sealed class NetWorldRuntime : NetWorld
                 if (localPlayer == null)
                     Debug.LogError("Unable to send local player: doesn't exists");
                 else
-                    ScheduleSend(MessageCodes.PlayerStateUpdate, DeliveryMethod.Reliable, localPlayer.Serialize());
+                    ScheduleSend(opCode: MessageCodes.PlayerStateUpdate, DeliveryMethod.Reliable, data: localPlayer.Serialize());
             }
         }
 
@@ -216,10 +221,10 @@ public sealed class NetWorldRuntime : NetWorld
             {
                 foreach (var playerUID in PlayersInternal.RemovedPlayers.ToArray())
                 {
-                    //Object owned by disconnected player.
+                    // Object owned by disconnected player.
                     if (state.IsOwnedBy(playerUID))
                     {
-                        //Change owner, if object is scene object.
+                        // Change owner, if object is scene object.
                         if (state.IsSceneObject)
                         {
                             //Is local client becomes master client, set object's owner and sync it.
@@ -230,11 +235,11 @@ public sealed class NetWorldRuntime : NetWorld
 
                             TryNotifyViewAboutDisconnectedPlayer(playerUID, stateUID);
                         }
-                        //Destroy object.
+                        // Destroy object.
                         else
                             RemoveObject(stateUID);
                     }
-                    //Notify view.
+                    // Notify view.
                     else
                         TryNotifyViewAboutDisconnectedPlayer(playerUID, stateUID);
                 }

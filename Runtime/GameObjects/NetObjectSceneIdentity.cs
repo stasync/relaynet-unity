@@ -36,7 +36,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
     public override void OnDisconnected(ClientUID clientUid)
     {
         base.OnDisconnected(clientUid);
-        if (Network.m_BackingClient.IsMasterClient)
+        if (Identity.World.Players.LocalPlayer.IsMaster)
             TryRegisterOrInitialize();
     }
 
