@@ -25,28 +25,28 @@ public static class HLNetReaderExtension
         new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 
     public static Vector4 ReadVector4(this NetReader reader) =>
-        new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+        new(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 
     public static Color ReadColor(this NetReader reader) =>
-         new Color(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+         new(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 
     public static Color32 ReadColor32(this NetReader reader) =>
-        new Color32(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
+        new(reader.ReadByte(), reader.ReadByte(), reader.ReadByte(), reader.ReadByte());
 
     public static Quaternion ReadQuaternion(this NetReader reader) =>
-        new Quaternion(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+        new(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 
     public static Rect ReadRect(this NetReader reader) =>
-        new Rect(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+        new(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 
-    public static Plane ReadPlane(this NetReader reader) =>
-        new Plane(reader.ReadVector3(), reader.ReadSingle());
+    public static Plane ReadPlane(this NetReader reader) => 
+        new(inNormal: reader.ReadVector3(), d: reader.ReadSingle());
 
-    public static Ray ReadRay(this NetReader reader) =>
-        new Ray(reader.ReadVector3(), reader.ReadVector3());
+    public static Ray ReadRay(this NetReader reader) => 
+        new(origin: reader.ReadVector3(), direction: reader.ReadVector3());
 
     public static Matrix4x4 ReadMatrix4x4(this NetReader reader) =>
-        new Matrix4x4
+        new()
         {
             m00 = reader.ReadSingle(),
             m01 = reader.ReadSingle(),
