@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Core.Utils.Math;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -35,14 +36,17 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
     public override void OnDisconnected(ClientUID clientUid)
     {
         base.OnDisconnected(clientUid);
-        if (Network.Realtime.IsMasterPlayer)
+        if (Network.m_BackingClient.IsMasterClient)
             TryRegisterOrInitialize();
     }
 
     private void TryRegisterOrInitialize()
     {
         if (!Identity.Initialized)
-            Network.Realtime.TryRegisterOrInitializeSceneObject(this);
+        {
+            var world = Network.GetMainWorldRuntime();
+            world?.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
+        }
     }
 
     public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => 

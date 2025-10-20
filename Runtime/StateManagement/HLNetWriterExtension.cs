@@ -4,9 +4,6 @@ using UnityEngine;
 
 public static class HLNetWriterExtension
 {
-    public static void WriteConnectionUID(this NetWriter writer, ClientUID connectionUID) =>
-       writer.WritePackedUInt32(connectionUID);
-
     public static void WritePlayer(this NetWriter writer, NetWorldPlayer value) =>
         writer.WriteConnectionUID(value == null ? ClientUID.Invalid : value.UID);
 

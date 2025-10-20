@@ -472,6 +472,9 @@ public sealed class NetWorldRuntime : NetWorld
     /// </summary>
     public NetObjectIdentity CreateObject(NetWorldPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
     {
+        if (!owner.IsLocal)
+            throw new InvalidOperationException();
+        
         var state = new NetObjectState(new NetObjectUID(owner.UID), prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(state.UID, state);
         return View.CreateImmediate(state, position, rotation);      

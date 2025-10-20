@@ -8,8 +8,20 @@ public abstract class GSInstanceBehaviourBase : MonoBehaviour
     protected IBroadcasterService Broadcaster => m_Broadcaster.Instance;
     private readonly ServiceProvider<IBroadcasterService> m_Broadcaster = new ();
 
-    protected GSNetwork Network => m_Network.Instance;
-    private readonly ServiceProvider<GSNetwork> m_Network = new ();
+    private GSClient m_BackingClient;
+
+    [System.Obsolete]
+    protected GSClient Network
+    {
+        get
+        {
+            // TODO: JUST A HACK TO COMPILE THE PROJECT.
+            if (m_BackingClient == null)
+                m_BackingClient = FindAnyObjectByType<GSClient>(FindObjectsInactive.Exclude);
+            
+            return m_BackingClient;
+        }
+    }
 
     public NetObjectIdentity Identity =>
         m_Identity != null ?

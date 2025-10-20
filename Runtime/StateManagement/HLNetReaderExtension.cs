@@ -3,9 +3,6 @@ using UnityEngine;
 
 public static class HLNetReaderExtension
 {
-    public static ClientUID ReadConnectionUID(this NetReader reader) =>
-        reader.ReadPackedUInt32();
-
     public static NetObjectUID ReadInstanceId(this NetReader reader) =>
         reader.ReadPackedUInt32();
 
