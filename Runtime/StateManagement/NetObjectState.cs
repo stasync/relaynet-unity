@@ -122,7 +122,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         Owner != null && Owner.IsLocal;
     
     public bool IsOwnedByMasterClient => 
-        Owner != null && Owner.IsMaster;
+        Owner is { IsMaster: true };
 
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
     
@@ -137,7 +137,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     private readonly NetWriter m_Writer = new();
 
-    public NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvider)
+    internal NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvider)
     {
         m_PlayerProvider = playerProvider;
         m_UpdateQueue = new Queue<Action<float>>();
@@ -154,14 +154,14 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
     }
 
-    public NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvider) :
+    internal NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvider) :
         this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) => 
             ChangeObjectRemotely(snapshot);
 
-    public void InvalidateOwner() => 
+    internal void InvalidateOwner() => 
         OwnerUID = ClientUID.Invalid;
 
-    public void Invalidate()
+    internal void Invalidate()
     {
         var wasValid = IsValid;
 
@@ -185,7 +185,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         Invalidated = null;
     }
 
-    public void ChangeObjectViewDataLocally(byte[] data, bool initialization = false)
+    internal void ChangeObjectViewDataLocally(byte[] data, bool initialization = false)
     {
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change '{UID}' object with owner '{OwnerUID}'.");
@@ -194,7 +194,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         viewData.SetData(data, initialization);
     }
 
-    public bool PrepareForSerialization()
+    internal bool PrepareForSerialization()
     {
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change '{UID}' object with owner '{OwnerUID}'.");
@@ -206,7 +206,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         return changed;
     }
 
-    public void ChangeObjectRemotely(NetObjectStateSnapshot snapshot)
+    internal void ChangeObjectRemotely(NetObjectStateSnapshot snapshot)
     {
         var checkOwner = snapshot.StateChangeType < ObjectStateChangeRequestType.ReliableUpdateOwnerChange;
 
@@ -251,7 +251,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     private void ScheduleOnUpdate(Action<float> a) =>
         m_UpdateQueue.Enqueue(a);
 
-    public void OnBeforeUpdateWorldState(float worldDelta)
+    internal void OnBeforeUpdateWorldState(float worldDelta)
     {
         // Clear rpc request without authority.
         m_RPCWithoutAuthorityRequests.Clear();
@@ -267,7 +267,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             m_UpdateQueue.Dequeue()(worldDelta);
     }
 
-    public void ScheduleUpdate(ObjectStateChangeRequestType requestType)
+    internal void ScheduleUpdate(ObjectStateChangeRequestType requestType)
     {
         if (!IsOwnedByLocalPlayer)
             throw new InvalidOperationException($"No authority to change {UID} object with owner {OwnerUID}");
@@ -278,7 +278,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             ScheduleStateChange(requestType);
     }
 
-    public void ChangedOwner(ClientUID newOwner)
+    internal void ChangedOwner(ClientUID newOwner)
     {
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
@@ -292,7 +292,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             Debug.LogError($"Unable to change owner, invalid id {newOwner}");
     }
 
-    public byte[] Serialize()
+    internal byte[] Serialize()
     {
         m_Writer.SeekZero();
         ToSnapshot().Serialize(m_Writer);
@@ -308,17 +308,16 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             $"m:{IsOwnedByMasterClient} " +
             $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
 
-
     public int CompareTo(NetObjectState other) => 
         UID.CompareTo(other == null ? NetObjectUID.Invalid : other.UID);
     
     public bool Equals(NetObjectState other) => 
         UID.Equals(other == null ? NetObjectUID.Invalid : other.UID);
 
-    public void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
+    internal void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
         ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryMethod)));
         
-    public void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod) =>
+    internal void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod) =>
         ScheduleOnUpdate(() =>
         {
             m_RPCBuffer.AddOrUpdate(hashCode, data, persistent, bufferChangeMethod);
@@ -326,6 +325,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
                 ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
         });
 
-    public void ScheduleRemovePersistentRPC(int hashCode) =>
+    internal void ScheduleRemovePersistentRPC(int hashCode) =>
         ScheduleOnUpdate(() => m_RPCBuffer.RemovePersistent(hashCode));
 }

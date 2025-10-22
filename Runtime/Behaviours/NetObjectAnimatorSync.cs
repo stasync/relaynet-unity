@@ -275,6 +275,7 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
                     m_Animator.Play(targetStateHash, layerIndex, targetNormalizedTime);
                     break;
                 case AnimatorStateChangeMethod.CrossFade:
+                    // todo: Calling Animator.GotoState on Synchronize layer
                     m_Animator.CrossFade(targetStateHash, m_CrossFadeDuration, layerIndex, targetNormalizedTime);
                     break;
             }

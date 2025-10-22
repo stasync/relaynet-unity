@@ -212,8 +212,23 @@ public class NetDebugWindow : EditorWindow
                         EditorGUILayout.Space();
                         var registerRequests = m_World.IncomingStateChangeRequests;
                         EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
+                        
+                        EditorGUI.indentLevel++;
                         foreach (var request in registerRequests)
                             EditorGUILayout.LabelField($"{request.OpCode} {request.Data}");
+                        EditorGUI.indentLevel--;
+                    }
+                    
+                    // Temporary Unregistered Objects.
+                    {
+                        EditorGUILayout.Space();
+                        var temporaryUnregisteredObjects = m_World.TemporaryUnregisteredObjects;
+                        EditorGUILayout.LabelField($"Unregistered Objects: {temporaryUnregisteredObjects.Count}", EditorStyles.boldLabel);
+                        
+                        EditorGUI.indentLevel++;
+                        foreach (var objectState in temporaryUnregisteredObjects.Values)
+                            EditorGUILayout.LabelField($"[{objectState.UID}] [{objectState.PrefabId}] Owner: {objectState.Owner} Scene: {objectState.IsSceneObject}");
+                        EditorGUI.indentLevel--;
                     }
                 }
                 EditorGUI.indentLevel--;
