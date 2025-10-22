@@ -26,7 +26,7 @@ public abstract class NetWorld
     public IExposedNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
-    private Queue<Action> m_ViewInitQueue;
+    private Queue<Action> m_ViewInitQueue = new();
 
     protected NetWorld(NetWorldID uid, string worldName) : this(uid, worldName, NetWorldID.Invalid)
     {
@@ -44,7 +44,6 @@ public abstract class NetWorld
 
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
         PlayersInternal = new NetWorldPlayersCollection(validator: () => IsValid);
-        m_ViewInitQueue = new Queue<Action>();
     }
 
     public void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
@@ -110,7 +109,7 @@ public abstract class NetWorld
 
     protected virtual void OnBeforeExecuteView(float worldDelta) { }
 
-    public virtual void Destroy()
+    public virtual void Dispose()
     {
         UID = NetWorldID.Invalid;
         ID = NetWorldID.Invalid;

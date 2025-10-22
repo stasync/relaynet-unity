@@ -155,7 +155,7 @@ public sealed class NetWorldEvaluator : NetWorld
         if (CurrentSnapshotIndex == m_HistoryBuffer.Count - 1)
         {
             if (m_AutoDestroy)
-                Destroy();
+                Dispose();
         }
         else
             PeekNextSnapshot();

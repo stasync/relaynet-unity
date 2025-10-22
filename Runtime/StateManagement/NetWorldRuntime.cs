@@ -380,9 +380,9 @@ public sealed class NetWorldRuntime : NetWorld
     /// <summary>
     /// Destroy all network objects and cleanup scene.
     /// </summary>
-    public override void Destroy()
+    public override void Dispose()
     {
-        base.Destroy();
+        base.Dispose();
 
         m_RemoteObjectUpdateRequests.Clear();
         m_RemoteObjectUpdateRequests = null;
@@ -473,7 +473,7 @@ public sealed class NetWorldRuntime : NetWorld
         m_ObjectsRegisterRequests.Add(newState.UID, newState);
         var newStateUID = newState.UID;
 
-        //Wait for view initialization.
+        // Wait for view initialization.
         ScheduleOnViewInit(() =>
         {
             if (TryGetExistedOrPendingState(newStateUID, out var state))

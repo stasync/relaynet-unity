@@ -85,7 +85,7 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
         if (m_PlayersCollection.ContainsKey(uid))
             throw new InvalidOperationException();
 
-        var player = new NetWorldPlayer(uid, name: "Unknown", localPlayer: () => LocalPlayerUID, masterPlayer: () => MasterPlayerUID);
+        var player = new NetWorldPlayer(uid, name: "Unknown", localPlayerUidProvider: () => LocalPlayerUID, masterPlayerUidProvider: () => MasterPlayerUID);
         m_PlayersCollection.Add(uid, player);
         m_AddedPlayers.Add(uid);
 
@@ -153,7 +153,7 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
                 player.RestoreFromSnapshot(playerSnapshot);
             else
                 m_PlayersCollection.Add(clientUid, 
-                    new NetWorldPlayer(playerSnapshot.UID, playerSnapshot.Name, localPlayer: () => LocalPlayerUID, masterPlayer: () => MasterPlayerUID));
+                    new NetWorldPlayer(playerSnapshot.UID, playerSnapshot.Name, localPlayerUidProvider: () => LocalPlayerUID, masterPlayerUidProvider: () => MasterPlayerUID));
         }
     }
 

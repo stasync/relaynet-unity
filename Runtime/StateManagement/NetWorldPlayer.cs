@@ -106,19 +106,19 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
     }
     
     public bool IsValid => UID.IsValid;
-    public bool IsLocal => IsValid && UID.Equals(m_LocalPlayer());
-    public bool IsMaster => IsValid && UID.Equals(m_MasterPlayer());
+    public bool IsLocal => IsValid && UID.Equals(other: m_LocalPlayerUidProvider());
+    public bool IsMaster => IsValid && UID.Equals(other: m_MasterPlayerUidProvider());
 
-    private readonly Func<ClientUID> m_LocalPlayer;
-    private readonly Func<ClientUID> m_MasterPlayer;
+    private readonly Func<ClientUID> m_LocalPlayerUidProvider;
+    private readonly Func<ClientUID> m_MasterPlayerUidProvider;
     private readonly NetWriter m_Writer = new ();
 
-    public NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayer, Func<ClientUID> masterPlayer)
+    public NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayerUidProvider, Func<ClientUID> masterPlayerUidProvider)
     {
         UID = uid;
         m_Name = name;
-        m_LocalPlayer = localPlayer;
-        m_MasterPlayer = masterPlayer;
+        m_LocalPlayerUidProvider = localPlayerUidProvider;
+        m_MasterPlayerUidProvider = masterPlayerUidProvider;
 
         m_Properties = new Properties(writePermission: () => IsLocal);
         m_TagObjectUIDs = new HashSet<NetObjectUID>();
