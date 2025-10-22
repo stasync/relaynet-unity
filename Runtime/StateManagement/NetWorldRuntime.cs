@@ -461,7 +461,7 @@ public sealed class NetWorldRuntime : NetWorld
             if (player != null)
                 player.IsReady = true;
 
-            //Create view.
+            // Create view.
             InitializeView();
         });
 

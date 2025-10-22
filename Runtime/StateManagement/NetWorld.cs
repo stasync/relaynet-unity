@@ -55,7 +55,7 @@ public abstract class NetWorld
             throw new InvalidOperationException($"View for world {Name} already initialized");
 
         View = new GameObject(Name).AddComponent<NetWorldView>();
-        View.Init(this, viewInitMode);
+        View.Init(world: this, viewInitMode);
 
         while (m_ViewInitQueue.Count > 0)
             m_ViewInitQueue.Dequeue()();
