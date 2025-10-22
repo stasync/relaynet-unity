@@ -96,11 +96,9 @@ public abstract class NetWorld
 
     protected virtual void OnBeforeUpdateWorldState(float worldDelta)
     {
-        foreach (var objectUid in new List<NetObjectUID>(m_CurrentObjectStates.Keys))
-        {
-            var state = m_CurrentObjectStates[objectUid];
+        foreach (var state in m_CurrentObjectStates.Values)
             state.OnBeforeUpdateWorldState(worldDelta);
-        }
+        
         PlayersInternal.OnBeforeUpdateWorldState(worldDelta);
     }
 

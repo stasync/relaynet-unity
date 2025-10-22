@@ -50,6 +50,14 @@ public readonly struct RPCState
 
 public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
 {
+    internal struct NewPRCData
+    {
+        internal int HashCode;
+        internal byte[] Data;
+        internal bool Persistent;
+        internal RPCBufferChangeMethod BufferChangeMethod;
+    }
+    
     public IReadOnlyCollection<RPCState> PersistentBuffer => m_PersistentBuffer;
     public IReadOnlyCollection<RPCState> TemporalBuffer => m_TemporalBuffer;
 
@@ -57,20 +65,26 @@ public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
     private readonly List<RPCState> m_TemporalBuffer = new();
     private readonly HashSet<uint> m_ReceiveCollisions = new();
 
-    public void AddOrUpdate(int hash, byte[] payload, bool persistent, RPCBufferChangeMethod changeMethod)
+    internal void AddOrUpdate(NewPRCData mutator)
     {
         var uid = RPCStateUIDAllocator.AllocateUID();
-        var data = new RPCState(hash, uid, payload);
+        var data = new RPCState(mutator.HashCode, uid, mutator.Data);
 
-        PushTo(m_TemporalBuffer, data, changeMethod);
-        if (persistent)
-            PushTo(m_PersistentBuffer, data, changeMethod);
+        PushTo(m_TemporalBuffer, data, mutator.BufferChangeMethod);
+        if (mutator.Persistent)
+            PushTo(m_PersistentBuffer, data, mutator.BufferChangeMethod);
     }
 
     private static void PushTo(List<RPCState> targetBuffer, RPCState newData, RPCBufferChangeMethod changeMethod)
     {
         if (changeMethod == RPCBufferChangeMethod.Replace)
-            targetBuffer.RemoveAll(d => d.Hash == newData.Hash);
+        {
+            for (var i = targetBuffer.Count - 1; i >= 0; i--)
+            {
+                if (targetBuffer[i].Hash == newData.Hash)
+                    targetBuffer.RemoveAt(i);
+            }
+        }
 
         targetBuffer.Add(newData);
     }
@@ -98,22 +112,22 @@ public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
         }
     }
 
-    public void ClearPersistent() =>
+    internal void ClearPersistent() =>
         m_PersistentBuffer.Clear();
 
-    public void ClearTemporal() =>
+    internal void ClearTemporal() =>
         m_TemporalBuffer.Clear();
 
-    public void Clear()
+    internal void Clear()
     {
         ClearPersistent();
         ClearTemporal();
     }
 
-    public void RemovePersistent(int hashCode) =>
+    internal void RemovePersistent(int hashCode) =>
         m_PersistentBuffer.RemoveAll(d => d.Hash.Equals(hashCode));
 
-    public void RestoreFormSnapshot(NetObjectRPCStateSnapshot snapshot)
+    internal void RestoreFormSnapshot(NetObjectRPCStateSnapshot snapshot)
     {
         m_PersistentBuffer.Clear();
         foreach (var rpcSnapshot in snapshot.PersistentBuffer)

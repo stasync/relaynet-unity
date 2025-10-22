@@ -93,7 +93,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public event Action Invalidated = delegate { };
 
     private readonly Func<ClientUID, NetWorldPlayer> m_PlayerProvider;
-    private readonly Queue<Action<float>> m_UpdateQueue;
 
     public bool IsValid => UID.IsValid;
 
@@ -132,15 +131,18 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(UID);
 
     public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
-
-    private readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests;
+    private readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new();
+    
+    private readonly Queue<ObjectStateChangeRequestType> m_StateChangeTypeQueue = new();
+    private readonly Queue<NetObjectRPCState.NewPRCData> m_RPCBufferUpdateQueue = new();
+    private readonly Queue<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityQueue = new();
+    private readonly Queue<int> m_PersistentRPCToRemoveQueue = new();
 
     private readonly NetWriter m_Writer = new();
 
     internal NetObjectState(NetObjectUID uid, string prefabId, bool isSceneObject, ClientUID owner, Func<ClientUID, NetWorldPlayer> playerProvider)
     {
         m_PlayerProvider = playerProvider;
-        m_UpdateQueue = new Queue<Action<float>>();
 
         UID = uid;
         PrefabId = prefabId ?? string.Empty;
@@ -151,7 +153,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         m_RPCBuffer = new NetObjectRPCState();
         m_DataCollection = new NetObjectDataCollection(() => IsOwnedByLocalPlayer);
-        m_RPCWithoutAuthorityRequests = new List<RPCWithoutAuthorityRequest>();
     }
 
     internal NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvider) :
@@ -171,12 +172,15 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         PrefabId = string.Empty;
         IsSceneObject = false;
         StateChangeType = ObjectStateChangeRequestType.None;
-
-        m_UpdateQueue.Clear();
-
+        
         m_RPCBuffer.Clear();
         m_DataCollection.Clear();
         m_RPCWithoutAuthorityRequests.Clear();
+
+        m_StateChangeTypeQueue.Clear();
+        m_RPCBufferUpdateQueue.Clear();
+        m_RPCWithoutAuthorityQueue.Clear();
+        m_PersistentRPCToRemoveQueue.Clear();
 
         if (wasValid)
             Invalidated();
@@ -238,19 +242,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     public NetObjectStateSnapshot ToSnapshot() => 
         NetObjectStateSnapshot.FormState(this);
 
-    private void ScheduleStateChange(ObjectStateChangeRequestType requestType) => 
-        ScheduleOnUpdate(() =>
-        {
-            if (StateChangeType < requestType)
-                StateChangeType = requestType;
-        });
-
-    private void ScheduleOnUpdate(Action a) =>
-        ScheduleOnUpdate(delta => a());
-
-    private void ScheduleOnUpdate(Action<float> a) =>
-        m_UpdateQueue.Enqueue(a);
-
     internal void OnBeforeUpdateWorldState(float worldDelta)
     {
         // Clear rpc request without authority.
@@ -261,10 +252,25 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
         // Return object to regular UDP pipeline.
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
+        
+        // New RPC requests.
+        while (m_RPCBufferUpdateQueue.TryDequeue(out var newRpcState))
+            m_RPCBuffer.AddOrUpdate(newRpcState);
+        
+        // Persistent RPC remove request.
+        while (m_PersistentRPCToRemoveQueue.TryDequeue(out var rpcHash))
+            m_RPCBuffer.RemovePersistent(rpcHash);
 
-        // Invoke update queue.
-        while (m_UpdateQueue.Count > 0)
-            m_UpdateQueue.Dequeue()(worldDelta);
+        // Update no-authority RPC requests. Note that is not a part of the state.
+        while (m_RPCWithoutAuthorityQueue.TryDequeue(out var rpcWithoutAuthorityRequest))
+            m_RPCWithoutAuthorityRequests.Add(rpcWithoutAuthorityRequest);
+        
+        // State change type requests.
+        while (m_StateChangeTypeQueue.TryDequeue(out var newRequestType))
+        {
+            if (StateChangeType < newRequestType)
+                StateChangeType = newRequestType;
+        }
     }
 
     internal void ScheduleUpdate(ObjectStateChangeRequestType requestType)
@@ -275,7 +281,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         if (StateChangeType > requestType)
             Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
         else
-            ScheduleStateChange(requestType);
+            m_StateChangeTypeQueue.Enqueue(requestType);
     }
 
     internal void ChangedOwner(ClientUID newOwner)
@@ -286,7 +292,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         if (newOwner.IsValid)
         {
             UpdateOwnerInternal(newOwner);
-            ScheduleStateChange(ObjectStateChangeRequestType.ReliableUpdateOwnerChange);
+            m_StateChangeTypeQueue.Enqueue(ObjectStateChangeRequestType.ReliableUpdateOwnerChange);
         }
         else
             Debug.LogError($"Unable to change owner, invalid id {newOwner}");
@@ -309,22 +315,28 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
 
     public int CompareTo(NetObjectState other) => 
-        UID.CompareTo(other == null ? NetObjectUID.Invalid : other.UID);
+        UID.CompareTo(other?.UID ?? NetObjectUID.Invalid);
     
     public bool Equals(NetObjectState other) => 
-        UID.Equals(other == null ? NetObjectUID.Invalid : other.UID);
+        UID.Equals(other?.UID ?? NetObjectUID.Invalid);
 
     internal void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
-        ScheduleOnUpdate(() => m_RPCWithoutAuthorityRequests.Add(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryMethod)));
-        
-    internal void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod) =>
-        ScheduleOnUpdate(() =>
+        m_RPCWithoutAuthorityQueue.Enqueue(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryMethod));
+    
+    internal void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod)
+    {
+        m_RPCBufferUpdateQueue.Enqueue(new NetObjectRPCState.NewPRCData
         {
-            m_RPCBuffer.AddOrUpdate(hashCode, data, persistent, bufferChangeMethod);
-            if (deliveryMethod == DeliveryMethod.Reliable)
-                ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
+            HashCode = hashCode,
+            Data = data,
+            Persistent = persistent,
+            BufferChangeMethod = bufferChangeMethod,
         });
+        
+        if (deliveryMethod == DeliveryMethod.Reliable)
+            ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
+    }
 
     internal void ScheduleRemovePersistentRPC(int hashCode) =>
-        ScheduleOnUpdate(() => m_RPCBuffer.RemovePersistent(hashCode));
+        m_PersistentRPCToRemoveQueue.Enqueue(hashCode);
 }
