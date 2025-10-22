@@ -24,8 +24,8 @@ public class NetWorldView : MonoBehaviour
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> CurrentObjectViews => m_CurrentObjectViews;
     private Dictionary<NetObjectUID, NetObjectIdentity> m_CurrentObjectViews;
-    public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> PendingObjectViews => m_PendingObjectViews;
-    private Dictionary<NetObjectUID, NetObjectIdentity> m_PendingObjectViews;
+    public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> TemporaryUnregisteredViews => m_TemporaryUnregisteredViews;
+    private Dictionary<NetObjectUID, NetObjectIdentity> m_TemporaryUnregisteredViews;
 
     private Scene m_WorldScene;
 
@@ -39,7 +39,7 @@ public class NetWorldView : MonoBehaviour
         m_World = world;
         m_ObjectFactory = new NetObjectFactory();
         m_CurrentObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
-        m_PendingObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
+        m_TemporaryUnregisteredViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
 
         var sceneName = $"{m_World.Name} {gameObject.GetInstanceID()}";
         switch (initMode)
@@ -77,7 +77,7 @@ public class NetWorldView : MonoBehaviour
             // Try get or create new state view.
             if (!m_CurrentObjectViews.TryGetValue(uid, out var netObjectView))
             {
-                if (m_PendingObjectViews.Remove(uid, out netObjectView))
+                if (m_TemporaryUnregisteredViews.Remove(uid, out netObjectView))
                     m_CurrentObjectViews.Add(uid, netObjectView);
                 else
                 {
@@ -102,7 +102,7 @@ public class NetWorldView : MonoBehaviour
             if (netObjectView.Initialized)
             {
                 if (!state.IsOwnedByLocalPlayer && state.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
-                    netObjectView.Deserialize(viewData.UnstructuredData, false, false);
+                    netObjectView.Deserialize(viewData.UnstructuredData, force: false, firstTime: false);
             }
             else
                 InitializeObjectView(netObjectView, state.UID);
@@ -132,7 +132,7 @@ public class NetWorldView : MonoBehaviour
             return netObjectView;
 
         // Try to add pending view.
-        if (m_PendingObjectViews.Remove(uid, out netObjectView))
+        if (m_TemporaryUnregisteredViews.Remove(uid, out netObjectView))
             m_CurrentObjectViews.Add(uid, netObjectView);
         
         return netObjectView;
@@ -142,7 +142,7 @@ public class NetWorldView : MonoBehaviour
     {
         var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
         InitializeObjectView(netObjectView, state.UID);
-        m_PendingObjectViews.Add(state.UID, netObjectView);
+        m_TemporaryUnregisteredViews.Add(state.UID, netObjectView);
         return netObjectView;
     }
 
@@ -179,7 +179,7 @@ public class NetWorldView : MonoBehaviour
     }
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => 
-        m_PendingObjectViews.Add(uid, identity);
+        m_TemporaryUnregisteredViews.Add(uid, identity);
 
     private void ForEachStates(Action<NetObjectUID, NetObjectState> processor) => 
         m_World.ForEachStates(processor);
@@ -189,7 +189,7 @@ public class NetWorldView : MonoBehaviour
         if (m_CurrentObjectViews.Remove(uid, out var cView))
             Destroy(cView.gameObject);
 
-        if (m_PendingObjectViews.Remove(uid, out var pView))
+        if (m_TemporaryUnregisteredViews.Remove(uid, out var pView))
             Destroy(pView.gameObject);
     }
 
@@ -235,14 +235,14 @@ public class NetWorldView : MonoBehaviour
         m_CurrentObjectViews.Clear();
         m_CurrentObjectViews = null;
 
-        foreach (var pendingView in m_PendingObjectViews.Values)
+        foreach (var pendingView in m_TemporaryUnregisteredViews.Values)
         {
             if (pendingView != null)
                 Destroy(pendingView.gameObject);
         }
 
-        m_PendingObjectViews.Clear();
-        m_PendingObjectViews = null;
+        m_TemporaryUnregisteredViews.Clear();
+        m_TemporaryUnregisteredViews = null;
 
         m_ObjectFactory = null;
         m_World = null;

@@ -237,12 +237,12 @@ public class NetDebugWindow : EditorWindow
             if (m_World.View != null)
             {
                 EditorGUILayout.Space();
-                m_DrawPendingViews = EditorGUILayout.Foldout(m_DrawPendingViews, $"Pending Views: {m_World.View.PendingObjectViews.Count}") && m_World.View.PendingObjectViews.Count > 0;
+                m_DrawPendingViews = EditorGUILayout.Foldout(m_DrawPendingViews, $"Pending Views: {m_World.View.TemporaryUnregisteredViews.Count}") && m_World.View.TemporaryUnregisteredViews.Count > 0;
                 if (m_DrawPendingViews)
                 {
                     EditorGUI.indentLevel++;
                     {
-                        foreach (var kvp in m_World.View.PendingObjectViews)
+                        foreach (var kvp in m_World.View.TemporaryUnregisteredViews)
                             EditorGUILayout.ObjectField($"Uid: {kvp.Key}", kvp.Value, typeof(NetObjectIdentity), allowSceneObjects: true);
                     }
                     EditorGUI.indentLevel--;
