@@ -50,12 +50,11 @@ public readonly struct RPCState
 
 public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
 {
-    private readonly List<RPCState> m_PersistentBuffer = new();
     public IReadOnlyCollection<RPCState> PersistentBuffer => m_PersistentBuffer;
-
-    private readonly List<RPCState> m_TemporalBuffer = new();
     public IReadOnlyCollection<RPCState> TemporalBuffer => m_TemporalBuffer;
 
+    private readonly List<RPCState> m_PersistentBuffer = new();
+    private readonly List<RPCState> m_TemporalBuffer = new();
     private readonly HashSet<uint> m_ReceiveCollisions = new();
 
     public void AddOrUpdate(int hash, byte[] payload, bool persistent, RPCBufferChangeMethod changeMethod)

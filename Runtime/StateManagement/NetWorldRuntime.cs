@@ -162,8 +162,8 @@ public sealed class NetWorldRuntime : NetWorld
         base.OnUpdateWorldState(worldDelta);
 
         TrySendWorldData();
-        TryReceiveWorldData();
-
+        
+        UpdateRemoteMasterWorldData();
         UpdatePlayerStates();
         UpdateStateBasedOnRemovedPlayers();
         UpdateStateBasedOnRemoteData();
@@ -181,7 +181,7 @@ public sealed class NetWorldRuntime : NetWorld
             DataSendRequested(userDataOpCode: MessageCodes.WorldCommunication, data: m_Writer.ToArray(), DeliveryMethod.Unreliable);
         }
 
-        void TryReceiveWorldData()
+        void UpdateRemoteMasterWorldData()
         {
             if (!PlayersInternal.LocalPlayerIsMaster)
                 return;
