@@ -11,7 +11,9 @@ public sealed class NetWorldRuntime : NetWorld
     private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
     private const float MIN_UPDATE_INTERVAL = 0.1f; // 10 times per second.
     
-    public event Action<NetWorldPlayerSnapshot> PlayerRegistered = delegate { };
+    public event Action<NetWorldPlayerSnapshot> PlayerAdded = delegate { };
+    public event Action<NetWorldPlayerSnapshot> PlayerRemoved = delegate { };
+
     public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
     public event DataSendRequestDelegate DataSendRequested = delegate { };
 
@@ -213,7 +215,7 @@ public sealed class NetWorldRuntime : NetWorld
                 {
                     // Add player and notify.
                     var player = PlayersInternal.RegisterImmediate(clientUid, isLocal: true);
-                    PlayerRegistered(player.ToSnapshot());
+                    PlayerAdded(player.ToSnapshot());
                 }
 
                 m_LocalPlayerRegisterQueue.Clear();
@@ -222,7 +224,14 @@ public sealed class NetWorldRuntime : NetWorld
             // Remove all.
             {
                 foreach (var clientUid in m_PlayerUnregisterQueue)
+                {
+                    var player = PlayersInternal.Find(clientUid);
+                    var playerSnapshot = player?.ToSnapshot() ?? default;
                     PlayersInternal.UnregisterImmediate(clientUid);
+                    
+                    if (playerSnapshot.UID.IsValid)
+                        PlayerRemoved(playerSnapshot);
+                }
 
                 m_PlayerUnregisterQueue.Clear();
             }
@@ -241,7 +250,7 @@ public sealed class NetWorldRuntime : NetWorld
                         player = PlayersInternal.RegisterImmediate(snapshot.UID, isLocal: false);
 
                         // Notify player registered.
-                        PlayerRegistered(player.ToSnapshot());
+                        PlayerAdded(player.ToSnapshot());
 
                         ForEachStates(processor: (_, state) => 
                         {
@@ -477,7 +486,7 @@ public sealed class NetWorldRuntime : NetWorld
         m_HistoryBuffer.Clear();
         m_HistoryBuffer = null;
 
-        PlayerRegistered = null;
+        PlayerAdded = null;
     }
 
     // Connected.
