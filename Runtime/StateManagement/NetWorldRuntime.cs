@@ -241,8 +241,10 @@ public sealed class NetWorldRuntime : NetWorld
         // Update state based on remote incoming data.
         void UpdateStateBasedOnRemoteData()
         {
-            ForEachRemoteRequests((uid, snapshot) =>
+            foreach (var uid in m_RemoteObjectUpdateRequests.Keys.ToArray())
             {
+                var snapshot = m_RemoteObjectUpdateRequests[uid];
+                
                 if (!snapshot.ObjectUID.IsValid)
                     throw new InvalidOperationException($"Invalid UID: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
 
@@ -250,7 +252,7 @@ public sealed class NetWorldRuntime : NetWorld
                 if (!PlayersInternal.Contains(snapshot.OwnerUID))
                 {
                     m_RemoteObjectUpdateRequests.Remove(uid);
-                    return;
+                    continue;
                 }
 
                 // Object exists, just update.
@@ -262,7 +264,7 @@ public sealed class NetWorldRuntime : NetWorld
                     if (objState.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateHard)
                         RemoveObject(snapshot.ObjectUID);
 
-                    return;
+                    continue;
                 }
 
                 // Object doesn't exists.
@@ -272,14 +274,14 @@ public sealed class NetWorldRuntime : NetWorld
                     
                     m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
                     m_RemoteObjectUpdateRequests.Remove(uid);
-                    return;
+                    continue;
                 }
 
                 // Add new or get pending.
                 if (snapshot.StateChangeType != ObjectStateChangeRequestType.InitializationUpdate)
                 {
                     m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
-                    return;
+                    continue;
                 }
 
                 if (m_ObjectsRegisterRequests.TryGetValue(snapshot.ObjectUID, out var newState))
@@ -297,7 +299,7 @@ public sealed class NetWorldRuntime : NetWorld
 
                 TryAddObject(newState);
                 m_RemoteObjectUpdateRequests.Remove(uid);
-            });
+            }
         }
 
         // Update RPC requests (Calling rpc without authority).
@@ -432,12 +434,6 @@ public sealed class NetWorldRuntime : NetWorld
         InitializeView();
     }
     
-    private void ForEachRemoteRequests(Action<NetObjectUID, NetObjectStateSnapshot> processor)
-    {
-        foreach (var uid in m_RemoteObjectUpdateRequests.Keys.ToArray())
-            processor(uid, m_RemoteObjectUpdateRequests[uid]);
-    }
-
     /// <summary>
     /// Create object with position and rotation input.
     /// Should be called on local client to create object across network.
@@ -473,7 +469,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         // Create state from scene object identity.
         // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, true, PlayersInternal.MasterPlayerUID, PlayersInternal.Find);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, PlayersInternal.MasterPlayerUID, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(newState.UID, newState);
         var newStateUID = newState.UID;
 
@@ -492,7 +488,9 @@ public sealed class NetWorldRuntime : NetWorld
             else
             {
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 Debug.LogError($"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with UID '{newStateUID}' not exist.");
+#endif
             }
         });
     }
