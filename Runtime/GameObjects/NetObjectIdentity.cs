@@ -161,7 +161,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        State.ScheduleOwnerChanged(World.Players.LocalPlayerUid);
+        State.ChangedOwner(World.Players.LocalPlayerUid);
     }
 
     private byte[] Serialize()

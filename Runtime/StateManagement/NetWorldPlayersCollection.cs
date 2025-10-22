@@ -50,11 +50,8 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     public NetWorldPlayer Find(ClientUID uid) => IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
     public bool Contains(ClientUID uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
 
-    public IReadOnlyCollection<ClientUID> AddedPlayers => m_AddedPlayers;
-    private HashSet<ClientUID> m_AddedPlayers;
-
     public IReadOnlyCollection<ClientUID> RemovedPlayers => m_RemovedPlayers;
-    private HashSet<ClientUID> m_RemovedPlayers;
+    private readonly HashSet<ClientUID> m_RemovedPlayers = new ();
 
     private Func<bool> m_Validator;
     private bool IsValid => m_Validator != null && m_Validator();
@@ -67,14 +64,10 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
         MasterPlayerUid = ClientUID.Invalid;
 
         m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayer>();
-
-        m_AddedPlayers = new HashSet<ClientUID>();
-        m_RemovedPlayers = new HashSet<ClientUID>();
     }
 
     internal void OnBeforeUpdateWorldState(float worldDelta)
     {
-        m_AddedPlayers.Clear();
         m_RemovedPlayers.Clear();
     }
 
@@ -83,13 +76,12 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
         if (m_PlayersCollection.ContainsKey(uid))
             throw new InvalidOperationException();
 
-        var player = new NetWorldPlayer(uid, name: "Unknown", 
+        var player = new NetWorldPlayer(uid, 
+            name: "Unknown", 
             localPlayerUidProvider: () => LocalPlayerUid, 
             masterPlayerUidProvider: () => MasterPlayerUid);
         
         m_PlayersCollection.Add(uid, player);
-        m_AddedPlayers.Add(uid);
-
         if (isLocal)
             LocalPlayerUid = uid;
 
@@ -127,12 +119,8 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
 
         m_PlayersCollection.Clear();
         m_PlayersCollection = null;
-
-        m_AddedPlayers.Clear();
-        m_AddedPlayers = null;
-
+        
         m_RemovedPlayers.Clear();
-        m_RemovedPlayers = null;
     }
 
     public NetWorldPlayersCollectionsSnapshot ToSnapshot() => 

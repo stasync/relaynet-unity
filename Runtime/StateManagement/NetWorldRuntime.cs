@@ -165,8 +165,8 @@ public sealed class NetWorldRuntime : NetWorld
         
         UpdateRemoteMasterWorldData();
         UpdatePlayerStates();
-        UpdateStateBasedOnRemovedPlayers();
-        UpdateStateBasedOnRemoteData();
+        UpdateObjectStateBasedOnRemovedPlayers();
+        UpdateObjectStateBasedOnRemoteData();
         UpdateRPCRequestsWithoutAuthority();
         UpdateLocalObjectState();
 
@@ -267,7 +267,7 @@ public sealed class NetWorldRuntime : NetWorld
         }
 
         // Update states based on removed player, if player leave, remove object.
-        void UpdateStateBasedOnRemovedPlayers()
+        void UpdateObjectStateBasedOnRemovedPlayers()
         {
             ForEachStates(processor: (stateUID, state) =>
             {
@@ -281,7 +281,7 @@ public sealed class NetWorldRuntime : NetWorld
                         {
                             //Is local client becomes master client, set object's owner and sync it.
                             if (PlayersInternal.LocalPlayerIsMaster)
-                                state.ScheduleOwnerChanged(PlayersInternal.LocalPlayer.Uid);
+                                state.ChangedOwner(PlayersInternal.LocalPlayer.Uid);
                             else
                                 state.InvalidateOwner();
 
@@ -306,7 +306,7 @@ public sealed class NetWorldRuntime : NetWorld
         }
 
         // Update state based on remote incoming data.
-        void UpdateStateBasedOnRemoteData()
+        void UpdateObjectStateBasedOnRemoteData()
         {
             foreach (var uid in m_RemoteObjectUpdateRequests.Keys.ToArray())
             {

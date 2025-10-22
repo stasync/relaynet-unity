@@ -278,7 +278,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             ScheduleStateChange(requestType);
     }
 
-    public void ScheduleOwnerChanged(ClientUID newOwner)
+    public void ChangedOwner(ClientUID newOwner)
     {
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
