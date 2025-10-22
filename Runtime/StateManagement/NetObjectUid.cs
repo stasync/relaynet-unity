@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 public readonly struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
 {

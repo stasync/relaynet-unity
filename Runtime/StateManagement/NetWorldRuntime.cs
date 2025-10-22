@@ -5,7 +5,7 @@ using UnityEngine;
 using Core.Networking;
 
 public sealed class NetWorldRuntime : NetWorld
-{    
+{
     public delegate void DataSendRequestDelegate(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
 
     private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
@@ -18,25 +18,23 @@ public sealed class NetWorldRuntime : NetWorld
     public event DataSendRequestDelegate DataSendRequested = delegate { };
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
-    private Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
+    private Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests = new();
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectStateSnapshot> RemoteObjectUpdateRequests => m_RemoteObjectUpdateRequests;    
-    private Dictionary<NetObjectUID, NetObjectStateSnapshot> m_RemoteObjectUpdateRequests;
+    private Dictionary<NetObjectUID, NetObjectStateSnapshot> m_RemoteObjectUpdateRequests = new();
 
     public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> RemotePlayersUpdateRequests => m_RemotePlayersUpdateRequests;
-    private Dictionary<ClientUID, NetWorldPlayerSnapshot> m_RemotePlayersUpdateRequests;
+    private Dictionary<ClientUID, NetWorldPlayerSnapshot> m_RemotePlayersUpdateRequests = new();
 
-    private Queue<byte[]> m_RemoteWorldDataUpdateRequests;
+    private Queue<byte[]> m_RemoteWorldDataUpdateRequests = new();
 
     public IReadOnlyHistoryBuffer HistoryBuffer => m_HistoryBuffer;
-    private HistoryBuffer m_HistoryBuffer;
+    private HistoryBuffer m_HistoryBuffer = new ();
 
-    private HashSet<ClientUID> m_LocalPlayerRegisterQueue;
-    private HashSet<ClientUID> m_PlayerUnregisterQueue;
+    private HashSet<ClientUID> m_LocalPlayerRegisterQueue = new ();
+    private HashSet<ClientUID> m_PlayerUnregisterQueue = new();
 
     private float m_LastUpdateTime;
-
-    public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
     
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
@@ -44,21 +42,7 @@ public sealed class NetWorldRuntime : NetWorld
     public NetWorldRuntime(string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
     {
         NetObjectUID.Reset();
-
-        m_LastUpdateTime = FixedTime;
-
-        // Must be cleaned, when player disconnects;
-        {
-            m_RemoteObjectUpdateRequests = new Dictionary<NetObjectUID, NetObjectStateSnapshot>();
-            m_RemotePlayersUpdateRequests = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
-            m_ObjectsRegisterRequests = new Dictionary<NetObjectUID, NetObjectState>();
-            m_RemoteWorldDataUpdateRequests = new Queue<byte[]>();
-        }
-
-        m_LocalPlayerRegisterQueue = new HashSet<ClientUID>();
-        m_PlayerUnregisterQueue = new HashSet<ClientUID>();
-
-        m_HistoryBuffer = new HistoryBuffer();
+        m_LastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
     }
 
     public NetWorldEvaluator Replicate() => 
@@ -164,10 +148,10 @@ public sealed class NetWorldRuntime : NetWorld
 
     protected override void UpdateImplementation(float deltaTime)
     {
-        var worldDelta = FixedTime - m_LastUpdateTime;
+        var worldDelta = UnityEngine.Time.fixedUnscaledTime - m_LastUpdateTime;
         if (worldDelta >= MIN_UPDATE_INTERVAL)
         {
-            m_LastUpdateTime = FixedTime;
+            m_LastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
             UpdateWorldState(worldDelta);
         }
     }
@@ -199,6 +183,9 @@ public sealed class NetWorldRuntime : NetWorld
 
         void TryReceiveWorldData()
         {
+            if (!PlayersInternal.LocalPlayerIsMaster)
+                return;
+            
             while (m_RemoteWorldDataUpdateRequests.Count > 0)
             {
                 m_Reader.Replace(buffer: m_RemoteWorldDataUpdateRequests.Dequeue());
