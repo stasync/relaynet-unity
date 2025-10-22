@@ -6,13 +6,14 @@ using Core.Networking;
 
 public sealed class NetWorldRuntime : NetWorld
 {    
-    public delegate void DataSendDelegate(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
+    public delegate void DataSendRequestDelegate(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
 
     private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
     private const float MIN_UPDATE_INTERVAL = 0.1f; // 10 times per second.
     
     public event Action<NetWorldPlayerSnapshot> PlayerRegistered = delegate { };
     public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
+    public event DataSendRequestDelegate DataSendRequested = delegate { };
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectsRegisterRequests => m_ObjectsRegisterRequests;
     private Dictionary<NetObjectUID, NetObjectState> m_ObjectsRegisterRequests;
@@ -31,10 +32,6 @@ public sealed class NetWorldRuntime : NetWorld
     private HashSet<ClientUID> m_LocalPlayerRegisterQueue;
     private HashSet<ClientUID> m_PlayerUnregisterQueue;
 
-    public int OutgoingMessageQueueCount => m_OutgoingMessageQueue.Count;
-    private Queue<Action> m_OutgoingMessageQueue;
-
-    private readonly DataSendDelegate m_Sender;
     private float m_LastUpdateTime;
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
@@ -42,10 +39,8 @@ public sealed class NetWorldRuntime : NetWorld
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
 
-    public NetWorldRuntime(DataSendDelegate sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
+    public NetWorldRuntime(string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
     {
-        m_Sender = sender ?? throw new ArgumentNullException(nameof(sender));
-
         NetObjectUID.Reset();
 
         m_LastUpdateTime = FixedTime;
@@ -62,8 +57,6 @@ public sealed class NetWorldRuntime : NetWorld
         m_PlayerUnregisterQueue = new HashSet<ClientUID>();
 
         m_HistoryBuffer = new HistoryBuffer();
-
-        m_OutgoingMessageQueue = new Queue<Action>();
     }
 
     public NetWorldEvaluator Replicate() => 
@@ -104,16 +97,6 @@ public sealed class NetWorldRuntime : NetWorld
             m_LastUpdateTime = FixedTime;
             UpdateWorldState(worldDelta);
         }
-
-        var deltaRatio = (MIN_UPDATE_INTERVAL - (FixedTime - m_LastUpdateTime)) / deltaTime;
-        var messageToSendCount = m_OutgoingMessageQueue.Count / deltaRatio;
-
-        var sent = 0f;
-        while (sent < messageToSendCount && m_OutgoingMessageQueue.Count > 0)
-        {
-            m_OutgoingMessageQueue.Dequeue()();
-            sent++;
-        }
     }
 
     #region Loop
@@ -138,7 +121,7 @@ public sealed class NetWorldRuntime : NetWorld
 
             m_Writer.SeekZero();
             m_Writer.WriteSingle(Time);
-            ScheduleSend(opCode: MessageCodes.WorldCommunication, DeliveryMethod.Unreliable, data: m_Writer.ToArray());
+            DataSendRequested(userDataOpCode: MessageCodes.WorldCommunication, data: m_Writer.ToArray(), DeliveryMethod.Unreliable);
         }
 
         void TryReceiveWorldData()
@@ -212,7 +195,7 @@ public sealed class NetWorldRuntime : NetWorld
                 if (localPlayer == null)
                     Debug.LogError("Unable to send local player: doesn't exists");
                 else
-                    ScheduleSend(opCode: MessageCodes.PlayerStateUpdate, DeliveryMethod.Reliable, data: localPlayer.Serialize());
+                    DataSendRequested(userDataOpCode: MessageCodes.PlayerStateUpdate, data: localPlayer.Serialize(), DeliveryMethod.Reliable);
             }
         }
 
@@ -322,8 +305,8 @@ public sealed class NetWorldRuntime : NetWorld
         {
             ForEachStates((_, state) => 
             {
-                foreach (var r in state.RPCWithoutAuthorityRequests)
-                    ScheduleSend(MessageCodes.RPC, r.DeliveryMethod, r.State.ToData());
+                foreach (var request in state.RPCWithoutAuthorityRequests)
+                    DataSendRequested(userDataOpCode: MessageCodes.RPC, data: request.State.ToData(), request.DeliveryMethod);
             });
         }
 
@@ -352,12 +335,12 @@ public sealed class NetWorldRuntime : NetWorld
             // Update and send local objects.
             ForEachLocalStates((uid, state) =>
             {
-                var deliveryIntent = DeliveryMethod.Unreliable;
+                var deliveryMethod = DeliveryMethod.Unreliable;
                 if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
-                    deliveryIntent = DeliveryMethod.Reliable;
+                    deliveryMethod = DeliveryMethod.Reliable;
 
                 state.PrepareForSerialization();
-                ScheduleSend(MessageCodes.ObjectStateUpdate, deliveryIntent, state.Serialize());
+                DataSendRequested(userDataOpCode: MessageCodes.ObjectStateUpdate, data: state.Serialize(), deliveryMethod);
 
                 switch (state.StateChangeType)
                 {
@@ -383,21 +366,7 @@ public sealed class NetWorldRuntime : NetWorld
             m_HistoryBuffer.Dequeue();
     }
     #endregion
-
-    private void ScheduleSend(uint opCode, DeliveryMethod method, byte[] data) =>
-        m_OutgoingMessageQueue.Enqueue(() =>
-        {
-            try
-            {
-                m_Sender(opCode, data, method);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-                Debug.LogError($"{data.Length} + {opCode}");
-            }
-        });
-
+    
     protected override void RemoveObject(NetObjectUID stateUID)
     {
         base.RemoveObject(stateUID);
@@ -433,9 +402,6 @@ public sealed class NetWorldRuntime : NetWorld
 
         m_HistoryBuffer.Clear();
         m_HistoryBuffer = null;
-
-        m_OutgoingMessageQueue.Clear();
-        m_OutgoingMessageQueue = null;
 
         PlayerRegistered = null;
     }

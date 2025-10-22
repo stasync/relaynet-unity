@@ -222,12 +222,6 @@ public class NetDebugWindow : EditorWindow
                         foreach (var objectStateSnapshot in remoteRequests.Values)
                             EditorGUILayout.LabelField(objectStateSnapshot.ToString());
                     }
-
-                    // Outgoing messages.
-                    {
-                        EditorGUILayout.Space();
-                        EditorGUILayout.LabelField($"Outgoing world message count: {m_World.OutgoingMessageQueueCount}", EditorStyles.boldLabel);
-                    }
                 }
                 EditorGUI.indentLevel--;
             }
