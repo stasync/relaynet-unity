@@ -421,18 +421,17 @@ public sealed class NetWorldRuntime : NetWorld
     }
 
     // Scene loaded.
-    public void OnSceneLoaded() => 
-        ScheduleOnUpdate(() =>
-        {            
-            //Check for player exists.
-            var player = PlayersInternal.LocalPlayer;
-            if (player != null)
-                player.IsReady = true;
+    public void OnSceneLoaded()
+    {
+        // Check for player exists.
+        var player = PlayersInternal.LocalPlayer;
+        if (player != null)
+            player.IsReady = true;
 
-            // Create view.
-            InitializeView();
-        });
-
+        // Create view.
+        InitializeView();
+    }
+    
     private void ForEachRemoteRequests(Action<NetObjectUID, NetObjectStateSnapshot> processor)
     {
         foreach (var uid in m_RemoteObjectUpdateRequests.Keys.ToArray())

@@ -26,7 +26,6 @@ public abstract class NetWorld
     public IExposedNetWorldPlayersCollection Players => PlayersInternal;
     protected NetWorldPlayersCollection PlayersInternal { get; private set; }
 
-    private NetWorldUpdateQueue m_UpdateQueue;
     private Queue<Action> m_ViewInitQueue;
 
     protected NetWorld(NetWorldID uid, string worldName) : this(uid, worldName, NetWorldID.Invalid)
@@ -44,8 +43,7 @@ public abstract class NetWorld
         Name = $"{ID}:{worldName}";
 
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
-        PlayersInternal = new NetWorldPlayersCollection(() => IsValid);
-        m_UpdateQueue = new NetWorldUpdateQueue();
+        PlayersInternal = new NetWorldPlayersCollection(validator: () => IsValid);
         m_ViewInitQueue = new Queue<Action>();
     }
 
@@ -63,11 +61,8 @@ public abstract class NetWorld
 
     public void Update(float deltaTime)
     {
-        if (!IsValid)
-            return;
-
-        m_UpdateQueue.ProcessQueue();
-        UpdateImplementation(deltaTime);
+        if (IsValid)
+            UpdateImplementation(deltaTime);
     }
 
     protected abstract void UpdateImplementation(float deltaTime);
@@ -92,7 +87,7 @@ public abstract class NetWorld
         OnBeforeUpdateWorldState(worldDelta);
         OnUpdateWorldState(worldDelta);
 
-        if(View != null)
+        if (View != null)
         {
             OnBeforeExecuteView(worldDelta);
             View.RebuildAccordingState();
@@ -132,9 +127,6 @@ public abstract class NetWorld
         PlayersInternal.Clear();
         PlayersInternal = null;
 
-        m_UpdateQueue.Clear();
-        m_UpdateQueue = null;
-
         m_ViewInitQueue.Clear();
         m_ViewInitQueue = null;
 
@@ -146,24 +138,6 @@ public abstract class NetWorld
             View = null;
         }
     }
-
-    public void ScheduleOnUpdate(Action action) => 
-        m_UpdateQueue.Enqueue(action);
-    
-    public void ScheduleOnUpdateUntil(Func<bool> condition, Action action) => 
-        m_UpdateQueue.EnqueueUntil(condition, action);
-    
-    public void ScheduleOnUpdateIfObjectExists(NetObjectUID objectUID, Action<NetObjectState> a) => 
-        ScheduleOnUpdate(() => 
-        {
-            if(!TryGetObject(objectUID, out var state))
-            {
-                Debug.LogError($"Skipping scheduled action for absent object {objectUID}");
-                return;
-            }
-
-            a(state);
-        });
 
     public virtual bool ObjectExists(NetObjectUID uid) => 
         m_CurrentObjectStates.ContainsKey(uid);
