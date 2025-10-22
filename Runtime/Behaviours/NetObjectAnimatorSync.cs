@@ -115,32 +115,39 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
 
     private readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new ();
     private readonly List<float> m_RemoteLayerWeights = new();
+    private bool[] m_LayersSyncFlags;
     
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
     
     private void Awake()
     {
-        foreach (var p in m_Animator.parameters)
+        foreach (var parameter in m_Animator.parameters)
         {
-            switch (p.type)
+            switch (parameter.type)
             {
                 case AnimatorControllerParameterType.Bool:
-                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorBoolParameterValueProxy(m_Animator, p));
+                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorBoolParameterValueProxy(m_Animator, parameter));
                     break;
 
                 case AnimatorControllerParameterType.Float:
-                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorFloatParameterValueProxy(m_Animator, p));
+                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorFloatParameterValueProxy(m_Animator, parameter));
                     break;
 
                 case AnimatorControllerParameterType.Int:
-                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorIntParameterValueProxy(m_Animator, p));
+                    m_AnimatorParameterValueProxyCollection.Add(new AnimatorIntParameterValueProxy(m_Animator, parameter));
                     break;
             }
         }
 
         for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
             m_RemoteLayerWeights.Add(m_Animator.GetLayerWeight(layerIndex));
+        
+        var runtimeController = (UnityEditor.Animations.AnimatorController)m_Animator.runtimeAnimatorController;
+       
+        m_LayersSyncFlags = new bool[runtimeController.layers.Length];
+        for (var index = 0; index < runtimeController.layers.Length; index++)
+            m_LayersSyncFlags[index] = (uint)runtimeController.layers[index].syncedLayerIndex < (uint)runtimeController.layers.Length;
     }
 
     public void SetTrigger(string triggerName) =>
@@ -239,6 +246,11 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         // Layers.
         for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
         {
+            var syncFlag = m_LayersSyncFlags[layerIndex];
+            writer.WriteBool(syncFlag);
+            if (syncFlag)
+                continue;
+            
             var stateToSync =
                 m_Animator.IsInTransition(layerIndex) ?
                 m_Animator.GetNextAnimatorStateInfo(layerIndex) :
@@ -263,9 +275,17 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         // Layers.
         for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
         {
+            var remoteSyncFlag = reader.ReadBoolean();
+            if (remoteSyncFlag)
+                continue;
+            
             var targetLayerWeight = reader.ReadSingle();
             var targetStateHash = reader.ReadInt32();
             var targetNormalizedTime = reader.ReadSingle();
+            
+            var localSyncFlag = m_LayersSyncFlags[layerIndex];
+            if (localSyncFlag)
+                continue;
 
             m_RemoteLayerWeights[layerIndex] = targetLayerWeight;
 

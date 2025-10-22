@@ -292,7 +292,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
             Debug.LogError($"Unable to change owner, invalid id {newOwner}");
     }
 
-    internal byte[] Serialize()
+    public byte[] Serialize()
     {
         m_Writer.SeekZero();
         ToSnapshot().Serialize(m_Writer);
