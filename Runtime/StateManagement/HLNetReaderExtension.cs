@@ -7,7 +7,7 @@ public static class HLNetReaderExtension
         reader.ReadPackedUInt32();
 
     public static NetWorldPlayer ReadPlayer(this NetReader reader, NetWorld targetWorld) =>
-        targetWorld.Players.Find(reader.ReadConnectionUID());
+        targetWorld.Players.Find(reader.ReadClientUid());
 
     public static NetObjectState ReadObjectState(this NetReader reader, NetWorld targetWorld) =>
         targetWorld.FindObject(reader.ReadPackedUInt32());

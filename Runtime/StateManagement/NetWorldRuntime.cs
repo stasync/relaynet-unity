@@ -5,7 +5,9 @@ using UnityEngine;
 using Core.Networking;
 
 public sealed class NetWorldRuntime : NetWorld
-{
+{    
+    public delegate void DataSendDelegate(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
+
     private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
     private const float MIN_UPDATE_INTERVAL = 0.1f; // 10 times per second.
     
@@ -32,7 +34,7 @@ public sealed class NetWorldRuntime : NetWorld
     public int OutgoingMessageQueueCount => m_OutgoingMessageQueue.Count;
     private Queue<Action> m_OutgoingMessageQueue;
 
-    private readonly Action<uint, byte[], DeliveryMethod> m_Sender;
+    private readonly DataSendDelegate m_Sender;
     private float m_LastUpdateTime;
 
     public float FixedTime => UnityEngine.Time.fixedUnscaledTime;
@@ -40,7 +42,7 @@ public sealed class NetWorldRuntime : NetWorld
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
 
-    public NetWorldRuntime(Action<uint, byte[], DeliveryMethod> sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
+    public NetWorldRuntime(DataSendDelegate sender, string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
     {
         m_Sender = sender ?? throw new ArgumentNullException(nameof(sender));
 

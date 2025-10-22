@@ -26,7 +26,7 @@ public readonly struct NetWorldPlayerSnapshot
 
     private NetWorldPlayerSnapshot(NetReader reader)
     {
-        UID = reader.ReadConnectionUID();
+        UID = reader.ReadClientUid();
         Name = reader.ReadString();
         IsInGameScene = reader.ReadBoolean();
         Platform = (GSDevice.Platform)reader.ReadInt32();
@@ -41,7 +41,7 @@ public readonly struct NetWorldPlayerSnapshot
 
     public void Serialize(NetWriter writer)
     {
-        writer.WriteConnectionUID(UID);
+        writer.WriteClientUid(UID);
         writer.WriteString(Name);
         writer.WriteBool(IsInGameScene);
         writer.WriteInt32((int)Platform);

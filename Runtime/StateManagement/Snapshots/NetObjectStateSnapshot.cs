@@ -12,7 +12,7 @@ public struct NetObjectStateSnapshot
 
     private void Restore(NetReader reader)
     {
-        OwnerUID = reader.ReadConnectionUID();
+        OwnerUID = reader.ReadClientUid();
         ObjectUID = reader.ReadInstanceId();
         PrefabId = reader.ReadString();
         IsSceneObject = reader.ReadBoolean();
@@ -23,7 +23,7 @@ public struct NetObjectStateSnapshot
 
     public void Serialize(NetWriter writer)
     {
-        writer.WriteConnectionUID(OwnerUID);
+        writer.WriteClientUid(OwnerUID);
         writer.WriteInstanceId(ObjectUID);
         writer.WriteString(PrefabId);
         writer.WriteBool(IsSceneObject);

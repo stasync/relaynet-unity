@@ -317,7 +317,7 @@ public class NetDebugWindow : EditorWindow
             return;
 
         var realtime = m_NetworkProvider.Instance.Realtime;
-        EditorGUILayout.LabelField($"RT status: {realtime.ConnectState}", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField($"RT status: {realtime.IsSessionRunningAndReady}", EditorStyles.boldLabel);
         EditorGUILayout.LabelField($"RT conn: {realtime.LocalConnectionUID}", EditorStyles.boldLabel);
 
         EditorGUILayout.Space();
