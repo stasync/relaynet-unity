@@ -62,32 +62,104 @@ public sealed class NetWorldRuntime : NetWorld
     public NetWorldEvaluator Replicate() => 
         new(runtime: this);
 
-    public void ScheduleUpdateForRemoteObject(NetObjectStateSnapshot snapshot)
+    public void ScheduleRemoteUpdate(uint userDataOpCode, byte[] data)
     {
-        if (!snapshot.ObjectUID.IsValid)
+        m_Reader.Replace(data);
+        switch (userDataOpCode)
         {
-            Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid UID.");
-            return;
-        }
+            // Other client wants to tell us about its player state.
+            case MessageCodes.PlayerStateUpdate:
+            {
+                // Add player, if not exists.
+                // Deserialize other player.
+                // Adding player id duplicated logic.
+                var snapshot = NetWorldPlayerSnapshot.FormReader(m_Reader);
+                if (!m_RemotePlayersUpdateRequests.TryAdd(snapshot.UID, snapshot))
+                    Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.UID}': already scheduled.");
+                
+                break;
+            }
+            case MessageCodes.ObjectStateUpdate:
+            {
+                var snapshot = NetObjectStateSnapshot.FormReader(m_Reader);
+                
+                if (!snapshot.ObjectUID.IsValid)
+                {
+                    Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid UID.");
+                    break;
+                }
 
-        if (m_RemoteObjectUpdateRequests.TryAdd(snapshot.ObjectUID, snapshot)) 
-            return;
+                if (m_RemoteObjectUpdateRequests.TryAdd(snapshot.ObjectUID, snapshot)) 
+                    break;
         
-        var current = m_RemoteObjectUpdateRequests[snapshot.ObjectUID];
-        if (current.StateChangeType < snapshot.StateChangeType)
-            m_RemoteObjectUpdateRequests[snapshot.ObjectUID] = snapshot;
-        else
-            Debug.LogWarning($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
-    }
+                var current = m_RemoteObjectUpdateRequests[snapshot.ObjectUID];
+                if (current.StateChangeType < snapshot.StateChangeType)
+                    m_RemoteObjectUpdateRequests[snapshot.ObjectUID] = snapshot;
+                else
+                    Debug.LogWarning($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
+                
+                break;
+            }
 
-    public void ScheduleUpdateForRemotePlayer(NetWorldPlayerSnapshot snapshot)
-    {
-        if (!m_RemotePlayersUpdateRequests.TryAdd(snapshot.UID, snapshot))
-             Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.UID}': already scheduled.");
-    }
+            case MessageCodes.WorldCommunication:
+            {
+                m_RemoteWorldDataUpdateRequests.Enqueue(data);
+                break;
+            }
 
-    public void ScheduleRemoteWorldDataUpdate(byte[] data) => 
-        m_RemoteWorldDataUpdateRequests.Enqueue(data);
+            case MessageCodes.RPC:
+            {
+                var state = RPCWithoutAuthorityState.FromReader(m_Reader);
+                if (!state.IsValid)
+                    throw new ArgumentException();
+
+                var objectIdentity = FindObjectView(state.ObjectUID);
+
+                // We need to handle rpc receive for objects, which are doesn't exist.
+                // It is probably already destroyed.
+                // No exceptions here, just warning.
+                if (objectIdentity == null)
+                {
+#if NETWORK_DEBUG
+                    var rpcName = RPCUtils.TryFindStringByHashSlow(state.RPCState.Hash);
+                    if (string.IsNullOrWhiteSpace(rpcName))
+                        rpcName = "empty";
+
+                    Debug.LogError($"Trying to receive rpc with code '{state.RPCState.Hash}' '{rpcName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed.");
+#endif
+                    break;
+                }
+
+                var receiver = (INoAuthorityRPCReceiver)objectIdentity;
+
+                switch (state.Type)
+                {
+                    case NoAuthorityRPCType.ToOwner:
+                    {
+                        // Check if we are this object's owner.
+                        if (objectIdentity.IsLocal)
+                            receiver.ReceiveRPCLocally(state);
+                        
+                        break;
+                    }
+                    case NoAuthorityRPCType.ToMaster:
+                    {
+                        if (objectIdentity.IsOwnedByMasterClient)
+                            receiver.ReceiveRPCOnMasterClient(state);
+                        
+                        break;
+                    }
+                    case NoAuthorityRPCType.ToAll:
+                    {
+                        receiver.ReceiveRPC(state);
+                        break;
+                    }
+                }
+                
+                break;
+            }
+        }
+    }
 
     protected override void UpdateImplementation(float deltaTime)
     {
@@ -533,48 +605,6 @@ public sealed class NetWorldRuntime : NetWorld
     {
         var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
         return networkObject == null ? null : networkObject.GetComponent<T>();
-    }
-
-    public void ReceiveRPCWithoutAuthority(RPCWithoutAuthorityState state)
-    {
-        if (!state.IsValid)
-            throw new ArgumentException();
-
-        var objectIdentity = FindObjectView(state.ObjectUID);
-
-        // We need to handle rpc receive for objects, which are doesn't exist.
-        // It is probably already destroyed.
-        // No exceptions here, just warning.
-        if (objectIdentity == null)
-        {
-#if NETWORK_DEBUG
-            var rpcName = RPCUtils.TryFindStringByHashSlow(state.RPCState.Hash);
-            if (string.IsNullOrWhiteSpace(rpcName))
-                rpcName = "empty";
-
-            Debug.LogError($"Trying to receive rpc with code '{state.RPCState.Hash}' '{rpcName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed.");
-#endif
-            return;
-        }
-
-        var receiver = (INoAuthorityRPCReceiver)objectIdentity;
-
-        switch (state.Type)
-        {
-            case NoAuthorityRPCType.ToOwner:
-                //Check if we are this object's owner
-                if (objectIdentity.IsLocal)
-                    receiver.ReceiveRPCLocally(state);
-                break;
-            case NoAuthorityRPCType.ToMaster:
-                if (objectIdentity.IsOwnedByMasterClient)
-                    receiver.ReceiveRPCOnMasterClient(state);
-                break;
-
-            case NoAuthorityRPCType.ToAll:
-                receiver.ReceiveRPC(state);
-                break;
-        }
     }
 
     public int GetHistoryBufferSize() => 
