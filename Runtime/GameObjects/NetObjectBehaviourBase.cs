@@ -30,5 +30,7 @@ public abstract class GSInstanceBehaviourBase : MonoBehaviour
 
     private NetObjectIdentity m_Identity;
 
-    protected virtual void OnDestroy() { }
+    protected virtual void OnDestroy()
+    {
+    }
 }
