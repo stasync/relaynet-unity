@@ -92,7 +92,7 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
         if (isLocal)
             LocalPlayerUID = uid;
 
-        UpdateMasterUID();
+        UpdateMasterUid();
         return player;
     }
 
@@ -104,10 +104,10 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
         if (m_PlayersCollection.Remove(uid))
             m_RemovedPlayers.Add(uid);
 
-        UpdateMasterUID();
+        UpdateMasterUid();
     }
 
-    private void UpdateMasterUID() => 
+    private void UpdateMasterUid() => 
         MasterPlayerUID = AllUIDs.Any() ? AllUIDs.Min() : ClientUID.Invalid;
 
     internal void Clear()

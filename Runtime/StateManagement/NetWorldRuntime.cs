@@ -441,11 +441,11 @@ public sealed class NetWorldRuntime : NetWorld
     }
 
     // Connected.
-    public void RegisterLocalPlayer(ClientUID peerId) => 
+    internal void RegisterLocalPlayer(ClientUID peerId) => 
         m_LocalPlayerRegisterQueue.Add(peerId);
 
     // Disconnected.
-    public void OnDisconnect(ClientUID uid)
+    internal void OnDisconnect(ClientUID uid)
     {
         if (m_RemotePlayersUpdateRequests.Remove(uid))
             Debug.LogError($"Removed absent update request for player '{uid}'.");
