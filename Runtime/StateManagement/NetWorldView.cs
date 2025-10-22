@@ -68,21 +68,21 @@ public class NetWorldView : MonoBehaviour
         }
 
         // Create, update, destroy objects.
-        ForEachStates((uid, state) =>
+        foreach (var (objectUid, state) in m_World.ObjectStates)
         {
             // Skip state.
-            if (!ShouldUpdateViewForState(uid))
-                return;
-
+            if (!ShouldUpdateViewForState(objectUid))
+                continue;
+            
             // Try get or create new state view.
-            if (!m_CurrentObjectViews.TryGetValue(uid, out var netObjectView))
+            if (!m_CurrentObjectViews.TryGetValue(objectUid, out var netObjectView))
             {
-                if (m_TemporaryUnregisteredViews.Remove(uid, out netObjectView))
-                    m_CurrentObjectViews.Add(uid, netObjectView);
+                if (m_TemporaryUnregisteredViews.Remove(objectUid, out netObjectView))
+                    m_CurrentObjectViews.Add(objectUid, netObjectView);
                 else
                 {
                     if (string.IsNullOrWhiteSpace(state.PrefabId))
-                        return;
+                        continue;
 
                     var position = Vector3.zero;
                     var rotation = Quaternion.identity;
@@ -94,7 +94,7 @@ public class NetWorldView : MonoBehaviour
                     }
 
                     netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
-                    m_CurrentObjectViews.Add(uid, netObjectView);
+                    m_CurrentObjectViews.Add(objectUid, netObjectView);
                 }
             }
 
@@ -106,7 +106,7 @@ public class NetWorldView : MonoBehaviour
             }
             else
                 InitializeObjectView(netObjectView, state.UID);
-        });
+        }
 
         Profiler.EndSample();
     }
@@ -122,7 +122,7 @@ public class NetWorldView : MonoBehaviour
         if (!netObjectState.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
             return true;
 
-        var directionToCamera = Camera.main.transform.position - transformData.Position.Value;
+        var directionToCamera = Camera.main!.transform.position - transformData.Position.Value;
         return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
     }
 
@@ -180,9 +180,6 @@ public class NetWorldView : MonoBehaviour
 
     public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => 
         m_TemporaryUnregisteredViews.Add(uid, identity);
-
-    private void ForEachStates(Action<NetObjectUID, NetObjectState> processor) => 
-        m_World.ForEachStates(processor);
 
     private void RemoveView(NetObjectUID uid)
     {

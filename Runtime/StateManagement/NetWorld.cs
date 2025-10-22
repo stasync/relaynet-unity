@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public abstract class NetWorld
@@ -97,7 +96,11 @@ public abstract class NetWorld
 
     protected virtual void OnBeforeUpdateWorldState(float worldDelta)
     {
-        ForEachStates((_, state) => state.OnBeforeUpdateWorldState(worldDelta));
+        foreach (var objectUid in new List<NetObjectUID>(m_CurrentObjectStates.Keys))
+        {
+            var state = m_CurrentObjectStates[objectUid];
+            state.OnBeforeUpdateWorldState(worldDelta);
+        }
         PlayersInternal.OnBeforeUpdateWorldState(worldDelta);
     }
 
@@ -173,26 +176,6 @@ public abstract class NetWorld
     public bool TryGetObject(NetObjectUID instanceId, out NetObjectState state) =>
         m_CurrentObjectStates.TryGetValue(instanceId, out state);
 
-    public void ForEachStates(Action<NetObjectUID, NetObjectState> processor)
-    {
-        foreach (var uid in m_CurrentObjectStates.Keys.ToArray())
-            processor(uid, m_CurrentObjectStates[uid]);
-    }
-
-    protected void ForEachLocalStates(Action<NetObjectUID, NetObjectState> processor) => 
-        ForEachStates((uid, state) =>
-        {
-            if (state.IsOwnedByLocalPlayer)
-                processor(uid, state);
-        });
-
-    protected void ForEachRemoteStates(Action<NetObjectUID, NetObjectState> processor) => 
-        ForEachStates((uid, state) =>
-        {
-            if (!state.IsOwnedByLocalPlayer)
-                processor(uid, state);
-        });
-
     protected virtual void RemoveObject(NetObjectUID stateUID)
     {
         if (!m_CurrentObjectStates.TryGetValue(stateUID, out var state))
@@ -224,11 +207,11 @@ public abstract class NetWorld
         }
 
         // Remove absent objects.
-        ForEachStates((uid, _) => 
+        foreach (var objectUid in new List<NetObjectUID>(m_CurrentObjectStates.Keys))
         {
-            if (!snapshot.Objects.ContainsKey(uid))
-                RemoveObject(uid);
-        });
+            if (!snapshot.Objects.ContainsKey(objectUid))
+                RemoveObject(objectUid);
+        }
     }
 
     public void ScheduleOnViewInit(Action action)

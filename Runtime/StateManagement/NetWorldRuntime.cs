@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Core.Networking;
 
@@ -247,10 +246,10 @@ public sealed class NetWorldRuntime : NetWorld
 
             // Update remotes.
             {
-                foreach (var uid in remotePlayersUpdateRequests.Keys.ToArray())
+                foreach (var clientUid in new List<ClientUID>(remotePlayersUpdateRequests.Keys))
                 {
-                    var snapshot = remotePlayersUpdateRequests[uid];
-                    var player = Players.Find(uid);
+                    var snapshot = remotePlayersUpdateRequests[clientUid];
+                    var player = Players.Find(clientUid);
 
                     // Player not exists.
                     if (player == null)
@@ -261,11 +260,12 @@ public sealed class NetWorldRuntime : NetWorld
                         // Notify player registered.
                         PlayerAdded(player.ToSnapshot());
 
-                        ForEachStates(processor: (_, state) =>
+                        foreach (var objectUid in new List<NetObjectUID>(ObjectStates.Keys))
                         {
+                            var state = ObjectStates[objectUid];
                             if (state.IsOwnedByLocalPlayer)
                                 state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-                        });
+                        };
                     }
 
                     var wasInGameScene = player.IsReady;
@@ -294,8 +294,9 @@ public sealed class NetWorldRuntime : NetWorld
         // Update states based on removed player, if player leave, remove object.
         void UpdateObjectStateBasedOnRemovedPlayers()
         {
-            ForEachStates(processor: (stateUID, state) =>
+            foreach (var objectUid in new List<NetObjectUID>(ObjectStates.Keys))
             {
+                var state = ObjectStates[objectUid];
                 while (removedPlayers.TryDequeue(out var removePlayerUid))
                 {
                     // Object owned by disconnected player.
@@ -309,31 +310,28 @@ public sealed class NetWorldRuntime : NetWorld
                                 state.ChangedOwner(PlayersInternal.LocalPlayer.Uid);
                             else
                                 state.InvalidateOwner();
-
-                            TryNotifyViewAboutDisconnectedPlayer(removePlayerUid, stateUID);
+                            
+                            if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
+                                view.OnDisconnected(removePlayerUid);
                         }
                         // Destroy object.
                         else
-                            RemoveObject(stateUID);
+                            RemoveObject(objectUid);
                     }
                     // Notify view.
                     else
-                        TryNotifyViewAboutDisconnectedPlayer(removePlayerUid, stateUID);
+                    {
+                        if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
+                            view.OnDisconnected(removePlayerUid);
+                    }
                 }
-            });
-            return;
-
-            void TryNotifyViewAboutDisconnectedPlayer(ClientUID clientUID, NetObjectUID objectUID)
-            {
-                if (View != null && View.CurrentObjectViews.TryGetValue(objectUID, out var view))
-                    view.OnDisconnected(clientUID);
             }
         }
 
         // Update state based on remote incoming data.
         void UpdateObjectStateBasedOnRemoteData()
         {
-            foreach (var uid in remoteObjectUpdateRequests.Keys.ToArray())
+            foreach (var uid in new List<NetObjectUID>(remoteObjectUpdateRequests.Keys))
             {
                 var snapshot = remoteObjectUpdateRequests[uid];
 
@@ -398,18 +396,19 @@ public sealed class NetWorldRuntime : NetWorld
         // Update RPC requests (Calling rpc without authority).
         void UpdateRPCRequestsWithoutAuthority()
         {
-            ForEachStates((_, state) =>
+            foreach (var uid in new List<NetObjectUID>(ObjectStates.Keys))
             {
+                var state = ObjectStates[uid];
                 foreach (var request in state.RPCWithoutAuthorityRequests)
                     DataSendRequested(userDataOpCode: MessageCodes.RPC, data: request.State.ToData(), request.DeliveryMethod);
-            });
+            }
         }
 
         // Update state based on local object changes.
         void UpdateLocalObjectState()
         {
             // Register new local object, that was just created.
-            foreach (var uid in m_TemporaryUnregisteredObjects.Keys.ToArray())
+            foreach (var uid in new List<NetObjectUID>(m_TemporaryUnregisteredObjects.Keys))
             {
                 var state = m_TemporaryUnregisteredObjects[uid];
                 // Skip remote objects.
@@ -428,8 +427,10 @@ public sealed class NetWorldRuntime : NetWorld
             }
 
             // Update and send local objects.
-            ForEachLocalStates((uid, state) =>
+            foreach (var uid in new List<NetObjectUID>(ObjectStates.Keys))
             {
+                var state = ObjectStates[uid];
+                
                 var deliveryMethod = DeliveryMethod.Unreliable;
                 if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
                     deliveryMethod = DeliveryMethod.Reliable;
@@ -447,7 +448,7 @@ public sealed class NetWorldRuntime : NetWorld
                         state.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateHard);
                         break;
                 }
-            });
+            }
         }
 
         #endregion
