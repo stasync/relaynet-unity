@@ -43,7 +43,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
     private void TryRegisterOrInitialize()
     {
         if (!Identity.Initialized)
-            Network.MainWorld.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
+            Network.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
     }
 
     public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => 
