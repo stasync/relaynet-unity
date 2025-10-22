@@ -18,7 +18,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
                 return false;
 
             var localPlayer = World.Players.LocalPlayer;
-            return localPlayer != null && localPlayer.MainTagObjectUID.IsValid && localPlayer.MainTagObjectUID.Equals(State.UID);
+            return localPlayer != null && localPlayer.MainTagObjectUid.IsValid && localPlayer.MainTagObjectUid.Equals(State.UID);
         }
     }
 
@@ -161,7 +161,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         if (!IsSceneObject)
             throw new Exception("You can manage owners only for scene objects");
 
-        State.ScheduleOwnerChanged(World.Players.LocalPlayerUID);
+        State.ScheduleOwnerChanged(World.Players.LocalPlayerUid);
     }
 
     private byte[] Serialize()

@@ -87,7 +87,7 @@ public sealed class NetWorldRuntime : NetWorld
                 
                 if (!snapshot.ObjectUID.IsValid)
                 {
-                    Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid UID.");
+                    Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid Uid.");
                     break;
                 }
 
@@ -294,8 +294,8 @@ public sealed class NetWorldRuntime : NetWorld
                         if (state.IsSceneObject)
                         {
                             //Is local client becomes master client, set object's owner and sync it.
-                            if (PlayersInternal.LocalPlayer != null && PlayersInternal.LocalPlayer.IsMaster)
-                                state.ScheduleOwnerChanged(PlayersInternal.LocalPlayer.UID);
+                            if (PlayersInternal.LocalPlayerIsMaster)
+                                state.ScheduleOwnerChanged(PlayersInternal.LocalPlayer.Uid);
                             else
                                 state.InvalidateOwner();
 
@@ -327,7 +327,7 @@ public sealed class NetWorldRuntime : NetWorld
                 var snapshot = m_RemoteObjectUpdateRequests[uid];
                 
                 if (!snapshot.ObjectUID.IsValid)
-                    throw new InvalidOperationException($"Invalid UID: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
+                    throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
 
                 // Check if owner exists.
                 if (!PlayersInternal.Contains(snapshot.OwnerUID))
@@ -351,7 +351,7 @@ public sealed class NetWorldRuntime : NetWorld
                 // Object doesn't exists.
                 if (snapshot.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateHard || snapshot.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateSoft)
                 {
-                    Debug.LogError($"Remote update snapshot form object with UID: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
+                    Debug.LogError($"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
                     
                     m_ObjectsRegisterRequests.Remove(snapshot.ObjectUID);
                     m_RemoteObjectUpdateRequests.Remove(uid);
@@ -405,7 +405,7 @@ public sealed class NetWorldRuntime : NetWorld
                     continue;
 
                 if (ObjectExists(state.UID))
-                    Debug.LogError($"Object with UID {state.UID} already exists");
+                    Debug.LogError($"Object with Uid {state.UID} already exists");
                 else
                 {
                     state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
@@ -524,7 +524,7 @@ public sealed class NetWorldRuntime : NetWorld
         if (!owner.IsLocal)
             throw new InvalidOperationException();
         
-        var state = new NetObjectState(new NetObjectUID(owner.UID), prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
+        var state = new NetObjectState(new NetObjectUID(owner.Uid), prefabId, isSceneObject, owner.Uid, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(state.UID, state);
         return View.CreateImmediate(state, position, rotation);      
     }
@@ -550,7 +550,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         // Create state from scene object identity.
         // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, PlayersInternal.MasterPlayerUID, PlayersInternal.Find);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, PlayersInternal.MasterPlayerUid, PlayersInternal.Find);
         m_ObjectsRegisterRequests.Add(newState.UID, newState);
         var newStateUID = newState.UID;
 
@@ -570,7 +570,7 @@ public sealed class NetWorldRuntime : NetWorld
             {
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.LogError($"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with UID '{newStateUID}' not exist.");
+                Debug.LogError($"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newStateUID}' not exist.");
 #endif
             }
         });
@@ -604,7 +604,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         NetObjectIdentity CreatePendingObject()
         {
-            var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.UID, PlayersInternal.Find);
+            var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.Uid, PlayersInternal.Find);
             m_ObjectsRegisterRequests.Add(instanceId, state);
             return View.CreateImmediate(state, position, rotation);
         }

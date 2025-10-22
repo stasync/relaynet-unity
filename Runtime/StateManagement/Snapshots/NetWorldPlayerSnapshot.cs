@@ -14,13 +14,13 @@ public readonly struct NetWorldPlayerSnapshot
 
     private NetWorldPlayerSnapshot(NetWorldPlayer player)
     {
-        UID = player.UID;
+        UID = player.Uid;
         Name = player.Name;
         IsInGameScene = player.IsReady;
         Platform = player.Platform;
         RTTMs = player.RTTMs;
-        TagObjectUIDs = new HashSet<NetObjectUID>(player.TagObjectUIDs);
-        MainTagObjectUID = player.MainTagObjectUID;
+        TagObjectUIDs = new HashSet<NetObjectUID>(player.TagObjectUidCollection);
+        MainTagObjectUID = player.MainTagObjectUid;
         Properties = PropertiesSnapshot.FromProperties(player.Properties);
     }
 
@@ -54,7 +54,7 @@ public readonly struct NetWorldPlayerSnapshot
     public int GetSize()
     {
         var result = 0;
-        result += ClientUID.Size; // UID
+        result += ClientUID.Size; // Uid
         result += Name.Length;
         result += sizeof(bool); // IsInGameScene
         result += sizeof(UserDeviceType.Platform); // Platform

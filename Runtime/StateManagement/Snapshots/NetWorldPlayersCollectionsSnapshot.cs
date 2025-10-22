@@ -14,12 +14,12 @@ public readonly struct NetWorldPlayersCollectionsSnapshot
 
     private NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
     {
-        LocalPlayerUID = collection.LocalPlayer.UID;
-        MasterClientUID = collection.MasterPlayer.UID;
+        LocalPlayerUID = collection.LocalPlayer.Uid;
+        MasterClientUID = collection.MasterPlayer.Uid;
 
         m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
-        foreach (var UID in collection.AllUIDs)
-            m_PlayersCollection.Add(UID, collection.Find(UID).ToSnapshot());
+        foreach (var worldPlayer in collection.All)
+            m_PlayersCollection.Add(worldPlayer.Uid, worldPlayer.ToSnapshot());
 
         m_RemovedPlayers = collection.RemovedPlayers.ToList();
     }

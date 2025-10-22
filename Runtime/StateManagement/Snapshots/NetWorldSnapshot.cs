@@ -34,7 +34,7 @@ public readonly struct NetWorldSnapshot
     {
         var size = 0;
         size += sizeof(float); // DeltaTime
-        size += NetWorldID.Size; // UID
+        size += NetWorldID.Size; // Uid
         size += NetWorldID.Size; // ID
         size += sizeof(float); // Time
         size += sizeof(float); // Local time

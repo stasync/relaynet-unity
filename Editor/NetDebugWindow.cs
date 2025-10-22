@@ -25,13 +25,13 @@ public class NetDebugWindow : EditorWindow
 
         public void Draw()
         {
-            m_Draw = EditorGUILayout.Foldout(m_Draw, $"UID: {m_State.UID} Prefab: {m_State.PrefabId}");
+            m_Draw = EditorGUILayout.Foldout(m_Draw, $"Uid: {m_State.UID} Prefab: {m_State.PrefabId}");
             if (!m_Draw)
                 return;
 
             EditorGUI.indentLevel++;
             {
-                EditorGUILayout.LabelField($"UID: {m_State.UID} Scene: {m_State.IsSceneObject} Prefab: {m_State.PrefabId}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Uid: {m_State.UID} Scene: {m_State.IsSceneObject} Prefab: {m_State.PrefabId}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Change type: {m_State.StateChangeType}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Owner: {m_State.Owner}");
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
@@ -139,15 +139,17 @@ public class NetDebugWindow : EditorWindow
                 DrawPlayer("Master: ", players.MasterPlayer);
 
                 EditorGUILayout.Space();
-                foreach (var uid in players.AllUIDs)
-                    DrawPlayer(string.Empty, players.Find(uid));
+                foreach (var worldPlayer in players.All)
+                    DrawPlayer(string.Empty, worldPlayer);
             }
 
             //Obejcts
             {
                 foreach (var UID in m_ObjectViews.Keys.ToList())
+                {
                     if (!m_World.ObjectExists(UID))
                         m_ObjectViews.Remove(UID);
+                }
 
                 // Expand/Collapse all objects;
                 {
@@ -235,7 +237,7 @@ public class NetDebugWindow : EditorWindow
                     EditorGUI.indentLevel++;
                     {
                         foreach (var kvp in m_World.View.PendingObjectViews)
-                            EditorGUILayout.ObjectField($"UID: {kvp.Key}", kvp.Value, typeof(NetObjectIdentity), allowSceneObjects: true);
+                            EditorGUILayout.ObjectField($"Uid: {kvp.Key}", kvp.Value, typeof(NetObjectIdentity), allowSceneObjects: true);
                     }
                     EditorGUI.indentLevel--;
                 }

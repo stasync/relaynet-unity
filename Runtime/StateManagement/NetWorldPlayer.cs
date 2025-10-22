@@ -4,14 +4,14 @@ using System.Collections.Generic;
 
 public interface IReadOnlyNetWorldPlayer
 {
-    ClientUID UID { get; }
+    ClientUID Uid { get; }
     string Name { get; }
     bool IsReady { get; }
     bool IsValid { get; }
     bool IsLocal { get; }
     bool IsMaster { get; }
-    NetObjectUID MainTagObjectUID { get; }
-    IReadOnlyCollection<NetObjectUID> TagObjectUIDs { get; }
+    NetObjectUID MainTagObjectUid { get; }
+    IReadOnlyCollection<NetObjectUID> TagObjectUidCollection { get; }
     NetWorldPlayerSnapshot ToSnapshot();
     int GetHashCode();
     string ToString();
@@ -19,7 +19,7 @@ public interface IReadOnlyNetWorldPlayer
 
 public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlayer>, IEquatable<NetWorldPlayer>
 {
-    public ClientUID UID { get; private set; }
+    public ClientUID Uid { get; private set; }
 
     #region Values
     public string Name
@@ -28,7 +28,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         set
         {
             if (!IsLocal)
-                throw new Exception("Trying to change remote player name, this is not allowed. Player id: " + UID);
+                throw new Exception("Trying to change remote player name, this is not allowed. Player id: " + Uid);
             m_Name = value;
         }
     }
@@ -40,7 +40,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         set
         {
             if (!IsLocal)
-                throw new Exception("Trying to change is ready on remote player, this is not allowed. Player id: " + UID);
+                throw new Exception("Trying to change is ready on remote player, this is not allowed. Player id: " + Uid);
             m_IsReady = value;
         }
     }
@@ -52,7 +52,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         set
         {
             if (!IsLocal)
-                throw new Exception("Trying to change platform without authority, this is not allowed. Player id: " + UID);
+                throw new Exception("Trying to change platform without authority, this is not allowed. Player id: " + Uid);
             m_Platform = value;
         }
     }
@@ -64,7 +64,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
         set
         {
             if (!IsLocal)
-                throw new Exception("Trying to change RTT value without authority, this is not allowed. Player id: " + UID);
+                throw new Exception("Trying to change RTT value without authority, this is not allowed. Player id: " + Uid);
             m_RTTMS = value;
         }
     }
@@ -73,10 +73,10 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
     public IProperties Properties => m_Properties;
     private readonly Properties m_Properties;
 
-    public IReadOnlyCollection<NetObjectUID> TagObjectUIDs => m_TagObjectUIDs;
-    private HashSet<NetObjectUID> m_TagObjectUIDs;
+    public IReadOnlyCollection<NetObjectUID> TagObjectUidCollection => m_TagObjectUidCollection;
+    private HashSet<NetObjectUID> m_TagObjectUidCollection;
     
-    public NetObjectUID MainTagObjectUID { get; private set; } = NetObjectUID.Invalid;
+    public NetObjectUID MainTagObjectUid { get; private set; } = NetObjectUID.Invalid;
     #endregion
 
     public void RegisterTagObject(NetObjectUID uid, bool main = false)
@@ -85,11 +85,11 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
             throw new InvalidOperationException("Trying to register tag object without authority, this is not allowed. Player id: " + uid);
 
         if (!uid.IsValid)
-            throw new InvalidOperationException("Trying to register invalid object UID as tag object");
+            throw new InvalidOperationException("Trying to register invalid object Uid as tag object");
 
-        m_TagObjectUIDs.Add(uid);
+        m_TagObjectUidCollection.Add(uid);
         if (main)
-            MainTagObjectUID = uid;
+            MainTagObjectUid = uid;
     }
 
     public void UnregisterTagObject(NetObjectUID uid)
@@ -98,16 +98,16 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
             throw new InvalidOperationException("Trying to unregister tag object without authority, this is not allowed. Player id: " + uid);
 
         if (!uid.IsValid)
-            throw new InvalidOperationException("Trying to register invalid object UID as tag object");
+            throw new InvalidOperationException("Trying to register invalid object Uid as tag object");
 
-        m_TagObjectUIDs.Remove(uid);
-        if (MainTagObjectUID == uid)
-            MainTagObjectUID = NetObjectUID.Invalid;
+        m_TagObjectUidCollection.Remove(uid);
+        if (MainTagObjectUid == uid)
+            MainTagObjectUid = NetObjectUID.Invalid;
     }
     
-    public bool IsValid => UID.IsValid;
-    public bool IsLocal => IsValid && UID.Equals(other: m_LocalPlayerUidProvider());
-    public bool IsMaster => IsValid && UID.Equals(other: m_MasterPlayerUidProvider());
+    public bool IsValid => Uid.IsValid;
+    public bool IsLocal => IsValid && Uid.Equals(other: m_LocalPlayerUidProvider());
+    public bool IsMaster => IsValid && Uid.Equals(other: m_MasterPlayerUidProvider());
 
     private readonly Func<ClientUID> m_LocalPlayerUidProvider;
     private readonly Func<ClientUID> m_MasterPlayerUidProvider;
@@ -115,35 +115,35 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
 
     public NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayerUidProvider, Func<ClientUID> masterPlayerUidProvider)
     {
-        UID = uid;
+        Uid = uid;
         m_Name = name;
         m_LocalPlayerUidProvider = localPlayerUidProvider;
         m_MasterPlayerUidProvider = masterPlayerUidProvider;
 
         m_Properties = new Properties(writePermission: () => IsLocal);
-        m_TagObjectUIDs = new HashSet<NetObjectUID>();
+        m_TagObjectUidCollection = new HashSet<NetObjectUID>();
     }
 
     public void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
     {
-        UID = snapshot.UID;
+        Uid = snapshot.UID;
         m_Name = snapshot.Name;
         m_IsReady = snapshot.IsInGameScene;
         m_Platform = snapshot.Platform;
         m_RTTMS = snapshot.RTTMs;
-        m_TagObjectUIDs = snapshot.TagObjectUIDs;
+        m_TagObjectUidCollection = snapshot.TagObjectUIDs;
 
         m_Properties.SetDataFromSnapshot(snapshot.Properties);
     }
 
-    public bool HasTagObject(NetObjectUID uid) => uid.IsValid && m_TagObjectUIDs.Contains(uid);
+    public bool HasTagObject(NetObjectUID uid) => uid.IsValid && m_TagObjectUidCollection.Contains(uid);
     public bool HasTagObject(NetObjectState state) => state != null && HasTagObject(state.UID);
 
     public NetWorldPlayerSnapshot ToSnapshot() => NetWorldPlayerSnapshot.FormPlayer(this);
 
-    public override string ToString() => $"{UID}:{Name} l:{IsLocal} m:{IsMaster}";
-    public int CompareTo(NetWorldPlayer other) => UID.CompareTo(other.UID);
-    public bool Equals(NetWorldPlayer other) => other != null && UID.Equals(other.UID);
+    public override string ToString() => $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
+    public int CompareTo(NetWorldPlayer other) => Uid.CompareTo(other.Uid);
+    public bool Equals(NetWorldPlayer other) => other != null && Uid.Equals(other.Uid);
 
     public byte[] Serialize()
     {
@@ -153,5 +153,5 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
     }
 
     public override int GetHashCode() => 
-        UID.GetHashCode();
+        Uid.GetHashCode();
 }

@@ -36,7 +36,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
     public override void OnDisconnected(ClientUID clientUid)
     {
         base.OnDisconnected(clientUid);
-        if (Identity.World.Players.LocalPlayer.IsMaster)
+        if (Identity.World.Players.LocalPlayerIsMaster)
             TryRegisterOrInitialize();
     }
 
@@ -60,7 +60,6 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
         }
 
         var sceneObjects = FindObjectsOfType<GSSceneObjectIdentity>();
-
         foreach (var obj in sceneObjects)
         {
             if (!obj.SceneObjectId.IsValid)
