@@ -84,7 +84,6 @@ public sealed class NetWorldRuntime : NetWorld
             case MessageCodes.ObjectStateUpdate:
             {
                 var snapshot = NetObjectStateSnapshot.FormReader(m_Reader);
-                
                 if (!snapshot.ObjectUID.IsValid)
                 {
                     Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid Uid.");
@@ -509,8 +508,11 @@ public sealed class NetWorldRuntime : NetWorld
         // Check for player exists.
         var player = PlayersInternal.LocalPlayer;
         if (player != null)
+        {
             player.IsReady = true;
-
+            PlayerBecomesReady(player.ToSnapshot());
+        }
+        
         // Create view.
         InitializeView();
     }
