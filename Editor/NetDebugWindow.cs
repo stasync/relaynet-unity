@@ -210,19 +210,10 @@ public class NetDebugWindow : EditorWindow
                     // Register requests.
                     {
                         EditorGUILayout.Space();
-                        var registerRequests = m_World.ObjectsRegisterRequests;
-                        EditorGUILayout.LabelField($"Objects register request: {registerRequests.Count}", EditorStyles.boldLabel);
-                        foreach (var netObjectState in registerRequests.Values)
-                            EditorGUILayout.LabelField(netObjectState.ToString());
-                    }
-
-                    // Remote update requests.
-                    {
-                        EditorGUILayout.Space();
-                        var remoteRequests = m_World.RemoteObjectUpdateRequests;
-                        EditorGUILayout.LabelField($"Objects remote request: {remoteRequests.Count}", EditorStyles.boldLabel);
-                        foreach (var objectStateSnapshot in remoteRequests.Values)
-                            EditorGUILayout.LabelField(objectStateSnapshot.ToString());
+                        var registerRequests = m_World.IncomingStateChangeRequests;
+                        EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
+                        foreach (var request in registerRequests)
+                            EditorGUILayout.LabelField($"{request.OpCode} {request.Data}");
                     }
                 }
                 EditorGUI.indentLevel--;

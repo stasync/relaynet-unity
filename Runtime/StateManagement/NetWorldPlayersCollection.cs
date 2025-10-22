@@ -50,9 +50,6 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     public NetWorldPlayer Find(ClientUID uid) => IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
     public bool Contains(ClientUID uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
 
-    public IReadOnlyCollection<ClientUID> RemovedPlayers => m_RemovedPlayers;
-    private readonly HashSet<ClientUID> m_RemovedPlayers = new ();
-
     private Func<bool> m_Validator;
     private bool IsValid => m_Validator != null && m_Validator();
 
@@ -68,7 +65,6 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
 
     internal void OnBeforeUpdateWorldState(float worldDelta)
     {
-        m_RemovedPlayers.Clear();
     }
 
     internal NetWorldPlayer RegisterImmediate(ClientUID uid, bool isLocal)
@@ -89,15 +85,16 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
         return player;
     }
 
-    internal void UnregisterImmediate(ClientUID uid)
+    internal bool UnregisterImmediate(ClientUID uid)
     {
         if (LocalPlayerUid == uid)
             LocalPlayerUid = ClientUID.Invalid;
 
-        if (m_PlayersCollection.Remove(uid))
-            m_RemovedPlayers.Add(uid);
+        var playerRemoved = m_PlayersCollection.Remove(uid);
+        if (playerRemoved)
+            RecalculateMasterPlayerUid();
 
-        RecalculateMasterPlayerUid();
+        return playerRemoved;
     }
 
     private void RecalculateMasterPlayerUid()
@@ -119,8 +116,6 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
 
         m_PlayersCollection.Clear();
         m_PlayersCollection = null;
-        
-        m_RemovedPlayers.Clear();
     }
 
     public NetWorldPlayersCollectionsSnapshot ToSnapshot() => 
