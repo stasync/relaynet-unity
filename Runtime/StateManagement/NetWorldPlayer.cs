@@ -46,7 +46,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
     }
     private bool m_IsReady;
 
-    public GSDevice.Platform Platform
+    public UserDeviceType.Platform Platform
     {
         get => m_Platform;
         set
@@ -56,7 +56,7 @@ public class NetWorldPlayer : IReadOnlyNetWorldPlayer, IComparable<NetWorldPlaye
             m_Platform = value;
         }
     }
-    private GSDevice.Platform m_Platform = GSDevice.Platform.Unknown;
+    private UserDeviceType.Platform m_Platform = UserDeviceType.Platform.Unknown;
 
     public int RTTMs
     {

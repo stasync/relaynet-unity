@@ -6,7 +6,7 @@ public readonly struct NetWorldPlayerSnapshot
     public readonly ClientUID UID;
     public readonly string Name;
     public readonly bool IsInGameScene;
-    public readonly GSDevice.Platform Platform;
+    public readonly UserDeviceType.Platform Platform;
     public readonly int RTTMs;
     public readonly HashSet<NetObjectUID> TagObjectUIDs;
     public readonly NetObjectUID MainTagObjectUID;
@@ -29,7 +29,7 @@ public readonly struct NetWorldPlayerSnapshot
         UID = reader.ReadClientUid();
         Name = reader.ReadString();
         IsInGameScene = reader.ReadBoolean();
-        Platform = (GSDevice.Platform)reader.ReadInt32();
+        Platform = (UserDeviceType.Platform)reader.ReadInt32();
         RTTMs = reader.ReadInt32();
         TagObjectUIDs = reader.ReadHashSet(r => r.ReadInstanceId());
         MainTagObjectUID = reader.ReadInstanceId();
@@ -57,7 +57,7 @@ public readonly struct NetWorldPlayerSnapshot
         result += ClientUID.Size; // UID
         result += Name.Length;
         result += sizeof(bool); // IsInGameScene
-        result += sizeof(GSDevice.Platform); // Platform
+        result += sizeof(UserDeviceType.Platform); // Platform
         result += sizeof(int); // RTT
 
         result += NetObjectUID.Size * TagObjectUIDs.Count;
