@@ -151,29 +151,27 @@ public sealed class NetWorldRuntime : NetWorld
 #endif
                             break;
                         }
-
-                        var receiver = (INoAuthorityRPCReceiver)objectIdentity;
-
+                        
                         switch (state.Type)
                         {
                             case NoAuthorityRPCType.ToOwner:
                             {
                                 // Check if we are this object's owner.
                                 if (objectIdentity.IsLocal)
-                                    receiver.ReceiveRPCLocally(state);
+                                    objectIdentity.ReceiveRPCLocally(state);
 
                                 break;
                             }
                             case NoAuthorityRPCType.ToMaster:
                             {
                                 if (objectIdentity.IsOwnedByMasterClient)
-                                    receiver.ReceiveRPCOnMasterClient(state);
+                                    objectIdentity.ReceiveRPCOnMasterClient(state);
 
                                 break;
                             }
                             case NoAuthorityRPCType.ToAll:
                             {
-                                receiver.ReceiveRPC(state);
+                                objectIdentity.ReceiveRPC(state);
                                 break;
                             }
                         }

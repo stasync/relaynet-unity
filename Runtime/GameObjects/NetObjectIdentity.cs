@@ -5,7 +5,7 @@ using System.Reflection;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
+public sealed class NetObjectIdentity : MonoBehaviour
 {
     public NetObjectUID InstanceId => State?.UID ?? NetObjectUID.Invalid;
     public bool IsOwnedByMasterClient => State is { IsOwnedByMasterClient: true };
@@ -18,7 +18,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
                 return false;
 
             var localPlayer = World.Players.LocalPlayer;
-            return localPlayer != null && localPlayer.MainTagObjectUid.IsValid && localPlayer.MainTagObjectUid.Equals(State.UID);
+            return localPlayer is { MainTagObjectUid: { IsValid: true } } && localPlayer.MainTagObjectUid.Equals(State.UID);
         }
     }
 
@@ -42,7 +42,10 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
 
     public NetObjectState State => m_NetObjectStateReference.State;
     private readonly NetObjectStateReference m_NetObjectStateReference = new ();
-
+    
+    private readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new ();
+    private readonly Dictionary<int, Action<byte[]>> m_RPCHandlers = new();
+    
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
@@ -146,8 +149,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     private void OnOwnerChanged()
     {
         Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner}");
-        foreach (var b in m_Observables)
-            b.OnOwnerChanged();
+        foreach (var behavior in m_Observables)
+            behavior.OnOwnerChanged();
     }
 
     /// <summary>
@@ -179,8 +182,8 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
             throw new ArgumentNullException(nameof(writer));
 
         writer.SeekZero();
-        foreach (var b in m_Observables)
-            b.Serialize(writer);
+        foreach (var behaviour in m_Observables)
+            behaviour.Serialize(writer);
     }
 
     /// <summary>
@@ -214,11 +217,6 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         if (Initialized)
             State.RPCBuffer.ExecuteRemotely(receivePersistent: false, ReceiveRPCRemotely);
     }
-
-    /// <summary>
-    /// RPC handlers.
-    /// </summary>
-    private readonly Dictionary<int, Action<byte[]>> m_RPCHandlers = new();
 
     /// <summary>
     /// Register handler to receive RPC (Better to call in OnEnable or OnInit).
@@ -310,7 +308,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         State.ScheduleRemovePersistentRPC(RPCUtils.ActionToHash(rpcHandlerMethod));
 
     /// <summary>
-    /// Receive rpc on object WITHOUT authority (Called from GSTransport).
+    /// Receive rpc on object WITHOUT authority..
     /// </summary>
     private void ReceiveRPCRemotely(int hashCode, byte[] data)
     {
@@ -321,12 +319,9 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     }
 
     /// <summary>
-    /// Receive rpc on object with authority. (Called from GSTransport).
+    /// Receive rpc on object with authority.
     /// </summary>
-    void INoAuthorityRPCReceiver.ReceiveRPCLocally(RPCWithoutAuthorityState state) => 
-        ReceiveRPCLocally(state);
-    
-    private void ReceiveRPCLocally(RPCWithoutAuthorityState state)
+    internal void ReceiveRPCLocally(RPCWithoutAuthorityState state)
     {
         if (!IsLocal)
             throw new Exception("Trying to receive AUTHORITY RPC on remote object behaviour, this is not allowed");
@@ -337,10 +332,7 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
     /// <summary>
     /// Receive rpc on master client. (Called from GSTransport).
     /// </summary>
-    void INoAuthorityRPCReceiver.ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state) => 
-        ReceiveRPCOnMasterClient(state);
-    
-    private void ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state)
+    internal void ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state)
     {
         if (!IsOwnedByMasterClient)
             throw new Exception("Trying to receive MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
@@ -348,7 +340,11 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
     }
 
-    void INoAuthorityRPCReceiver.ReceiveRPC(RPCWithoutAuthorityState state) => 
+    /// <summary>
+    /// Receive prc anywhere.
+    /// </summary>
+    /// <param name="state"></param>
+    internal void ReceiveRPC(RPCWithoutAuthorityState state) => 
         InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
 
     private void InvokeRpcHandler(int hashCode, byte[] data)
@@ -383,33 +379,10 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
 
         State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }
-
-    private void OnDestroy()
-    {
-        if (State == null) 
-            return;
-        
-        State.OnOwnerChanged -= OnOwnerChanged;
-        State.LocalUpdateRequest -= OnLocalUpdateRequest;
-
-        m_NetObjectStateReference.SetTargetUID(NetObjectUID.Invalid);
-        m_NetObjectStateReference.SetTargetWorld(null);
-    }
-
-#if UNITY_EDITOR
-    private void OnDrawGizmos()
-    {
-        if (!Initialized)
-            return;
-
-        UnityEditor.Handles.Label(
-            transform.position, 
-            $"Object: {InstanceId}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
-    }
-#endif
-
-    private readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new ();
-
+    
+    /// <summary>
+    /// Could be used instead of <see cref="UnityEngine.Behaviour.GetComponent{T}"/>
+    /// </summary>
     public T GetBehaviour<T>() where T : GSInstanceBehaviourBase
     {
         var type = typeof(T);
@@ -422,4 +395,28 @@ public sealed class NetObjectIdentity : MonoBehaviour, INoAuthorityRPCReceiver
         
         return behaviour as T;
     }
+    
+    private void OnDestroy()
+    {
+        if (State == null) 
+            return;
+        
+        State.OnOwnerChanged -= OnOwnerChanged;
+        State.LocalUpdateRequest -= OnLocalUpdateRequest;
+
+        m_NetObjectStateReference.SetTargetUID(NetObjectUID.Invalid);
+        m_NetObjectStateReference.SetTargetWorld(null);
+    }
+    
+#if UNITY_EDITOR
+    private void OnDrawGizmos()
+    {
+        if (!Initialized)
+            return;
+
+        UnityEditor.Handles.Label(
+            transform.position, 
+            $"Object: {InstanceId}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
+    }
+#endif
 }
