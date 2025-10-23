@@ -20,12 +20,12 @@ public abstract class NetWorld
     public bool IsReplica => SourceID.IsValid;
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
-    private Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
+    private readonly Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
 
     public IExposedNetWorldPlayersCollection Players => PlayersInternal;
-    protected NetWorldPlayersCollection PlayersInternal { get; private set; }
+    protected readonly NetWorldPlayersCollection PlayersInternal;
 
-    private Queue<Action> m_ViewInitQueue = new();
+    private readonly Queue<Action> m_ViewInitActionQueue = new();
 
     protected NetWorld(NetWorldID uid, string worldName) : this(uid, worldName, NetWorldID.Invalid)
     {
@@ -53,8 +53,8 @@ public abstract class NetWorld
         View = new GameObject(Name).AddComponent<NetWorldView>();
         View.Init(world: this, viewInitMode);
 
-        while (m_ViewInitQueue.Count > 0)
-            m_ViewInitQueue.Dequeue()();
+        while (m_ViewInitActionQueue.Count > 0)
+            m_ViewInitActionQueue.Dequeue()();
     }
 
     public void Update(float deltaTime)
@@ -122,19 +122,15 @@ public abstract class NetWorld
             netObject.Invalidate();
 
         m_CurrentObjectStates.Clear();
-        m_CurrentObjectStates = null;
-
         PlayersInternal.Clear();
-        PlayersInternal = null;
-
-        m_ViewInitQueue.Clear();
-        m_ViewInitQueue = null;
+        m_ViewInitActionQueue.Clear();
 
         if (View == null)
-            Debug.LogError($"View already destroyed (Maybe it's done by unity via exiting play mode)");
+            Debug.LogError("View already destroyed (Maybe it's done by unity via exiting play mode)");
         else
         {
-            View.Destroy(); //Destroy all net object views;
+            // Destroy all net object views.
+            View.Destroy();
             View = null;
         }
     }
@@ -159,7 +155,7 @@ public abstract class NetWorld
         if (View == null)
             return null;
 
-        foreach(var view in View.CurrentObjectViews.Values)
+        foreach (var view in View.CurrentObjectViews.Values)
         {
             var component = view.GetBehaviour<T>();
             if (component != null)
@@ -186,7 +182,7 @@ public abstract class NetWorld
     public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => 
         NetWorldSnapshot.FromWorld(deltaTime, this);
 
-    public void RestoreFromSnapshot(NetWorldSnapshot snapshot)
+    protected void RestoreFromSnapshot(NetWorldSnapshot snapshot)
     {
         // Update time.
         Time = snapshot.Time;
@@ -198,8 +194,8 @@ public abstract class NetWorld
         // Add or update objects.
         foreach(var kvp in snapshot.Objects)
         {
-            if (m_CurrentObjectStates.ContainsKey(kvp.Key))
-                m_CurrentObjectStates[kvp.Key].ChangeObjectRemotely(kvp.Value);
+            if (m_CurrentObjectStates.TryGetValue(kvp.Key, out var state))
+                state.ChangeObjectRemotely(kvp.Value);
             else
                 TryAddObject(new NetObjectState(kvp.Value, PlayersInternal.Find));
         }
@@ -212,12 +208,12 @@ public abstract class NetWorld
         }
     }
 
-    public void ScheduleOnViewInit(Action action)
+    protected void ScheduleOnViewInit(Action action)
     {
         if (View != null)
             action();
         else
-            m_ViewInitQueue.Enqueue(action);
+            m_ViewInitActionQueue.Enqueue(action);
     }
 
     public override int GetHashCode()

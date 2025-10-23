@@ -42,7 +42,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
     }
 
     public void ChangeTransactionRequest(NetObjectUID sender, bool interactionState) =>
-        ChangeTransactionRequest(sender, interactionState, success => { });
+        ChangeTransactionRequest(sender, interactionState, _ => { });
 
     public void ChangeTransactionRequest(NetObjectUID sender, bool interactionState, Action<bool> callback)
     {

@@ -10,9 +10,9 @@ public interface IReadOnlyNetObjectRPCState
     void ExecuteRemotely(bool receivePersistent, Action<int, byte[]> handler);
 }
 
-public struct RPCStateUIDAllocator
+internal static class RPCStateUIDAllocator
 {
-    public static uint AllocateUID() => ++m_Counter;
+    public static uint NextUid() => ++m_Counter;
     private static uint m_Counter;
 }
 
@@ -67,7 +67,7 @@ public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
 
     internal void AddOrUpdate(NewPRCData mutator)
     {
-        var uid = RPCStateUIDAllocator.AllocateUID();
+        var uid = RPCStateUIDAllocator.NextUid();
         var data = new RPCState(mutator.HashCode, uid, mutator.Data);
 
         PushTo(m_TemporalBuffer, data, mutator.BufferChangeMethod);

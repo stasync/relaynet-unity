@@ -3,12 +3,14 @@ using System.Collections.Generic;
 
 public static class RPCUtils
 {
+    private static readonly Dictionary<string, int> s_RPCHashMap = new();
+
     /// <summary>
     /// Converts action to RPC code.
     /// </summary>
     /// <param name="a"></param>
     /// <returns></returns>
-    public static string ActionToString(Action<byte[]> a)
+    internal static string ActionToString(Action<byte[]> a)
     {
         // Anonymous delegate method name usually looks like '<Foo>m__0';
         // TODO: More 'beautiful' way to know is delegate is anonymous.
@@ -17,14 +19,14 @@ public static class RPCUtils
 
         return $"{a.Method.DeclaringType!.FullName}.{a.Method.Name}";
     }
-
-    private static readonly Dictionary<string, int> s_RPCHashMap = new();
-
+    
     public static string TryFindStringByHashSlow(int hash)
     {
         foreach (var kvp in s_RPCHashMap)
+        {
             if (kvp.Value == hash)
                 return kvp.Key;
+        }
 
         return string.Empty;
     }
@@ -34,7 +36,7 @@ public static class RPCUtils
     /// </summary>
     /// <param name="s"></param>
     /// <returns></returns>
-    public static int NameToHash(string s)
+    internal static int NameToHash(string s)
     {
         if (string.IsNullOrWhiteSpace(s))
             return 0;

@@ -46,7 +46,7 @@ public readonly struct RPCWithoutAuthorityState
     {
         ObjectUID = objectUID;
         Type = type;
-        RPCState = new RPCState(hashCode, RPCStateUIDAllocator.AllocateUID(), payload);
+        RPCState = new RPCState(hashCode, RPCStateUIDAllocator.NextUid(), payload);
     }
 
     private RPCWithoutAuthorityState(NetReader reader)
@@ -118,7 +118,7 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
         HashCode.Combine(UID, PrefabId, IsSceneObject, OwnerUID, StateChangeType, m_RPCBuffer, m_DataCollection);
 
     public bool IsOwnedByLocalPlayer => 
-        Owner != null && Owner.IsLocal;
+        Owner is { IsLocal: true };
     
     public bool IsOwnedByMasterClient => 
         Owner is { IsMaster: true };

@@ -7,8 +7,14 @@ public sealed class NetWorldRuntime : NetWorld
 {
     public struct IncomingStateChangeRequest
     {
-        public uint OpCode;
-        public byte[] Data;
+        public readonly uint OpCode;
+        public readonly byte[] Data;
+
+        internal IncomingStateChangeRequest(uint opCode, byte[] data)
+        {
+            OpCode = opCode;
+            Data = data;
+        }
     }
     
     public delegate void DataSendRequestDelegate(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
@@ -29,10 +35,10 @@ public sealed class NetWorldRuntime : NetWorld
     private readonly Dictionary<NetObjectUID, NetObjectState> m_TemporaryUnregisteredObjects = new ();
 
     public IReadOnlyHistoryBuffer HistoryBuffer => m_HistoryBuffer;
-    private HistoryBuffer m_HistoryBuffer = new();
+    private readonly HistoryBuffer m_HistoryBuffer = new();
 
-    private HashSet<ClientUID> m_LocalPlayerRegisterQueue = new();
-    private HashSet<ClientUID> m_PlayerUnregisterQueue = new();
+    private readonly HashSet<ClientUID> m_LocalPlayerRegisterQueue = new();
+    private readonly HashSet<ClientUID> m_PlayerUnregisterQueue = new();
 
     private float m_LastUpdateTime;
 
@@ -45,19 +51,6 @@ public sealed class NetWorldRuntime : NetWorld
         m_LastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
     }
 
-    public NetWorldEvaluator Replicate() =>
-        new(runtime: this);
-
-    public void ScheduleRemoteUpdate(uint userDataOpCode, byte[] data)
-    {
-        m_IncomingStateChangeRequests.Enqueue(
-            new IncomingStateChangeRequest()
-            {
-                OpCode = userDataOpCode,
-                Data = data
-            });
-    }
-
     protected override void UpdateImplementation(float deltaTime)
     {
         var worldDelta = UnityEngine.Time.fixedUnscaledTime - m_LastUpdateTime;
@@ -68,8 +61,7 @@ public sealed class NetWorldRuntime : NetWorld
         }
     }
 
-    #region Loop
-
+    #region Update
     protected override void OnUpdateWorldState(float worldDelta)
     {
         base.OnUpdateWorldState(worldDelta);
@@ -91,7 +83,6 @@ public sealed class NetWorldRuntime : NetWorld
         UpdateLocalObjectState();
 
         #region Internal
-
         void ProcessIncomingData()
         {
             while (m_IncomingStateChangeRequests.TryDequeue(out var stateChangeRequest))
@@ -265,7 +256,7 @@ public sealed class NetWorldRuntime : NetWorld
                             var state = ObjectStates[objectUid];
                             if (state.IsOwnedByLocalPlayer)
                                 state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
-                        };
+                        }
                     }
 
                     var wasInGameScene = player.IsReady;
@@ -393,7 +384,7 @@ public sealed class NetWorldRuntime : NetWorld
             }
         }
 
-        // Update RPC requests (Calling rpc without authority).
+        // Update RPC requests - calling rpc without authority.
         void UpdateRPCRequestsWithoutAuthority()
         {
             foreach (var uid in new List<NetObjectUID>(ObjectStates.Keys))
@@ -416,7 +407,11 @@ public sealed class NetWorldRuntime : NetWorld
                     continue;
 
                 if (ObjectExists(state.UID))
-                    Debug.LogError($"Object with Uid {state.UID} already exists");
+                {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    Debug.LogError($"Object with Uid '{state.UID}' already exists");
+#endif
+                }
                 else
                 {
                     state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
@@ -450,7 +445,6 @@ public sealed class NetWorldRuntime : NetWorld
                 }
             }
         }
-
         #endregion
     }
 
@@ -463,13 +457,7 @@ public sealed class NetWorldRuntime : NetWorld
             m_HistoryBuffer.Dequeue();
     }
     #endregion
-
-    protected override void RemoveObject(NetObjectUID stateUID)
-    {
-        base.RemoveObject(stateUID);
-        m_TemporaryUnregisteredObjects.Remove(stateUID);
-    }
-
+    
     /// <summary>
     /// Destroy all network objects and cleanup scene.
     /// </summary>
@@ -478,42 +466,39 @@ public sealed class NetWorldRuntime : NetWorld
         base.Dispose();
 
         m_LocalPlayerRegisterQueue.Clear();
-        m_LocalPlayerRegisterQueue = null;
-
         m_PlayerUnregisterQueue.Clear();
-        m_PlayerUnregisterQueue = null;
-
         m_HistoryBuffer.Clear();
-        m_HistoryBuffer = null;
 
         PlayerAdded = null;
     }
+    
+    /// <summary>
+    /// Create another world that could evaluate and re-player this world's history buffer.
+    /// </summary>
+    /// <returns></returns>
+    public NetWorldEvaluator Replicate() =>
+        new(runtime: this);
 
-    // Connected.
-    internal void RegisterLocalPlayer(ClientUID peerId) =>
-        m_LocalPlayerRegisterQueue.Add(peerId);
-
-    // Disconnected.
-    internal void OnDisconnect(ClientUID uid)
+    protected override void RemoveObject(NetObjectUID stateUID)
     {
-        m_LocalPlayerRegisterQueue.Remove(uid);
-        m_PlayerUnregisterQueue.Add(uid);
+        base.RemoveObject(stateUID);
+        m_TemporaryUnregisteredObjects.Remove(stateUID);
     }
-
-    // Scene loaded.
-    public void OnSceneLoaded()
+    
+    internal void RegisterLocalPlayer(ClientUID clientUid) =>
+        m_LocalPlayerRegisterQueue.Add(clientUid);
+    
+    internal void OnDisconnect(ClientUID clientUid)
     {
-        // Check for player exists.
-        var player = PlayersInternal.LocalPlayer;
-        if (player != null)
-        {
-            player.IsReady = true;
-            PlayerBecomesReady(player.ToSnapshot());
-        }
-
-        // Create view.
-        InitializeView();
+        m_LocalPlayerRegisterQueue.Remove(clientUid);
+        m_PlayerUnregisterQueue.Add(clientUid);
     }
+    
+    internal void ScheduleRemoteUpdate(uint userDataOpCode, byte[] data) =>
+        m_IncomingStateChangeRequests.Enqueue(new IncomingStateChangeRequest(userDataOpCode, data));
+    
+    private bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) =>
+        TryGetObject(instanceId, out state) || m_TemporaryUnregisteredObjects.TryGetValue(instanceId, out state);
 
     /// <summary>
     /// Create object with position and rotation input.
@@ -530,9 +515,9 @@ public sealed class NetWorldRuntime : NetWorld
     }
 
     /// <summary>
-    /// Register object, which is not created via main object creation pipline.
+    /// Register object, which is not created via main object creation pipeline.
     /// See 'CreateObject' method.
-    /// This is not initialize object, so object will be invalid, untill first update happens.
+    /// This is not an initialized object, so object will be invalid, until the very first update happens.
     /// </summary>
     public void TryRegisterOrInitializeSceneObjectIdentity(GSSceneObjectIdentity sceneIdentity)
     {
@@ -576,10 +561,9 @@ public sealed class NetWorldRuntime : NetWorld
         });
     }
 
-    private bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) =>
-        TryGetObject(instanceId, out state) || m_TemporaryUnregisteredObjects.TryGetValue(instanceId, out state);
-
-    //TODO: Think how to avoid this override;
+    /// <summary>
+    /// Returns an object state that corresponds to <param name="instanceId"></param>.
+    /// </summary>
     public override NetObjectState FindObject(NetObjectUID instanceId)
     {
         var existed = base.FindObject(instanceId);
@@ -602,9 +586,10 @@ public sealed class NetWorldRuntime : NetWorld
         
         var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.Uid, PlayersInternal.Find);
         m_TemporaryUnregisteredObjects.Add(instanceId, state);
-        return View.CreateImmediate(state, position, rotation);;
+        return View.CreateImmediate(state, position, rotation);
     }
-
+    
+    /// <inheritdoc cref="FindObjectViewOrCreateMock"/>
     public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation) where T : GSInstanceBehaviourBase
     {
         var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
@@ -613,4 +598,21 @@ public sealed class NetWorldRuntime : NetWorld
 
     public int GetHistoryBufferSize() =>
         m_HistoryBuffer.Size;
+    
+    /// <summary>
+    /// World has to be notified, when game world is loaded.
+    /// </summary>
+    public void OnSceneLoaded()
+    {
+        // Check for player exists.
+        var player = PlayersInternal.LocalPlayer;
+        if (player != null)
+        {
+            player.IsReady = true;
+            PlayerBecomesReady(player.ToSnapshot());
+        }
+
+        // Create view.
+        InitializeView();
+    }
 }
