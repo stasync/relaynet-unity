@@ -143,11 +143,11 @@ public sealed class NetWorldRuntime : NetWorld
                         if (objectIdentity == null)
                         {
 #if NETWORK_DEBUG
-                            var rpcName = RPCUtils.TryFindStringByHashSlow(state.RPCState.Hash);
-                            if (string.IsNullOrWhiteSpace(rpcName))
-                                rpcName = "empty";
-
-                            Debug.LogError($"Trying to receive rpc with code '{state.RPCState.Hash}' '{rpcName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed.");
+                            var rpcHandlerMethod = RPCUtils.TryFindMethodInfoByHashSlow(state.RPCState.Hash);
+                            var rpcHandlerMethodName = rpcHandlerMethod == null ? 
+                                "UNKNOWN" : $"{rpcHandlerMethod.DeclaringType!.FullName}.{rpcHandlerMethod.Name}";
+                            
+                            Debug.LogError($"Trying to receive rpc with code '{state.RPCState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed.");
 #endif
                             break;
                         }

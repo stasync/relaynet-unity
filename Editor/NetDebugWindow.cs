@@ -86,8 +86,15 @@ public class NetDebugWindow : EditorWindow
             EditorGUI.indentLevel--;
         }
 
-        private void DrawRPC(RPCState rpc) =>
-            EditorGUILayout.LabelField($"{rpc.UID} Hash: {rpc.Hash} '{RPCUtils.TryFindStringByHashSlow(rpc.Hash)}' Payload size: {rpc.Payload.Length}");
+        private void DrawRPC(RPCState rpc)
+        {
+            var handlerMethod = RPCUtils.TryFindMethodInfoByHashSlow(rpc.Hash);
+            var handlerInfo = handlerMethod == null
+                ? "UNKNOWN"
+                : $"{handlerMethod.DeclaringType!.FullName}.{handlerMethod.Name}";
+            
+            EditorGUILayout.LabelField($"{rpc.UID} Hash: {rpc.Hash} '{handlerInfo}' Payload size: {rpc.Payload.Length}");
+        }
     }
 
     private abstract class WorldDrawer<T> where T : NetWorld
