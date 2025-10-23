@@ -11,17 +11,17 @@ public sealed class NetObjectViewStateData : NetObjectStateData
         UnstructuredData = new byte[] { };
     }
 
-    public override void Serialize(NetWriter writer)
+    protected override void OnSerialize(NetWriter writer)
     {
-        base.Serialize(writer);
+        base.OnSerialize(writer);
 
         writer.WriteBool(Initialized);
         writer.WriteBytesAndSize(UnstructuredData);
     }
 
-    public override void Deserialize(NetReader reader, bool firstTime)
+    protected override void OnDeserialize(NetReader reader, bool firstTime)
     {
-        base.Deserialize(reader, firstTime);
+        base.OnDeserialize(reader, firstTime);
 
         ViewInitialized = reader.ReadBoolean();
         UnstructuredData = reader.ReadBytesAndSize();

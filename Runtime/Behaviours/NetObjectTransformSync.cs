@@ -52,7 +52,7 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
     }
 #endif
 
-    public override void OnInitializeViewData()
+    protected override void OnInitializeViewData()
     {
         base.OnInitializeViewData();
         ResetTemporaryData();
@@ -127,9 +127,9 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
         }
     }
 
-    protected override void SerializeDirtyChecked(NetWriter writer)
+    protected override void OnSerialize(NetWriter writer)
     {
-        base.SerializeDirtyChecked(writer);
+        base.OnSerialize(writer);
 
         foreach (var nestedTransform in m_NestedTransforms)
         {
@@ -138,9 +138,9 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
         }
     }
 
-    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
+    protected override void OnDeserialize(NetReader reader, bool firstTime)
     {
-        base.DeserializeDirtyChecked(reader, firstTime);
+        base.OnDeserialize(reader, firstTime);
 
         foreach (var nestedTransform in m_NestedTransforms)
         {

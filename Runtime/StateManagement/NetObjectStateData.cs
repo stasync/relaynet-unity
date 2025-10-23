@@ -4,12 +4,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-[Obsolete]
-public sealed class NetObjectStateEmptyData : NetObjectStateData
-{
-    public NetObjectStateEmptyData(Func<bool> writePermission) : base(writePermission) { }
-}
-
 public abstract class NetObjectStateData
 {
     [AttributeUsage(AttributeTargets.Field)]
@@ -65,16 +59,28 @@ public abstract class NetObjectStateData
         return hash;
     }
 
-    public virtual void Serialize(NetWriter writer)
+    internal virtual void SerializeInternal(NetWriter writer)
     {
         foreach (var kvp in m_InternalValueCollection)
             kvp.Value.Serialize(writer);
+
+        OnSerialize(writer);
     }
 
-    public virtual void Deserialize(NetReader reader, bool firstTime)
+    protected virtual void OnSerialize(NetWriter writer)
+    {
+    }
+
+    internal virtual void DeserializeInternal(NetReader reader, bool firstTime)
     {
         foreach (var value in m_InternalValueCollection.Values)
             value.DeserializeAndApply(reader, firstTime);
+        
+        OnDeserialize(reader, firstTime);
+    }
+    
+    protected virtual void OnDeserialize(NetReader reader, bool firstTime)
+    {
     }
 
     public override string ToString()
@@ -108,7 +114,7 @@ public abstract class NetObjectStateData
         return Activator.CreateInstance(type, writePermission) as NetObjectStateData;
     }
 
-    public static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData
+    internal static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData
     {
         if (Provide(typeof(T), writePermission) is not T instance)
             throw new InvalidOperationException($"Unable to produce instance of data of type '{typeof(T).FullName}'.");
@@ -119,10 +125,10 @@ public abstract class NetObjectStateData
     private static byte GetTypeIndex(Type dataType) =>
         Core.Utils.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 
-    public static int GetTypeIndex<TData>() where TData : NetObjectStateData =>
+    internal static int GetTypeIndex<TData>() where TData : NetObjectStateData =>
         GetTypeIndex(typeof(TData));
 
-    public static bool TryGetType(byte index, out Type type) =>
+    internal static bool TryGetType(byte index, out Type type) =>
         Core.Utils.Types.Lookup<NetObjectStateData>.WithIndex(index, out type);
 
 #if UNITY_EDITOR
@@ -135,7 +141,7 @@ public abstract class NetObjectStateData
     public int GetSerializedSize_Editor()
     {
         var writer = new NetWriter();
-        Serialize(writer);
+        SerializeInternal(writer);
         return writer.Position;
     }
 #endif

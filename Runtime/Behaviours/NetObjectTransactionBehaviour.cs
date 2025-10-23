@@ -26,7 +26,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
     
-    public override void OnInitializeViewData()
+    protected override void OnInitializeViewData()
     {
         base.OnInitializeViewData();
         if (IsLocal)

@@ -15,7 +15,7 @@ public abstract class AnimatorParameterValueProxy<T> : IAnimatorValueProxy where
     protected readonly AnimatorControllerParameter Parameter;
     protected T LastDeserializedValue { get; private set; }
 
-    public AnimatorParameterValueProxy(Animator animator, AnimatorControllerParameter parameter)
+    protected AnimatorParameterValueProxy(Animator animator, AnimatorControllerParameter parameter)
     {
         Animator = animator;
         Parameter = parameter;
@@ -88,8 +88,15 @@ public class AnimatorBoolParameterValueProxy : AnimatorParameterValueProxy<bool>
 }
 
 [DisallowMultipleComponent]
-public sealed class GSAnimatorSync : GSInstanceBehaviour
+public sealed class GSAnimatorSync : GSInstanceBehaviour<GSAnimatorSync.StateData>
 {
+    public sealed class StateData : NetObjectStateData
+    {
+        public StateData(Func<bool> writePermission) : base(writePermission)
+        {
+        }
+    }
+    
     private enum AnimatorStateChangeMethod : byte
     {
         Play, CrossFade,
@@ -218,8 +225,8 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         if (!Identity.Initialized)
             return;
 
-        foreach (var p in m_AnimatorParameterValueProxyCollection)
-            p.OnUpdate(Time.deltaTime, IsLocal);
+        foreach (var animatorValueProxy in m_AnimatorParameterValueProxyCollection)
+            animatorValueProxy.OnUpdate(Time.deltaTime, IsLocal);
 
         if (!IsLocal)
         {
@@ -235,9 +242,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         }
     }
 
-    protected override void SerializeDirtyChecked(NetWriter writer)
+    protected override void OnSerialize(NetWriter writer)
     {
-        base.SerializeDirtyChecked(writer);
+        base.OnSerialize(writer);
 
         // Parameters.
         foreach (var p in m_AnimatorParameterValueProxyCollection)
@@ -264,9 +271,9 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour
         }
     }
 
-    protected override void DeserializeDirtyChecked(NetReader reader, bool firstTime)
+    protected override void OnDeserialize(NetReader reader, bool firstTime)
     {
-        base.DeserializeDirtyChecked(reader, firstTime);
+        base.OnDeserialize(reader, firstTime);
 
         // Parameters.
         foreach (var p in m_AnimatorParameterValueProxyCollection)

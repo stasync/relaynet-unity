@@ -35,7 +35,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     public bool IsSceneObject => State is { IsSceneObject: true };
     public bool Initialized { get; private set; }
 
-    private IGSInstanceObservable[] m_Observables;
+    private GSInstanceBehaviourBase[] m_Behaviours;
 
     private NetWriter m_ObjectWriter;
     private NetReader m_ObjectReader;
@@ -55,8 +55,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         if (Initialized)
             throw new Exception("Object already initialized");
 
-        m_Observables = gameObject
-            .GetComponents<IGSInstanceObservable>();
+        m_Behaviours = gameObject.GetComponents<GSInstanceBehaviourBase>();
 
         World = world;
 
@@ -71,8 +70,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
             Deserialize(viewStateData.UnstructuredData, force: true, firstTime: true); // Force true to allow deserialization before object initialized.
 
         // Pre initialization.
-        foreach (var o in m_Observables)
-            o.OnPreInitialize();
+        foreach (var behaviour in m_Behaviours)
+            behaviour.OnPreInitializeInternal();
 
         // Mark object as initialized.
         Initialized = true;
@@ -81,7 +80,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         OnOwnerChanged();
 
         // Register RPC handlers.
-        foreach (var behaviour in m_Observables)
+        foreach (var behaviour in m_Behaviours)
         {
             foreach (var methodInfo in RPCUtils.GetAutoRegisterRPCHandlers(behaviour.GetType()))
             {
@@ -93,14 +92,14 @@ public sealed class NetObjectIdentity : MonoBehaviour
         }
 
         // Tell components about object was initialized.
-        foreach (var behaviour in m_Observables)
+        foreach (var behaviour in m_Behaviours)
         {
             if (!viewStateData.ViewInitialized)
-                behaviour.OnInitializeViewData();
+                behaviour.OnInitializeViewDataInternal();
         }
 
-        foreach (var behaviour in m_Observables)
-            behaviour.OnPostInitialize();
+        foreach (var behaviour in m_Behaviours)
+            behaviour.OnPostInitializeInternal();
 
         // Invokes buffered rpc, must be called after deserialization done.
         // Only for remote objects.
@@ -111,10 +110,10 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
     /// </summary>
-    internal void OnDisconnected(ClientUID peerId)
+    internal void OnDisconnected(ClientUID clientUid)
     {
-        foreach (var behaviour in m_Observables)
-            behaviour.OnDisconnected(peerId);
+        foreach (var behaviour in m_Behaviours)
+            behaviour.OnDisconnectedInternal(clientUid);
     }
 
     private void OnLocalUpdateRequest(ObjectStateChangeRequestType stateChangeType)
@@ -125,8 +124,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
         if (!IsLocal)
             return;
 
-        foreach (var b in m_Observables)
-            b.OnAuthorityUpdate();
+        foreach (var behaviour in m_Behaviours)
+            behaviour.OnAuthorityUpdateInternal();
 
         State.ChangeObjectViewDataLocally(Serialize(), stateChangeType == ObjectStateChangeRequestType.InitializationUpdate);
     }
@@ -137,8 +136,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
     private void OnOwnerChanged()
     {
         Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner}");
-        foreach (var behavior in m_Observables)
-            behavior.OnOwnerChanged();
+        foreach (var behavior in m_Behaviours)
+            behavior.OnOwnerChangedInternal();
     }
 
     /// <summary>
@@ -170,8 +169,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
             throw new ArgumentNullException(nameof(writer));
 
         writer.SeekZero();
-        foreach (var behaviour in m_Observables)
-            behaviour.Serialize(writer);
+        foreach (var behaviour in m_Behaviours)
+            behaviour.OnSerializeInternal(writer);
     }
 
     /// <summary>
@@ -198,8 +197,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
         m_ObjectReader ??= new NetReader();
         m_ObjectReader.Replace(data);
 
-        foreach (var b in m_Observables)
-            b.Deserialize(m_ObjectReader, firstTime);
+        foreach (var behaviour in m_Behaviours)
+            behaviour.OnDeserializeInternal(m_ObjectReader, firstTime);
 
         // Receive rpc buffer if object initialized.
         if (Initialized)
@@ -362,8 +361,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
         if (!IsLocal)
             throw new Exception("Trying to destroy remote object, this is not allowed");
 
-        foreach (var behaviour in m_Observables)
-            behaviour.OnSoftDestroyRequestedLocally();
+        foreach (var behaviour in m_Behaviours)
+            behaviour.OnSoftDestroyRequestedLocallyInternal();
 
         State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }

@@ -15,7 +15,7 @@ public readonly struct NetObjectDataCollectionSnapshot
         foreach (var data in dataCollection)
         {
             s_Writer.WriteInt32(data.TypeHashCode);
-            data.Serialize(s_Writer);
+            data.SerializeInternal(s_Writer);
         }
 
         Data = s_Writer.ToArray();

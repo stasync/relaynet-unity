@@ -85,7 +85,7 @@ public sealed class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
                 m_InternalCollection.Add(typeHashCode, data);
             }
 
-            data.Deserialize(m_Reader, false);
+            data.DeserializeInternal(m_Reader, firstTime: false);
         }
     }
 

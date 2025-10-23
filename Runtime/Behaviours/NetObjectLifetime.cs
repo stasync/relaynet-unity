@@ -32,7 +32,7 @@ public sealed class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
         Data.CurrentLifetime.Set(lifetime);
     }
 
-    public override void OnInitializeViewData()
+    protected override void OnInitializeViewData()
     {
         base.OnInitializeViewData();
 

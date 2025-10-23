@@ -1,13 +1,7 @@
-﻿using Core.Networking;
-using System;
-using UnityEngine;
+﻿using System;
 
-[Obsolete("Use data based behaviour instead")]
-public abstract class GSInstanceBehaviour : GSInstanceBehaviour<NetObjectStateEmptyData>
-{
-}
-
-public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour where TObjectData : NetObjectStateData
+public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour
+    where TObjectData : NetObjectStateData
 {
     protected TObjectData Data { get; private set; }
 
@@ -49,114 +43,21 @@ public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
         Identity.ToAllRPC(rpcHandlerMethod, data, invokeLocally, deliveryMethod);
 
     /// <summary>
-    /// Serialization called by GSInstanceIdentity.
-    /// </summary>
-    void ISerializable.Serialize(NetWriter writer)
-    {
-        SerializeDirtyChecked(writer);
-
-#if NETWORK_DEBUG
-        writer.WriteInt32(GetType().FullName!.GetHashCode());
-#endif
-    }
-
-    /// <summary>
-    /// Deserialization called by GSInstanceIdentity.
-    /// </summary>
-    void ISerializable.Deserialize(NetReader reader, bool firtsTime)
-    {
-        DeserializeDirtyChecked(reader, firtsTime);
-
-        OnDataDeserialized(firtsTime);
-
-#if NETWORK_DEBUG
-        var typeName = GetType().FullName;
-        var hash = typeName!.GetHashCode();
-        var serializedHash = reader.ReadInt32();
-
-        if (!hash.Equals(serializedHash))
-            Debug.LogError($"Potential serialization problem in {typeName} on {gameObject.name}");
-#endif
-    }
-
-    /// <summary>
     /// Destroy game object and sync it. Use this instead of Destroy(GameObject).
     /// You can't destroy remote objects.
     /// </summary>
     public void DestroyObjectViaNetwork() => Identity.DestroyViaNetwork();
 
     /// <summary>
-    /// Consider to use <see cref="OnPostInitialize"/> instead.
+    /// Consider to use <see cref="GSInstanceBehaviourBase.OnPostInitialize"/> instead.
     /// </summary>
-    public virtual void OnPreInitialize()
+    protected override void OnPreInitialize()
     {
+        base.OnPreInitialize();
+
         Data = Identity
             .State
             .DataCollection
             .GetOrCreateData<TObjectData>();
-    }
-
-    /// <summary>
-    /// Object instantiated and initialized, use it instead of 'Awake'. Called by <see cref="NetObjectIdentity"/> after object deserialization.
-    /// </summary>
-    public virtual void OnPostInitialize()
-    {
-    }
-
-    public virtual void OnInitializeViewData()
-    {
-    }
-
-    /// <summary>
-    /// Owner changed
-    /// </summary>
-    public virtual void OnOwnerChanged()
-    {
-    }
-
-    /// <summary>
-    /// Called, when object needs to be updated, according to <see cref="NetObjectIdentity.m_UpdateRate"/>.
-    /// Data values can be set here.
-    /// </summary>
-    public virtual void OnAuthorityUpdate()
-    {
-    }
-
-    /// <summary>
-    /// Other player disconnected.
-    /// </summary>
-    /// <param name="clientUid"></param>
-    public virtual void OnDisconnected(ClientUID clientUid)
-    {
-    }
-
-    /// <summary>
-    /// Destroy method called locally.
-    /// </summary>
-    public virtual void OnSoftDestroyRequestedLocally()
-    {
-    }
-
-    /// <summary>
-    /// Serialize method without dirty check.
-    /// </summary>
-    [Obsolete("Use data based serialization instead")]
-    protected virtual void SerializeDirtyChecked(NetWriter writer)
-    {
-    }
-
-    /// <summary>
-    /// Deserialize method without dirty check.
-    /// </summary>
-    [Obsolete("Use data based serialization instead")]
-    protected virtual void DeserializeDirtyChecked(NetReader reader, bool firstTime)
-    {
-    }
-
-    /// <summary>
-    /// Called, when network data was deserialized.
-    /// </summary>
-    protected virtual void OnDataDeserialized(bool firstTime)
-    {
     }
 }
