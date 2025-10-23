@@ -83,24 +83,12 @@ public sealed class NetObjectIdentity : MonoBehaviour
         // Register RPC handlers.
         foreach (var behaviour in m_Observables)
         {
-            // TODO: FIELD METHODS CACHE.
-            foreach (var methodInfo in behaviour.GetType().GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+            foreach (var methodInfo in RPCUtils.GetAutoRegisterRPCHandlers(behaviour.GetType()))
             {
-                var attribute = methodInfo.GetCustomAttribute<AutoRegisterRPCHandler>();
-                if (attribute == null)
-                    continue;
-                
-                var parameters = methodInfo.GetParameters();
-                if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
-                {
-                    Debug.LogError($"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRPCHandler).FullName}' on '{behaviour.GetType().FullName}'.", gameObject);
-                    continue;
-                }
-
                 if (methodInfo.CreateDelegate(typeof(Action<byte[]>), behaviour) is Action<byte[]> action)
                     RegisterRPCHandler(action);
                 else
-                    Debug.LogError($"Unable to create delegate for RPC haddler '{methodInfo.Name}' on '{behaviour.GetType().FullName}'.", gameObject);
+                    Debug.LogError($"Unable to create delegate for RPC handler '{methodInfo.Name}' on '{behaviour.GetType().FullName}'.", gameObject);
             }
         }
 

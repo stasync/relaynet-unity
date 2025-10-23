@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
 
 public static class RPCUtils
 {
     private static readonly Dictionary<MethodInfo, bool> s_MethodValidityCache = new();
     private static readonly Dictionary<MethodInfo, int> s_RPCHashMap = new();
+    private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> m_AutoRegisterRPCHandlerMethodsCache = new();
 
     /// <summary>
     /// Converts action to RPC code.
@@ -66,5 +68,32 @@ public static class RPCUtils
         }
 
         return null;
+    }
+    
+    public static IReadOnlyList<MethodInfo> GetAutoRegisterRPCHandlers(Type type)
+    {
+        if (m_AutoRegisterRPCHandlerMethodsCache.TryGetValue(type, out var result))
+            return result;
+        
+        var methodCollection = new List<MethodInfo>();
+        m_AutoRegisterRPCHandlerMethodsCache.Add(type, methodCollection);
+        
+        foreach (var methodInfo in type.GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+        {
+            var attribute = methodInfo.GetCustomAttribute<AutoRegisterRPCHandler>();
+            if (attribute == null)
+                continue;
+                
+            var parameters = methodInfo.GetParameters();
+            if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
+            {
+                Debug.LogError($"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRPCHandler).FullName}' on '{type.FullName}'.");
+                continue;
+            }
+            
+            methodCollection.Add(methodInfo);
+        }
+
+        return methodCollection;
     }
 }
