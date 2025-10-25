@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Core;
 using Core.DependencyInjection.Services;
 using LROTech.Network.StateManagement;
@@ -188,9 +190,32 @@ public class NetDebugWindow : EditorWindow
                 }
             }
         }
-        
-        private void DrawPlayer(string prefix, NetWorldPlayer p) => 
-            EditorGUILayout.LabelField($"{prefix}{(p == null ? "null" : p.ToString())}");
+
+        private void DrawPlayer(string prefix, NetWorldPlayer player, bool drawProperties = false)
+        {
+            EditorGUILayout.LabelField($"{prefix}{(player == null ? "null" : player.ToString())}");
+            if (player == null)
+                return;
+
+            if (drawProperties)
+            {
+                EditorGUI.indentLevel++;
+                foreach (var fieldInfo in player.Properties.GetType().GetFields(bindingAttr: BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if (typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType))
+                    {
+                        var dictionary = (IDictionary)fieldInfo.GetValue(player!.Properties);
+
+                        EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldInfo.Name)}: {dictionary.Keys.Count}");
+                        EditorGUI.indentLevel++;
+                        foreach (var key in dictionary.Keys)
+                            EditorGUILayout.LabelField($"{key}: {dictionary[key]}");
+                        EditorGUI.indentLevel--;
+                    }
+                }
+                EditorGUI.indentLevel--;
+            }
+        }
     }
 
     private class BaseWorldDrawer : WorldDrawer<NetWorld>
