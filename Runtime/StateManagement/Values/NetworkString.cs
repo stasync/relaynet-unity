@@ -2,7 +2,7 @@
 using Core.Networking;
 using UnityEngine;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public abstract class SerializableNumeric<TValue> : SerializableValue<TValue> where TValue : struct, IComparable<TValue>
     {

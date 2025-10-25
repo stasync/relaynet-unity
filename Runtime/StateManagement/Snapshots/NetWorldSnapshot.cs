@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public readonly struct NetWorldSnapshot
     {

@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public enum RPCBufferChangeMethod : byte
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public sealed class NetWorldObjectViewWaiter : IDisposable
     {

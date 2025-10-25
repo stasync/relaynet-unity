@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class AutoRegisterRPCHandler : Attribute

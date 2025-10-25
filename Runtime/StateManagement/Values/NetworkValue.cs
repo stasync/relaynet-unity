@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public class SerializableValue<TValue> : SerializableValueDefinition<TValue, TValue>
     {

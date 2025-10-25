@@ -1,7 +1,7 @@
 using System;
 using Core.Networking;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public sealed class NetObjectViewStateData : NetObjectStateData
     {

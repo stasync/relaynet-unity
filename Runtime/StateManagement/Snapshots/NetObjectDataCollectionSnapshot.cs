@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System.Collections.Generic;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public readonly struct NetObjectDataCollectionSnapshot
     {

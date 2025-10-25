@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public abstract class NetWorld
     {

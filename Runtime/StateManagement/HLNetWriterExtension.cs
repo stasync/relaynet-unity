@@ -2,7 +2,7 @@
 using System;
 using UnityEngine;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public static class HLNetWriterExtension
     {

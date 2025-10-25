@@ -1,4 +1,4 @@
-﻿namespace LROTech.Network.State
+﻿namespace LROTech.Network.StateManagment
 {
     /// <summary>
     /// Type of PRC sending 

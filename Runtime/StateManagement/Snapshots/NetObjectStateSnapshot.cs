@@ -1,6 +1,6 @@
 ﻿using Core.Networking;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public struct NetObjectStateSnapshot
     {

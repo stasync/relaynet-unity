@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
-using LROTech.Network.State;
+using LROTech.Network.StateManagment;
 using UnityEngine;
 
 [DisallowMultipleComponent]

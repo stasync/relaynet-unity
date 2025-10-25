@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public readonly struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
     {

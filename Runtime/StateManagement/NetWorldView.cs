@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;
 
-namespace LROTech.Network.State
+namespace LROTech.Network.StateManagment
 {
     public enum NetWorldViewInitMode
     {
