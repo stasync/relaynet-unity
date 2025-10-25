@@ -26,7 +26,7 @@ namespace LROTech.Network.StateManagement
     {
         public readonly NetObjectUID ObjectUID;
         public readonly NoAuthorityRPCType Type;
-        public readonly RPCState RPCState;
+        public readonly NetObjectRPCState RPCState;
 
         public bool IsValid => ObjectUID.IsValid && RPCState.IsValid;
 
@@ -34,14 +34,14 @@ namespace LROTech.Network.StateManagement
         {
             ObjectUID = objectUID;
             Type = type;
-            RPCState = new RPCState(hashCode, RPCStateUIDAllocator.NextUid(), payload);
+            RPCState = new NetObjectRPCState(hashCode, NetObjectRPCUtils.UIDAllocator.NextUid(), payload);
         }
 
         private RPCWithoutAuthorityState(NetReader reader)
         {
             ObjectUID = reader.ReadInstanceId();
             Type = (NoAuthorityRPCType)reader.ReadByte();
-            RPCState = RPCState.FromSnapshot(RPCStateSnapshot.FromReader(reader));
+            RPCState = NetObjectRPCState.FromSnapshot(RPCStateSnapshot.FromReader(reader));
         }
 
         private void Serialize(NetWriter writer)
@@ -97,8 +97,8 @@ namespace LROTech.Network.StateManagement
 
         public ObjectStateChangeRequestType StateChangeType { get; private set; }
 
-        public NetObjectRPCState RPCBuffer => m_RPCBuffer;
-        private readonly NetObjectRPCState m_RPCBuffer;
+        public NetObjectRPCBuffer RPCBuffer => m_RPCBuffer;
+        private readonly NetObjectRPCBuffer m_RPCBuffer;
 
         public NetObjectDataCollection DataCollection => m_DataCollection;
         private readonly NetObjectDataCollection m_DataCollection;
@@ -124,7 +124,7 @@ namespace LROTech.Network.StateManagement
         private readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new();
 
         private readonly Queue<ObjectStateChangeRequestType> m_StateChangeTypeQueue = new();
-        private readonly Queue<NetObjectRPCState.NewPRCData> m_RPCBufferUpdateQueue = new();
+        private readonly Queue<NetObjectRPCBuffer.NewPRCData> m_RPCBufferUpdateQueue = new();
         private readonly Queue<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityQueue = new();
         private readonly Queue<int> m_PersistentRPCToRemoveQueue = new();
 
@@ -142,7 +142,7 @@ namespace LROTech.Network.StateManagement
 
             StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
 
-            m_RPCBuffer = new NetObjectRPCState();
+            m_RPCBuffer = new NetObjectRPCBuffer();
             m_DataCollection = new NetObjectDataCollection(() => IsOwnedByLocalPlayer);
         }
 
@@ -317,7 +317,7 @@ namespace LROTech.Network.StateManagement
 
         internal void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod)
         {
-            m_RPCBufferUpdateQueue.Enqueue(new NetObjectRPCState.NewPRCData
+            m_RPCBufferUpdateQueue.Enqueue(new NetObjectRPCBuffer.NewPRCData
             {
                 HashCode = hashCode,
                 Data = data,

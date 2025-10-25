@@ -89,9 +89,9 @@ public class NetDebugWindow : EditorWindow
             EditorGUI.indentLevel--;
         }
 
-        private void DrawRPC(RPCState rpc)
+        private void DrawRPC(NetObjectRPCState rpc)
         {
-            var handlerMethod = RPCUtils.TryFindMethodInfoByHashSlow(rpc.Hash);
+            var handlerMethod = NetObjectRPCUtils.TryFindMethodInfoByHashSlow(rpc.Hash);
             var handlerInfo = handlerMethod == null
                 ? "UNKNOWN"
                 : $"{handlerMethod.DeclaringType!.FullName}.{handlerMethod.Name}";

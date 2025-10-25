@@ -86,7 +86,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         foreach (var behaviour in m_Behaviours)
         {
             var behaviourType = behaviour.GetType();
-            foreach (var methodInfo in RPCUtils.GetAutoRegisterRPCHandlers(behaviourType))
+            foreach (var methodInfo in NetObjectRPCUtils.GetAutoRegisterRPCHandlers(behaviourType))
             {
                 if (methodInfo.CreateDelegate(typeof(Action<byte[]>), behaviour) is Action<byte[]> action)
                     RegisterRPCHandler(action);
@@ -219,7 +219,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// <param name="handler"></param>
     public void RegisterRPCHandler(Action<byte[]> handler)
     {
-        var rpcHash = RPCUtils.ActionToHash(handler);
+        var rpcHash = NetObjectRPCUtils.ActionToHash(handler);
         // WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
         if (!m_RPCHandlers.TryAdd(rpcHash, handler))
             throw new InvalidOperationException(
@@ -248,7 +248,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
             throw new Exception(
                 "Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
-        var hashCode = RPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
 
         // Try to invoke handler locally.
         if (invokeLocally)
@@ -264,7 +264,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// </summary>
     public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
-        var hashCode = RPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
         // If we have authority on this object, don't need to send this kind of RPC.
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
@@ -279,7 +279,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// </summary>
     public void ToMasterRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
-        var hashCode = RPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
         // If we have authority on this object, don't need to send this kind of RPC.
         if (IsOwnedByMasterClient)
             InvokeRpcHandler(hashCode, data);
@@ -293,7 +293,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// </summary>
     public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
-        var hashCode = RPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
         if (invokeLocally)
             InvokeRpcHandler(hashCode, data);
 
@@ -305,7 +305,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
     public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) =>
-        State.ScheduleRemovePersistentRPC(RPCUtils.ActionToHash(rpcHandlerMethod));
+        State.ScheduleRemovePersistentRPC(NetObjectRPCUtils.ActionToHash(rpcHandlerMethod));
 
     /// <summary>
     /// Receive rpc on object WITHOUT authority..
@@ -357,7 +357,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             var handlerInfoString = $"Hash: '{hashCode}'";
-            var handlerMethodInfo = RPCUtils.TryFindMethodInfoByHashSlow(hashCode);
+            var handlerMethodInfo = NetObjectRPCUtils.TryFindMethodInfoByHashSlow(hashCode);
             handlerInfoString = handlerMethodInfo != null
                 ? $"{handlerInfoString} Method: '{handlerMethodInfo.DeclaringType!.FullName}.{handlerMethodInfo.Name}'"
                 : $"{handlerInfoString} Method: 'UNKNOWN'";

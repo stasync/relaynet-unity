@@ -148,7 +148,7 @@ namespace LROTech.Network.StateManagement
                             if (objectIdentity == null)
                             {
 #if NETWORK_DEBUG
-                                var rpcHandlerMethod = RPCUtils.TryFindMethodInfoByHashSlow(state.RPCState.Hash);
+                                var rpcHandlerMethod = NetObjectRPCUtils.TryFindMethodInfoByHashSlow(state.RPCState.Hash);
                                 var rpcHandlerMethodName = rpcHandlerMethod == null
                                     ? "UNKNOWN"
                                     : $"{rpcHandlerMethod.DeclaringType!.FullName}.{rpcHandlerMethod.Name}";

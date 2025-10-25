@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace LROTech.Network.StateManagement
 {
-    public static class RPCUtils
+    public static class NetObjectRPCUtils
     {
         private static readonly Dictionary<MethodInfo, bool> s_MethodValidityCache = new();
         private static readonly Dictionary<MethodInfo, int> s_RPCHashMap = new();
@@ -98,6 +98,14 @@ namespace LROTech.Network.StateManagement
             }
 
             return methodCollection;
+        }
+        
+        internal static class UIDAllocator
+        {
+            private static uint m_Counter;
+
+            internal static uint NextUid() => 
+                ++m_Counter;
         }
     }
 }
