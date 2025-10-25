@@ -1,9 +1,13 @@
 ﻿using Core.Networking;
 using System;
 
-public class SerializableValue<TValue> : SerializableValueDefinition<TValue, TValue>
+namespace LROTech.Network.State
 {
-    public SerializableValue(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) :
-        base(defaultValue, reader, writer)
-    { }
+    public class SerializableValue<TValue> : SerializableValueDefinition<TValue, TValue>
+    {
+        public SerializableValue(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) :
+            base(defaultValue, reader, writer)
+        {
+        }
+    }
 }

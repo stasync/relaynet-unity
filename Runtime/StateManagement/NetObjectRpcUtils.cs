@@ -3,98 +3,101 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-public static class RPCUtils
+namespace LROTech.Network.State
 {
-    private static readonly Dictionary<MethodInfo, bool> s_MethodValidityCache = new();
-    private static readonly Dictionary<MethodInfo, int> s_RPCHashMap = new();
-    private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> m_AutoRegisterRPCHandlerMethodsCache = new();
-
-    /// <summary>
-    /// Converts action to RPC code.
-    /// </summary>
-    /// <param name="a"></param>
-    /// <returns></returns>
-    internal static int ActionToHash(Action<byte[]> a)
+    public static class RPCUtils
     {
-        if (!IsValidMethod(a.Method))
-            throw new InvalidOperationException("Unable to create RPC code with anonymous delegates.");
+        private static readonly Dictionary<MethodInfo, bool> s_MethodValidityCache = new();
+        private static readonly Dictionary<MethodInfo, int> s_RPCHashMap = new();
+        private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> m_AutoRegisterRPCHandlerMethodsCache = new();
 
-        if (s_RPCHashMap.TryGetValue(a.Method, out var result))
-            return result;
-
-        result = NameToHash($"{a.Method.DeclaringType!.FullName}.{a.Method.Name}");
-        s_RPCHashMap.Add(a.Method, result);
-        return result;
-    }
-
-    private static bool IsValidMethod(MethodInfo method)
-    {
-        if (s_MethodValidityCache.TryGetValue(method, out var result))
-            return result;
-
-        // Anonymous delegate method name usually looks like '<Foo>m__0';
-        // TODO: More 'beautiful' way to know is delegate is anonymous.
-        s_MethodValidityCache.Add(method, result = !method.Name.StartsWith("<"));
-        return result;
-    }
-
-    /// <summary>
-    /// Calculates a stable hash code for the string.
-    /// </summary>
-    /// <param name="inputString"></param>
-    private static int NameToHash(string inputString)
-    {
-        unchecked
+        /// <summary>
+        /// Converts action to RPC code.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <returns></returns>
+        internal static int ActionToHash(Action<byte[]> a)
         {
-            var hash = inputString.Length + 32;
-            for (var i = 0; i != inputString.Length; i++)
-                hash = (hash << 5) - hash + inputString[i];
+            if (!IsValidMethod(a.Method))
+                throw new InvalidOperationException("Unable to create RPC code with anonymous delegates.");
 
-            return hash;
-        }
-    }
+            if (s_RPCHashMap.TryGetValue(a.Method, out var result))
+                return result;
 
-    /// <summary>
-    /// Backwards slow version to get method info by the hash.
-    /// May return the valid <see cref="MethodInfo"/>, if it was registered once.
-    /// Should only be used for debug matters.
-    /// </summary>
-    public static MethodInfo TryFindMethodInfoByHashSlow(int hash)
-    {
-        foreach (var kvp in s_RPCHashMap)
-        {
-            if (kvp.Value == hash)
-                return kvp.Key;
+            result = NameToHash($"{a.Method.DeclaringType!.FullName}.{a.Method.Name}");
+            s_RPCHashMap.Add(a.Method, result);
+            return result;
         }
 
-        return null;
-    }
-
-    public static IReadOnlyList<MethodInfo> GetAutoRegisterRPCHandlers(Type type)
-    {
-        if (m_AutoRegisterRPCHandlerMethodsCache.TryGetValue(type, out var result))
-            return result;
-
-        var methodCollection = new List<MethodInfo>();
-        m_AutoRegisterRPCHandlerMethodsCache.Add(type, methodCollection);
-
-        foreach (var methodInfo in type.GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+        private static bool IsValidMethod(MethodInfo method)
         {
-            var attribute = methodInfo.GetCustomAttribute<AutoRegisterRPCHandler>();
-            if (attribute == null)
-                continue;
+            if (s_MethodValidityCache.TryGetValue(method, out var result))
+                return result;
 
-            var parameters = methodInfo.GetParameters();
-            if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
+            // Anonymous delegate method name usually looks like '<Foo>m__0';
+            // TODO: More 'beautiful' way to know is delegate is anonymous.
+            s_MethodValidityCache.Add(method, result = !method.Name.StartsWith("<"));
+            return result;
+        }
+
+        /// <summary>
+        /// Calculates a stable hash code for the string.
+        /// </summary>
+        /// <param name="inputString"></param>
+        private static int NameToHash(string inputString)
+        {
+            unchecked
             {
-                Debug.LogError(
-                    $"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRPCHandler).FullName}' on '{type.FullName}'.");
-                continue;
+                var hash = inputString.Length + 32;
+                for (var i = 0; i != inputString.Length; i++)
+                    hash = (hash << 5) - hash + inputString[i];
+
+                return hash;
+            }
+        }
+
+        /// <summary>
+        /// Backwards slow version to get method info by the hash.
+        /// May return the valid <see cref="MethodInfo"/>, if it was registered once.
+        /// Should only be used for debug matters.
+        /// </summary>
+        public static MethodInfo TryFindMethodInfoByHashSlow(int hash)
+        {
+            foreach (var kvp in s_RPCHashMap)
+            {
+                if (kvp.Value == hash)
+                    return kvp.Key;
             }
 
-            methodCollection.Add(methodInfo);
+            return null;
         }
 
-        return methodCollection;
+        public static IReadOnlyList<MethodInfo> GetAutoRegisterRPCHandlers(Type type)
+        {
+            if (m_AutoRegisterRPCHandlerMethodsCache.TryGetValue(type, out var result))
+                return result;
+
+            var methodCollection = new List<MethodInfo>();
+            m_AutoRegisterRPCHandlerMethodsCache.Add(type, methodCollection);
+
+            foreach (var methodInfo in type.GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                var attribute = methodInfo.GetCustomAttribute<AutoRegisterRPCHandler>();
+                if (attribute == null)
+                    continue;
+
+                var parameters = methodInfo.GetParameters();
+                if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
+                {
+                    Debug.LogError(
+                        $"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRPCHandler).FullName}' on '{type.FullName}'.");
+                    continue;
+                }
+
+                methodCollection.Add(methodInfo);
+            }
+
+            return methodCollection;
+        }
     }
 }

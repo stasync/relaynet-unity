@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using LROTech.Network.State;
+using UnityEditor;
 
 [CustomEditor(typeof(NetWorldView))]
 public class NetWorldViewEditor : Editor

@@ -2,140 +2,143 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
+namespace LROTech.Network.State
 {
-    #region State
-
-    public ClientUID LocalPlayerUid { get; private set; }
-    public ClientUID MasterPlayerUid { get; private set; }
-
-    public IReadOnlyCollection<NetWorldPlayer> All => m_PlayersCollection.Values;
-
-    private Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
-
-    #endregion
-
-    public bool LocalPlayerIsMaster => IsValid && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
-    public NetWorldPlayer LocalPlayer => Find(LocalPlayerUid);
-    public NetWorldPlayer MasterPlayer => Find(MasterPlayerUid);
-    public NetWorldPlayer Find(ClientUID uid) => IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
-    public bool Contains(ClientUID uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
-
-    private Func<bool> m_Validator;
-    private bool IsValid => m_Validator != null && m_Validator();
-
-    internal NetWorldPlayersCollection(Func<bool> validator)
+    public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
     {
-        m_Validator = validator;
+        #region State
 
-        LocalPlayerUid = ClientUID.Invalid;
-        MasterPlayerUid = ClientUID.Invalid;
+        public ClientUID LocalPlayerUid { get; private set; }
+        public ClientUID MasterPlayerUid { get; private set; }
 
-        m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayer>();
-    }
+        public IReadOnlyCollection<NetWorldPlayer> All => m_PlayersCollection.Values;
 
-    internal void OnBeforeUpdateWorldState(float worldDelta)
-    {
-    }
+        private Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
 
-    internal NetWorldPlayer RegisterImmediate(ClientUID uid, bool isLocal)
-    {
-        if (m_PlayersCollection.ContainsKey(uid))
-            throw new InvalidOperationException();
+        #endregion
 
-        var player = new NetWorldPlayer(uid,
-            name: "Unknown",
-            localPlayerUidProvider: () => LocalPlayerUid,
-            masterPlayerUidProvider: () => MasterPlayerUid);
+        public bool LocalPlayerIsMaster => IsValid && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
+        public NetWorldPlayer LocalPlayer => Find(LocalPlayerUid);
+        public NetWorldPlayer MasterPlayer => Find(MasterPlayerUid);
+        public NetWorldPlayer Find(ClientUID uid) => IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
+        public bool Contains(ClientUID uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
 
-        m_PlayersCollection.Add(uid, player);
-        if (isLocal)
-            LocalPlayerUid = uid;
+        private Func<bool> m_Validator;
+        private bool IsValid => m_Validator != null && m_Validator();
 
-        RecalculateMasterPlayerUid();
-        return player;
-    }
+        internal NetWorldPlayersCollection(Func<bool> validator)
+        {
+            m_Validator = validator;
 
-    internal bool UnregisterImmediate(ClientUID uid)
-    {
-        if (LocalPlayerUid == uid)
             LocalPlayerUid = ClientUID.Invalid;
+            MasterPlayerUid = ClientUID.Invalid;
 
-        var playerRemoved = m_PlayersCollection.Remove(uid);
-        if (playerRemoved)
+            m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayer>();
+        }
+
+        internal void OnBeforeUpdateWorldState(float worldDelta)
+        {
+        }
+
+        internal NetWorldPlayer RegisterImmediate(ClientUID uid, bool isLocal)
+        {
+            if (m_PlayersCollection.ContainsKey(uid))
+                throw new InvalidOperationException();
+
+            var player = new NetWorldPlayer(uid,
+                name: "Unknown",
+                localPlayerUidProvider: () => LocalPlayerUid,
+                masterPlayerUidProvider: () => MasterPlayerUid);
+
+            m_PlayersCollection.Add(uid, player);
+            if (isLocal)
+                LocalPlayerUid = uid;
+
             RecalculateMasterPlayerUid();
-
-        return playerRemoved;
-    }
-
-    private void RecalculateMasterPlayerUid()
-    {
-        MasterPlayerUid = ClientUID.Invalid;
-        foreach (var worldPlayer in All)
-        {
-            if (worldPlayer.Uid < MasterPlayerUid || !MasterPlayerUid.IsValid)
-                MasterPlayerUid = worldPlayer.Uid;
-        }
-    }
-
-    internal void Clear()
-    {
-        m_Validator = null;
-
-        LocalPlayerUid = ClientUID.Invalid;
-        MasterPlayerUid = ClientUID.Invalid;
-
-        m_PlayersCollection.Clear();
-        m_PlayersCollection = null;
-    }
-
-    public NetWorldPlayersCollectionsSnapshot ToSnapshot() =>
-        NetWorldPlayersCollectionsSnapshot.FormCollection(collection: this);
-
-    internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
-    {
-        // Use invalid id for local and master player while snapshots if only used for world replication.
-        // LocalPlayerUID = snapshot.LocalPlayerUID;
-        // MasterPlayerUID = snapshot.MasterClientUID;
-
-        LocalPlayerUid = ClientUID.Invalid;
-        MasterPlayerUid = ClientUID.Invalid;
-
-        // Remove.
-        foreach (var clientUid in new List<ClientUID>(m_PlayersCollection.Keys))
-        {
-            if (!snapshot.PlayersCollection.ContainsKey(clientUid))
-                m_PlayersCollection.Remove(clientUid);
+            return player;
         }
 
-        // Add or update.
-        foreach (var (clientUid, playerSnapshot) in snapshot.PlayersCollection)
+        internal bool UnregisterImmediate(ClientUID uid)
         {
-            if (m_PlayersCollection.TryGetValue(clientUid, out var player))
-                player.RestoreFromSnapshot(playerSnapshot);
-            else
-                m_PlayersCollection.Add(clientUid, new NetWorldPlayer(
-                    playerSnapshot.UID,
-                    playerSnapshot.Name,
-                    localPlayerUidProvider: () => LocalPlayerUid,
-                    masterPlayerUidProvider: () => MasterPlayerUid));
-        }
-    }
+            if (LocalPlayerUid == uid)
+                LocalPlayerUid = ClientUID.Invalid;
 
-    public override int GetHashCode()
-    {
-        var hash = 13;
-        hash = hash * 7 + LocalPlayerUid.GetHashCode();
-        hash = hash * 7 + MasterPlayerUid.GetHashCode();
-        foreach (var kvp in m_PlayersCollection)
-        {
-            hash += kvp.Key.GetHashCode();
-            hash += kvp.Value.GetHashCode();
+            var playerRemoved = m_PlayersCollection.Remove(uid);
+            if (playerRemoved)
+                RecalculateMasterPlayerUid();
+
+            return playerRemoved;
         }
 
-        return hash;
-    }
+        private void RecalculateMasterPlayerUid()
+        {
+            MasterPlayerUid = ClientUID.Invalid;
+            foreach (var worldPlayer in All)
+            {
+                if (worldPlayer.Uid < MasterPlayerUid || !MasterPlayerUid.IsValid)
+                    MasterPlayerUid = worldPlayer.Uid;
+            }
+        }
 
-    public IEnumerator<NetWorldPlayer> GetEnumerator() => All.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => All.GetEnumerator();
+        internal void Clear()
+        {
+            m_Validator = null;
+
+            LocalPlayerUid = ClientUID.Invalid;
+            MasterPlayerUid = ClientUID.Invalid;
+
+            m_PlayersCollection.Clear();
+            m_PlayersCollection = null;
+        }
+
+        public NetWorldPlayersCollectionsSnapshot ToSnapshot() =>
+            NetWorldPlayersCollectionsSnapshot.FormCollection(collection: this);
+
+        internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
+        {
+            // Use invalid id for local and master player while snapshots if only used for world replication.
+            // LocalPlayerUID = snapshot.LocalPlayerUID;
+            // MasterPlayerUID = snapshot.MasterClientUID;
+
+            LocalPlayerUid = ClientUID.Invalid;
+            MasterPlayerUid = ClientUID.Invalid;
+
+            // Remove.
+            foreach (var clientUid in new List<ClientUID>(m_PlayersCollection.Keys))
+            {
+                if (!snapshot.PlayersCollection.ContainsKey(clientUid))
+                    m_PlayersCollection.Remove(clientUid);
+            }
+
+            // Add or update.
+            foreach (var (clientUid, playerSnapshot) in snapshot.PlayersCollection)
+            {
+                if (m_PlayersCollection.TryGetValue(clientUid, out var player))
+                    player.RestoreFromSnapshot(playerSnapshot);
+                else
+                    m_PlayersCollection.Add(clientUid, new NetWorldPlayer(
+                        playerSnapshot.UID,
+                        playerSnapshot.Name,
+                        localPlayerUidProvider: () => LocalPlayerUid,
+                        masterPlayerUidProvider: () => MasterPlayerUid));
+            }
+        }
+
+        public override int GetHashCode()
+        {
+            var hash = 13;
+            hash = hash * 7 + LocalPlayerUid.GetHashCode();
+            hash = hash * 7 + MasterPlayerUid.GetHashCode();
+            foreach (var kvp in m_PlayersCollection)
+            {
+                hash += kvp.Key.GetHashCode();
+                hash += kvp.Value.GetHashCode();
+            }
+
+            return hash;
+        }
+
+        public IEnumerator<NetWorldPlayer> GetEnumerator() => All.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => All.GetEnumerator();
+    }
 }

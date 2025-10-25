@@ -3,58 +3,64 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>, ICollectionWithCount
+namespace LROTech.Network.State
 {
-    public SerializableHashSet(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
-       this(new HashSet<TValue>(), valueReader, valueWriter)
-    { }
+    public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>,
+        ICollectionWithCount
+    {
+        public SerializableHashSet(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
+            this(new HashSet<TValue>(), valueReader, valueWriter)
+        {
+        }
 
-    public SerializableHashSet(
-        HashSet<TValue> defaultValue,
-        Func<NetReader, bool, TValue> valueReader,
-        Action<NetWriter, TValue> valueWriter) :
+        public SerializableHashSet(
+            HashSet<TValue> defaultValue,
+            Func<NetReader, bool, TValue> valueReader,
+            Action<NetWriter, TValue> valueWriter) :
             base(
                 defaultValue,
                 (r, f) => r.ReadHashSet(
                     cValueReader => valueReader(cValueReader, f)),
                 (w, v) => w.WriteCollection(v,
                     (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
-    { }
+        {
+        }
 
-    public int Count => InternalValue.Count;
+        public int Count => InternalValue.Count;
 
-    public bool Add(TValue value)
-    {
-        if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
+        public bool Add(TValue value)
+        {
+            if (!HasPermission)
+                throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
 
-        return InternalValue.Add(value);
-    }
+            return InternalValue.Add(value);
+        }
 
-    public bool Remove(TValue value)
-    {
-        if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
+        public bool Remove(TValue value)
+        {
+            if (!HasPermission)
+                throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
 
-        return InternalValue.Remove(value);
-    }
+            return InternalValue.Remove(value);
+        }
 
-    public bool Contains(TValue value) => InternalValue.Contains(value);
+        public bool Contains(TValue value) => InternalValue.Contains(value);
 
-    public void Clear()
-    {
-        if (!HasPermission)
-            throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
+        public void Clear()
+        {
+            if (!HasPermission)
+                throw new InvalidOperationException($"No authority to change hash of type {typeof(TValue).Name}");
 
-        if (InternalValue.Count == 0)
-            return;
+            if (InternalValue.Count == 0)
+                return;
 
-        InternalValue.Clear();
-    }
+            InternalValue.Clear();
+        }
 
-    public override string ToString() =>
-        $"{InternalValue.Count} [{string.Join("; ", InternalValue)}]";
+        public override string ToString() =>
+            $"{InternalValue.Count} [{string.Join("; ", InternalValue)}]";
 
-    public IEnumerator<TValue> GetEnumerator() => InternalValue.GetEnumerator();
+        public IEnumerator<TValue> GetEnumerator() => InternalValue.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => InternalValue.GetEnumerator();
+    }
 }

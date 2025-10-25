@@ -1,38 +1,41 @@
 ﻿using System.Collections.Generic;
 
-public readonly struct NetWorldPlayersCollectionsSnapshot
+namespace LROTech.Network.State
 {
-    public readonly ClientUID LocalPlayerUID;
-    public readonly ClientUID MasterClientUID;
-
-    public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> PlayersCollection => m_PlayersCollection;
-    readonly Dictionary<ClientUID, NetWorldPlayerSnapshot> m_PlayersCollection;
-
-    private NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
+    public readonly struct NetWorldPlayersCollectionsSnapshot
     {
-        LocalPlayerUID = collection.LocalPlayer.Uid;
-        MasterClientUID = collection.MasterPlayer.Uid;
+        public readonly ClientUID LocalPlayerUID;
+        public readonly ClientUID MasterClientUID;
 
-        m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
-        foreach (var worldPlayer in collection.All)
-            m_PlayersCollection.Add(worldPlayer.Uid, worldPlayer.ToSnapshot());
-    }
+        public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> PlayersCollection => m_PlayersCollection;
+        readonly Dictionary<ClientUID, NetWorldPlayerSnapshot> m_PlayersCollection;
 
-    public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) =>
-        new(collection);
-
-    public int GetSize()
-    {
-        var result = 0;
-        result += ClientUID.Size; // LocalPlayerUID
-        result += ClientUID.Size; // MasterClientUID
-
-        foreach (var p in m_PlayersCollection.Values)
+        private NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
         {
-            result += ClientUID.Size; // ClientUID
-            result += p.GetSize();
+            LocalPlayerUID = collection.LocalPlayer.Uid;
+            MasterClientUID = collection.MasterPlayer.Uid;
+
+            m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
+            foreach (var worldPlayer in collection.All)
+                m_PlayersCollection.Add(worldPlayer.Uid, worldPlayer.ToSnapshot());
         }
 
-        return result;
+        public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) =>
+            new(collection);
+
+        public int GetSize()
+        {
+            var result = 0;
+            result += ClientUID.Size; // LocalPlayerUID
+            result += ClientUID.Size; // MasterClientUID
+
+            foreach (var p in m_PlayersCollection.Values)
+            {
+                result += ClientUID.Size; // ClientUID
+                result += p.GetSize();
+            }
+
+            return result;
+        }
     }
 }
