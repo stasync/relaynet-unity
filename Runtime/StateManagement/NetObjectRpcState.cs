@@ -1,15 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public interface IReadOnlyNetObjectRPCState
-{
-    IReadOnlyCollection<RPCState> PersistentBuffer { get; }
-    IReadOnlyCollection<RPCState> TemporalBuffer { get; }
-
-    NetObjectRPCStateSnapshot ToSnapshot();
-    void ExecuteRemotely(bool receivePersistent, Action<int, byte[]> handler);
-}
-
 internal static class RPCStateUIDAllocator
 {
     public static uint NextUid() => ++m_Counter;
@@ -48,7 +39,7 @@ public readonly struct RPCState
     }
 }
 
-public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
+public sealed class NetObjectRPCState
 {
     internal struct NewPRCData
     {
@@ -112,7 +103,7 @@ public sealed class NetObjectRPCState : IReadOnlyNetObjectRPCState
         }
     }
 
-    internal void ClearPersistent() =>
+    private void ClearPersistent() =>
         m_PersistentBuffer.Clear();
 
     internal void ClearTemporal() =>

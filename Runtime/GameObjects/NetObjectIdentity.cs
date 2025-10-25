@@ -1,7 +1,6 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -82,12 +81,13 @@ public sealed class NetObjectIdentity : MonoBehaviour
         // Register RPC handlers.
         foreach (var behaviour in m_Behaviours)
         {
-            foreach (var methodInfo in RPCUtils.GetAutoRegisterRPCHandlers(behaviour.GetType()))
+            var behaviourType = behaviour.GetType();
+            foreach (var methodInfo in RPCUtils.GetAutoRegisterRPCHandlers(behaviourType))
             {
                 if (methodInfo.CreateDelegate(typeof(Action<byte[]>), behaviour) is Action<byte[]> action)
                     RegisterRPCHandler(action);
                 else
-                    Debug.LogError($"Unable to create delegate for RPC handler '{methodInfo.Name}' on '{behaviour.GetType().FullName}'.", gameObject);
+                    Debug.LogError($"Unable to create delegate for RPC handler '{methodInfo.Name}' on '{behaviourType.FullName}'.", gameObject);
             }
         }
 
@@ -104,7 +104,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         // Invokes buffered rpc, must be called after deserialization done.
         // Only for remote objects.
         if (!IsLocal)
-            State.RPCBuffer.ExecuteRemotely(receivePersistent: true, ReceiveRPCRemotely);
+            State.RPCBuffer.ExecuteRemotely(executePersistent: true, ReceiveRPCRemotely);
     }
 
     /// <summary>
@@ -202,7 +202,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
 
         // Receive rpc buffer if object initialized.
         if (Initialized)
-            State.RPCBuffer.ExecuteRemotely(receivePersistent: false, ReceiveRPCRemotely);
+            State.RPCBuffer.ExecuteRemotely(executePersistent: false, ReceiveRPCRemotely);
     }
 
     /// <summary>

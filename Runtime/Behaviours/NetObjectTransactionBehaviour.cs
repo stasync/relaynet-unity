@@ -5,11 +5,13 @@ using UnityEngine;
 
 public class InteractionNetworkData : NetObjectStateData
 {
-    public InteractionNetworkData(Func<bool> writePermission) : base(writePermission) { }
-
     public readonly SerializableObjectUID CurrentInteraction = new ();
     public readonly SerializableObjectUID LastInteraction = new ();
     public readonly SerializableBool InteractionsEnabled = new ();
+
+    public InteractionNetworkData(Func<bool> writePermission) : base(writePermission)
+    {
+    }
 }
 
 public sealed class GSObjectTransaction : GSObjectTransaction<InteractionNetworkData> { }

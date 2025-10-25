@@ -107,10 +107,10 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
     
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
     
-    public IReadOnlyNetObjectRPCState RPCBuffer => m_RPCBuffer;
+    public NetObjectRPCState RPCBuffer => m_RPCBuffer;
     private readonly NetObjectRPCState m_RPCBuffer;
     
-    public IReadOnlyNetObjectDataCollection DataCollection => m_DataCollection;
+    public NetObjectDataCollection DataCollection => m_DataCollection;
     private readonly NetObjectDataCollection m_DataCollection;
     #endregion
 

@@ -3,16 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-public interface IReadOnlyNetObjectDataCollection : IReadOnlyCollection<NetObjectStateData>
-{
-    NetObjectDataCollectionSnapshot ToSnapshot();
-    T GetOrCreateData<T>() where T : NetObjectStateData;
-    bool TryGetData<T>(out T data) where T : NetObjectStateData;
-    T GetData<T>() where T : NetObjectStateData;
-    bool HasData<T>() where T : NetObjectStateData;
-}
-
-public sealed class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
+public sealed class NetObjectDataCollection : IReadOnlyCollection<NetObjectStateData>
 {
     private readonly NetReader m_Reader;
     private readonly Dictionary<int, NetObjectStateData> m_InternalCollection;
@@ -62,7 +53,7 @@ public sealed class NetObjectDataCollection : IReadOnlyNetObjectDataCollection
         return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
     }
 
-    public void Clear() => 
+    internal void Clear() => 
         m_InternalCollection.Clear();
 
     public NetObjectDataCollectionSnapshot ToSnapshot() => 

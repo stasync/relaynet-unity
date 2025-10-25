@@ -9,7 +9,6 @@ public abstract class NetObjectStateData
     public readonly int TypeHashCode;
 
     protected readonly Func<bool> WritePermission;
-    protected bool Initialized { get; private set; }
 
     public IReadOnlyDictionary<string, SerializableValue> SerializableValues => m_InternalValueCollection;
     private readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new ();
@@ -27,8 +26,6 @@ public abstract class NetObjectStateData
             else
                 Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
         }
-
-        Initialized = true;
     }
 
     public override int GetHashCode()
@@ -75,9 +72,6 @@ public abstract class NetObjectStateData
 
     protected void AddValueManual(string valueName, SerializableValue value)
     {
-        if (Initialized)
-            throw new InvalidOperationException("Unable to add new value if data already initialized.");
-
         if (m_InternalValueCollection.ContainsKey(valueName))
             throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{valueName}'.");
 

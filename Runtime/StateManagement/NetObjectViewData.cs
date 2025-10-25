@@ -1,3 +1,4 @@
+using System;
 using Core.Networking;
 
 public sealed class NetObjectViewStateData : NetObjectStateData
@@ -5,17 +6,17 @@ public sealed class NetObjectViewStateData : NetObjectStateData
     public bool ViewInitialized { get; private set; }
     public byte[] UnstructuredData { get; private set; }
 
-    public NetObjectViewStateData(System.Func<bool> writePermission) : base(writePermission)
+    public NetObjectViewStateData(Func<bool> writePermission) : base(writePermission)
     {
         ViewInitialized = false;
-        UnstructuredData = new byte[] { };
+        UnstructuredData = Array.Empty<byte>();
     }
 
     protected override void OnSerialize(NetWriter writer)
     {
         base.OnSerialize(writer);
 
-        writer.WriteBool(Initialized);
+        writer.WriteBool(ViewInitialized);
         writer.WriteBytesAndSize(UnstructuredData);
     }
 
@@ -30,7 +31,7 @@ public sealed class NetObjectViewStateData : NetObjectStateData
     public void SetData(byte[] data, bool initialization = false)
     {
         if (!WritePermission())
-            throw new System.InvalidOperationException();
+            throw new InvalidOperationException();
 
         UnstructuredData = data;
 
