@@ -82,7 +82,7 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        public override int GetHashCode()
+        public int GetVersionHash()
         {
             var hash = 13;
             foreach (var kvp in m_InternalCollection)

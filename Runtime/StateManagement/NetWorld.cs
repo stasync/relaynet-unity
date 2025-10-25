@@ -232,7 +232,7 @@ namespace LROTech.Network.StateManagement
             foreach (var kvp in m_CurrentObjectStates)
             {
                 hash += kvp.Key.GetHashCode();
-                hash += kvp.Value.GetHashCode();
+                hash += kvp.Value.GetVersionHash();
             }
 
             hash = hash * 7 + Players.GetHashCode();

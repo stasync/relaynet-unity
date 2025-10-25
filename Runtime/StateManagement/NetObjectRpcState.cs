@@ -21,13 +21,13 @@ namespace LROTech.Network.StateManagement
         public static NetObjectRPCState FromSnapshot(RPCStateSnapshot snapshot) =>
             new(snapshot.Hash, snapshot.UID, snapshot.Payload);
 
-        public override int GetHashCode()
+        public int GetVersionHash()
         {
             var hash = 13;
             hash = hash * 7 + Hash.GetHashCode();
             hash = hash * 7 + UID.GetHashCode();
-            foreach (var d in Payload)
-                hash = hash * 7 + d.GetHashCode();
+            foreach (var b in Payload)
+                hash = hash * 7 + b.GetHashCode();
             return hash;
         }
     }

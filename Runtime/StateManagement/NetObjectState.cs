@@ -89,6 +89,9 @@ namespace LROTech.Network.StateManagement
 
         public NetObjectUID UID { get; private set; }
 
+        /// <summary>
+        /// TODO: Should be changed to long or uint
+        /// </summary>
         public string PrefabId { get; private set; }
 
         public bool IsSceneObject { get; private set; }
@@ -105,8 +108,18 @@ namespace LROTech.Network.StateManagement
 
         #endregion
 
-        public override int GetHashCode() =>
-            HashCode.Combine(UID, PrefabId, IsSceneObject, OwnerUID, StateChangeType, m_RPCBuffer, m_DataCollection);
+        public int GetVersionHash()
+        {
+            var hash = 13;
+            hash = hash * 7 + UID.GetHashCode();
+            hash = hash * 7 + PrefabId.GetHashCode();
+            hash = hash * 7 + IsSceneObject.GetHashCode();
+            hash = hash * 7 + OwnerUID.GetHashCode();
+            hash = hash * 7 + StateChangeType.GetHashCode();
+            hash = hash * 7 + m_RPCBuffer.GetVersionHash();
+            hash = hash * 7 + m_DataCollection.GetVersionHash();
+            return hash;
+        }
 
         public bool IsOwnedByLocalPlayer =>
             Owner is { IsLocal: true };
@@ -194,9 +207,9 @@ namespace LROTech.Network.StateManagement
             if (!IsOwnedByLocalPlayer)
                 throw new InvalidOperationException($"No authority to change '{UID}' object with owner '{OwnerUID}'.");
 
-            var lastHashCode = GetHashCode();
+            var lastHashCode = GetVersionHash();
             LocalUpdateRequest(StateChangeType);
-            var newHashCode = GetHashCode();
+            var newHashCode = GetVersionHash();
             var changed = newHashCode != lastHashCode;
             return changed;
         }

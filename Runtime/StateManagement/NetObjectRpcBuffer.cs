@@ -96,13 +96,13 @@ namespace LROTech.Network.StateManagement
         public NetObjectRPCStateSnapshot ToSnapshot() =>
             NetObjectRPCStateSnapshot.FromState(this);
 
-        public override int GetHashCode()
+        public int GetVersionHash()
         {
             var hash = 13;
             foreach (var rpc in m_PersistentBuffer)
-                hash = hash * 7 + rpc.GetHashCode();
+                hash = hash * 7 + rpc.GetVersionHash();
             foreach (var rpc in m_TemporalBuffer)
-                hash = hash * 7 + rpc.GetHashCode();
+                hash = hash * 7 + rpc.GetVersionHash();
             return hash;
         }
     }
