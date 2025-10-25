@@ -34,8 +34,7 @@ public sealed class NetWorldRuntime : NetWorld
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> TemporaryUnregisteredObjects => m_TemporaryUnregisteredObjects;
     private readonly Dictionary<NetObjectUID, NetObjectState> m_TemporaryUnregisteredObjects = new();
 
-    public IReadOnlyHistoryBuffer HistoryBuffer => m_HistoryBuffer;
-    private readonly HistoryBuffer m_HistoryBuffer = new();
+    public readonly NetWorldHistoryBuffer HistoryBuffer = new();
 
     private readonly HashSet<ClientUID> m_LocalPlayerRegisterQueue = new();
     private readonly HashSet<ClientUID> m_PlayerUnregisterQueue = new();
@@ -458,9 +457,9 @@ public sealed class NetWorldRuntime : NetWorld
     {
         base.OnBeforeExecuteView(worldDelta);
 
-        m_HistoryBuffer.Enqueue(ToSnapshot(worldDelta));
-        while (m_HistoryBuffer.LengthInSeconds > HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS)
-            m_HistoryBuffer.Dequeue();
+        HistoryBuffer.Enqueue(ToSnapshot(worldDelta));
+        while (HistoryBuffer.LengthInSeconds > HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS)
+            HistoryBuffer.Dequeue();
     }
 
     #endregion
@@ -474,7 +473,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         m_LocalPlayerRegisterQueue.Clear();
         m_PlayerUnregisterQueue.Clear();
-        m_HistoryBuffer.Clear();
+        HistoryBuffer.Clear();
 
         PlayerAdded = null;
     }
@@ -609,7 +608,7 @@ public sealed class NetWorldRuntime : NetWorld
     }
 
     public int GetHistoryBufferSize() =>
-        m_HistoryBuffer.Size;
+        HistoryBuffer.Size;
 
     /// <summary>
     /// World has to be notified, when game world is loaded.

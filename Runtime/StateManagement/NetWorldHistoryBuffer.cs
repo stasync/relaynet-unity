@@ -1,15 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 
-public interface IReadOnlyHistoryBuffer : IReadOnlyCollection<NetWorldSnapshot>
-{
-    int Size { get; }
-    int AverageFrameSize { get; }
-    float SizeMB { get; }
-    float LengthInSeconds { get; }
-}
-
-public sealed class HistoryBuffer : IReadOnlyHistoryBuffer
+public sealed class NetWorldHistoryBuffer : IReadOnlyCollection<NetWorldSnapshot>
 {
     public int Size { get; private set; }
     public int AverageFrameSize { get; private set; }
@@ -19,7 +11,7 @@ public sealed class HistoryBuffer : IReadOnlyHistoryBuffer
 
     private readonly Queue<NetWorldSnapshot> m_HistoryBuffer = new();
 
-    public void Enqueue(NetWorldSnapshot snapshot)
+    internal void Enqueue(NetWorldSnapshot snapshot)
     {
         m_HistoryBuffer.Enqueue(snapshot);
 
@@ -29,7 +21,7 @@ public sealed class HistoryBuffer : IReadOnlyHistoryBuffer
         RecalculateAverageSize();
     }
 
-    public void Dequeue()
+    internal void Dequeue()
     {
         var snapshot = m_HistoryBuffer.Dequeue();
 
@@ -39,7 +31,7 @@ public sealed class HistoryBuffer : IReadOnlyHistoryBuffer
         RecalculateAverageSize();
     }
 
-    public void Clear()
+    internal void Clear()
     {
         m_HistoryBuffer.Clear();
 
