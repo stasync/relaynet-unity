@@ -20,20 +20,6 @@ public enum ObjectStateChangeRequestType : byte
     RemoveUpdateHard,
 }
 
-public interface IReadOnlyNetObjectState
-{
-    bool IsValid { get; }
-    IReadOnlyNetWorldPlayer Owner { get; }
-    bool IsOwnedByLocalPlayer { get; }
-    bool IsOwnedByMasterClient { get; }
-    bool IsOwnersTagObject { get; }
-    bool IsOwnedBy(ClientUID uid);
-    IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests { get; }
-    NetObjectStateSnapshot ToSnapshot();
-    int GetHashCode();
-    string ToString();
-}
-
 public readonly struct RPCWithoutAuthorityState
 {
     public readonly NetObjectUID ObjectUID;
@@ -86,7 +72,7 @@ public readonly struct RPCWithoutAuthorityRequest
     }
 }
 
-public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectState>, IEquatable<NetObjectState>
+public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectState>
 {
     public event Action OnOwnerChanged = delegate { };
     public event Action<ObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
@@ -125,7 +111,6 @@ public class NetObjectState : IReadOnlyNetObjectState, IComparable<NetObjectStat
 
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
     
-    IReadOnlyNetWorldPlayer IReadOnlyNetObjectState.Owner => Owner;
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
     public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(UID);

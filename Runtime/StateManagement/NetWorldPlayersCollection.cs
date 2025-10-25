@@ -2,32 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public interface INetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
-{
-    ClientUID LocalPlayerUid { get; }
-    ClientUID MasterPlayerUid { get; }
-    bool Contains(ClientUID uid);
-    int GetHashCode();
-    NetWorldPlayersCollectionsSnapshot ToSnapshot();
-}
-
-public interface IReadOnlyNetWorldPlayersCollection : INetWorldPlayersCollection
-{
-    IReadOnlyNetWorldPlayer LocalPlayer { get; }
-    IReadOnlyNetWorldPlayer MasterPlayer { get; }
-    IReadOnlyNetWorldPlayer Find(ClientUID uid);
-}
-
-public interface IExposedNetWorldPlayersCollection : INetWorldPlayersCollection
-{
-    IReadOnlyCollection<NetWorldPlayer> All { get; }
-    NetWorldPlayer LocalPlayer { get; }
-    NetWorldPlayer MasterPlayer { get; }
-    NetWorldPlayer Find(ClientUID uid);
-    bool LocalPlayerIsMaster { get; }
-}
-
-public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollection, IReadOnlyNetWorldPlayersCollection
+public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
 {
     #region State
     public ClientUID LocalPlayerUid { get; private set; }
@@ -36,12 +11,6 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     public IReadOnlyCollection<NetWorldPlayer> All => m_PlayersCollection.Values;
 
     private Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
-    #endregion
-
-    #region IReadOnlyNetWorldPlayersCollection
-    IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.LocalPlayer => LocalPlayer;
-    IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.MasterPlayer => MasterPlayer;
-    IReadOnlyNetWorldPlayer IReadOnlyNetWorldPlayersCollection.Find(ClientUID uid) => Find(uid);
     #endregion
 
     public bool LocalPlayerIsMaster => IsValid && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
@@ -53,7 +22,7 @@ public sealed class NetWorldPlayersCollection : IExposedNetWorldPlayersCollectio
     private Func<bool> m_Validator;
     private bool IsValid => m_Validator != null && m_Validator();
 
-    public NetWorldPlayersCollection(Func<bool> validator)
+    internal NetWorldPlayersCollection(Func<bool> validator)
     {
         m_Validator = validator;
 

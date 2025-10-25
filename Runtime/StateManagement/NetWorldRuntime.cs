@@ -183,7 +183,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         void TrySendWorldData()
         {
-            if (!PlayersInternal.LocalPlayerIsMaster)
+            if (!Players.LocalPlayerIsMaster)
                 return;
 
             m_Writer.SeekZero();
@@ -193,7 +193,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         void UpdateRemoteMasterWorldData()
         {
-            if (!PlayersInternal.LocalPlayerIsMaster)
+            if (!Players.LocalPlayerIsMaster)
                 return;
 
             while (remoteWorldDataUpdateRequests.Count > 0)
@@ -210,7 +210,7 @@ public sealed class NetWorldRuntime : NetWorld
                 foreach (var clientUid in m_LocalPlayerRegisterQueue)
                 {
                     // Add player and notify.
-                    var player = PlayersInternal.RegisterImmediate(clientUid, isLocal: true);
+                    var player = Players.RegisterImmediate(clientUid, isLocal: true);
                     PlayerAdded(player.ToSnapshot());
                 }
 
@@ -221,9 +221,9 @@ public sealed class NetWorldRuntime : NetWorld
             {
                 foreach (var clientUid in m_PlayerUnregisterQueue)
                 {
-                    var player = PlayersInternal.Find(clientUid);
+                    var player = Players.Find(clientUid);
                     var playerSnapshot = player?.ToSnapshot() ?? default;
-                    if (PlayersInternal.UnregisterImmediate(clientUid))
+                    if (Players.UnregisterImmediate(clientUid))
                         removedPlayers.Enqueue(clientUid);
 
                     if (playerSnapshot.UID.IsValid)
@@ -244,7 +244,7 @@ public sealed class NetWorldRuntime : NetWorld
                     if (player == null)
                     {
                         // Create new.
-                        player = PlayersInternal.RegisterImmediate(snapshot.UID, isLocal: false);
+                        player = Players.RegisterImmediate(snapshot.UID, isLocal: false);
 
                         // Notify player registered.
                         PlayerAdded(player.ToSnapshot());
@@ -295,8 +295,8 @@ public sealed class NetWorldRuntime : NetWorld
                         if (state.IsSceneObject)
                         {
                             //Is local client becomes master client, set object's owner and sync it.
-                            if (PlayersInternal.LocalPlayerIsMaster)
-                                state.ChangedOwner(PlayersInternal.LocalPlayer.Uid);
+                            if (Players.LocalPlayerIsMaster)
+                                state.ChangedOwner(Players.LocalPlayer.Uid);
                             else
                                 state.InvalidateOwner();
                             
@@ -329,7 +329,7 @@ public sealed class NetWorldRuntime : NetWorld
                         $"Invalid Uid: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
 
                 // Check if owner exists.
-                if (!PlayersInternal.Contains(snapshot.OwnerUID))
+                if (!Players.Contains(snapshot.OwnerUID))
                 {
                     remoteObjectUpdateRequests.Remove(uid);
                     continue;
@@ -375,7 +375,7 @@ public sealed class NetWorldRuntime : NetWorld
                         Debug.LogError($"Unable to restore object {newState} form {snapshot}");
                 }
                 else
-                    newState = new NetObjectState(snapshot, PlayersInternal.Find);
+                    newState = new NetObjectState(snapshot, Players.Find);
 
                 TryAddObject(newState);
                 remoteObjectUpdateRequests.Remove(uid);
@@ -507,7 +507,7 @@ public sealed class NetWorldRuntime : NetWorld
         if (!owner.IsLocal)
             throw new InvalidOperationException();
 
-        var state = new NetObjectState(new NetObjectUID(owner.Uid), prefabId, isSceneObject, owner.Uid, PlayersInternal.Find);
+        var state = new NetObjectState(new NetObjectUID(owner.Uid), prefabId, isSceneObject, owner.Uid, Players.Find);
         m_TemporaryUnregisteredObjects.Add(state.UID, state);
         return View.CreateImmediate(state, position, rotation);
     }
@@ -533,7 +533,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         // Create state from scene object identity.
         // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, PlayersInternal.MasterPlayerUid, PlayersInternal.Find);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid, Players.Find);
         m_TemporaryUnregisteredObjects.Add(newState.UID, newState);
         var newStateUID = newState.UID;
 
@@ -543,7 +543,7 @@ public sealed class NetWorldRuntime : NetWorld
             if (TryGetExistedOrPendingState(newStateUID, out var state))
             {
                 // Initialize immateriality on master client.
-                if (PlayersInternal.LocalPlayerIsMaster)
+                if (Players.LocalPlayerIsMaster)
                     View.InitializeObjectView(sceneIdentity.Identity, state.UID);
 
                 // Add view to be used in the future.
@@ -582,7 +582,7 @@ public sealed class NetWorldRuntime : NetWorld
         if (identity != null) 
             return identity;
         
-        var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.Uid, PlayersInternal.Find);
+        var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.Uid, Players.Find);
         m_TemporaryUnregisteredObjects.Add(instanceId, state);
         return View.CreateImmediate(state, position, rotation);
     }
@@ -603,7 +603,7 @@ public sealed class NetWorldRuntime : NetWorld
     public void OnSceneLoaded()
     {
         // Check for player exists.
-        var player = PlayersInternal.LocalPlayer;
+        var player = Players.LocalPlayer;
         if (player != null)
         {
             player.IsReady = true;

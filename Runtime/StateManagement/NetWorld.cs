@@ -22,8 +22,7 @@ public abstract class NetWorld
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
     private readonly Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
 
-    public IExposedNetWorldPlayersCollection Players => PlayersInternal;
-    protected readonly NetWorldPlayersCollection PlayersInternal;
+    public readonly NetWorldPlayersCollection Players;
 
     private readonly Queue<Action> m_ViewInitActionQueue = new();
 
@@ -42,10 +41,10 @@ public abstract class NetWorld
         Name = $"{ID}:{worldName}";
 
         m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
-        PlayersInternal = new NetWorldPlayersCollection(validator: () => IsValid);
+        Players = new NetWorldPlayersCollection(validator: () => IsValid);
     }
 
-    public void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
+    internal void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
     {
         if (View != null)
             throw new InvalidOperationException($"View for world {Name} already initialized");
@@ -99,7 +98,7 @@ public abstract class NetWorld
         foreach (var state in m_CurrentObjectStates.Values)
             state.OnBeforeUpdateWorldState(worldDelta);
         
-        PlayersInternal.OnBeforeUpdateWorldState(worldDelta);
+        Players.OnBeforeUpdateWorldState(worldDelta);
     }
 
     protected virtual void OnUpdateWorldState(float worldDelta)
@@ -122,7 +121,7 @@ public abstract class NetWorld
             netObject.Invalidate();
 
         m_CurrentObjectStates.Clear();
-        PlayersInternal.Clear();
+        Players.Clear();
         m_ViewInitActionQueue.Clear();
 
         if (View == null)
@@ -189,7 +188,7 @@ public abstract class NetWorld
         LocalTime = snapshot.LocalTime;
 
         // Restore players.
-        PlayersInternal.RestoreFromSnapshot(snapshot.Players);
+        Players.RestoreFromSnapshot(snapshot.Players);
 
         // Add or update objects.
         foreach(var kvp in snapshot.Objects)
@@ -197,7 +196,7 @@ public abstract class NetWorld
             if (m_CurrentObjectStates.TryGetValue(kvp.Key, out var state))
                 state.ChangeObjectRemotely(kvp.Value);
             else
-                TryAddObject(new NetObjectState(kvp.Value, PlayersInternal.Find));
+                TryAddObject(new NetObjectState(kvp.Value, Players.Find));
         }
 
         // Remove absent objects.
@@ -227,7 +226,7 @@ public abstract class NetWorld
             hash += kvp.Key.GetHashCode();
             hash += kvp.Value.GetHashCode();
         }
-        hash = (hash * 7) + PlayersInternal.GetHashCode();
+        hash = (hash * 7) + Players.GetHashCode();
         return hash;
     }
 }
