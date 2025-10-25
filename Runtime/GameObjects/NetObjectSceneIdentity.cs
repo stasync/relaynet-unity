@@ -13,13 +13,13 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
         {
         }
     }
-    
+
     [SerializeField, Range(NetObjectUID.FIRST_VALID_UID, NetObjectUID.FIRST_VALID_UID + NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE)]
     private int m_SceneObjectId;
+
     public NetObjectUID SceneObjectId => (uint)m_SceneObjectId;
 
-    [SerializeField]
-    private string m_PrefabId;
+    [SerializeField] private string m_PrefabId;
     public string PrefabID => m_PrefabId;
 
     /// <summary>
@@ -46,7 +46,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
             Network.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
     }
 
-    public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) => 
+    public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) =>
         value.Identity;
 
 #if UNITY_EDITOR
@@ -67,13 +67,16 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
                 Debug.LogError($"{obj.gameObject.name} has ivalid id {obj.SceneObjectId} (Has to be fixed manually)");
                 continue;
             }
+
             var objectWithSameId = ObjectWithSameId(sceneObjects, obj);
 
             if (objectWithSameId == null)
                 continue;
 
-            Debug.LogErrorFormat("{0} and {1} game objects has same scene id {2} ", obj.gameObject.name, objectWithSameId.gameObject.name, obj.m_SceneObjectId);
+            Debug.LogErrorFormat(
+                $"'{obj.gameObject.name}' and '{objectWithSameId.gameObject.name}' game objects has same scene id '{obj.m_SceneObjectId}'.");
         }
+
         Debug.LogWarning("Validation finished");
     }
 
@@ -91,9 +94,10 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
         {
             UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
             while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
-                sceneObjectIdentity.m_SceneObjectId = 
+                sceneObjectIdentity.m_SceneObjectId =
                     RandomExtended.Default.Int(NetObjectUID.FIRST_VALID_UID, NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE);
         }
+
         ValidateSceneObjects();
     }
 

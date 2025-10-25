@@ -3,7 +3,7 @@
 /// </summary>
 public enum NoAuthorityRPCType : byte
 {
-    ToOwner = 0, 
+    ToOwner = 0,
     ToMaster = 1,
     ToAll = 2,
 }

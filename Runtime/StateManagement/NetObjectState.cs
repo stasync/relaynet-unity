@@ -83,41 +83,43 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     public bool IsValid => UID.IsValid;
 
     #region SYNCRONIZED STATE
+
     public NetObjectUID UID { get; private set; }
-    
+
     public string PrefabId { get; private set; }
-    
+
     public bool IsSceneObject { get; private set; }
-    
+
     public ClientUID OwnerUID { get; private set; }
-    
+
     public ObjectStateChangeRequestType StateChangeType { get; private set; }
-    
+
     public NetObjectRPCState RPCBuffer => m_RPCBuffer;
     private readonly NetObjectRPCState m_RPCBuffer;
-    
+
     public NetObjectDataCollection DataCollection => m_DataCollection;
     private readonly NetObjectDataCollection m_DataCollection;
+
     #endregion
 
     public override int GetHashCode() =>
         HashCode.Combine(UID, PrefabId, IsSceneObject, OwnerUID, StateChangeType, m_RPCBuffer, m_DataCollection);
 
-    public bool IsOwnedByLocalPlayer => 
+    public bool IsOwnedByLocalPlayer =>
         Owner is { IsLocal: true };
-    
-    public bool IsOwnedByMasterClient => 
+
+    public bool IsOwnedByMasterClient =>
         Owner is { IsMaster: true };
 
     public bool IsOwnedBy(ClientUID uid) => OwnerUID == uid;
-    
+
     public NetWorldPlayer Owner => m_PlayerProvider(OwnerUID);
 
     public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(UID);
 
     public IReadOnlyCollection<RPCWithoutAuthorityRequest> RPCWithoutAuthorityRequests => m_RPCWithoutAuthorityRequests;
     private readonly List<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityRequests = new();
-    
+
     private readonly Queue<ObjectStateChangeRequestType> m_StateChangeTypeQueue = new();
     private readonly Queue<NetObjectRPCState.NewPRCData> m_RPCBufferUpdateQueue = new();
     private readonly Queue<RPCWithoutAuthorityRequest> m_RPCWithoutAuthorityQueue = new();
@@ -141,10 +143,10 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     }
 
     internal NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUID, NetWorldPlayer> playerProvider) :
-        this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) => 
-            ChangeObjectRemotely(snapshot);
+        this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) =>
+        ChangeObjectRemotely(snapshot);
 
-    internal void InvalidateOwner() => 
+    internal void InvalidateOwner() =>
         OwnerUID = ClientUID.Invalid;
 
     internal void Invalidate()
@@ -157,7 +159,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         PrefabId = string.Empty;
         IsSceneObject = false;
         StateChangeType = ObjectStateChangeRequestType.None;
-        
+
         m_RPCBuffer.Clear();
         m_DataCollection.Clear();
         m_RPCWithoutAuthorityRequests.Clear();
@@ -199,12 +201,13 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     {
         var checkOwner = snapshot.StateChangeType < ObjectStateChangeRequestType.ReliableUpdateOwnerChange;
 
-        if(snapshot.StateChangeType == ObjectStateChangeRequestType.ReliableUpdateOwnerChange)
+        if (snapshot.StateChangeType == ObjectStateChangeRequestType.ReliableUpdateOwnerChange)
             Debug.LogError($"_______ {snapshot.StateChangeType} {UID} : {PrefabId}");
 
         if (checkOwner && IsOwnedByLocalPlayer)
         {
-            Debug.LogError($"Unable to restore local object with '{UID}' : '{PrefabId}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
+            Debug.LogError(
+                $"Unable to restore local object with '{UID}' : '{PrefabId}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
             return;
         }
 
@@ -224,7 +227,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
             OnOwnerChanged();
     }
 
-    public NetObjectStateSnapshot ToSnapshot() => 
+    public NetObjectStateSnapshot ToSnapshot() =>
         NetObjectStateSnapshot.FormState(this);
 
     internal void OnBeforeUpdateWorldState(float worldDelta)
@@ -237,11 +240,11 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
 
         // Return object to regular UDP pipeline.
         StateChangeType = ObjectStateChangeRequestType.UnreliableUpdate;
-        
+
         // New RPC requests.
         while (m_RPCBufferUpdateQueue.TryDequeue(out var newRpcState))
             m_RPCBuffer.AddOrUpdate(newRpcState);
-        
+
         // Persistent RPC remove request.
         while (m_PersistentRPCToRemoveQueue.TryDequeue(out var rpcHash))
             m_RPCBuffer.RemovePersistent(rpcHash);
@@ -249,7 +252,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
         // Update no-authority RPC requests. Note that is not a part of the state.
         while (m_RPCWithoutAuthorityQueue.TryDequeue(out var rpcWithoutAuthorityRequest))
             m_RPCWithoutAuthorityRequests.Add(rpcWithoutAuthorityRequest);
-        
+
         // State change type requests.
         while (m_StateChangeTypeQueue.TryDequeue(out var newRequestType))
         {
@@ -292,22 +295,22 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
     }
 
     public override string ToString() => $"{UID}:{PrefabId} " +
-            $"s:{IsSceneObject} " +
-            $"st:{StateChangeType} " +
-            $"own:{OwnerUID}:{(Owner == null ? "null" : Owner.ToString())} " +
-            $"l:{IsOwnedByLocalPlayer} " +
-            $"m:{IsOwnedByMasterClient} " +
-            $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
+                                         $"s:{IsSceneObject} " +
+                                         $"st:{StateChangeType} " +
+                                         $"own:{OwnerUID}:{(Owner == null ? "null" : Owner.ToString())} " +
+                                         $"l:{IsOwnedByLocalPlayer} " +
+                                         $"m:{IsOwnedByMasterClient} " +
+                                         $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
 
-    public int CompareTo(NetObjectState other) => 
+    public int CompareTo(NetObjectState other) =>
         UID.CompareTo(other?.UID ?? NetObjectUID.Invalid);
-    
-    public bool Equals(NetObjectState other) => 
+
+    public bool Equals(NetObjectState other) =>
         UID.Equals(other?.UID ?? NetObjectUID.Invalid);
 
     internal void ScheduleRPCWithoutAuthority(NoAuthorityRPCType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
         m_RPCWithoutAuthorityQueue.Enqueue(new RPCWithoutAuthorityRequest(UID, type, hashCode, data, deliveryMethod));
-    
+
     internal void ScheduleRPC(int hashCode, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod)
     {
         m_RPCBufferUpdateQueue.Enqueue(new NetObjectRPCState.NewPRCData
@@ -317,7 +320,7 @@ public class NetObjectState : IComparable<NetObjectState>, IEquatable<NetObjectS
             Persistent = persistent,
             BufferChangeMethod = bufferChangeMethod,
         });
-        
+
         if (deliveryMethod == DeliveryMethod.Reliable)
             ScheduleUpdate(ObjectStateChangeRequestType.ReliableUpdate);
     }

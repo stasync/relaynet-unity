@@ -53,10 +53,10 @@ public sealed class NetObjectDataCollection : IReadOnlyCollection<NetObjectState
         return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
     }
 
-    internal void Clear() => 
+    internal void Clear() =>
         m_InternalCollection.Clear();
 
-    public NetObjectDataCollectionSnapshot ToSnapshot() => 
+    public NetObjectDataCollectionSnapshot ToSnapshot() =>
         new(m_InternalCollection.Values);
 
     public void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
@@ -88,12 +88,13 @@ public sealed class NetObjectDataCollection : IReadOnlyCollection<NetObjectState
             hash = hash * 7 + kvp.Key.GetHashCode();
             hash = hash * 7 + kvp.Value.GetHashCode();
         }
+
         return hash;
     }
 
-    public IEnumerator<NetObjectStateData> GetEnumerator() => 
+    public IEnumerator<NetObjectStateData> GetEnumerator() =>
         m_InternalCollection.Values.GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator() => 
+    IEnumerator IEnumerable.GetEnumerator() =>
         m_InternalCollection.Values.GetEnumerator();
 }

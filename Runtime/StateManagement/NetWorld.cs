@@ -97,7 +97,7 @@ public abstract class NetWorld
     {
         foreach (var state in m_CurrentObjectStates.Values)
             state.OnBeforeUpdateWorldState(worldDelta);
-        
+
         Players.OnBeforeUpdateWorldState(worldDelta);
     }
 
@@ -107,7 +107,9 @@ public abstract class NetWorld
         LocalTime += worldDelta;
     }
 
-    protected virtual void OnBeforeExecuteView(float worldDelta) { }
+    protected virtual void OnBeforeExecuteView(float worldDelta)
+    {
+    }
 
     public virtual void Dispose()
     {
@@ -134,21 +136,18 @@ public abstract class NetWorld
         }
     }
 
-    public virtual bool ObjectExists(NetObjectUID uid) => 
+    public virtual bool ObjectExists(NetObjectUID uid) =>
         m_CurrentObjectStates.ContainsKey(uid);
 
-    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) => 
-        View == null ? null :
-        View.FindObjectView(instanceId);
+    public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
+        View == null ? null : View.FindObjectView(instanceId);
 
     public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase =>
-        View == null ? null :
-        View.FindObjectView<T>(instanceId);
+        View == null ? null : View.FindObjectView<T>(instanceId);
 
     public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
-        View == null ? null :
-        View.FindObjectViewsOfType<T>();
-    
+        View == null ? null : View.FindObjectViewsOfType<T>();
+
     public T FindObjectViewOfType<T>() where T : GSInstanceBehaviourBase
     {
         if (View == null)
@@ -160,6 +159,7 @@ public abstract class NetWorld
             if (component != null)
                 return component;
         }
+
         return null;
     }
 
@@ -177,9 +177,9 @@ public abstract class NetWorld
         state.Invalidate();
         m_CurrentObjectStates.Remove(stateUID);
     }
-        
-    public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) => 
-        NetWorldSnapshot.FromWorld(deltaTime, this);
+
+    public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) =>
+        NetWorldSnapshot.FromWorld(deltaTime, world: this);
 
     protected void RestoreFromSnapshot(NetWorldSnapshot snapshot)
     {
@@ -191,7 +191,7 @@ public abstract class NetWorld
         Players.RestoreFromSnapshot(snapshot.Players);
 
         // Add or update objects.
-        foreach(var kvp in snapshot.Objects)
+        foreach (var kvp in snapshot.Objects)
         {
             if (m_CurrentObjectStates.TryGetValue(kvp.Key, out var state))
                 state.ChangeObjectRemotely(kvp.Value);
@@ -218,15 +218,16 @@ public abstract class NetWorld
     public override int GetHashCode()
     {
         var hash = 13;
-        hash = (hash * 7) + ID.GetHashCode();
-        hash = (hash * 7) + Time.GetHashCode();
-        hash = (hash * 7) + LocalTime.GetHashCode(); //Do we need local time in hash code?
+        hash = hash * 7 + ID.GetHashCode();
+        hash = hash * 7 + Time.GetHashCode();
+        hash = hash * 7 + LocalTime.GetHashCode(); //Do we need local time in hash code?
         foreach (var kvp in m_CurrentObjectStates)
         {
             hash += kvp.Key.GetHashCode();
             hash += kvp.Value.GetHashCode();
         }
-        hash = (hash * 7) + Players.GetHashCode();
+
+        hash = hash * 7 + Players.GetHashCode();
         return hash;
     }
 }

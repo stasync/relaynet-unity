@@ -36,8 +36,11 @@ public readonly struct NetWorldPlayerSnapshot
         Properties = PropertiesSnapshot.FromReader(reader);
     }
 
-    public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player) => new(player);
-    public static NetWorldPlayerSnapshot FormReader(NetReader reader) => new(reader);
+    public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player) => 
+        new(player);
+    
+    public static NetWorldPlayerSnapshot FormReader(NetReader reader) => 
+        new(reader);
 
     public void Serialize(NetWriter writer)
     {
@@ -46,7 +49,7 @@ public readonly struct NetWorldPlayerSnapshot
         writer.WriteBool(IsInGameScene);
         writer.WriteInt32((int)Platform);
         writer.WriteSingle(RTTMs);
-        writer.WriteCollection(TagObjectUIDs, (v, w) => w.WriteInstanceId(v));
+        writer.WriteCollection(TagObjectUIDs, (netObjectUid, netWriter) => netWriter.WriteInstanceId(netObjectUid));
         writer.WriteInstanceId(MainTagObjectUID);
         writer.WriteBytesAndSize(Properties.Data);
     }

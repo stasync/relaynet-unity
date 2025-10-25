@@ -16,7 +16,7 @@ public sealed class NetWorldRuntime : NetWorld
             Data = data;
         }
     }
-    
+
     public delegate void DataSendRequestDelegate(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
 
     private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
@@ -32,7 +32,7 @@ public sealed class NetWorldRuntime : NetWorld
     private readonly Queue<IncomingStateChangeRequest> m_IncomingStateChangeRequests = new();
 
     public IReadOnlyDictionary<NetObjectUID, NetObjectState> TemporaryUnregisteredObjects => m_TemporaryUnregisteredObjects;
-    private readonly Dictionary<NetObjectUID, NetObjectState> m_TemporaryUnregisteredObjects = new ();
+    private readonly Dictionary<NetObjectUID, NetObjectState> m_TemporaryUnregisteredObjects = new();
 
     public IReadOnlyHistoryBuffer HistoryBuffer => m_HistoryBuffer;
     private readonly HistoryBuffer m_HistoryBuffer = new();
@@ -62,6 +62,7 @@ public sealed class NetWorldRuntime : NetWorld
     }
 
     #region Update
+
     protected override void OnUpdateWorldState(float worldDelta)
     {
         base.OnUpdateWorldState(worldDelta);
@@ -83,6 +84,7 @@ public sealed class NetWorldRuntime : NetWorld
         UpdateLocalObjectState();
 
         #region Internal
+
         void ProcessIncomingData()
         {
             while (m_IncomingStateChangeRequests.TryDequeue(out var stateChangeRequest))
@@ -118,7 +120,8 @@ public sealed class NetWorldRuntime : NetWorld
                         if (current.StateChangeType < snapshot.StateChangeType)
                             remoteObjectUpdateRequests[snapshot.ObjectUID] = snapshot;
                         else
-                            Debug.LogWarning($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
+                            Debug.LogWarning(
+                                $"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
 
                         break;
                     }
@@ -144,14 +147,16 @@ public sealed class NetWorldRuntime : NetWorld
                         {
 #if NETWORK_DEBUG
                             var rpcHandlerMethod = RPCUtils.TryFindMethodInfoByHashSlow(state.RPCState.Hash);
-                            var rpcHandlerMethodName = rpcHandlerMethod == null ? 
-                                "UNKNOWN" : $"{rpcHandlerMethod.DeclaringType!.FullName}.{rpcHandlerMethod.Name}";
-                            
-                            Debug.LogError($"Trying to receive rpc with code '{state.RPCState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed.");
+                            var rpcHandlerMethodName = rpcHandlerMethod == null
+                                ? "UNKNOWN"
+                                : $"{rpcHandlerMethod.DeclaringType!.FullName}.{rpcHandlerMethod.Name}";
+
+                            Debug.LogError(
+                                $"Trying to receive rpc with code '{state.RPCState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed.");
 #endif
                             break;
                         }
-                        
+
                         switch (state.Type)
                         {
                             case NoAuthorityRPCType.ToOwner:
@@ -175,6 +180,7 @@ public sealed class NetWorldRuntime : NetWorld
                                 break;
                             }
                         }
+
                         break;
                     }
                 }
@@ -299,7 +305,7 @@ public sealed class NetWorldRuntime : NetWorld
                                 state.ChangedOwner(Players.LocalPlayer.Uid);
                             else
                                 state.InvalidateOwner();
-                            
+
                             if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
                                 view.OnDisconnected(removePlayerUid);
                         }
@@ -350,7 +356,8 @@ public sealed class NetWorldRuntime : NetWorld
                 // Object doesn't exists.
                 if (snapshot.StateChangeType is ObjectStateChangeRequestType.RemoveUpdateHard or ObjectStateChangeRequestType.RemoveUpdateSoft)
                 {
-                    Debug.LogError($"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
+                    Debug.LogError(
+                        $"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
 
                     m_TemporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
                     remoteObjectUpdateRequests.Remove(uid);
@@ -423,7 +430,7 @@ public sealed class NetWorldRuntime : NetWorld
             foreach (var uid in new List<NetObjectUID>(ObjectStates.Keys))
             {
                 var state = ObjectStates[uid];
-                
+
                 var deliveryMethod = DeliveryMethod.Unreliable;
                 if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
                     deliveryMethod = DeliveryMethod.Reliable;
@@ -443,6 +450,7 @@ public sealed class NetWorldRuntime : NetWorld
                 }
             }
         }
+
         #endregion
     }
 
@@ -454,8 +462,9 @@ public sealed class NetWorldRuntime : NetWorld
         while (m_HistoryBuffer.LengthInSeconds > HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS)
             m_HistoryBuffer.Dequeue();
     }
+
     #endregion
-    
+
     /// <summary>
     /// Destroy all network objects and cleanup scene.
     /// </summary>
@@ -469,7 +478,7 @@ public sealed class NetWorldRuntime : NetWorld
 
         PlayerAdded = null;
     }
-    
+
     /// <summary>
     /// Create another world that could evaluate and re-player this world's history buffer.
     /// </summary>
@@ -482,19 +491,19 @@ public sealed class NetWorldRuntime : NetWorld
         base.RemoveObject(stateUID);
         m_TemporaryUnregisteredObjects.Remove(stateUID);
     }
-    
+
     internal void RegisterLocalPlayer(ClientUID clientUid) =>
         m_LocalPlayerRegisterQueue.Add(clientUid);
-    
+
     internal void OnDisconnect(ClientUID clientUid)
     {
         m_LocalPlayerRegisterQueue.Remove(clientUid);
         m_PlayerUnregisterQueue.Add(clientUid);
     }
-    
+
     internal void ScheduleRemoteUpdate(uint userDataOpCode, byte[] data) =>
         m_IncomingStateChangeRequests.Enqueue(new IncomingStateChangeRequest(userDataOpCode, data));
-    
+
     private bool TryGetExistedOrPendingState(NetObjectUID instanceId, out NetObjectState state) =>
         TryGetObject(instanceId, out state) || m_TemporaryUnregisteredObjects.TryGetValue(instanceId, out state);
 
@@ -522,7 +531,8 @@ public sealed class NetWorldRuntime : NetWorld
         if (ObjectExists(sceneIdentity.SceneObjectId))
         {
 #if NETWORK_DEBUG
-            Debug.LogError($"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabID}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
+            Debug.LogError(
+                $"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabID}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
 #endif
             UnityEngine.Object.Destroy(sceneIdentity.gameObject);
             return;
@@ -533,7 +543,8 @@ public sealed class NetWorldRuntime : NetWorld
 
         // Create state from scene object identity.
         // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid, Players.Find);
+        var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid,
+            Players.Find);
         m_TemporaryUnregisteredObjects.Add(newState.UID, newState);
         var newStateUID = newState.UID;
 
@@ -553,7 +564,8 @@ public sealed class NetWorldRuntime : NetWorld
             {
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.LogError($"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newStateUID}' not exist.");
+                Debug.LogError(
+                    $"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newStateUID}' not exist.");
 #endif
             }
         });
@@ -576,19 +588,21 @@ public sealed class NetWorldRuntime : NetWorld
     /// Note that this object will not be in valid state, until update happens.
     /// Use in only if it's highly necessary.
     /// </summary>
-    public NetObjectIdentity FindObjectViewOrCreateMock(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+    public NetObjectIdentity FindObjectViewOrCreateMock(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject,
+        Vector3 position, Quaternion rotation)
     {
         var identity = FindObjectView(instanceId);
-        if (identity != null) 
+        if (identity != null)
             return identity;
-        
+
         var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.Uid, Players.Find);
         m_TemporaryUnregisteredObjects.Add(instanceId, state);
         return View.CreateImmediate(state, position, rotation);
     }
-    
+
     /// <inheritdoc cref="FindObjectViewOrCreateMock"/>
-    public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation) where T : GSInstanceBehaviourBase
+    public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUID instanceId, string prefabId, bool isSceneObject, Vector3 position,
+        Quaternion rotation) where T : GSInstanceBehaviourBase
     {
         var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
         return networkObject == null ? null : networkObject.GetComponent<T>();
@@ -596,7 +610,7 @@ public sealed class NetWorldRuntime : NetWorld
 
     public int GetHistoryBufferSize() =>
         m_HistoryBuffer.Size;
-    
+
     /// <summary>
     /// World has to be notified, when game world is loaded.
     /// </summary>

@@ -18,7 +18,7 @@ public static class RPCUtils
     {
         if (!IsValidMethod(a.Method))
             throw new InvalidOperationException("Unable to create RPC code with anonymous delegates.");
-        
+
         if (s_RPCHashMap.TryGetValue(a.Method, out var result))
             return result;
 
@@ -29,9 +29,9 @@ public static class RPCUtils
 
     private static bool IsValidMethod(MethodInfo method)
     {
-        if (s_MethodValidityCache.TryGetValue(method, out var result)) 
+        if (s_MethodValidityCache.TryGetValue(method, out var result))
             return result;
-        
+
         // Anonymous delegate method name usually looks like '<Foo>m__0';
         // TODO: More 'beautiful' way to know is delegate is anonymous.
         s_MethodValidityCache.Add(method, result = !method.Name.StartsWith("<"));
@@ -53,7 +53,7 @@ public static class RPCUtils
             return hash;
         }
     }
-    
+
     /// <summary>
     /// Backwards slow version to get method info by the hash.
     /// May return the valid <see cref="MethodInfo"/>, if it was registered once.
@@ -69,28 +69,29 @@ public static class RPCUtils
 
         return null;
     }
-    
+
     public static IReadOnlyList<MethodInfo> GetAutoRegisterRPCHandlers(Type type)
     {
         if (m_AutoRegisterRPCHandlerMethodsCache.TryGetValue(type, out var result))
             return result;
-        
+
         var methodCollection = new List<MethodInfo>();
         m_AutoRegisterRPCHandlerMethodsCache.Add(type, methodCollection);
-        
+
         foreach (var methodInfo in type.GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
         {
             var attribute = methodInfo.GetCustomAttribute<AutoRegisterRPCHandler>();
             if (attribute == null)
                 continue;
-                
+
             var parameters = methodInfo.GetParameters();
             if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
             {
-                Debug.LogError($"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRPCHandler).FullName}' on '{type.FullName}'.");
+                Debug.LogError(
+                    $"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRPCHandler).FullName}' on '{type.FullName}'.");
                 continue;
             }
-            
+
             methodCollection.Add(methodInfo);
         }
 

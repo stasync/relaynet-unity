@@ -12,7 +12,7 @@ public readonly struct RPCState
     public readonly int Hash;
     public readonly uint UID;
     public readonly byte[] Payload;
-    
+
     public bool IsValid => !Hash.Equals(0) && Payload != null;
 
     public RPCState(int hash, uint uid, byte[] payload)
@@ -22,11 +22,11 @@ public readonly struct RPCState
         Payload = payload;
     }
 
-    public RPCStateSnapshot ToSnapshot() => 
+    public RPCStateSnapshot ToSnapshot() =>
         RPCStateSnapshot.FromState(this);
 
-    public static RPCState FromSnapshot(RPCStateSnapshot snapshot) => 
-        new (snapshot.Hash, snapshot.UID, snapshot.Payload);
+    public static RPCState FromSnapshot(RPCStateSnapshot snapshot) =>
+        new(snapshot.Hash, snapshot.UID, snapshot.Payload);
 
     public override int GetHashCode()
     {
@@ -48,7 +48,7 @@ public sealed class NetObjectRPCState
         internal bool Persistent;
         internal RPCBufferChangeMethod BufferChangeMethod;
     }
-    
+
     public IReadOnlyCollection<RPCState> PersistentBuffer => m_PersistentBuffer;
     public IReadOnlyCollection<RPCState> TemporalBuffer => m_TemporalBuffer;
 

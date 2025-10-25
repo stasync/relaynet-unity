@@ -11,7 +11,7 @@ public abstract class NetObjectStateData
     protected readonly Func<bool> WritePermission;
 
     public IReadOnlyDictionary<string, SerializableValue> SerializableValues => m_InternalValueCollection;
-    private readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new ();
+    private readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new();
 
     protected NetObjectStateData(Func<bool> writePermission)
     {
@@ -53,10 +53,10 @@ public abstract class NetObjectStateData
     {
         foreach (var value in m_InternalValueCollection.Values)
             value.DeserializeAndApply(reader, firstTime);
-        
+
         OnDeserialize(reader, firstTime);
     }
-    
+
     protected virtual void OnDeserialize(NetReader reader, bool firstTime)
     {
     }
@@ -96,7 +96,7 @@ public abstract class NetObjectStateData
 
         return instance;
     }
-    
+
     private static byte GetTypeIndex(Type dataType) =>
         Core.Utils.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 

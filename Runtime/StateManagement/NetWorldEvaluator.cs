@@ -6,15 +6,16 @@ public sealed class NetWorldEvaluator : NetWorld
     public int CurrentSnapshotIndex { get; private set; }
     public bool Paused { get; private set; }
     public int BufferCount => m_HistoryBuffer.Count;
-    
+
     private readonly List<NetWorldSnapshot> m_HistoryBuffer;
-    
+
     private NetWorldSnapshot m_CurrentSnapshot;
     private float m_CurrentTime;
     private float m_NextSnapshotTime;
     private readonly bool m_AutoDestroy;
 
-    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(uid: runtime.ID, worldName: $"World {runtime.ID} evaluator", runtime.ID)
+    public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(uid: runtime.ID, worldName: $"World {runtime.ID} evaluator",
+        runtime.ID)
     {
         InitializeView(NetWorldViewInitMode.SeparatePhysicsSimulation);
 
@@ -66,7 +67,7 @@ public sealed class NetWorldEvaluator : NetWorld
             UpdateWorldState(m_CurrentSnapshot.DeltaTime);
     }
 
-    public void SetPaused(bool paused) => 
+    public void SetPaused(bool paused) =>
         Paused = paused;
 
     public int FindLastSnapshotIndex(Predicate<NetWorldSnapshot> predicate)

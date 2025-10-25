@@ -5,12 +5,14 @@ using System.Collections.Generic;
 public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
 {
     #region State
+
     public ClientUID LocalPlayerUid { get; private set; }
     public ClientUID MasterPlayerUid { get; private set; }
 
     public IReadOnlyCollection<NetWorldPlayer> All => m_PlayersCollection.Values;
 
     private Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
+
     #endregion
 
     public bool LocalPlayerIsMaster => IsValid && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
@@ -41,11 +43,11 @@ public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
         if (m_PlayersCollection.ContainsKey(uid))
             throw new InvalidOperationException();
 
-        var player = new NetWorldPlayer(uid, 
-            name: "Unknown", 
-            localPlayerUidProvider: () => LocalPlayerUid, 
+        var player = new NetWorldPlayer(uid,
+            name: "Unknown",
+            localPlayerUidProvider: () => LocalPlayerUid,
             masterPlayerUidProvider: () => MasterPlayerUid);
-        
+
         m_PlayersCollection.Add(uid, player);
         if (isLocal)
             LocalPlayerUid = uid;
@@ -71,7 +73,7 @@ public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
         MasterPlayerUid = ClientUID.Invalid;
         foreach (var worldPlayer in All)
         {
-            if (worldPlayer.Uid < MasterPlayerUid || !MasterPlayerUid.IsValid) 
+            if (worldPlayer.Uid < MasterPlayerUid || !MasterPlayerUid.IsValid)
                 MasterPlayerUid = worldPlayer.Uid;
         }
     }
@@ -87,9 +89,9 @@ public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
         m_PlayersCollection = null;
     }
 
-    public NetWorldPlayersCollectionsSnapshot ToSnapshot() => 
+    public NetWorldPlayersCollectionsSnapshot ToSnapshot() =>
         NetWorldPlayersCollectionsSnapshot.FormCollection(collection: this);
-    
+
     internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
     {
         // Use invalid id for local and master player while snapshots if only used for world replication.
@@ -107,15 +109,15 @@ public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
         }
 
         // Add or update.
-        foreach(var (clientUid, playerSnapshot) in snapshot.PlayersCollection)
+        foreach (var (clientUid, playerSnapshot) in snapshot.PlayersCollection)
         {
             if (m_PlayersCollection.TryGetValue(clientUid, out var player))
                 player.RestoreFromSnapshot(playerSnapshot);
             else
                 m_PlayersCollection.Add(clientUid, new NetWorldPlayer(
-                    playerSnapshot.UID, 
-                    playerSnapshot.Name, 
-                    localPlayerUidProvider: () => LocalPlayerUid, 
+                    playerSnapshot.UID,
+                    playerSnapshot.Name,
+                    localPlayerUidProvider: () => LocalPlayerUid,
                     masterPlayerUidProvider: () => MasterPlayerUid));
         }
     }
@@ -130,6 +132,7 @@ public sealed class NetWorldPlayersCollection : IEnumerable<NetWorldPlayer>
             hash += kvp.Key.GetHashCode();
             hash += kvp.Value.GetHashCode();
         }
+
         return hash;
     }
 

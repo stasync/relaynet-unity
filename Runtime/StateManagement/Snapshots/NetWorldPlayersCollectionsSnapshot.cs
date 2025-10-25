@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 public readonly struct NetWorldPlayersCollectionsSnapshot
 {
@@ -19,7 +18,8 @@ public readonly struct NetWorldPlayersCollectionsSnapshot
             m_PlayersCollection.Add(worldPlayer.Uid, worldPlayer.ToSnapshot());
     }
 
-    public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) => new(collection);
+    public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) =>
+        new(collection);
 
     public int GetSize()
     {
@@ -32,7 +32,7 @@ public readonly struct NetWorldPlayersCollectionsSnapshot
             result += ClientUID.Size; // ClientUID
             result += p.GetSize();
         }
-        
+
         return result;
     }
 }

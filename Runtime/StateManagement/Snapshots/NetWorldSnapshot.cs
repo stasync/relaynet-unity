@@ -27,7 +27,7 @@ public readonly struct NetWorldSnapshot
         Players = world.Players.ToSnapshot();
     }
 
-    public static NetWorldSnapshot FromWorld(float deltaTime, NetWorld world) => 
+    public static NetWorldSnapshot FromWorld(float deltaTime, NetWorld world) =>
         new(deltaTime, world);
 
     public int GetSize()

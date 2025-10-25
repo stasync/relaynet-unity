@@ -9,6 +9,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     public NetObjectUID InstanceId => State?.UID ?? NetObjectUID.Invalid;
     public bool IsOwnedByMasterClient => State is { IsOwnedByMasterClient: true };
     public bool IsLocal => State is { IsOwnedByLocalPlayer: true };
+
     public bool IsLocalPlayerMainTagObject
     {
         get
@@ -32,6 +33,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// Object prefab id
     /// </summary>
     public bool IsSceneObject => State is { IsSceneObject: true };
+
     public bool Initialized { get; private set; }
 
     private GSInstanceBehaviourBase[] m_Behaviours;
@@ -40,11 +42,11 @@ public sealed class NetObjectIdentity : MonoBehaviour
     private NetReader m_ObjectReader;
 
     public NetObjectState State => m_NetObjectStateReference.State;
-    private readonly NetObjectStateReference m_NetObjectStateReference = new ();
-    
-    private readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new ();
+    private readonly NetObjectStateReference m_NetObjectStateReference = new();
+
+    private readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new();
     private readonly Dictionary<int, Action<byte[]>> m_RPCHandlers = new();
-    
+
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
@@ -66,7 +68,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
 
         var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
         if (!IsLocal)
-            Deserialize(viewStateData.UnstructuredData, force: true, firstTime: true); // Force true to allow deserialization before object initialized.
+            Deserialize(viewStateData.UnstructuredData, force: true,
+                firstTime: true); // Force true to allow deserialization before object initialized.
 
         // Pre initialization.
         foreach (var behaviour in m_Behaviours)
@@ -181,13 +184,17 @@ public sealed class NetObjectIdentity : MonoBehaviour
         if (IsLocal)
         {
             // TODO: Need to deserialize this data somehow, or change ownership changing pipeline.
-            Debug.LogError($"Trying to deserialize local player object '{gameObject.name}', this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was changed before.", gameObject);
+            Debug.LogError(
+                $"Trying to deserialize local player object '{gameObject.name}', this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was changed before.",
+                gameObject);
             return;
         }
 
         if (!Initialized && !force)
         {
-            Debug.LogWarning($"Trying to deserialize object '{gameObject.name}' that is not initialized, this is not allowed. Use 'force' option to do this.", gameObject);
+            Debug.LogWarning(
+                $"Trying to deserialize object '{gameObject.name}' that is not initialized, this is not allowed. Use 'force' option to do this.",
+                gameObject);
             return;
         }
 
@@ -214,29 +221,34 @@ public sealed class NetObjectIdentity : MonoBehaviour
         var rpcHash = RPCUtils.ActionToHash(handler);
         // WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
         if (!m_RPCHandlers.TryAdd(rpcHash, handler))
-            throw new InvalidOperationException($"'{gameObject.name}' already contains handler for '{handler.Method.DeclaringType!.FullName}.{handler.Method.Name}''{rpcHash}' rpc code.");
+            throw new InvalidOperationException(
+                $"'{gameObject.name}' already contains handler for '{handler.Method.DeclaringType!.FullName}.{handler.Method.Name}''{rpcHash}' rpc code.");
     }
 
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
-        OwnerToOthersRPC(rpcHandlerMethod,data, persistent: false, RPCBufferChangeMethod.Add, deliveryMethod, invokeLocally);
+    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable,
+        bool invokeLocally = true) =>
+        OwnerToOthersRPC(rpcHandlerMethod, data, persistent: false, RPCBufferChangeMethod.Add, deliveryMethod, invokeLocally);
 
     /// <summary>
     /// Same as AuthRPC, but buffered.
     /// Only works via RELIABLE delivery.
     /// </summary>
-    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocally = true) =>
+    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data,
+        RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocally = true) =>
         OwnerToOthersRPC(rpcHandlerMethod, data, persistent: true, bufferChangeMethod, DeliveryMethod.Reliable, invokeLocally);
-    
-    private void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
+
+    private void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod,
+        DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
     {
         if (!IsLocal)
-            throw new Exception("Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
+            throw new Exception(
+                "Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
         var hashCode = RPCUtils.ActionToHash(rpcHandlerMethod);
-        
+
         // Try to invoke handler locally.
         if (invokeLocally)
             InvokeRpcHandler(hashCode, data);
@@ -258,7 +270,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         else
             State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToOwner, hashCode, data, deliveryMethod);
     }
-    
+
     /// <summary>
     /// RPC variation, sends RPC to MASTER client.
     /// It does not matter whether MASTER client is a owner of this object or not.
@@ -286,12 +298,12 @@ public sealed class NetObjectIdentity : MonoBehaviour
 
         State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToAll, hashCode, data, deliveryMethod);
     }
-    
+
     /// <summary>
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
-    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) => 
+    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) =>
         State.ScheduleRemovePersistentRPC(RPCUtils.ActionToHash(rpcHandlerMethod));
 
     /// <summary>
@@ -331,7 +343,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// Receive prc anywhere.
     /// </summary>
     /// <param name="state"></param>
-    internal void ReceiveRPC(RPCWithoutAuthorityState state) => 
+    internal void ReceiveRPC(RPCWithoutAuthorityState state) =>
         InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
 
     private void InvokeRpcHandler(int hashCode, byte[] data)
@@ -341,17 +353,17 @@ public sealed class NetObjectIdentity : MonoBehaviour
         else
         {
             var errorMessage = $"Handler for RPC is not registered on object '{gameObject.name}'.";
-            
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             var handlerInfoString = $"Hash: '{hashCode}'";
             var handlerMethodInfo = RPCUtils.TryFindMethodInfoByHashSlow(hashCode);
-            handlerInfoString = handlerMethodInfo != null ? 
-                $"{handlerInfoString} Method: '{handlerMethodInfo.DeclaringType!.FullName}.{handlerMethodInfo.Name}'" : 
-                $"{handlerInfoString} Method: 'UNKNOWN'";
-            
+            handlerInfoString = handlerMethodInfo != null
+                ? $"{handlerInfoString} Method: '{handlerMethodInfo.DeclaringType!.FullName}.{handlerMethodInfo.Name}'"
+                : $"{handlerInfoString} Method: 'UNKNOWN'";
+
             errorMessage += $" Handler info: {handlerInfoString}.";
 #endif
-            
+
             Debug.LogError(errorMessage, gameObject);
         }
     }
@@ -366,7 +378,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
 
         State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
     }
-    
+
     /// <summary>
     /// Could be used instead of <see cref="UnityEngine.Behaviour.GetComponent{T}"/>
     /// </summary>
@@ -379,22 +391,22 @@ public sealed class NetObjectIdentity : MonoBehaviour
             if (behaviour != null)
                 m_CachedBehaviours.Add(type, behaviour);
         }
-        
+
         return behaviour as T;
     }
-    
+
     private void OnDestroy()
     {
-        if (State == null) 
+        if (State == null)
             return;
-        
+
         State.OnOwnerChanged -= OnOwnerChanged;
         State.LocalUpdateRequest -= OnLocalUpdateRequest;
 
         m_NetObjectStateReference.SetTargetUID(NetObjectUID.Invalid);
         m_NetObjectStateReference.SetTargetWorld(null);
     }
-    
+
 #if UNITY_EDITOR
     private void OnDrawGizmos()
     {
@@ -402,7 +414,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
             return;
 
         UnityEditor.Handles.Label(
-            transform.position, 
+            transform.position,
             $"Object: {InstanceId}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
     }
 #endif

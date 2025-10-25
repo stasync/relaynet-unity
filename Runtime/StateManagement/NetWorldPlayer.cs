@@ -7,6 +7,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     public ClientUID Uid { get; private set; }
 
     #region Values
+
     public string Name
     {
         get => m_Name;
@@ -17,6 +18,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
             m_Name = value;
         }
     }
+
     private string m_Name;
 
     public bool IsReady
@@ -29,6 +31,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
             m_IsReady = value;
         }
     }
+
     private bool m_IsReady;
 
     public UserDeviceType.Platform Platform
@@ -41,6 +44,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
             m_Platform = value;
         }
     }
+
     private UserDeviceType.Platform m_Platform = UserDeviceType.Platform.Unknown;
 
     public int RTTMs
@@ -53,15 +57,17 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
             m_RTTMS = value;
         }
     }
+
     private int m_RTTMS;
-    
+
     public IProperties Properties => m_Properties;
     private readonly Properties m_Properties;
 
     public IReadOnlyCollection<NetObjectUID> TagObjectUidCollection => m_TagObjectUidCollection;
     private HashSet<NetObjectUID> m_TagObjectUidCollection;
-    
+
     public NetObjectUID MainTagObjectUid { get; private set; } = NetObjectUID.Invalid;
+
     #endregion
 
     public void RegisterTagObject(NetObjectUID uid, bool main = false)
@@ -89,14 +95,14 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         if (MainTagObjectUid == uid)
             MainTagObjectUid = NetObjectUID.Invalid;
     }
-    
+
     public bool IsValid => Uid.IsValid;
     public bool IsLocal => IsValid && Uid.Equals(other: m_LocalPlayerUidProvider());
     public bool IsMaster => IsValid && Uid.Equals(other: m_MasterPlayerUidProvider());
 
     private readonly Func<ClientUID> m_LocalPlayerUidProvider;
     private readonly Func<ClientUID> m_MasterPlayerUidProvider;
-    private readonly NetWriter m_Writer = new ();
+    private readonly NetWriter m_Writer = new();
 
     internal NetWorldPlayer(ClientUID uid, string name, Func<ClientUID> localPlayerUidProvider, Func<ClientUID> masterPlayerUidProvider)
     {
@@ -124,7 +130,7 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
     public bool HasTagObject(NetObjectUID uid) => uid.IsValid && m_TagObjectUidCollection.Contains(uid);
     public bool HasTagObject(NetObjectState state) => state != null && HasTagObject(state.UID);
 
-    public NetWorldPlayerSnapshot ToSnapshot() => 
+    public NetWorldPlayerSnapshot ToSnapshot() =>
         NetWorldPlayerSnapshot.FormPlayer(this);
 
     public override string ToString() => $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
@@ -138,6 +144,6 @@ public class NetWorldPlayer : IComparable<NetWorldPlayer>, IEquatable<NetWorldPl
         return m_Writer.ToArray();
     }
 
-    public override int GetHashCode() => 
+    public override int GetHashCode() =>
         Uid.GetHashCode();
 }

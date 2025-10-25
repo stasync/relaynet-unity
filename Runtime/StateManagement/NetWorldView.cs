@@ -7,7 +7,8 @@ using UnityEngine.SceneManagement;
 
 public enum NetWorldViewInitMode
 {
-    Default, SeparatePhysicsSimulation,
+    Default,
+    SeparatePhysicsSimulation,
 }
 
 public class NetWorldView : MonoBehaviour
@@ -73,7 +74,7 @@ public class NetWorldView : MonoBehaviour
             // Skip state.
             if (!ShouldUpdateViewForState(objectUid))
                 continue;
-            
+
             // Try get or create new state view.
             if (!m_CurrentObjectViews.TryGetValue(objectUid, out var netObjectView))
             {
@@ -134,7 +135,7 @@ public class NetWorldView : MonoBehaviour
         // Try to add pending view.
         if (m_TemporaryUnregisteredViews.Remove(uid, out netObjectView))
             m_CurrentObjectViews.Add(uid, netObjectView);
-        
+
         return netObjectView;
     }
 
@@ -178,7 +179,7 @@ public class NetWorldView : MonoBehaviour
         UpdateSoundFor(targetTransform);
     }
 
-    public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) => 
+    public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) =>
         m_TemporaryUnregisteredViews.Add(uid, identity);
 
     private void RemoveView(NetObjectUID uid)
@@ -212,17 +213,17 @@ public class NetWorldView : MonoBehaviour
 
     private void UpdateVisibilityFor(Transform targetTransform)
     {
-        foreach (var r in targetTransform.GetComponentsInChildren<Renderer>(true))
-            r.forceRenderingOff = ForceRenderingOff;
+        foreach (var renderedComponent in targetTransform.GetComponentsInChildren<Renderer>(true))
+            renderedComponent.forceRenderingOff = ForceRenderingOff;
 
-        foreach(var l in targetTransform.GetComponentsInChildren<Light>(true))
-            l.enabled = !ForceRenderingOff;
+        foreach (var lightComponent in targetTransform.GetComponentsInChildren<Light>(true))
+            lightComponent.enabled = !ForceRenderingOff;
     }
 
     private void UpdateSoundFor(Transform targetTransform)
     {
-        foreach (var s in targetTransform.GetComponentsInChildren<AudioSource>(true))
-            s.mute = ForceMute;
+        foreach (var audioSource in targetTransform.GetComponentsInChildren<AudioSource>(true))
+            audioSource.mute = ForceMute;
     }
 
     public void Destroy()
@@ -251,7 +252,7 @@ public class NetWorldView : MonoBehaviour
     }
 
     public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
-       m_CurrentObjectViews.GetValueOrDefault(instanceId);
+        m_CurrentObjectViews.GetValueOrDefault(instanceId);
 
     public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase
     {

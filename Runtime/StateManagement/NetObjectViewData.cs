@@ -48,7 +48,7 @@ public sealed class NetObjectViewStateData : NetObjectStateData
             hash = hash * 7 + d.GetHashCode();
         return hash;
     }
-    
+
 #if UNITY_EDITOR
     public override System.Collections.Generic.IEnumerable<string> GetValuesInfo_Editor()
     {

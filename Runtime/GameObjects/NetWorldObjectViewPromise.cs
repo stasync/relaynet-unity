@@ -28,6 +28,7 @@ public sealed class NetWorldObjectViewWaiter : IDisposable
             waiters = new List<Action<NetObjectIdentity>>();
             m_NewObjectWaiters.Add(uid, waiters);
         }
+
         waiters.Add(a);
     }
 

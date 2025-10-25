@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public readonly struct NetObjectDataCollectionSnapshot
 {
-    private static readonly NetWriter s_Writer = new ();
+    private static readonly NetWriter s_Writer = new();
 
     public readonly byte[] Data;
 
@@ -24,15 +24,15 @@ public readonly struct NetObjectDataCollectionSnapshot
     private NetObjectDataCollectionSnapshot(NetReader reader) =>
         Data = reader.ReadBytesAndSize();
 
-    public static NetObjectDataCollectionSnapshot FromState(NetObjectDataCollection data) => 
+    public static NetObjectDataCollectionSnapshot FromState(NetObjectDataCollection data) =>
         data.ToSnapshot();
 
-    public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) => 
-        new (reader);
+    public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) =>
+        new(reader);
 
-    public int GetSize() => 
+    public int GetSize() =>
         Data.Length;
 
-    public void Serialize(NetWriter writer) => 
+    public void Serialize(NetWriter writer) =>
         writer.WriteBytesAndSize(Data);
 }
