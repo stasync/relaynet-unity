@@ -1,14 +1,10 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using UnityEngine;
 
 public abstract class NetObjectStateData
 {
-    [AttributeUsage(AttributeTargets.Field)]
-    public class SyncValue : Attribute { }
-
     public bool HasWritePermission => WritePermission();
     public readonly int TypeHashCode;
 
@@ -24,27 +20,12 @@ public abstract class NetObjectStateData
         TypeHashCode = GetTypeIndex(GetType());
 
         // Collect serializable values.
-        // TODO: FIELD CACHE.
-        foreach (var filedInfo in GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+        foreach (var filedInfo in SerializableValue.GetFields(GetType()))
         {
-            if (typeof(SerializableValue).IsAssignableFrom(filedInfo.FieldType))
-            {
-                if (filedInfo.GetValue(this) is SerializableValue value)
-                    AddValueManual(filedInfo.Name, value);
-                else
-                    Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
-                    
-                continue;
-            }
-
-            // TODO: The following is EXPERIMENTAL.
-            if (Attribute.IsDefined(filedInfo, typeof(SyncValue)))
-            {
-                /*if (filedInfo.FieldType == typeof(float))
-                    AddValueManual(filedInfo.Name, new SerializableFloatObserver(() => (float)filedInfo.GetValue(this), v => filedInfo.SetValue(this, v)));
-                else
-                    Debug.LogError($"'{typeof(SyncValue).FullName}' attribute is defined for field of unsupported type '{filedInfo.FieldType.FullName}'.");*/
-            }
+            if (filedInfo.GetValue(this) is SerializableValue value)
+                AddValueManual(filedInfo.Name, value);
+            else
+                Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
         }
 
         Initialized = true;

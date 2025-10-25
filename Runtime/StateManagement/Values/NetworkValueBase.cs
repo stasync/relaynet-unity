@@ -1,5 +1,6 @@
 ﻿using Core.Networking;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 public abstract class SerializableValue : ISerializable
@@ -12,12 +13,30 @@ public abstract class SerializableValue : ISerializable
     public abstract void Serialize(NetWriter writer);
     public abstract void Deserialize(NetReader reader, bool firstTime);
 
-    public static readonly FieldInfo WritePermissionFieldInfo;
+    internal static readonly FieldInfo WritePermissionFieldInfo;
+    private static readonly Dictionary<Type, IReadOnlyList<FieldInfo>> _fieldCache = new();
 
     static SerializableValue()
     {
         WritePermissionFieldInfo = typeof(SerializableValue)
-            .GetField(nameof(m_WritePermission), BindingFlags.Instance | BindingFlags.NonPublic);
+            .GetField(nameof(m_WritePermission), bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
+    }
+
+    internal static IReadOnlyList<FieldInfo> GetFields(Type type)
+    {
+        if (_fieldCache.TryGetValue(type, out var result))
+            return result;
+        
+        var newFiledList = new List<FieldInfo>();
+        _fieldCache.Add(type, newFiledList);
+        
+        foreach (var filedInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+        {
+            if (typeof(SerializableValue).IsAssignableFrom(filedInfo.FieldType))
+                newFiledList.Add(filedInfo);
+        }
+        
+        return newFiledList;
     }
 }
 
