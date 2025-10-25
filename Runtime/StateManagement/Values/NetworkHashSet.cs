@@ -3,7 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>,
         ICollectionWithCount

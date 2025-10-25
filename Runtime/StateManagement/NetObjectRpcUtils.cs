@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     public static class RPCUtils
     {

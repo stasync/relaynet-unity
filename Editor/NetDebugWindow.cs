@@ -2,7 +2,7 @@
 using System.Linq;
 using Core;
 using Core.DependencyInjection.Services;
-using LROTech.Network.StateManagment;
+using LROTech.Network.StateManagement;
 using UnityEditor;
 using UnityEngine;
 

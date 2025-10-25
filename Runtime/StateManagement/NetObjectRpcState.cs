@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     internal static class RPCStateUIDAllocator
     {

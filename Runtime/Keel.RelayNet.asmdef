@@ -1,6 +1,6 @@
 {
-    "name": "LROTech.Networking",
-    "rootNamespace": "LROTech.Networking",
+    "name": "LROTech.Network",
+    "rootNamespace": "",
     "references": [
         "GUID:870e076238331484db44643fe4f786a5",
         "GUID:30fe14bf48ca6429f89ec80c366d94a0"

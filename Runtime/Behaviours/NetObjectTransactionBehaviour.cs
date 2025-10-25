@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
-using LROTech.Network.StateManagment;
+using LROTech.Network.StateManagement;
 using UnityEngine;
 
 public class InteractionNetworkData : NetObjectStateData

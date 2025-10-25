@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>, ICollectionWithCount
     {

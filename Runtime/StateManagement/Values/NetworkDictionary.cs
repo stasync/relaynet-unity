@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
         IDictionary<TKey, TValue>, ICollectionWithCount

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Core.Networking;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     public sealed class NetWorldRuntime : NetWorld
     {

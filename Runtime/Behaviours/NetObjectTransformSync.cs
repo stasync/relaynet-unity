@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.Networking;
-using LROTech.Network.StateManagment;
+using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
 

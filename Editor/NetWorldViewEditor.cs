@@ -1,4 +1,4 @@
-﻿using LROTech.Network.StateManagment;
+﻿using LROTech.Network.StateManagement;
 using UnityEditor;
 
 [CustomEditor(typeof(NetWorldView))]

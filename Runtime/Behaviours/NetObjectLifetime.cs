@@ -1,5 +1,5 @@
 ﻿using System;
-using LROTech.Network.StateManagment;
+using LROTech.Network.StateManagement;
 using UnityEngine;
 
 public sealed class GSObjectLifetimeData : NetObjectStateData

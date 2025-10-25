@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using UnityEngine;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     public static class HLNetReaderExtension
     {

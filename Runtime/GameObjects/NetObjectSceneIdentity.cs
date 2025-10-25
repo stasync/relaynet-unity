@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Core.Utils.Math;
-using LROTech.Network.StateManagment;
+using LROTech.Network.StateManagement;
 using UnityEngine;
 
 [DisallowMultipleComponent]

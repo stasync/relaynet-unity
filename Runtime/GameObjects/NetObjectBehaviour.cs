@@ -1,5 +1,5 @@
 ﻿using System;
-using LROTech.Network.StateManagment;
+using LROTech.Network.StateManagement;
 
 public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour
     where TObjectData : NetObjectStateData

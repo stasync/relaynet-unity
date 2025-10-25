@@ -1,7 +1,7 @@
 ﻿using Core.Networking;
 using System.Collections.Generic;
 
-namespace LROTech.Network.StateManagment
+namespace LROTech.Network.StateManagement
 {
     public readonly struct NetWorldPlayerSnapshot
     {
