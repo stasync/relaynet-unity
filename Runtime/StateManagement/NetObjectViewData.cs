@@ -41,13 +41,13 @@ namespace LROTech.Network.StateManagement
                 ViewInitialized = true;
         }
 
-        public override int GetHashCode()
+        internal override int GetVersionHash()
         {
-            var hash = base.GetHashCode();
+            var hash = base.GetVersionHash();
 
             hash += ViewInitialized.GetHashCode();
-            foreach (var d in UnstructuredData)
-                hash = hash * 7 + d.GetHashCode();
+            foreach (var b in UnstructuredData)
+                hash = hash * 7 + b.GetHashCode();
             return hash;
         }
 

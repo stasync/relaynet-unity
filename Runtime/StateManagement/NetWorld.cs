@@ -223,7 +223,7 @@ namespace LROTech.Network.StateManagement
                 m_ViewInitActionQueue.Enqueue(action);
         }
 
-        public override int GetHashCode()
+        public int GetVersionHash()
         {
             var hash = 13;
             hash = hash * 7 + ID.GetHashCode();
@@ -235,8 +235,8 @@ namespace LROTech.Network.StateManagement
                 hash += kvp.Value.GetVersionHash();
             }
 
-            hash = hash * 7 + Players.GetHashCode();
-            hash = hash * 7 + Properties.GetHashCode();
+            hash = hash * 7 + Players.GetVersionHash();
+            hash = hash * 7 + Properties.GetVersionHash();
 
             return hash;
         }

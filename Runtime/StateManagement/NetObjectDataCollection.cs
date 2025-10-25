@@ -82,13 +82,14 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        public int GetVersionHash()
+        internal int GetVersionHash()
         {
             var hash = 13;
+            hash = hash * 7 + m_InternalCollection.Count.GetHashCode();
             foreach (var kvp in m_InternalCollection)
             {
                 hash = hash * 7 + kvp.Key.GetHashCode();
-                hash = hash * 7 + kvp.Value.GetHashCode();
+                hash = hash * 7 + kvp.Value.GetVersionHash();
             }
 
             return hash;

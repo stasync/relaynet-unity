@@ -30,7 +30,7 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        public override int GetHashCode()
+        internal virtual int GetVersionHash()
         {
             var hash = TypeHashCode;
             foreach (var value in m_InternalValueCollection.Values)

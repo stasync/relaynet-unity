@@ -21,7 +21,7 @@ namespace LROTech.Network.StateManagement
         public static NetObjectRPCState FromSnapshot(RPCStateSnapshot snapshot) =>
             new(snapshot.Hash, snapshot.UID, snapshot.Payload);
 
-        public int GetVersionHash()
+        internal int GetVersionHash()
         {
             var hash = 13;
             hash = hash * 7 + Hash.GetHashCode();

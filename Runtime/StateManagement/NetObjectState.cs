@@ -108,7 +108,7 @@ namespace LROTech.Network.StateManagement
 
         #endregion
 
-        public int GetVersionHash()
+        internal int GetVersionHash()
         {
             var hash = 13;
             hash = hash * 7 + UID.GetHashCode();
@@ -311,13 +311,14 @@ namespace LROTech.Network.StateManagement
             return m_Writer.ToArray();
         }
 
-        public override string ToString() => $"{UID}:{PrefabId} " +
-                                             $"s:{IsSceneObject} " +
-                                             $"st:{StateChangeType} " +
-                                             $"own:{OwnerUID}:{(Owner == null ? "null" : Owner.ToString())} " +
-                                             $"l:{IsOwnedByLocalPlayer} " +
-                                             $"m:{IsOwnedByMasterClient} " +
-                                             $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
+        public override string ToString() =>
+            $"{UID}:{PrefabId} " +
+            $"s:{IsSceneObject} " +
+            $"st:{StateChangeType} " +
+            $"own:{OwnerUID}:{(Owner == null ? "null" : Owner.ToString())} " +
+            $"l:{IsOwnedByLocalPlayer} " +
+            $"m:{IsOwnedByMasterClient} " +
+            $"rpc: t:{m_RPCBuffer.TemporalBuffer.Count} p:{m_RPCBuffer.PersistentBuffer.Count}";
 
         public int CompareTo(NetObjectState other) =>
             UID.CompareTo(other?.UID ?? NetObjectUID.Invalid);

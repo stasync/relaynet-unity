@@ -138,7 +138,7 @@ public class NetDebugWindow : EditorWindow
         {
             EditorGUILayout.LabelField($"Time: {m_World.Time:f1}", EditorStyles.boldLabel);
             EditorGUILayout.LabelField($"Local Time: {m_World.LocalTime:f1}", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField($"Hash: {m_World.GetHashCode()}", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Hash: {m_World.GetVersionHash()}", EditorStyles.boldLabel);
             EditorGUILayout.Space();
 
             //Players

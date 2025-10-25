@@ -45,7 +45,7 @@ namespace LROTech.Network.StateManagement
             Deserialize(m_Reader, firstTime: false);
         }
 
-        public override int GetHashCode()
+        internal int GetVersionHash()
         {
             var hash = 0;
             hash += GetDictionaryHashCode(m_ByteData);

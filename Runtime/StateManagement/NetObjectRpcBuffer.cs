@@ -96,7 +96,7 @@ namespace LROTech.Network.StateManagement
         public NetObjectRPCStateSnapshot ToSnapshot() =>
             NetObjectRPCStateSnapshot.FromState(this);
 
-        public int GetVersionHash()
+        internal int GetVersionHash()
         {
             var hash = 13;
             foreach (var rpc in m_PersistentBuffer)

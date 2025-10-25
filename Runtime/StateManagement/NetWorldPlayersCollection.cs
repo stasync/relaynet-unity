@@ -124,7 +124,7 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        public override int GetHashCode()
+        internal int GetVersionHash()
         {
             var hash = 13;
             hash = hash * 7 + LocalPlayerUid.GetHashCode();
