@@ -25,6 +25,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
 
         public readonly NetWorldPlayersCollection Players;
+        public readonly NetworkProperties Properties;
 
         private readonly Queue<Action> m_ViewInitActionQueue = new();
 
@@ -44,6 +45,7 @@ namespace LROTech.Network.StateManagement
 
             m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
             Players = new NetWorldPlayersCollection(validator: () => IsValid);
+            Properties = new NetworkProperties(writePermission: () => Players.LocalPlayerIsMaster);
         }
 
         internal void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
@@ -126,6 +128,7 @@ namespace LROTech.Network.StateManagement
 
             m_CurrentObjectStates.Clear();
             Players.Clear();
+            Properties.Clean();
             m_ViewInitActionQueue.Clear();
 
             if (View == null)
@@ -192,6 +195,9 @@ namespace LROTech.Network.StateManagement
             // Restore players.
             Players.RestoreFromSnapshot(snapshot.Players);
 
+            // Restore properties.
+            Properties.RestoreFromSnapshot(snapshot.Properties);
+
             // Add or update objects.
             foreach (var kvp in snapshot.Objects)
             {
@@ -230,6 +236,8 @@ namespace LROTech.Network.StateManagement
             }
 
             hash = hash * 7 + Players.GetHashCode();
+            hash = hash * 7 + Properties.GetHashCode();
+
             return hash;
         }
     }

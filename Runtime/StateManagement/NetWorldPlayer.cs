@@ -125,7 +125,7 @@ namespace LROTech.Network.StateManagement
             m_RTTMS = snapshot.RTTMs;
             m_TagObjectUidCollection = snapshot.TagObjectUIDs;
 
-            Properties.SetDataFromSnapshot(snapshot.Properties);
+            Properties.RestoreFromSnapshot(snapshot.Properties);
         }
 
         public bool HasTagObject(NetObjectUID uid) =>

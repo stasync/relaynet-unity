@@ -28,7 +28,18 @@ namespace LROTech.Network.StateManagement
             return new NetworkPropertiesSnapshot(m_Writer.ToArray());
         }
 
-        internal void SetDataFromSnapshot(NetworkPropertiesSnapshot snapshot)
+        internal void Clean()
+        {
+            m_ByteData.Clear();
+            m_UIntData.Clear();
+            m_IntData.Clear();
+            m_FloatData.Clear();
+            m_BoolData.Clear();
+            m_StringData.Clear();
+            m_Vector3Data.Clear();
+        }
+
+        internal void RestoreFromSnapshot(NetworkPropertiesSnapshot snapshot)
         {
             m_Reader.Replace(snapshot.Data);
             Deserialize(m_Reader, firstTime: false);

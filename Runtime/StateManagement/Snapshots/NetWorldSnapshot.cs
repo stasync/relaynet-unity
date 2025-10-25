@@ -13,7 +13,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUID, NetObjectStateSnapshot> m_ObjectStates;
 
         public readonly NetWorldPlayersCollectionsSnapshot Players;
-        //public readonly NetworkPropertiesSnapshot Properties;
+        public readonly NetworkPropertiesSnapshot Properties;
 
         private NetWorldSnapshot(float deltaTime, NetWorld world)
         {
@@ -28,6 +28,7 @@ namespace LROTech.Network.StateManagement
                 m_ObjectStates.Add(kvp.Key, kvp.Value.ToSnapshot());
 
             Players = world.Players.ToSnapshot();
+            Properties = world.Properties.ToSnapshot();
         }
 
         public static NetWorldSnapshot FromWorld(float deltaTime, NetWorld world) =>
@@ -42,13 +43,14 @@ namespace LROTech.Network.StateManagement
             size += sizeof(float); // Time
             size += sizeof(float); // Local time
 
-            foreach (var o in m_ObjectStates.Values)
+            foreach (var netObject in m_ObjectStates.Values)
             {
                 size += NetObjectUID.Size; // NetObjectUID
-                size += o.GetSize();
+                size += netObject.GetSize();
             }
 
             size += Players.GetSize();
+            size += Properties.GetSize();
             return size;
         }
     }
