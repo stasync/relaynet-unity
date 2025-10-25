@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
 {

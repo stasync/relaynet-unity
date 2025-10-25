@@ -1,6 +1,7 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
+using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
 {
@@ -123,7 +124,10 @@ namespace LROTech.Network.StateManagement
             m_IsReady = snapshot.IsInGameScene;
             m_Platform = snapshot.Platform;
             m_RTTMS = snapshot.RTTMs;
-            m_TagObjectUidCollection = snapshot.TagObjectUIDs;
+            
+            m_TagObjectUidCollection.Clear();
+            foreach (var tagObject in snapshot.TagObjectUIDs)
+                m_TagObjectUidCollection.Add(tagObject);
 
             Properties.RestoreFromSnapshot(snapshot.Properties);
         }

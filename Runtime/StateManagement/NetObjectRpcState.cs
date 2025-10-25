@@ -1,3 +1,5 @@
+using LROTech.Network.StateManagement.Snapshots;
+
 namespace LROTech.Network.StateManagement
 {
     public readonly struct NetObjectRPCState

@@ -1,4 +1,4 @@
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Snapshots
 {
     public readonly struct NetworkPropertiesSnapshot
     {

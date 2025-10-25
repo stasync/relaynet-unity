@@ -1,7 +1,7 @@
-﻿using Core.Networking;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Core.Networking;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Snapshots
 {
     public readonly struct NetWorldPlayerSnapshot
     {
@@ -10,7 +10,7 @@ namespace LROTech.Network.StateManagement
         public readonly bool IsInGameScene;
         public readonly UserDeviceType.Platform Platform;
         public readonly int RTTMs;
-        public readonly HashSet<NetObjectUid> TagObjectUIDs;
+        public readonly IReadOnlyCollection<NetObjectUid> TagObjectUIDs;
         public readonly NetObjectUid MainTagObjectUID;
         public readonly NetworkPropertiesSnapshot Properties;
 
@@ -33,7 +33,7 @@ namespace LROTech.Network.StateManagement
             IsInGameScene = reader.ReadBoolean();
             Platform = (UserDeviceType.Platform)reader.ReadInt32();
             RTTMs = reader.ReadInt32();
-            TagObjectUIDs = reader.ReadHashSet(r => r.ReadInstanceId());
+            TagObjectUIDs = reader.ReadHashSet(netReader => netReader.ReadInstanceId());
             MainTagObjectUID = reader.ReadInstanceId();
             Properties = new NetworkPropertiesSnapshot(reader.ReadBytesAndSize());
         }
