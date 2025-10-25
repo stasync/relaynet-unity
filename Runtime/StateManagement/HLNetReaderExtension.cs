@@ -5,7 +5,7 @@ namespace LROTech.Network.StateManagement
 {
     public static class HLNetReaderExtension
     {
-        public static NetObjectUID ReadInstanceId(this NetReader reader) =>
+        public static NetObjectUid ReadInstanceId(this NetReader reader) =>
             reader.ReadPackedUInt32();
 
         public static NetWorldPlayer ReadPlayer(this NetReader reader, NetWorld targetWorld) =>

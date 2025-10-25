@@ -5,13 +5,13 @@ namespace LROTech.Network.StateManagement
 {
     public readonly struct NetWorldPlayerSnapshot
     {
-        public readonly ClientUID UID;
+        public readonly ClientUid UID;
         public readonly string Name;
         public readonly bool IsInGameScene;
         public readonly UserDeviceType.Platform Platform;
         public readonly int RTTMs;
-        public readonly HashSet<NetObjectUID> TagObjectUIDs;
-        public readonly NetObjectUID MainTagObjectUID;
+        public readonly HashSet<NetObjectUid> TagObjectUIDs;
+        public readonly NetObjectUid MainTagObjectUID;
         public readonly NetworkPropertiesSnapshot Properties;
 
         private NetWorldPlayerSnapshot(NetWorldPlayer player)
@@ -21,7 +21,7 @@ namespace LROTech.Network.StateManagement
             IsInGameScene = player.IsReady;
             Platform = player.Platform;
             RTTMs = player.RTTMs;
-            TagObjectUIDs = new HashSet<NetObjectUID>(player.TagObjectUidCollection);
+            TagObjectUIDs = new HashSet<NetObjectUid>(player.TagObjectUidCollection);
             MainTagObjectUID = player.MainTagObjectUid;
             Properties = NetworkPropertiesSnapshot.FromProperties(player.Properties);
         }
@@ -59,15 +59,15 @@ namespace LROTech.Network.StateManagement
         public int GetSize()
         {
             var result = 0;
-            result += ClientUID.Size; // Uid
+            result += ClientUid.Size; // Uid
             result += Name.Length;
             result += sizeof(bool); // IsInGameScene
             result += sizeof(UserDeviceType.Platform); // Platform
             result += sizeof(int); // RTT
 
-            result += NetObjectUID.Size * TagObjectUIDs.Count;
+            result += NetObjectUid.Size * TagObjectUIDs.Count;
 
-            result += NetObjectUID.Size; // Main tag object
+            result += NetObjectUid.Size; // Main tag object
             result += Properties.GetSize();
 
             return result;

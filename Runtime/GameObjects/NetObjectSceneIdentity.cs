@@ -15,10 +15,10 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
         }
     }
 
-    [SerializeField, Range(NetObjectUID.FIRST_VALID_UID, NetObjectUID.FIRST_VALID_UID + NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE)]
+    [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
     private int m_SceneObjectId;
 
-    public NetObjectUID SceneObjectId => (uint)m_SceneObjectId;
+    public NetObjectUid SceneObjectId => (uint)m_SceneObjectId;
 
     [SerializeField] private string m_PrefabId;
     public string PrefabID => m_PrefabId;
@@ -34,7 +34,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
         TryRegisterOrInitialize();
     }
 
-    protected override void OnDisconnected(ClientUID clientUid)
+    protected override void OnDisconnected(ClientUid clientUid)
     {
         base.OnDisconnected(clientUid);
         if (Identity.World.Players.LocalPlayerIsMaster)
@@ -96,7 +96,7 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
             UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
             while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
                 sceneObjectIdentity.m_SceneObjectId =
-                    RandomExtended.Default.Int(NetObjectUID.FIRST_VALID_UID, NetObjectUID.SCENE_OBJECT_RESERVED_UID_SPACE);
+                    RandomExtended.Default.Int(NetObjectUid.FIRST_VALID_UID, NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE);
         }
 
         ValidateSceneObjects();

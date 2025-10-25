@@ -7,7 +7,7 @@ namespace LROTech.Network.StateManagement
     public abstract class NetWorld
     {
         public event Action Updated = delegate { };
-        public event Action<NetObjectUID> ObjectCreated = delegate { };
+        public event Action<NetObjectUid> ObjectCreated = delegate { };
 
         public bool IsValid => ID.IsValid;
 
@@ -21,8 +21,8 @@ namespace LROTech.Network.StateManagement
 
         public bool IsReplica => SourceID.IsValid;
 
-        public IReadOnlyDictionary<NetObjectUID, NetObjectState> ObjectStates => m_CurrentObjectStates;
-        private readonly Dictionary<NetObjectUID, NetObjectState> m_CurrentObjectStates;
+        public IReadOnlyDictionary<NetObjectUid, NetObjectState> ObjectStates => m_CurrentObjectStates;
+        private readonly Dictionary<NetObjectUid, NetObjectState> m_CurrentObjectStates;
 
         public readonly NetWorldPlayersCollection Players;
         public readonly NetworkProperties Properties;
@@ -43,7 +43,7 @@ namespace LROTech.Network.StateManagement
             LocalTime = 0f;
             Name = $"{ID}:{worldName}";
 
-            m_CurrentObjectStates = new Dictionary<NetObjectUID, NetObjectState>();
+            m_CurrentObjectStates = new Dictionary<NetObjectUid, NetObjectState>();
             Players = new NetWorldPlayersCollection(validator: () => IsValid);
             Properties = new NetworkProperties(writePermission: () => Players.LocalPlayerIsMaster);
         }
@@ -73,11 +73,11 @@ namespace LROTech.Network.StateManagement
             if (!state.IsValid)
                 throw new InvalidOperationException();
 
-            var canAddObject = !ObjectExists(state.UID);
+            var canAddObject = !ObjectExists(state.Uid);
             if (canAddObject)
             {
-                m_CurrentObjectStates.Add(state.UID, state);
-                ObjectCreated(state.UID);
+                m_CurrentObjectStates.Add(state.Uid, state);
+                ObjectCreated(state.Uid);
             }
 
             return canAddObject;
@@ -141,13 +141,13 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        public virtual bool ObjectExists(NetObjectUID uid) =>
+        public virtual bool ObjectExists(NetObjectUid uid) =>
             m_CurrentObjectStates.ContainsKey(uid);
 
-        public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
+        public NetObjectIdentity FindObjectView(NetObjectUid instanceId) =>
             View == null ? null : View.FindObjectView(instanceId);
 
-        public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase =>
+        public T FindObjectView<T>(NetObjectUid instanceId) where T : GSInstanceBehaviourBase =>
             View == null ? null : View.FindObjectView<T>(instanceId);
 
         public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
@@ -168,13 +168,13 @@ namespace LROTech.Network.StateManagement
             return null;
         }
 
-        public virtual NetObjectState FindObject(NetObjectUID instanceId) =>
+        public virtual NetObjectState FindObject(NetObjectUid instanceId) =>
             m_CurrentObjectStates.GetValueOrDefault(instanceId);
 
-        public bool TryGetObject(NetObjectUID instanceId, out NetObjectState state) =>
+        public bool TryGetObject(NetObjectUid instanceId, out NetObjectState state) =>
             m_CurrentObjectStates.TryGetValue(instanceId, out state);
 
-        protected virtual void RemoveObject(NetObjectUID stateUID)
+        protected virtual void RemoveObject(NetObjectUid stateUID)
         {
             if (!m_CurrentObjectStates.TryGetValue(stateUID, out var state))
                 return;
@@ -184,7 +184,7 @@ namespace LROTech.Network.StateManagement
         }
 
         public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) =>
-            NetWorldSnapshot.FromWorld(deltaTime, world: this);
+            new(deltaTime, world: this);
 
         protected void RestoreFromSnapshot(NetWorldSnapshot snapshot)
         {
@@ -208,7 +208,7 @@ namespace LROTech.Network.StateManagement
             }
 
             // Remove absent objects.
-            foreach (var objectUid in new List<NetObjectUID>(m_CurrentObjectStates.Keys))
+            foreach (var objectUid in new List<NetObjectUid>(m_CurrentObjectStates.Keys))
             {
                 if (!snapshot.Objects.ContainsKey(objectUid))
                     RemoveObject(objectUid);

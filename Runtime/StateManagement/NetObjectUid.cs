@@ -2,11 +2,11 @@
 
 namespace LROTech.Network.StateManagement
 {
-    public readonly struct NetObjectUID : IComparable<NetObjectUID>, IEquatable<NetObjectUID>
+    public readonly struct NetObjectUid : IComparable<NetObjectUid>, IEquatable<NetObjectUid>
     {
         #region STATIC
 
-        public static readonly NetObjectUID Invalid = 0;
+        public static readonly NetObjectUid Invalid = 0;
         private static uint s_IdCounter;
 
         /// <summary>
@@ -24,7 +24,7 @@ namespace LROTech.Network.StateManagement
         internal static void Reset() =>
             s_IdCounter = 0;
 
-        private static NetObjectUID AllocateNewId(ClientUID clientUid)
+        private static NetObjectUid AllocateNewId(ClientUid clientUid)
         {
             // Increment internal id.
             s_IdCounter++;
@@ -32,19 +32,19 @@ namespace LROTech.Network.StateManagement
             return ClientStartId(clientUid) + s_IdCounter;
         }
 
-        private static NetObjectUID ClientStartId(ClientUID clientUid) =>
+        private static NetObjectUid ClientStartId(ClientUid clientUid) =>
             FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + clientUid * 10000;
 
         #endregion
 
-        public NetObjectUID(ClientUID clientUid) =>
+        public NetObjectUid(ClientUid clientUid) =>
             m_Value = AllocateNewId(clientUid);
 
         /// <summary>
         /// This private constructor in use for casting.
         /// </summary>
         /// <param name="value"></param>
-        private NetObjectUID(uint value) =>
+        private NetObjectUid(uint value) =>
             m_Value = value;
 
         private readonly uint m_Value;
@@ -54,14 +54,14 @@ namespace LROTech.Network.StateManagement
         public bool IsInvalid => !IsValid;
         public bool IsSceneObjectSpaceId => IsValid && m_Value <= SCENE_OBJECT_RESERVED_UID_SPACE;
 
-        public int CompareTo(NetObjectUID other) => m_Value.CompareTo(other.m_Value);
-        public static implicit operator uint(NetObjectUID value) => value.m_Value;
-        public static implicit operator NetObjectUID(uint value) => new(value);
+        public int CompareTo(NetObjectUid other) => m_Value.CompareTo(other.m_Value);
+        public static implicit operator uint(NetObjectUid value) => value.m_Value;
+        public static implicit operator NetObjectUid(uint value) => new(value);
 
-        public static bool operator ==(NetObjectUID value0, NetObjectUID value1) => value0.m_Value == value1.m_Value;
-        public static bool operator !=(NetObjectUID value0, NetObjectUID value1) => value0.m_Value != value1.m_Value;
+        public static bool operator ==(NetObjectUid value0, NetObjectUid value1) => value0.m_Value == value1.m_Value;
+        public static bool operator !=(NetObjectUid value0, NetObjectUid value1) => value0.m_Value != value1.m_Value;
 
-        public bool Equals(NetObjectUID other) => m_Value.Equals(other.m_Value);
+        public bool Equals(NetObjectUid other) => m_Value.Equals(other.m_Value);
 
         public override string ToString() => m_Value.ToString();
         public override bool Equals(object obj) => m_Value.Equals(obj);

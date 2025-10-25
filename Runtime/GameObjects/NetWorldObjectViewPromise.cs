@@ -6,17 +6,17 @@ namespace LROTech.Network.StateManagement
     public sealed class NetWorldObjectViewWaiter : IDisposable
     {
         private NetWorld m_World;
-        private Dictionary<NetObjectUID, List<Action<NetObjectIdentity>>> m_NewObjectWaiters;
+        private Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>> m_NewObjectWaiters;
 
         public NetWorldObjectViewWaiter(NetWorld world)
         {
             m_World = world;
-            m_NewObjectWaiters = new Dictionary<NetObjectUID, List<Action<NetObjectIdentity>>>();
+            m_NewObjectWaiters = new Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>>();
 
             m_World.View.NewObjectInitialized += OnNewObjectInitialized;
         }
 
-        public void GetOrWaitFor(NetObjectUID uid, Action<NetObjectIdentity> a)
+        public void GetOrWaitFor(NetObjectUid uid, Action<NetObjectIdentity> a)
         {
             var existedView = m_World.FindObjectView(uid);
             if (existedView != null)

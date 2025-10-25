@@ -7,13 +7,13 @@ namespace LROTech.Network.StateManagement
     public static class HLNetWriterExtension
     {
         public static void WritePlayer(this NetWriter writer, NetWorldPlayer value) =>
-            writer.WriteClientUid(value == null ? ClientUID.Invalid : value.Uid);
+            writer.WriteClientUid(value == null ? ClientUid.Invalid : value.Uid);
 
-        public static void WriteInstanceId(this NetWriter writer, NetObjectUID value) =>
+        public static void WriteInstanceId(this NetWriter writer, NetObjectUid value) =>
             writer.WritePackedUInt32(value);
 
         public static void WriteIdentity(this NetWriter writer, NetObjectIdentity value) =>
-            WriteInstanceId(writer, value == null ? NetObjectUID.Invalid : value.InstanceId);
+            WriteInstanceId(writer, value == null ? NetObjectUid.Invalid : value.InstanceId);
 
         public static void WriteBehaviour(this NetWriter writer, GSInstanceBehaviourBase value) =>
             WriteIdentity(writer, value == null ? null : value.Identity);

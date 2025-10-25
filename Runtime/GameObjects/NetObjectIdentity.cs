@@ -7,7 +7,7 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class NetObjectIdentity : MonoBehaviour
 {
-    public NetObjectUID InstanceId => State?.UID ?? NetObjectUID.Invalid;
+    public NetObjectUid InstanceId => State?.Uid ?? NetObjectUid.Invalid;
     public bool IsOwnedByMasterClient => State is { IsOwnedByMasterClient: true };
     public bool IsLocal => State is { IsOwnedByLocalPlayer: true };
 
@@ -19,7 +19,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
                 return false;
 
             var localPlayer = World.Players.LocalPlayer;
-            return localPlayer is { MainTagObjectUid: { IsValid: true } } && localPlayer.MainTagObjectUid.Equals(State.UID);
+            return localPlayer is { MainTagObjectUid: { IsValid: true } } && localPlayer.MainTagObjectUid.Equals(State.Uid);
         }
     }
 
@@ -52,7 +52,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// Initialization. Called from GSInstanceFactory. 
     /// Shouldn't be called from top-level API.
     /// </summary>
-    internal void Initialize(NetWorld world, NetObjectUID stateUID)
+    internal void Initialize(NetWorld world, NetObjectUid stateUID)
     {
         if (Initialized)
             throw new Exception("Object already initialized");
@@ -114,7 +114,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
     /// </summary>
-    internal void OnDisconnected(ClientUID clientUid)
+    internal void OnDisconnected(ClientUid clientUid)
     {
         foreach (var behaviour in m_Behaviours)
             behaviour.OnDisconnectedInternal(clientUid);
@@ -404,7 +404,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         State.OnOwnerChanged -= OnOwnerChanged;
         State.LocalUpdateRequest -= OnLocalUpdateRequest;
 
-        m_NetObjectStateReference.SetTargetUID(NetObjectUID.Invalid);
+        m_NetObjectStateReference.SetTargetUID(NetObjectUid.Invalid);
         m_NetObjectStateReference.SetTargetWorld(null);
     }
 

@@ -4,20 +4,20 @@ namespace LROTech.Network.StateManagement
 {
     public readonly struct NetWorldPlayersCollectionsSnapshot
     {
-        public readonly ClientUID LocalPlayerUID;
-        public readonly ClientUID MasterClientUID;
-
-        public IReadOnlyDictionary<ClientUID, NetWorldPlayerSnapshot> PlayersCollection => m_PlayersCollection;
-        readonly Dictionary<ClientUID, NetWorldPlayerSnapshot> m_PlayersCollection;
+        public readonly ClientUid LocalPlayerUID;
+        public readonly ClientUid MasterClientUID;
+        public readonly IReadOnlyDictionary<ClientUid, NetWorldPlayerSnapshot> PlayersCollection;
 
         private NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
         {
             LocalPlayerUID = collection.LocalPlayer.Uid;
             MasterClientUID = collection.MasterPlayer.Uid;
 
-            m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayerSnapshot>();
+            var playersCollection = new Dictionary<ClientUid, NetWorldPlayerSnapshot>();
             foreach (var worldPlayer in collection.All)
-                m_PlayersCollection.Add(worldPlayer.Uid, worldPlayer.ToSnapshot());
+                playersCollection.Add(worldPlayer.Uid, worldPlayer.ToSnapshot());
+
+            PlayersCollection = playersCollection;
         }
 
         public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) =>
@@ -26,12 +26,12 @@ namespace LROTech.Network.StateManagement
         public int GetSize()
         {
             var result = 0;
-            result += ClientUID.Size; // LocalPlayerUID
-            result += ClientUID.Size; // MasterClientUID
+            result += ClientUid.Size; // LocalPlayerUid
+            result += ClientUid.Size; // MasterClientUid
 
-            foreach (var p in m_PlayersCollection.Values)
+            foreach (var p in PlayersCollection.Values)
             {
-                result += ClientUID.Size; // ClientUID
+                result += ClientUid.Size; // ClientUid
                 result += p.GetSize();
             }
 

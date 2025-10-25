@@ -1,7 +1,7 @@
 ﻿namespace LROTech.Network.StateManagement
 {
     /// <summary>
-    /// Type of PRC sending 
+    /// Type of PRC that is being sent without authority.
     /// </summary>
     public enum NoAuthorityRPCType : byte
     {

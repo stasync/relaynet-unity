@@ -2,17 +2,17 @@
 
 namespace LROTech.Network.StateManagement
 {
-    public struct NetObjectStateSnapshot
+    public readonly struct NetObjectStateSnapshot
     {
-        public ClientUID OwnerUID { get; private set; }
-        public NetObjectUID ObjectUID { get; private set; }
-        public string PrefabId { get; private set; }
-        public bool IsSceneObject { get; private set; }
-        public ObjectStateChangeRequestType StateChangeType { get; private set; }
-        public NetObjectRPCStateSnapshot RPCState { get; private set; }
-        public NetObjectDataCollectionSnapshot DataState { get; private set; }
+        public readonly ClientUid OwnerUID;
+        public readonly NetObjectUid ObjectUID;
+        public readonly string PrefabId;
+        public readonly bool IsSceneObject;
+        public readonly ObjectStateChangeRequestType StateChangeType;
+        public readonly NetObjectRPCStateSnapshot RPCState;
+        public readonly NetObjectDataCollectionSnapshot DataState;
 
-        private void Restore(NetReader reader)
+        internal NetObjectStateSnapshot(NetReader reader)
         {
             OwnerUID = reader.ReadClientUid();
             ObjectUID = reader.ReadInstanceId();
@@ -23,7 +23,18 @@ namespace LROTech.Network.StateManagement
             DataState = NetObjectDataCollectionSnapshot.FromReader(reader);
         }
 
-        public void Serialize(NetWriter writer)
+        internal NetObjectStateSnapshot(NetObjectState state)
+        {
+            OwnerUID = state.OwnerUid;
+            ObjectUID = state.Uid;
+            PrefabId = state.PrefabId;
+            IsSceneObject = state.IsSceneObject;
+            StateChangeType = state.StateChangeType;
+            RPCState = state.RPCBuffer.ToSnapshot();
+            DataState = state.DataCollection.ToSnapshot();
+        }
+        
+        internal void Serialize(NetWriter writer)
         {
             writer.WriteClientUid(OwnerUID);
             writer.WriteInstanceId(ObjectUID);
@@ -34,33 +45,14 @@ namespace LROTech.Network.StateManagement
             DataState.Serialize(writer);
         }
 
-        public static NetObjectStateSnapshot FormReader(NetReader reader)
-        {
-            var snapshot = new NetObjectStateSnapshot();
-            snapshot.Restore(reader);
-            return snapshot;
-        }
-
-        public static NetObjectStateSnapshot FormState(NetObjectState state) =>
-            new()
-            {
-                OwnerUID = state.OwnerUID,
-                ObjectUID = state.UID,
-                PrefabId = state.PrefabId,
-                IsSceneObject = state.IsSceneObject,
-                StateChangeType = state.StateChangeType,
-                RPCState = state.RPCBuffer.ToSnapshot(),
-                DataState = state.DataCollection.ToSnapshot(),
-            };
-
         public override string ToString() =>
             $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
 
         public int GetSize()
         {
             var result = 0;
-            result += ClientUID.Size; // OwnerUID
-            result += NetObjectUID.Size; // ObjectUID
+            result += ClientUid.Size; // OwnerUid
+            result += NetObjectUid.Size; // ObjectUID
             result += PrefabId.Length;
             result += sizeof(bool); // IsSceneObject
             result += sizeof(ObjectStateChangeRequestType); // StateChangeType

@@ -8,20 +8,20 @@ namespace LROTech.Network.StateManagement
     {
         #region State
 
-        public ClientUID LocalPlayerUid { get; private set; }
-        public ClientUID MasterPlayerUid { get; private set; }
+        public ClientUid LocalPlayerUid { get; private set; }
+        public ClientUid MasterPlayerUid { get; private set; }
 
         public IReadOnlyCollection<NetWorldPlayer> All => m_PlayersCollection.Values;
 
-        private Dictionary<ClientUID, NetWorldPlayer> m_PlayersCollection;
+        private Dictionary<ClientUid, NetWorldPlayer> m_PlayersCollection;
 
         #endregion
 
         public bool LocalPlayerIsMaster => IsValid && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
         public NetWorldPlayer LocalPlayer => Find(LocalPlayerUid);
         public NetWorldPlayer MasterPlayer => Find(MasterPlayerUid);
-        public NetWorldPlayer Find(ClientUID uid) => IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
-        public bool Contains(ClientUID uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
+        public NetWorldPlayer Find(ClientUid uid) => IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
+        public bool Contains(ClientUid uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
 
         private Func<bool> m_Validator;
         private bool IsValid => m_Validator != null && m_Validator();
@@ -30,17 +30,17 @@ namespace LROTech.Network.StateManagement
         {
             m_Validator = validator;
 
-            LocalPlayerUid = ClientUID.Invalid;
-            MasterPlayerUid = ClientUID.Invalid;
+            LocalPlayerUid = ClientUid.Invalid;
+            MasterPlayerUid = ClientUid.Invalid;
 
-            m_PlayersCollection = new Dictionary<ClientUID, NetWorldPlayer>();
+            m_PlayersCollection = new Dictionary<ClientUid, NetWorldPlayer>();
         }
 
         internal void OnBeforeUpdateWorldState(float worldDelta)
         {
         }
 
-        internal NetWorldPlayer RegisterImmediate(ClientUID uid, bool isLocal)
+        internal NetWorldPlayer RegisterImmediate(ClientUid uid, bool isLocal)
         {
             if (m_PlayersCollection.ContainsKey(uid))
                 throw new InvalidOperationException();
@@ -58,10 +58,10 @@ namespace LROTech.Network.StateManagement
             return player;
         }
 
-        internal bool UnregisterImmediate(ClientUID uid)
+        internal bool UnregisterImmediate(ClientUid uid)
         {
             if (LocalPlayerUid == uid)
-                LocalPlayerUid = ClientUID.Invalid;
+                LocalPlayerUid = ClientUid.Invalid;
 
             var playerRemoved = m_PlayersCollection.Remove(uid);
             if (playerRemoved)
@@ -72,7 +72,7 @@ namespace LROTech.Network.StateManagement
 
         private void RecalculateMasterPlayerUid()
         {
-            MasterPlayerUid = ClientUID.Invalid;
+            MasterPlayerUid = ClientUid.Invalid;
             foreach (var worldPlayer in All)
             {
                 if (worldPlayer.Uid < MasterPlayerUid || !MasterPlayerUid.IsValid)
@@ -84,8 +84,8 @@ namespace LROTech.Network.StateManagement
         {
             m_Validator = null;
 
-            LocalPlayerUid = ClientUID.Invalid;
-            MasterPlayerUid = ClientUID.Invalid;
+            LocalPlayerUid = ClientUid.Invalid;
+            MasterPlayerUid = ClientUid.Invalid;
 
             m_PlayersCollection.Clear();
             m_PlayersCollection = null;
@@ -100,11 +100,11 @@ namespace LROTech.Network.StateManagement
             // LocalPlayerUID = snapshot.LocalPlayerUID;
             // MasterPlayerUID = snapshot.MasterClientUID;
 
-            LocalPlayerUid = ClientUID.Invalid;
-            MasterPlayerUid = ClientUID.Invalid;
+            LocalPlayerUid = ClientUid.Invalid;
+            MasterPlayerUid = ClientUid.Invalid;
 
             // Remove.
-            foreach (var clientUid in new List<ClientUID>(m_PlayersCollection.Keys))
+            foreach (var clientUid in new List<ClientUid>(m_PlayersCollection.Keys))
             {
                 if (!snapshot.PlayersCollection.ContainsKey(clientUid))
                     m_PlayersCollection.Remove(clientUid);
@@ -132,7 +132,7 @@ namespace LROTech.Network.StateManagement
             foreach (var kvp in m_PlayersCollection)
             {
                 hash += kvp.Key.GetHashCode();
-                hash += kvp.Value.GetHashCode();
+                hash += kvp.Value.GetVersionHash();
             }
 
             return hash;

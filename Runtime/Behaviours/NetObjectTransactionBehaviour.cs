@@ -20,11 +20,11 @@ public sealed class GSObjectTransaction : GSObjectTransaction<InteractionNetwork
 [DisallowMultipleComponent]
 public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> where TData : InteractionNetworkData
 {
-    public NetObjectUID CurrentInteraction => Data.CurrentInteraction.Value;
-    public NetObjectUID LastInteraction => Data.LastInteraction.Value;
+    public NetObjectUid CurrentInteraction => Data.CurrentInteraction.Value;
+    public NetObjectUid LastInteraction => Data.LastInteraction.Value;
     public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
 
-    private readonly Dictionary<NetObjectUID, Action<bool>> m_InteractionChangeRequestCallbacks = new ();
+    private readonly Dictionary<NetObjectUid, Action<bool>> m_InteractionChangeRequestCallbacks = new ();
     
     private readonly NetWriter m_Writer = new();
     private readonly NetReader m_Reader = new();
@@ -44,10 +44,10 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
         Data.InteractionsEnabled.Set(value);
     }
 
-    public void ChangeTransactionRequest(NetObjectUID sender, bool interactionState) =>
+    public void ChangeTransactionRequest(NetObjectUid sender, bool interactionState) =>
         ChangeTransactionRequest(sender, interactionState, _ => { });
 
-    public void ChangeTransactionRequest(NetObjectUID sender, bool interactionState, Action<bool> callback)
+    public void ChangeTransactionRequest(NetObjectUid sender, bool interactionState, Action<bool> callback)
     {
         if (m_InteractionChangeRequestCallbacks.TryGetValue(sender, out _))
         {
@@ -105,7 +105,7 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
 
         if (canChangeInteractionState)
         {
-            Data.CurrentInteraction.Set(state ? sender : NetObjectUID.Invalid);
+            Data.CurrentInteraction.Set(state ? sender : NetObjectUid.Invalid);
             if(state)
                 Data.LastInteraction.Set(sender);
         }

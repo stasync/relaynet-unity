@@ -28,13 +28,13 @@ public class NetDebugWindow : EditorWindow
 
         public void Draw()
         {
-            m_Draw = EditorGUILayout.Foldout(m_Draw, $"Uid: {m_State.UID} Prefab: {m_State.PrefabId}");
+            m_Draw = EditorGUILayout.Foldout(m_Draw, $"Uid: {m_State.Uid} Prefab: {m_State.PrefabId}");
             if (!m_Draw)
                 return;
 
             EditorGUI.indentLevel++;
             {
-                EditorGUILayout.LabelField($"Uid: {m_State.UID} Scene: {m_State.IsSceneObject} Prefab: {m_State.PrefabId}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Uid: {m_State.Uid} Scene: {m_State.IsSceneObject} Prefab: {m_State.PrefabId}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Change type: {m_State.StateChangeType}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Owner: {m_State.Owner}");
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
@@ -82,7 +82,7 @@ public class NetDebugWindow : EditorWindow
                 if (m_World.View != null)
                 {
                     EditorGUI.BeginDisabledGroup(true);
-                    EditorGUILayout.ObjectField("View", m_World.FindObjectView(m_State.UID), typeof(GameObject), true);
+                    EditorGUILayout.ObjectField("View", m_World.FindObjectView(m_State.Uid), typeof(GameObject), true);
                     EditorGUI.EndDisabledGroup();
                 }
             }
@@ -107,7 +107,7 @@ public class NetDebugWindow : EditorWindow
         public bool IsValid => m_World != null && m_World.IsValid;
 
         bool m_Draw;
-        Dictionary<NetObjectUID, ObjectDrawer> m_ObjectViews;
+        Dictionary<NetObjectUid, ObjectDrawer> m_ObjectViews;
 
         protected WorldDrawer(T world)
         {
@@ -127,7 +127,7 @@ public class NetDebugWindow : EditorWindow
             if (!m_Draw)
                 return;
 
-            m_ObjectViews ??= new Dictionary<NetObjectUID, ObjectDrawer>();
+            m_ObjectViews ??= new Dictionary<NetObjectUid, ObjectDrawer>();
 
             EditorGUI.indentLevel++;
             OnDrawWorld();
@@ -260,7 +260,7 @@ public class NetDebugWindow : EditorWindow
                         
                         EditorGUI.indentLevel++;
                         foreach (var objectState in temporaryUnregisteredObjects.Values)
-                            EditorGUILayout.LabelField($"[{objectState.UID}] [{objectState.PrefabId}] Owner: {objectState.Owner} Scene: {objectState.IsSceneObject}");
+                            EditorGUILayout.LabelField($"[{objectState.Uid}] [{objectState.PrefabId}] Owner: {objectState.Owner} Scene: {objectState.IsSceneObject}");
                         EditorGUI.indentLevel--;
                     }
                 }

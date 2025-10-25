@@ -6,7 +6,7 @@ namespace LROTech.Network.StateManagement
     {
         public readonly byte[] Data;
 
-        public NetworkPropertiesSnapshot(byte[] properties) =>
+        internal NetworkPropertiesSnapshot(byte[] properties) =>
             Data = properties;
 
         public int GetSize() =>

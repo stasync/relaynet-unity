@@ -46,7 +46,7 @@ public abstract class GSInstanceBehaviourBase : MonoBehaviour
     internal void OnAuthorityUpdateInternal() => 
         OnAuthorityUpdate();
     
-    internal void OnDisconnectedInternal(ClientUID clientUid) => 
+    internal void OnDisconnectedInternal(ClientUid clientUid) => 
         OnDisconnected(clientUid);
     
     internal void OnSerializeInternal(NetWriter writer)
@@ -112,7 +112,7 @@ public abstract class GSInstanceBehaviourBase : MonoBehaviour
     /// <summary>
     /// Other client disconnected.
     /// </summary>
-    protected virtual void OnDisconnected(ClientUID clientUid)
+    protected virtual void OnDisconnected(ClientUid clientUid)
     {
     }
     

@@ -25,10 +25,10 @@ namespace LROTech.Network.StateManagement
         private NetObjectFactory m_ObjectFactory;
         private bool m_Initialized;
 
-        public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> CurrentObjectViews => m_CurrentObjectViews;
-        private Dictionary<NetObjectUID, NetObjectIdentity> m_CurrentObjectViews;
-        public IReadOnlyDictionary<NetObjectUID, NetObjectIdentity> TemporaryUnregisteredViews => m_TemporaryUnregisteredViews;
-        private Dictionary<NetObjectUID, NetObjectIdentity> m_TemporaryUnregisteredViews;
+        public IReadOnlyDictionary<NetObjectUid, NetObjectIdentity> CurrentObjectViews => m_CurrentObjectViews;
+        private Dictionary<NetObjectUid, NetObjectIdentity> m_CurrentObjectViews;
+        public IReadOnlyDictionary<NetObjectUid, NetObjectIdentity> TemporaryUnregisteredViews => m_TemporaryUnregisteredViews;
+        private Dictionary<NetObjectUid, NetObjectIdentity> m_TemporaryUnregisteredViews;
 
         private Scene m_WorldScene;
 
@@ -41,8 +41,8 @@ namespace LROTech.Network.StateManagement
 
             m_World = world;
             m_ObjectFactory = new NetObjectFactory();
-            m_CurrentObjectViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
-            m_TemporaryUnregisteredViews = new Dictionary<NetObjectUID, NetObjectIdentity>();
+            m_CurrentObjectViews = new Dictionary<NetObjectUid, NetObjectIdentity>();
+            m_TemporaryUnregisteredViews = new Dictionary<NetObjectUid, NetObjectIdentity>();
 
             var sceneName = $"{m_World.Name} {gameObject.GetInstanceID()}";
             switch (initMode)
@@ -108,13 +108,13 @@ namespace LROTech.Network.StateManagement
                         netObjectView.Deserialize(viewData.UnstructuredData, force: false, firstTime: false);
                 }
                 else
-                    InitializeObjectView(netObjectView, state.UID);
+                    InitializeObjectView(netObjectView, state.Uid);
             }
 
             Profiler.EndSample();
         }
 
-        private bool ShouldUpdateViewForState(NetObjectUID uid)
+        private bool ShouldUpdateViewForState(NetObjectUid uid)
         {
             if (!m_World.TryGetObject(uid, out var netObjectState))
                 return false;
@@ -129,7 +129,7 @@ namespace LROTech.Network.StateManagement
             return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
         }
 
-        public NetObjectIdentity GetView(NetObjectUID uid)
+        public NetObjectIdentity GetView(NetObjectUid uid)
         {
             if (m_CurrentObjectViews.TryGetValue(uid, out var netObjectView))
                 return netObjectView;
@@ -144,12 +144,12 @@ namespace LROTech.Network.StateManagement
         public NetObjectIdentity CreateImmediate(NetObjectState state, Vector3 position, Quaternion rotation)
         {
             var netObjectView = m_ObjectFactory.Create(state.PrefabId, position, rotation);
-            InitializeObjectView(netObjectView, state.UID);
-            m_TemporaryUnregisteredViews.Add(state.UID, netObjectView);
+            InitializeObjectView(netObjectView, state.Uid);
+            m_TemporaryUnregisteredViews.Add(state.Uid, netObjectView);
             return netObjectView;
         }
 
-        public void InitializeObjectView(NetObjectIdentity identity, NetObjectUID uid)
+        public void InitializeObjectView(NetObjectIdentity identity, NetObjectUid uid)
         {
             if (identity.Initialized)
                 throw new InvalidOperationException($"Identity {identity.gameObject.name}:{uid} already initialized.");
@@ -181,10 +181,10 @@ namespace LROTech.Network.StateManagement
             UpdateSoundFor(targetTransform);
         }
 
-        public void RegisterAsPending(NetObjectUID uid, NetObjectIdentity identity) =>
+        public void RegisterAsPending(NetObjectUid uid, NetObjectIdentity identity) =>
             m_TemporaryUnregisteredViews.Add(uid, identity);
 
-        private void RemoveView(NetObjectUID uid)
+        private void RemoveView(NetObjectUid uid)
         {
             if (m_CurrentObjectViews.Remove(uid, out var cView))
                 Destroy(cView.gameObject);
@@ -253,10 +253,10 @@ namespace LROTech.Network.StateManagement
                 SceneManager.UnloadSceneAsync(m_WorldScene);
         }
 
-        public NetObjectIdentity FindObjectView(NetObjectUID instanceId) =>
+        public NetObjectIdentity FindObjectView(NetObjectUid instanceId) =>
             m_CurrentObjectViews.GetValueOrDefault(instanceId);
 
-        public T FindObjectView<T>(NetObjectUID instanceId) where T : GSInstanceBehaviourBase
+        public T FindObjectView<T>(NetObjectUid instanceId) where T : GSInstanceBehaviourBase
         {
             var networkObject = FindObjectView(instanceId);
             return networkObject == null ? null : networkObject.GetComponent<T>();

@@ -81,13 +81,13 @@ namespace LROTech.Network.StateManagement
         }
     }
 
-    public class SerializableObjectUID : SerializableValue<NetObjectUID>
+    public class SerializableObjectUID : SerializableValue<NetObjectUid>
     {
-        public SerializableObjectUID() : this(NetObjectUID.Invalid)
+        public SerializableObjectUID() : this(NetObjectUid.Invalid)
         {
         }
 
-        public SerializableObjectUID(NetObjectUID defaultValue) : base(defaultValue, (r, f) => r.ReadInstanceId(), (w, v) => w.WriteInstanceId(v))
+        public SerializableObjectUID(NetObjectUid defaultValue) : base(defaultValue, (r, f) => r.ReadInstanceId(), (w, v) => w.WriteInstanceId(v))
         {
         }
     }
