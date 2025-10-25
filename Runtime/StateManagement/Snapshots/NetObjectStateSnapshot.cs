@@ -9,7 +9,7 @@ namespace LROTech.Network.StateManagement
         public readonly string PrefabId;
         public readonly bool IsSceneObject;
         public readonly ObjectStateChangeRequestType StateChangeType;
-        public readonly NetObjectRPCStateSnapshot RPCState;
+        public readonly NetObjectRPCBufferSnapshot RPCState;
         public readonly NetObjectDataCollectionSnapshot DataState;
 
         internal NetObjectStateSnapshot(NetReader reader)
@@ -19,8 +19,8 @@ namespace LROTech.Network.StateManagement
             PrefabId = reader.ReadString();
             IsSceneObject = reader.ReadBoolean();
             StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
-            RPCState = NetObjectRPCStateSnapshot.FromReader(reader);
-            DataState = NetObjectDataCollectionSnapshot.FromReader(reader);
+            RPCState = new NetObjectRPCBufferSnapshot(reader);
+            DataState = new NetObjectDataCollectionSnapshot(reader);
         }
 
         internal NetObjectStateSnapshot(NetObjectState state)

@@ -92,7 +92,7 @@ namespace LROTech.Network.StateManagement
         }
 
         public NetWorldPlayersCollectionsSnapshot ToSnapshot() =>
-            NetWorldPlayersCollectionsSnapshot.FormCollection(collection: this);
+            new (collection: this);
 
         internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
         {

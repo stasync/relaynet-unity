@@ -1,5 +1,3 @@
-using Core.Networking;
-
 namespace LROTech.Network.StateManagement
 {
     public readonly struct NetworkPropertiesSnapshot
@@ -11,11 +9,5 @@ namespace LROTech.Network.StateManagement
 
         public int GetSize() =>
             Data.Length;
-
-        public static NetworkPropertiesSnapshot FromProperties(NetworkProperties properties) =>
-            properties.ToSnapshot();
-
-        public static NetworkPropertiesSnapshot FromReader(NetReader reader) =>
-            new(reader.ReadBytesAndSize());
     }
 }

@@ -135,18 +135,18 @@ namespace LROTech.Network.StateManagement
             state != null && HasTagObject(state.Uid);
 
         public NetWorldPlayerSnapshot ToSnapshot() =>
-            NetWorldPlayerSnapshot.FormPlayer(this);
+            new(player: this);
 
         public override string ToString() =>
             $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
-        
+
         public byte[] Serialize()
         {
             m_Writer.SeekZero();
             ToSnapshot().Serialize(m_Writer);
             return m_Writer.ToArray();
         }
-        
+
         internal int GetVersionHash()
         {
             var hash = 13;

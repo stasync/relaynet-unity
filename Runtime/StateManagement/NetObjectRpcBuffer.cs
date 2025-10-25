@@ -82,19 +82,19 @@ namespace LROTech.Network.StateManagement
         internal void RemovePersistent(int hashCode) =>
             m_PersistentBuffer.RemoveAll(d => d.Hash.Equals(hashCode));
 
-        internal void RestoreFormSnapshot(NetObjectRPCStateSnapshot snapshot)
+        internal void RestoreFormSnapshot(NetObjectRPCBufferSnapshot snapshot)
         {
             m_PersistentBuffer.Clear();
             foreach (var rpcSnapshot in snapshot.PersistentBuffer)
-                m_PersistentBuffer.Add(NetObjectRPCState.FromSnapshot(rpcSnapshot));
+                m_PersistentBuffer.Add(new NetObjectRPCState(rpcSnapshot));
 
             m_TemporalBuffer.Clear();
             foreach (var rpcSnapshot in snapshot.TemporalBuffer)
-                m_TemporalBuffer.Add(NetObjectRPCState.FromSnapshot(rpcSnapshot));
+                m_TemporalBuffer.Add(new NetObjectRPCState(rpcSnapshot));
         }
 
-        public NetObjectRPCStateSnapshot ToSnapshot() =>
-            NetObjectRPCStateSnapshot.FromState(this);
+        public NetObjectRPCBufferSnapshot ToSnapshot() =>
+            new(state: this);
 
         internal int GetVersionHash()
         {

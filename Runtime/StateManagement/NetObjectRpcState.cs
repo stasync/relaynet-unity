@@ -15,11 +15,15 @@ namespace LROTech.Network.StateManagement
             Payload = payload;
         }
         
-        public RPCStateSnapshot ToSnapshot() =>
-            RPCStateSnapshot.FromState(this);
-
-        public static NetObjectRPCState FromSnapshot(RPCStateSnapshot snapshot) =>
-            new(snapshot.Hash, snapshot.UID, snapshot.Payload);
+        internal NetObjectRPCState(NetObjectRPCStateSnapshot snapshot)
+        {
+            Hash = snapshot.Hash;
+            UID = snapshot.UID;
+            Payload = snapshot.Payload;
+        }
+        
+        public NetObjectRPCStateSnapshot ToSnapshot() =>
+            new(data: this);
 
         internal int GetVersionHash()
         {

@@ -8,7 +8,7 @@ namespace LROTech.Network.StateManagement
         public readonly ClientUid MasterClientUID;
         public readonly IReadOnlyDictionary<ClientUid, NetWorldPlayerSnapshot> PlayersCollection;
 
-        private NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
+        internal NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
         {
             LocalPlayerUID = collection.LocalPlayer.Uid;
             MasterClientUID = collection.MasterPlayer.Uid;
@@ -20,19 +20,16 @@ namespace LROTech.Network.StateManagement
             PlayersCollection = playersCollection;
         }
 
-        public static NetWorldPlayersCollectionsSnapshot FormCollection(NetWorldPlayersCollection collection) =>
-            new(collection);
-
         public int GetSize()
         {
             var result = 0;
             result += ClientUid.Size; // LocalPlayerUid
             result += ClientUid.Size; // MasterClientUid
 
-            foreach (var p in PlayersCollection.Values)
+            foreach (var playerSnapshot in PlayersCollection.Values)
             {
                 result += ClientUid.Size; // ClientUid
-                result += p.GetSize();
+                result += playerSnapshot.GetSize();
             }
 
             return result;

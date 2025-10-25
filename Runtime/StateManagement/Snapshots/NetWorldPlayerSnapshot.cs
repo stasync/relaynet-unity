@@ -14,7 +14,7 @@ namespace LROTech.Network.StateManagement
         public readonly NetObjectUid MainTagObjectUID;
         public readonly NetworkPropertiesSnapshot Properties;
 
-        private NetWorldPlayerSnapshot(NetWorldPlayer player)
+        internal NetWorldPlayerSnapshot(NetWorldPlayer player)
         {
             UID = player.Uid;
             Name = player.Name;
@@ -23,10 +23,10 @@ namespace LROTech.Network.StateManagement
             RTTMs = player.RTTMs;
             TagObjectUIDs = new HashSet<NetObjectUid>(player.TagObjectUidCollection);
             MainTagObjectUID = player.MainTagObjectUid;
-            Properties = NetworkPropertiesSnapshot.FromProperties(player.Properties);
+            Properties = player.Properties.ToSnapshot();
         }
 
-        private NetWorldPlayerSnapshot(NetReader reader)
+        internal NetWorldPlayerSnapshot(NetReader reader)
         {
             UID = reader.ReadClientUid();
             Name = reader.ReadString();
@@ -35,16 +35,10 @@ namespace LROTech.Network.StateManagement
             RTTMs = reader.ReadInt32();
             TagObjectUIDs = reader.ReadHashSet(r => r.ReadInstanceId());
             MainTagObjectUID = reader.ReadInstanceId();
-            Properties = NetworkPropertiesSnapshot.FromReader(reader);
+            Properties = new NetworkPropertiesSnapshot(reader.ReadBytesAndSize());
         }
-
-        public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player) =>
-            new(player);
-
-        public static NetWorldPlayerSnapshot FormReader(NetReader reader) =>
-            new(reader);
-
-        public void Serialize(NetWriter writer)
+        
+        internal void Serialize(NetWriter writer)
         {
             writer.WriteClientUid(UID);
             writer.WriteString(Name);

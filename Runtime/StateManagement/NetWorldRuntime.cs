@@ -99,7 +99,7 @@ namespace LROTech.Network.StateManagement
                             // Add player, if not exists.
                             // Deserialize other player.
                             // Adding player id duplicated logic.
-                            var snapshot = NetWorldPlayerSnapshot.FormReader(m_Reader);
+                            var snapshot = new NetWorldPlayerSnapshot(m_Reader);
                             if (!remotePlayersUpdateRequests.TryAdd(snapshot.UID, snapshot))
                                 Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.UID}': already scheduled.");
 

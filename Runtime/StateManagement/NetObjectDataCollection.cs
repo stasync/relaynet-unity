@@ -54,14 +54,11 @@ namespace LROTech.Network.StateManagement
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
             return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
         }
-
-        internal void Clear() =>
-            m_InternalCollection.Clear();
-
+        
         public NetObjectDataCollectionSnapshot ToSnapshot() =>
             new(m_InternalCollection.Values);
 
-        public void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
+        internal void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
         {
             m_Reader.Replace(snapshot.Data);
 
@@ -81,6 +78,9 @@ namespace LROTech.Network.StateManagement
                 data.DeserializeInternal(m_Reader, firstTime: false);
             }
         }
+        
+        internal void Clear() =>
+            m_InternalCollection.Clear();
 
         internal int GetVersionHash()
         {

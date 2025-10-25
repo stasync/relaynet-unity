@@ -41,7 +41,7 @@ namespace LROTech.Network.StateManagement
         {
             ObjectUID = reader.ReadInstanceId();
             Type = (NoAuthorityRPCType)reader.ReadByte();
-            RPCState = NetObjectRPCState.FromSnapshot(RPCStateSnapshot.FromReader(reader));
+            RPCState = new NetObjectRPCState(new NetObjectRPCStateSnapshot(reader));
         }
 
         private void Serialize(NetWriter writer)

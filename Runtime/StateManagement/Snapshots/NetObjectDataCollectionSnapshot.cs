@@ -9,7 +9,7 @@ namespace LROTech.Network.StateManagement
 
         public readonly byte[] Data;
 
-        public NetObjectDataCollectionSnapshot(IReadOnlyCollection<NetObjectStateData> dataCollection)
+        internal NetObjectDataCollectionSnapshot(IReadOnlyCollection<NetObjectStateData> dataCollection)
         {
             s_Writer.SeekZero();
 
@@ -23,19 +23,13 @@ namespace LROTech.Network.StateManagement
             Data = s_Writer.ToArray();
         }
 
-        private NetObjectDataCollectionSnapshot(NetReader reader) =>
+        internal NetObjectDataCollectionSnapshot(NetReader reader) =>
             Data = reader.ReadBytesAndSize();
-
-        public static NetObjectDataCollectionSnapshot FromState(NetObjectDataCollection data) =>
-            data.ToSnapshot();
-
-        public static NetObjectDataCollectionSnapshot FromReader(NetReader reader) =>
-            new(reader);
-
+        
+        internal void Serialize(NetWriter writer) =>
+            writer.WriteBytesAndSize(Data);
+        
         public int GetSize() =>
             Data.Length;
-
-        public void Serialize(NetWriter writer) =>
-            writer.WriteBytesAndSize(Data);
     }
 }
