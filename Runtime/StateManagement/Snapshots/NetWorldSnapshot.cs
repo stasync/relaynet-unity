@@ -13,6 +13,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUID, NetObjectStateSnapshot> m_ObjectStates;
 
         public readonly NetWorldPlayersCollectionsSnapshot Players;
+        //public readonly NetworkPropertiesSnapshot Properties;
 
         private NetWorldSnapshot(float deltaTime, NetWorld world)
         {

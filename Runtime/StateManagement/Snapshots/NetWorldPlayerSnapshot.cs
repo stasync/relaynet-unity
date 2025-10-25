@@ -12,7 +12,7 @@ namespace LROTech.Network.StateManagement
         public readonly int RTTMs;
         public readonly HashSet<NetObjectUID> TagObjectUIDs;
         public readonly NetObjectUID MainTagObjectUID;
-        public readonly PropertiesSnapshot Properties;
+        public readonly NetworkPropertiesSnapshot Properties;
 
         private NetWorldPlayerSnapshot(NetWorldPlayer player)
         {
@@ -23,7 +23,7 @@ namespace LROTech.Network.StateManagement
             RTTMs = player.RTTMs;
             TagObjectUIDs = new HashSet<NetObjectUID>(player.TagObjectUidCollection);
             MainTagObjectUID = player.MainTagObjectUid;
-            Properties = PropertiesSnapshot.FromProperties(player.Properties);
+            Properties = NetworkPropertiesSnapshot.FromProperties(player.Properties);
         }
 
         private NetWorldPlayerSnapshot(NetReader reader)
@@ -35,7 +35,7 @@ namespace LROTech.Network.StateManagement
             RTTMs = reader.ReadInt32();
             TagObjectUIDs = reader.ReadHashSet(r => r.ReadInstanceId());
             MainTagObjectUID = reader.ReadInstanceId();
-            Properties = PropertiesSnapshot.FromReader(reader);
+            Properties = NetworkPropertiesSnapshot.FromReader(reader);
         }
 
         public static NetWorldPlayerSnapshot FormPlayer(NetWorldPlayer player) =>

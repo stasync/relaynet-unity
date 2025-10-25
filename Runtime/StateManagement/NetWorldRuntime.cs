@@ -42,6 +42,7 @@ namespace LROTech.Network.StateManagement
         private readonly HashSet<ClientUID> m_PlayerUnregisterQueue = new();
 
         private float m_LastUpdateTime;
+        private readonly NetworkProperties m_Properties;
 
         private readonly NetWriter m_Writer = new();
         private readonly NetReader m_Reader = new();
@@ -50,6 +51,7 @@ namespace LROTech.Network.StateManagement
         {
             NetObjectUID.Reset();
             m_LastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
+            m_Properties = new NetworkProperties(writePermission: () => Players.LocalPlayerIsMaster);
         }
 
         protected override void UpdateImplementation(float deltaTime)
@@ -196,6 +198,7 @@ namespace LROTech.Network.StateManagement
 
                 m_Writer.SeekZero();
                 m_Writer.WriteSingle(Time);
+                m_Properties.Serialize(m_Writer);
                 DataSendRequested(userDataOpCode: MessageCodes.WorldCommunication, data: m_Writer.ToArray(), DeliveryMethod.Unreliable);
             }
 
@@ -208,6 +211,7 @@ namespace LROTech.Network.StateManagement
                 {
                     m_Reader.Replace(buffer: remoteWorldDataUpdateRequests.Dequeue());
                     Time = m_Reader.ReadSingle();
+                    m_Properties.Deserialize(m_Reader, firstTime: false);
                 }
             }
 

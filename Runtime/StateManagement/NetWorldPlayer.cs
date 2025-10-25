@@ -62,8 +62,7 @@ namespace LROTech.Network.StateManagement
 
         private int m_RTTMS;
 
-        public IProperties Properties => m_Properties;
-        private readonly Properties m_Properties;
+        public readonly NetworkProperties Properties;
 
         public IReadOnlyCollection<NetObjectUID> TagObjectUidCollection => m_TagObjectUidCollection;
         private HashSet<NetObjectUID> m_TagObjectUidCollection;
@@ -113,7 +112,7 @@ namespace LROTech.Network.StateManagement
             m_LocalPlayerUidProvider = localPlayerUidProvider;
             m_MasterPlayerUidProvider = masterPlayerUidProvider;
 
-            m_Properties = new Properties(writePermission: () => IsLocal);
+            Properties = new NetworkProperties(writePermission: () => IsLocal);
             m_TagObjectUidCollection = new HashSet<NetObjectUID>();
         }
 
@@ -126,18 +125,26 @@ namespace LROTech.Network.StateManagement
             m_RTTMS = snapshot.RTTMs;
             m_TagObjectUidCollection = snapshot.TagObjectUIDs;
 
-            m_Properties.SetDataFromSnapshot(snapshot.Properties);
+            Properties.SetDataFromSnapshot(snapshot.Properties);
         }
 
-        public bool HasTagObject(NetObjectUID uid) => uid.IsValid && m_TagObjectUidCollection.Contains(uid);
-        public bool HasTagObject(NetObjectState state) => state != null && HasTagObject(state.UID);
+        public bool HasTagObject(NetObjectUID uid) =>
+            uid.IsValid && m_TagObjectUidCollection.Contains(uid);
+
+        public bool HasTagObject(NetObjectState state) =>
+            state != null && HasTagObject(state.UID);
 
         public NetWorldPlayerSnapshot ToSnapshot() =>
             NetWorldPlayerSnapshot.FormPlayer(this);
 
-        public override string ToString() => $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
-        public int CompareTo(NetWorldPlayer other) => Uid.CompareTo(other.Uid);
-        public bool Equals(NetWorldPlayer other) => other != null && Uid.Equals(other.Uid);
+        public override string ToString() =>
+            $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
+
+        public int CompareTo(NetWorldPlayer other) =>
+            Uid.CompareTo(other.Uid);
+
+        public bool Equals(NetWorldPlayer other) =>
+            other != null && Uid.Equals(other.Uid);
 
         public byte[] Serialize()
         {
