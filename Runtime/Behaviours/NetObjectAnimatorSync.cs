@@ -5,9 +5,12 @@ using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public interface IAnimatorValueProxy : ISerializable
+public interface IAnimatorValueProxy
 {
     void OnUpdate(float deltaTime, bool hasAuthority);
+    
+    void Serialize(NetWriter writer);
+    void Deserialize(NetReader reader, bool firstTime);
 }
 
 public abstract class AnimatorParameterValueProxy<T> : IAnimatorValueProxy where T : struct

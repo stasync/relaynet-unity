@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Core;
 using Core.DependencyInjection.Services;
+using Core.Networking;
 using LROTech.Network.StateManagement;
 using UnityEditor;
 using UnityEngine;
@@ -13,10 +14,10 @@ public class NetDebugWindow : EditorWindow
     #region Drawers
     private class ObjectDrawer
     {
-        readonly NetObjectState m_State;
-        readonly NetWorld m_World;
+        private readonly NetObjectState m_State;
+        private readonly NetWorld m_World;
 
-        bool m_Draw;
+        private bool m_Draw;
 
         public void SetDrawingEnabled(bool value) => m_Draw = value;
 
@@ -40,7 +41,7 @@ public class NetDebugWindow : EditorWindow
                 EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
                 EditorGUILayout.LabelField($"Master: {m_State.IsOwnedByMasterClient}");
 
-                EditorGUILayout.LabelField($"Total size: {m_State.Serialize().Length}");
+                EditorGUILayout.LabelField($"Total size: {m_State.ToSnapshot().GetSize()}");
 
                 if (m_State.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
                     EditorGUILayout.LabelField($"View data size: {viewData.UnstructuredData.Length}");
@@ -245,11 +246,6 @@ public class NetDebugWindow : EditorWindow
                         EditorGUILayout.Space();
                         var registerRequests = m_World.IncomingStateChangeRequests;
                         EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
-                        
-                        EditorGUI.indentLevel++;
-                        foreach (var request in registerRequests)
-                            EditorGUILayout.LabelField($"{request.OpCode} {request.Data}");
-                        EditorGUI.indentLevel--;
                     }
                     
                     // Temporary Unregistered Objects.

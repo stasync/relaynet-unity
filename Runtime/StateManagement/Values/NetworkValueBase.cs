@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace LROTech.Network.StateManagement
 {
-    public abstract class SerializableValue : ISerializable
+    public abstract class SerializableValue
     {
         private readonly Func<bool> m_WritePermission = null;
         protected bool HasPermission => m_WritePermission();
@@ -87,7 +87,7 @@ namespace LROTech.Network.StateManagement
         public override void Serialize(NetWriter writer) =>
             m_Writer(writer, InternalValue);
 
-        public override int GetHashCode() =>
+        public int GetValueHashCode() =>
             m_InternalValue.GetHashCode();
 
         public override string ToString() =>

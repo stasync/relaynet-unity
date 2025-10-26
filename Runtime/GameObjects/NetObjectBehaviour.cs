@@ -1,7 +1,7 @@
 ﻿using System;
 using LROTech.Network.StateManagement;
 
-public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase, IGSInstanceBehaviour
+public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase
     where TObjectData : NetObjectStateData
 {
     protected TObjectData Data { get; private set; }

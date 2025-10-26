@@ -8,19 +8,7 @@ namespace LROTech.Network.StateManagement
 {
     public sealed class NetWorldRuntime : NetWorld
     {
-        public struct IncomingStateChangeRequest
-        {
-            public readonly uint OpCode;
-            public readonly byte[] Data;
-
-            internal IncomingStateChangeRequest(uint opCode, byte[] data)
-            {
-                OpCode = opCode;
-                Data = data;
-            }
-        }
-
-        public delegate void DataSendRequestDelegate(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
+        public delegate void DataSendRequestDelegate(byte[] data, DeliveryMethod deliveryMethod);
 
         private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
         private const float MIN_UPDATE_INTERVAL = 0.1f; // 10 times per second.
@@ -31,8 +19,8 @@ namespace LROTech.Network.StateManagement
         public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
         public event DataSendRequestDelegate DataSendRequested = delegate { };
 
-        public IReadOnlyCollection<IncomingStateChangeRequest> IncomingStateChangeRequests => m_IncomingStateChangeRequests;
-        private readonly Queue<IncomingStateChangeRequest> m_IncomingStateChangeRequests = new();
+        public IReadOnlyCollection<byte[]> IncomingStateChangeRequests => m_IncomingStateChangeRequests;
+        private readonly Queue<byte[]>  m_IncomingStateChangeRequests = new();
 
         public IReadOnlyDictionary<NetObjectUid, NetObjectState> TemporaryUnregisteredObjects => m_TemporaryUnregisteredObjects;
         private readonly Dictionary<NetObjectUid, NetObjectState> m_TemporaryUnregisteredObjects = new();
@@ -89,13 +77,15 @@ namespace LROTech.Network.StateManagement
 
             void ProcessIncomingData()
             {
-                while (m_IncomingStateChangeRequests.TryDequeue(out var stateChangeRequest))
+                while (m_IncomingStateChangeRequests.TryDequeue(out var stateChangeData))
                 {
-                    m_Reader.Replace(stateChangeRequest.Data);
-                    switch (stateChangeRequest.OpCode)
+                    m_Reader.Replace(stateChangeData);
+                    var worldChangeOpCode = (NetWorldRuntimeChangeOp)m_Reader.ReadByte();
+                    
+                    switch (worldChangeOpCode)
                     {
                         // Other client wants to tell us about its player state.
-                        case MessageCodes.PlayerStateUpdate:
+                        case NetWorldRuntimeChangeOp.PlayerStateUpdate:
                         {
                             // Add player, if not exists.
                             // Deserialize other player.
@@ -106,7 +96,7 @@ namespace LROTech.Network.StateManagement
 
                             break;
                         }
-                        case MessageCodes.ObjectStateUpdate:
+                        case NetWorldRuntimeChangeOp.ObjectStateUpdate:
                         {
                             var snapshot = new NetObjectStateSnapshot(m_Reader);
                             if (!snapshot.ObjectUID.IsValid)
@@ -129,13 +119,13 @@ namespace LROTech.Network.StateManagement
                             break;
                         }
 
-                        case MessageCodes.WorldCommunication:
+                        case NetWorldRuntimeChangeOp.WorldCommunication:
                         {
-                            remoteWorldDataUpdateRequests.Enqueue(stateChangeRequest.Data);
+                            remoteWorldDataUpdateRequests.Enqueue(stateChangeData);
                             break;
                         }
 
-                        case MessageCodes.Rpc:
+                        case NetWorldRuntimeChangeOp.Rpc:
                         {
                             var state = new RpcWithoutAuthorityState(m_Reader);
                             if (!state.IsValid)
@@ -182,10 +172,14 @@ namespace LROTech.Network.StateManagement
                                     objectIdentity.ReceiveRpc(state);
                                     break;
                                 }
+                                default:
+                                    throw new ArgumentOutOfRangeException();
                             }
 
                             break;
                         }
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
                 }
             }
@@ -196,9 +190,10 @@ namespace LROTech.Network.StateManagement
                     return;
 
                 m_Writer.SeekZero();
+                m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldCommunication);
                 m_Writer.WriteSingle(Time);
                 Properties.Serialize(m_Writer);
-                DataSendRequested(userDataOpCode: MessageCodes.WorldCommunication, data: m_Writer.ToArray(), DeliveryMethod.Unreliable);
+                DataSendRequested(data: m_Writer.ToArray(), DeliveryMethod.Unreliable);
             }
 
             void UpdateRemoteMasterWorldData()
@@ -286,8 +281,12 @@ namespace LROTech.Network.StateManagement
                     if (localPlayer == null)
                         Debug.LogError("Unable to send local player: doesn't exists");
                     else
-                        DataSendRequested(userDataOpCode: MessageCodes.PlayerStateUpdate, data: localPlayer.Serialize(),
-                            DeliveryMethod.Reliable);
+                    {
+                        m_Writer.SeekZero();
+                        m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.PlayerStateUpdate);
+                        localPlayer.ToSnapshot().Serialize(m_Writer);
+                        DataSendRequested(data: m_Writer.ToArray(), DeliveryMethod.Reliable);
+                    }
                 }
             }
 
@@ -359,7 +358,8 @@ namespace LROTech.Network.StateManagement
                     }
 
                     // Object doesn't exists.
-                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard or NetObjectStateChangeRequestType.RemoveUpdateSoft)
+                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard
+                        or NetObjectStateChangeRequestType.RemoveUpdateSoft)
                     {
                         Debug.LogError(
                             $"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
@@ -401,7 +401,12 @@ namespace LROTech.Network.StateManagement
                 {
                     var state = ObjectStates[uid];
                     foreach (var request in state.RpcWithoutAuthorityRequests)
-                        DataSendRequested(userDataOpCode: MessageCodes.Rpc, data: request.State.ToData(), request.DeliveryMethod);
+                    {
+                        m_Writer.SeekZero();
+                        m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.Rpc);
+                        request.State.Serialize(m_Writer);
+                        DataSendRequested(data: m_Writer.ToArray(), request.DeliveryMethod);
+                    }
                 }
             }
 
@@ -441,7 +446,11 @@ namespace LROTech.Network.StateManagement
                         deliveryMethod = DeliveryMethod.Reliable;
 
                     state.PrepareForSerialization();
-                    DataSendRequested(userDataOpCode: MessageCodes.ObjectStateUpdate, data: state.Serialize(), deliveryMethod);
+                    
+                    m_Writer.SeekZero();
+                    m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.ObjectStateUpdate);
+                    state.ToSnapshot().Serialize(m_Writer);
+                    DataSendRequested(data: m_Writer.ToArray(), deliveryMethod);
 
                     switch (state.StateChangeType)
                     {
@@ -506,8 +515,8 @@ namespace LROTech.Network.StateManagement
             m_PlayerUnregisterQueue.Add(clientUid);
         }
 
-        internal void ScheduleRemoteUpdate(uint userDataOpCode, byte[] data) =>
-            m_IncomingStateChangeRequests.Enqueue(new IncomingStateChangeRequest(userDataOpCode, data));
+        internal void ScheduleRemoteUpdate(byte[] data) =>
+            m_IncomingStateChangeRequests.Enqueue(data);
 
         private bool TryGetExistedOrPendingState(NetObjectUid instanceId, out NetObjectState state) =>
             TryGetObject(instanceId, out state) || m_TemporaryUnregisteredObjects.TryGetValue(instanceId, out state);

@@ -1,21 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Core.Networking;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
-
-public sealed class NetObjectTransformData : NetObjectStateData
-{
-    public NetObjectTransformData(Func<bool> writePermission) : base(writePermission) { }
-
-    public readonly SerializableVector3 Position = new();
-    public readonly SerializableQuaternion Rotation = new();
-    public readonly SerializableVector3 Velocity = new();
-    public readonly SerializableFloat WorldTime = new();
-    public readonly SerializableBool HasParent = new();
-}
-
 
 [DisallowMultipleComponent]
 public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData>

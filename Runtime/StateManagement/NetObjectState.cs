@@ -218,14 +218,6 @@ namespace LROTech.Network.StateManagement
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");
         }
 
-        public byte[] Serialize()
-        {
-            m_Writer.SeekZero();
-            ToSnapshot().Serialize(m_Writer);
-
-            return m_Writer.ToArray();
-        }
-
         public override string ToString() =>
             $"{Uid}:{PrefabId} " +
             $"s:{IsSceneObject} " +

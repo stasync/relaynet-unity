@@ -145,13 +145,6 @@ namespace LROTech.Network.StateManagement
         public override string ToString() =>
             $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
 
-        public byte[] Serialize()
-        {
-            m_Writer.SeekZero();
-            ToSnapshot().Serialize(m_Writer);
-            return m_Writer.ToArray();
-        }
-
         internal int GetVersionHash()
         {
             var hash = 13;

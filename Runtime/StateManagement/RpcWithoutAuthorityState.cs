@@ -25,18 +25,11 @@ namespace LROTech.Network.StateManagement
             RpcState = new NetObjectRpcState(new NetObjectRpcStateSnapshot(reader));
         }
 
-        private void Serialize(NetWriter writer)
+        internal void Serialize(NetWriter writer)
         {
             writer.WriteInstanceId(ObjectUid);
             writer.WriteByte((byte)Type);
             RpcState.ToSnapshot().Serialize(writer);
-        }
-
-        public byte[] ToData()
-        {
-            var writer = new NetWriter();
-            Serialize(writer);
-            return writer.ToArray();
         }
     }
 }
