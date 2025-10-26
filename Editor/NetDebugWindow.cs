@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Core;
 using Core.DependencyInjection.Services;
+using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using UnityEditor;
 using UnityEngine;

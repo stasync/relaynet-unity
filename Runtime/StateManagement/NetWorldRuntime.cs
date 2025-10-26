@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Core.Networking;
+using LROTech.Network.GameObjects;
+using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement

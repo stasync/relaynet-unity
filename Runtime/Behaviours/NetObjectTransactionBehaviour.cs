@@ -1,36 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.Networking;
+using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 
 namespace LROTech.Network.DefaultBehaviours
 {
-    public class InteractionNetworkData : NetObjectStateData
+    public sealed class NetObjectTransactionBehaviour : NetObjectTransactionBehaviour<NetObjectTransactionBehaviour.TransactionNetworkData>
     {
-        public readonly SerializableObjectUID CurrentInteraction = new ();
-        public readonly SerializableObjectUID LastInteraction = new ();
-        public readonly SerializableBool InteractionsEnabled = new ();
-
-        public InteractionNetworkData(Func<bool> writePermission) : base(writePermission)
+        public class TransactionNetworkData : NetObjectStateData
         {
+            public readonly SerializableObjectUID CurrentInteraction = new();
+            public readonly SerializableObjectUID LastInteraction = new();
+            public readonly SerializableBool InteractionsEnabled = new();
+
+            public TransactionNetworkData(Func<bool> writePermission) : base(writePermission)
+            {
+            }
         }
     }
 
-    public sealed class GSObjectTransaction : GSObjectTransaction<InteractionNetworkData> { }
-
     [DisallowMultipleComponent]
-    public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> where TData : InteractionNetworkData
+    public abstract class NetObjectTransactionBehaviour<TData> : GSInstanceBehaviour<TData>
+        where TData : NetObjectTransactionBehaviour.TransactionNetworkData
     {
         public NetObjectUid CurrentInteraction => Data.CurrentInteraction.Value;
         public NetObjectUid LastInteraction => Data.LastInteraction.Value;
         public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
 
-        private readonly Dictionary<NetObjectUid, Action<bool>> m_InteractionChangeRequestCallbacks = new ();
-    
+        private readonly Dictionary<NetObjectUid, Action<bool>> m_InteractionChangeRequestCallbacks = new();
+
         private readonly NetWriter m_Writer = new();
         private readonly NetReader m_Reader = new();
-    
+
         protected override void OnInitializeViewData()
         {
             base.OnInitializeViewData();
@@ -38,7 +41,7 @@ namespace LROTech.Network.DefaultBehaviours
                 SetInteractionsEnabledWithAuthority(true);
         }
 
-        public void SetInteractionsEnabledWithAuthority(bool value) 
+        public void SetInteractionsEnabledWithAuthority(bool value)
         {
             if (!IsLocal)
                 throw new InvalidOperationException("No authority");
@@ -60,7 +63,8 @@ namespace LROTech.Network.DefaultBehaviours
 
             if (!InteractionsEnabled || CurrentInteraction.IsValid && interactionState)
             {
-                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: {CurrentInteraction} Enabled: {InteractionsEnabled}");
+                Debug.LogError(
+                    $"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: {CurrentInteraction} Enabled: {InteractionsEnabled}");
                 callback(false);
                 return;
             }
@@ -74,7 +78,8 @@ namespace LROTech.Network.DefaultBehaviours
 
             if (!senderState.IsOwnedByLocalPlayer)
             {
-                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' isn't owned by local player.");
+                Debug.LogError(
+                    $"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' isn't owned by local player.");
                 callback(false);
                 return;
             }
@@ -96,10 +101,8 @@ namespace LROTech.Network.DefaultBehaviours
 
             var currentInteractionObject = Data.CurrentInteraction.Value;
 
-            var canChangeInteractionState = 
-                state ? 
-                    currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value :
-                    currentInteractionObject.Equals(sender);
+            var canChangeInteractionState =
+                state ? currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value : currentInteractionObject.Equals(sender);
 
             m_Writer.SeekZero();
             m_Writer.WriteInstanceId(sender);
@@ -108,7 +111,7 @@ namespace LROTech.Network.DefaultBehaviours
             if (canChangeInteractionState)
             {
                 Data.CurrentInteraction.Set(state ? sender : NetObjectUid.Invalid);
-                if(state)
+                if (state)
                     Data.LastInteraction.Set(sender);
             }
 

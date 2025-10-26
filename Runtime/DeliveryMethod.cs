@@ -1,4 +1,4 @@
-namespace LROTech.Network
+namespace LROTech.Network.Sessions
 {
     public enum DeliveryMethod
     {

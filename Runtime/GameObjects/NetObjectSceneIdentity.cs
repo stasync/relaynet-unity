@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using Core.Utils.Math;
+using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 
-namespace LROTech.Network
+namespace LROTech.Network.GameObjects
 {
     [DisallowMultipleComponent]
     public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.BehaviourData>

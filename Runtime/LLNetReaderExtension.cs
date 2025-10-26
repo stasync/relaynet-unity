@@ -1,6 +1,6 @@
 using Core.Networking;
 
-namespace LROTech.Network
+namespace LROTech.Network.Sessions
 {
     public static class LLNetReaderExtension 
     {

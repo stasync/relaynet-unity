@@ -1,9 +1,10 @@
 ﻿using Core.DependencyInjection.Services;
 using Core.DependencyInjection.Services.Events;
 using Core.Networking;
+using LROTech.Network.Sessions;
 using UnityEngine;
 
-namespace LROTech.Network
+namespace LROTech.Network.GameObjects
 {
     [RequireComponent(typeof(NetObjectIdentity))]
     public abstract class GSInstanceBehaviourBase : MonoBehaviour

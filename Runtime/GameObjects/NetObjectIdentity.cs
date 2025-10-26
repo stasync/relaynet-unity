@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.Networking;
+using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 
-namespace LROTech.Network
+namespace LROTech.Network.GameObjects
 {
     [DisallowMultipleComponent]
     public sealed class NetObjectIdentity : MonoBehaviour

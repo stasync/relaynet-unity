@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.Networking;
+using LROTech.Network.GameObjects;
+using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -94,7 +96,7 @@ namespace LROTech.Network.DefaultBehaviours
     }
 
     [DisallowMultipleComponent]
-    public sealed class GSAnimatorSync : GSInstanceBehaviour<GSAnimatorSync.StateData>
+    public sealed class NetObjectAnimatorSync : GSInstanceBehaviour<NetObjectAnimatorSync.StateData>
     {
         public sealed class StateData : NetObjectStateData
         {

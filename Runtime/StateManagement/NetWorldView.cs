@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using LROTech.Network.GameObjects;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.SceneManagement;

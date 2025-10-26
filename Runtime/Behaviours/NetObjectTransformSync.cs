@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Core.Networking;
+using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -7,7 +8,7 @@ using UnityEngine.Serialization;
 namespace LROTech.Network.DefaultBehaviours
 {
     [DisallowMultipleComponent]
-    public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData>
+    public sealed class NetObjectTransformSync : GSInstanceBehaviour<NetObjectTransformData>
     {
         [SerializeField, Range(0f, 1f)]
         private float m_InterpolateMovement = 1f;

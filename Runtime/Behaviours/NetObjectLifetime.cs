@@ -1,12 +1,13 @@
 ﻿using System;
+using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 
 namespace LROTech.Network.DefaultBehaviours
 {
-    public sealed class GSObjectLifetimeData : NetObjectStateData
+    public sealed class NetObjectLifetimeData : NetObjectStateData
     {
-        public GSObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
+        public NetObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
 
         public readonly SerializableFloat Lifetime = new();
         public readonly SerializableFloat CurrentLifetime = new ();
@@ -14,7 +15,7 @@ namespace LROTech.Network.DefaultBehaviours
         public float NormalizedLifetime => CurrentLifetime.Value / Lifetime.Value;
     }
 
-    public sealed class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
+    public sealed class NetObjectObjectLifetime : GSInstanceBehaviour<NetObjectLifetimeData>
     {
         public event Action TimePassed = delegate { };
         public float NormalizedLifetime => Data.NormalizedLifetime;

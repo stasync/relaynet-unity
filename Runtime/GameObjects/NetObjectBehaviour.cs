@@ -1,7 +1,8 @@
 ﻿using System;
+using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 
-namespace LROTech.Network
+namespace LROTech.Network.GameObjects
 {
     public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase where TObjectData : NetObjectStateData
     {
