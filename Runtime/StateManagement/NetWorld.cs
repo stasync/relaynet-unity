@@ -149,13 +149,13 @@ namespace LROTech.Network.StateManagement
         public NetObjectIdentity FindObjectView(NetObjectUid instanceId) =>
             View == null ? null : View.FindObjectView(instanceId);
 
-        public T FindObjectView<T>(NetObjectUid instanceId) where T : GSInstanceBehaviourBase =>
+        public T FindObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase =>
             View == null ? null : View.FindObjectView<T>(instanceId);
 
-        public IEnumerable<T> FindObjectViewsOfType<T>() where T : GSInstanceBehaviourBase =>
+        public IEnumerable<T> FindObjectViewsOfType<T>() where T : NetObjectBehaviourBase =>
             View == null ? null : View.FindObjectViewsOfType<T>();
 
-        public T FindObjectViewOfType<T>() where T : GSInstanceBehaviourBase
+        public T FindObjectViewOfType<T>() where T : NetObjectBehaviourBase
         {
             if (View == null)
                 return null;

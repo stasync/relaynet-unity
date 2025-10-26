@@ -22,7 +22,7 @@ namespace LROTech.Network.DefaultBehaviours
     }
 
     [DisallowMultipleComponent]
-    public abstract class NetObjectTransactionBehaviour<TData> : GSInstanceBehaviour<TData>
+    public abstract class NetObjectTransactionBehaviour<TData> : NetObjectBehaviour<TData>
         where TData : NetObjectTransactionBehaviour.TransactionNetworkData
     {
         public NetObjectUid CurrentInteraction => Data.CurrentInteraction.Value;

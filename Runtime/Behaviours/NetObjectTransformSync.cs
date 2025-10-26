@@ -8,7 +8,7 @@ using UnityEngine.Serialization;
 namespace LROTech.Network.DefaultBehaviours
 {
     [DisallowMultipleComponent]
-    public sealed class NetObjectTransformSync : GSInstanceBehaviour<NetObjectTransformData>
+    public sealed class NetObjectTransformSync : NetObjectBehaviour<NetObjectTransformData>
     {
         [SerializeField, Range(0f, 1f)]
         private float m_InterpolateMovement = 1f;

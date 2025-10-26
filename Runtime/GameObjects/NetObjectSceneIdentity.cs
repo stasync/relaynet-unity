@@ -9,7 +9,7 @@ using UnityEngine;
 namespace LROTech.Network.GameObjects
 {
     [DisallowMultipleComponent]
-    public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.BehaviourData>
+    public sealed class NetObjectSceneIdentity : NetObjectBehaviour<NetObjectSceneIdentity.BehaviourData>
     {
         public sealed class BehaviourData : NetObjectStateData
         {
@@ -50,7 +50,7 @@ namespace LROTech.Network.GameObjects
                 Network.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
         }
 
-        public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) =>
+        public static implicit operator NetObjectIdentity(NetObjectSceneIdentity value) =>
             value.Identity;
 
 #if UNITY_EDITOR
@@ -63,7 +63,7 @@ namespace LROTech.Network.GameObjects
                 return;
             }
 
-            var sceneObjects = FindObjectsOfType<GSSceneObjectIdentity>();
+            var sceneObjects = FindObjectsOfType<NetObjectSceneIdentity>();
             foreach (var obj in sceneObjects)
             {
                 if (!obj.SceneObjectId.IsValid)
@@ -93,7 +93,7 @@ namespace LROTech.Network.GameObjects
                 return;
             }
 
-            var sceneObjects = FindObjectsByType<GSSceneObjectIdentity>(FindObjectsSortMode.None);
+            var sceneObjects = FindObjectsByType<NetObjectSceneIdentity>(FindObjectsSortMode.None);
             foreach (var sceneObjectIdentity in sceneObjects)
             {
                 UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
@@ -105,7 +105,7 @@ namespace LROTech.Network.GameObjects
             ValidateSceneObjects();
         }
 
-        private static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> sceneObjects, GSSceneObjectIdentity target) =>
+        private static NetObjectSceneIdentity ObjectWithSameId(IEnumerable<NetObjectSceneIdentity> sceneObjects, NetObjectSceneIdentity target) =>
             sceneObjects
                 .Where(o => o != target)
                 .FirstOrDefault(o => o.m_SceneObjectId == target.m_SceneObjectId);

@@ -7,7 +7,7 @@ using UnityEngine;
 namespace LROTech.Network.GameObjects
 {
     [RequireComponent(typeof(NetObjectIdentity))]
-    public abstract class GSInstanceBehaviourBase : MonoBehaviour
+    public abstract class NetObjectBehaviourBase : MonoBehaviour
     {
         protected IBroadcasterService Broadcaster => m_Broadcaster.Instance;
         private readonly ServiceProvider<IBroadcasterService> m_Broadcaster = new ();

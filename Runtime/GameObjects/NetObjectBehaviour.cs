@@ -4,7 +4,7 @@ using LROTech.Network.StateManagement;
 
 namespace LROTech.Network.GameObjects
 {
-    public abstract class GSInstanceBehaviour<TObjectData> : GSInstanceBehaviourBase where TObjectData : NetObjectStateData
+    public abstract class NetObjectBehaviour<TObjectData> : NetObjectBehaviourBase where TObjectData : NetObjectStateData
     {
         protected TObjectData Data { get; private set; }
 
@@ -55,7 +55,7 @@ namespace LROTech.Network.GameObjects
             Identity.DestroyViaNetwork();
 
         /// <summary>
-        /// Consider to use <see cref="GSInstanceBehaviourBase.OnPostInitialize"/> instead.
+        /// Consider to use <see cref="NetObjectBehaviourBase.OnPostInitialize"/> instead.
         /// </summary>
         protected override void OnPreInitialize()
         {

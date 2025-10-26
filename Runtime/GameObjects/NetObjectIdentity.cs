@@ -40,7 +40,7 @@ namespace LROTech.Network.GameObjects
 
         public bool Initialized { get; private set; }
 
-        private GSInstanceBehaviourBase[] m_Behaviours;
+        private NetObjectBehaviourBase[] m_Behaviours;
 
         private NetWriter m_ObjectWriter;
         private NetReader m_ObjectReader;
@@ -48,7 +48,7 @@ namespace LROTech.Network.GameObjects
         public NetObjectState State => m_NetObjectStateReference.State;
         private readonly NetObjectStateReference m_NetObjectStateReference = new();
 
-        private readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new();
+        private readonly Dictionary<Type, NetObjectBehaviourBase> m_CachedBehaviours = new();
         private readonly Dictionary<int, Action<byte[]>> m_RpcHandlers = new();
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace LROTech.Network.GameObjects
             if (Initialized)
                 throw new Exception("Object already initialized");
 
-            m_Behaviours = gameObject.GetComponents<GSInstanceBehaviourBase>();
+            m_Behaviours = gameObject.GetComponents<NetObjectBehaviourBase>();
 
             World = world;
 
@@ -386,7 +386,7 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// Could be used instead of <see cref="UnityEngine.Behaviour.GetComponent{T}"/>
         /// </summary>
-        public T GetBehaviour<T>() where T : GSInstanceBehaviourBase
+        public T GetBehaviour<T>() where T : NetObjectBehaviourBase
         {
             var type = typeof(T);
             if (!m_CachedBehaviours.TryGetValue(type, out var behaviour))

@@ -16,7 +16,7 @@ namespace LROTech.Network.StateManagement
         public static NetObjectState ReadObjectState(this NetReader reader, NetWorld targetWorld) =>
             targetWorld.FindObject(instanceId: reader.ReadPackedUInt32());
 
-        public static T ReadObjectViewOfType<T>(this NetReader reader, NetWorld targetWorld) where T : GSInstanceBehaviourBase =>
+        public static T ReadObjectViewOfType<T>(this NetReader reader, NetWorld targetWorld) where T : NetObjectBehaviourBase =>
             targetWorld.FindObjectView<T>(instanceId: reader.ReadPackedUInt32());
 
         public static Vector2 ReadVector2(this NetReader reader) =>

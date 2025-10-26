@@ -542,7 +542,7 @@ namespace LROTech.Network.StateManagement
         /// See 'CreateObject' method.
         /// This is not an initialized object, so object will be invalid, until the very first update happens.
         /// </summary>
-        public void TryRegisterOrInitializeSceneObjectIdentity(GSSceneObjectIdentity sceneIdentity)
+        public void TryRegisterOrInitializeSceneObjectIdentity(NetObjectSceneIdentity sceneIdentity)
         {
             if (ObjectExists(sceneIdentity.SceneObjectId))
             {
@@ -618,7 +618,7 @@ namespace LROTech.Network.StateManagement
 
         /// <inheritdoc cref="FindObjectViewOrCreateMock"/>
         public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUid instanceId, string prefabId, bool isSceneObject, Vector3 position,
-            Quaternion rotation) where T : GSInstanceBehaviourBase
+            Quaternion rotation) where T : NetObjectBehaviourBase
         {
             var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
             return networkObject == null ? null : networkObject.GetComponent<T>();

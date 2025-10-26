@@ -96,7 +96,7 @@ namespace LROTech.Network.DefaultBehaviours
     }
 
     [DisallowMultipleComponent]
-    public sealed class NetObjectAnimatorSync : GSInstanceBehaviour<NetObjectAnimatorSync.StateData>
+    public sealed class NetObjectAnimatorSync : NetObjectBehaviour<NetObjectAnimatorSync.StateData>
     {
         public sealed class StateData : NetObjectStateData
         {
