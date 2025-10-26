@@ -355,13 +355,8 @@ public class NetDebugWindow : EditorWindow
 
         m_ShowNetworkStatistics = EditorGUILayout.Foldout(m_ShowNetworkStatistics, "Network Statistics");
         if (m_ShowNetworkStatistics)
-        {
-            var statistics = realtime.CurrentClientStatistics;
-            if (statistics != null)
-                EditorGUILayout.HelpBox(statistics.ToString(), MessageType.None);
-            else
-                EditorGUILayout.HelpBox("Statistics is not available", MessageType.Error);
-        }
+            EditorGUILayout.HelpBox("Statistics is not available", MessageType.Error);
+        
         EditorGUILayout.Space();
 
         var mainWorld = realtime.MainWorld;
