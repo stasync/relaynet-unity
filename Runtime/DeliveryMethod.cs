@@ -1,6 +1,9 @@
-public enum DeliveryMethod
+namespace LROTech.Network
 {
-    Unreliable = 0,
-    Reliable,
-    ReliableOrdered
+    public enum DeliveryMethod
+    {
+        Unreliable = 0,
+        Reliable,
+        ReliableOrdered
+    }
 }

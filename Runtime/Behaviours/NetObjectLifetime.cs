@@ -2,62 +2,65 @@
 using LROTech.Network.StateManagement;
 using UnityEngine;
 
-public sealed class GSObjectLifetimeData : NetObjectStateData
+namespace LROTech.Network.DefaultBehaviours
 {
-    public GSObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
-
-    public readonly SerializableFloat Lifetime = new();
-    public readonly SerializableFloat CurrentLifetime = new ();
-
-    public float NormalizedLifetime => CurrentLifetime.Value / Lifetime.Value;
-}
-
-public sealed class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
-{
-    public event Action TimePassed = delegate { };
-    public float NormalizedLifetime => Data.NormalizedLifetime;
-    public float CurrentLifetime => Data.CurrentLifetime.Value;
-
-    [SerializeField]
-    private bool m_UpdateTime = true;
-
-    [SerializeField]    
-    private float m_Lifetime = 60f;
-
-    [SerializeField]    
-    private bool m_AutoDestroy;
-
-    public void SetLifetimeWithAuthority(float lifetime)
+    public sealed class GSObjectLifetimeData : NetObjectStateData
     {
-        Data.Lifetime.Set(lifetime);
-        Data.CurrentLifetime.Set(lifetime);
+        public GSObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
+
+        public readonly SerializableFloat Lifetime = new();
+        public readonly SerializableFloat CurrentLifetime = new ();
+
+        public float NormalizedLifetime => CurrentLifetime.Value / Lifetime.Value;
     }
 
-    protected override void OnInitializeViewData()
+    public sealed class GSObjectLifetime : GSInstanceBehaviour<GSObjectLifetimeData>
     {
-        base.OnInitializeViewData();
+        public event Action TimePassed = delegate { };
+        public float NormalizedLifetime => Data.NormalizedLifetime;
+        public float CurrentLifetime => Data.CurrentLifetime.Value;
 
-        if (IsLocal)
-            SetLifetimeWithAuthority(m_Lifetime);
-    }
+        [SerializeField]
+        private bool m_UpdateTime = true;
 
-    private void FixedUpdate()
-    {
-        if (!IsLocal)
-            return;
+        [SerializeField]    
+        private float m_Lifetime = 60f;
 
-        if (Data.CurrentLifetime.Value > 0f)
+        [SerializeField]    
+        private bool m_AutoDestroy;
+
+        public void SetLifetimeWithAuthority(float lifetime)
         {
-            if (m_UpdateTime)
-                Data.CurrentLifetime.Change(-Time.fixedDeltaTime);
+            Data.Lifetime.Set(lifetime);
+            Data.CurrentLifetime.Set(lifetime);
+        }
 
-            if (Data.CurrentLifetime.Value <= 0f)
+        protected override void OnInitializeViewData()
+        {
+            base.OnInitializeViewData();
+
+            if (IsLocal)
+                SetLifetimeWithAuthority(m_Lifetime);
+        }
+
+        private void FixedUpdate()
+        {
+            if (!IsLocal)
+                return;
+
+            if (Data.CurrentLifetime.Value > 0f)
             {
-                Data.CurrentLifetime.Set(0f);
-                TimePassed();
+                if (m_UpdateTime)
+                    Data.CurrentLifetime.Change(-Time.fixedDeltaTime);
 
-                if (m_AutoDestroy)
-                    DestroyObjectViaNetwork();
+                if (Data.CurrentLifetime.Value <= 0f)
+                {
+                    Data.CurrentLifetime.Set(0f);
+                    TimePassed();
+
+                    if (m_AutoDestroy)
+                        DestroyObjectViaNetwork();
+                }
             }
         }
     }
