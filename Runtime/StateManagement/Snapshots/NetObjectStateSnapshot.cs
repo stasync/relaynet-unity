@@ -9,7 +9,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         public readonly string PrefabId;
         public readonly bool IsSceneObject;
         public readonly ObjectStateChangeRequestType StateChangeType;
-        public readonly NetObjectRPCBufferSnapshot RPCState;
+        public readonly NetObjectRpcBufferSnapshot RpcState;
         public readonly NetObjectDataCollectionSnapshot DataState;
 
         internal NetObjectStateSnapshot(NetReader reader)
@@ -19,7 +19,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             PrefabId = reader.ReadString();
             IsSceneObject = reader.ReadBoolean();
             StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
-            RPCState = new NetObjectRPCBufferSnapshot(reader);
+            RpcState = new NetObjectRpcBufferSnapshot(reader);
             DataState = new NetObjectDataCollectionSnapshot(reader);
         }
 
@@ -30,7 +30,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             PrefabId = state.PrefabId;
             IsSceneObject = state.IsSceneObject;
             StateChangeType = state.StateChangeType;
-            RPCState = state.RPCBuffer.ToSnapshot();
+            RpcState = state.RpcBuffer.ToSnapshot();
             DataState = state.DataCollection.ToSnapshot();
         }
         
@@ -41,7 +41,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             writer.WriteString(PrefabId);
             writer.WriteBool(IsSceneObject);
             writer.WriteByte((byte)StateChangeType);
-            RPCState.Serialize(writer);
+            RpcState.Serialize(writer);
             DataState.Serialize(writer);
         }
 
@@ -56,7 +56,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             result += PrefabId.Length;
             result += sizeof(bool); // IsSceneObject
             result += sizeof(ObjectStateChangeRequestType); // StateChangeType
-            result += RPCState.GetSize();
+            result += RpcState.GetSize();
             result += DataState.GetSize();
             return result;
         }

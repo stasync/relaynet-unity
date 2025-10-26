@@ -45,8 +45,8 @@ public class NetDebugWindow : EditorWindow
                 if (m_State.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
                     EditorGUILayout.LabelField($"View data size: {viewData.UnstructuredData.Length}");
 
-                var temporalBuffer = m_State.RPCBuffer.TemporalBuffer;
-                var persistentBuffer = m_State.RPCBuffer.PersistentBuffer;
+                var temporalBuffer = m_State.RpcBuffer.TemporalBuffer;
+                var persistentBuffer = m_State.RpcBuffer.PersistentBuffer;
 
                 EditorGUILayout.LabelField($"RPC: Temporal: {temporalBuffer.Count}", EditorStyles.boldLabel);
                 {
@@ -89,14 +89,14 @@ public class NetDebugWindow : EditorWindow
             EditorGUI.indentLevel--;
         }
 
-        private void DrawRPC(NetObjectRPCState rpc)
+        private void DrawRPC(NetObjectRpcState rpc)
         {
-            var handlerMethod = NetObjectRPCUtils.TryFindMethodInfoByHashSlow(rpc.Hash);
+            var handlerMethod = NetObjectRpcUtils.TryFindMethodInfoByHashSlow(rpc.Hash);
             var handlerInfo = handlerMethod == null
                 ? "UNKNOWN"
                 : $"{handlerMethod.DeclaringType!.FullName}.{handlerMethod.Name}";
             
-            EditorGUILayout.LabelField($"{rpc.UID} Hash: {rpc.Hash} '{handlerInfo}' Payload size: {rpc.Payload.Length}");
+            EditorGUILayout.LabelField($"{rpc.Uid} Hash: {rpc.Hash} '{handlerInfo}' Payload size: {rpc.Payload.Length}");
         }
     }
 

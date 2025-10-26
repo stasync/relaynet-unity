@@ -2,36 +2,36 @@ using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
 {
-    public readonly struct NetObjectRPCState
+    public readonly struct NetObjectRpcState
     {
         public readonly int Hash;
-        public readonly uint UID;
+        public readonly uint Uid;
         public readonly byte[] Payload;
 
         public bool IsValid => !Hash.Equals(0) && Payload != null;
 
-        internal NetObjectRPCState(int hash, uint uid, byte[] payload)
+        internal NetObjectRpcState(int hash, uint uid, byte[] payload)
         {
             Hash = hash;
-            UID = uid;
+            Uid = uid;
             Payload = payload;
         }
         
-        internal NetObjectRPCState(NetObjectRPCStateSnapshot snapshot)
+        internal NetObjectRpcState(NetObjectRpcStateSnapshot snapshot)
         {
             Hash = snapshot.Hash;
-            UID = snapshot.UID;
+            Uid = snapshot.Uid;
             Payload = snapshot.Payload;
         }
         
-        public NetObjectRPCStateSnapshot ToSnapshot() =>
+        public NetObjectRpcStateSnapshot ToSnapshot() =>
             new(data: this);
 
         internal int GetVersionHash()
         {
             var hash = 13;
             hash = hash * 7 + Hash.GetHashCode();
-            hash = hash * 7 + UID.GetHashCode();
+            hash = hash * 7 + Uid.GetHashCode();
             foreach (var b in Payload)
                 hash = hash * 7 + b.GetHashCode();
             return hash;

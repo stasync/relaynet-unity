@@ -5,11 +5,11 @@ using UnityEngine;
 
 namespace LROTech.Network.StateManagement
 {
-    public static class NetObjectRPCUtils
+    public static class NetObjectRpcUtils
     {
         private static readonly Dictionary<MethodInfo, bool> s_MethodValidityCache = new();
-        private static readonly Dictionary<MethodInfo, int> s_RPCHashMap = new();
-        private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> m_AutoRegisterRPCHandlerMethodsCache = new();
+        private static readonly Dictionary<MethodInfo, int> s_RpcMethodToHashLookup = new();
+        private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> m_AutoRegisterRpcHandlerMethodsCache = new();
 
         /// <summary>
         /// Converts action to RPC code.
@@ -21,11 +21,11 @@ namespace LROTech.Network.StateManagement
             if (!IsValidMethod(a.Method))
                 throw new InvalidOperationException("Unable to create RPC code with anonymous delegates.");
 
-            if (s_RPCHashMap.TryGetValue(a.Method, out var result))
+            if (s_RpcMethodToHashLookup.TryGetValue(a.Method, out var result))
                 return result;
 
             result = NameToHash($"{a.Method.DeclaringType!.FullName}.{a.Method.Name}");
-            s_RPCHashMap.Add(a.Method, result);
+            s_RpcMethodToHashLookup.Add(a.Method, result);
             return result;
         }
 
@@ -63,7 +63,7 @@ namespace LROTech.Network.StateManagement
         /// </summary>
         public static MethodInfo TryFindMethodInfoByHashSlow(int hash)
         {
-            foreach (var kvp in s_RPCHashMap)
+            foreach (var kvp in s_RpcMethodToHashLookup)
             {
                 if (kvp.Value == hash)
                     return kvp.Key;
@@ -72,17 +72,17 @@ namespace LROTech.Network.StateManagement
             return null;
         }
 
-        public static IReadOnlyList<MethodInfo> GetAutoRegisterRPCHandlers(Type type)
+        public static IReadOnlyList<MethodInfo> GetAutoRegisterRpcHandlers(Type type)
         {
-            if (m_AutoRegisterRPCHandlerMethodsCache.TryGetValue(type, out var result))
+            if (m_AutoRegisterRpcHandlerMethodsCache.TryGetValue(type, out var result))
                 return result;
 
             var methodCollection = new List<MethodInfo>();
-            m_AutoRegisterRPCHandlerMethodsCache.Add(type, methodCollection);
+            m_AutoRegisterRpcHandlerMethodsCache.Add(type, methodCollection);
 
             foreach (var methodInfo in type.GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
-                var attribute = methodInfo.GetCustomAttribute<AutoRegisterRPCHandler>();
+                var attribute = methodInfo.GetCustomAttribute<AutoRegisterRpcHandler>();
                 if (attribute == null)
                     continue;
 
@@ -90,7 +90,7 @@ namespace LROTech.Network.StateManagement
                 if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
                 {
                     Debug.LogError(
-                        $"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRPCHandler).FullName}' on '{type.FullName}'.");
+                        $"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRpcHandler).FullName}' on '{type.FullName}'.");
                     continue;
                 }
 
@@ -100,7 +100,7 @@ namespace LROTech.Network.StateManagement
             return methodCollection;
         }
         
-        internal static class UIDAllocator
+        internal static class UidAllocator
         {
             private static uint m_Counter;
 

@@ -5,8 +5,8 @@ namespace LROTech.Network.StateManagement.Snapshots
     public readonly struct NetWorldSnapshot
     {
         public readonly float DeltaTime;
-        public readonly NetWorldID Uid;
-        public readonly NetWorldID Id;
+        public readonly NetWorldId Uid;
+        public readonly NetWorldId Id;
         public readonly float Time;
         public readonly float LocalTime;
         public readonly IReadOnlyDictionary<NetObjectUid, NetObjectStateSnapshot> Objects;
@@ -35,8 +35,8 @@ namespace LROTech.Network.StateManagement.Snapshots
         {
             var size = 0;
             size += sizeof(float); // DeltaTime
-            size += NetWorldID.Size; // Uid
-            size += NetWorldID.Size; // ID
+            size += NetWorldId.Size; // Uid
+            size += NetWorldId.Size; // ID
             size += sizeof(float); // Time
             size += sizeof(float); // Local time
 

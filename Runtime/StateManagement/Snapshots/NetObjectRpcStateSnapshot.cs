@@ -2,30 +2,30 @@ using Core.Networking;
 
 namespace LROTech.Network.StateManagement.Snapshots
 {
-    public readonly struct NetObjectRPCStateSnapshot
+    public readonly struct NetObjectRpcStateSnapshot
     {
         public readonly int Hash;
-        public readonly uint UID;
+        public readonly uint Uid;
         public readonly byte[] Payload;
 
-        internal NetObjectRPCStateSnapshot(NetObjectRPCState data)
+        internal NetObjectRpcStateSnapshot(NetObjectRpcState data)
         {
             Hash = data.Hash;
-            UID = data.UID;
+            Uid = data.Uid;
             Payload = data.Payload;
         }
 
-        internal NetObjectRPCStateSnapshot(NetReader reader)
+        internal NetObjectRpcStateSnapshot(NetReader reader)
         {
             Hash = reader.ReadInt32();
-            UID = reader.ReadPackedUInt32();
+            Uid = reader.ReadPackedUInt32();
             Payload = reader.ReadBytesAndSize();
         }
 
         internal void Serialize(NetWriter writer)
         {
             writer.WriteInt32(Hash);
-            writer.WritePackedUInt32(UID);
+            writer.WritePackedUInt32(Uid);
             writer.WriteBytesAndSize(Payload);
         }
 

@@ -46,7 +46,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
     private readonly NetObjectStateReference m_NetObjectStateReference = new();
 
     private readonly Dictionary<Type, GSInstanceBehaviourBase> m_CachedBehaviours = new();
-    private readonly Dictionary<int, Action<byte[]>> m_RPCHandlers = new();
+    private readonly Dictionary<int, Action<byte[]>> m_RpcHandlers = new();
 
     /// <summary>
     /// Initialization. Called from GSInstanceFactory. 
@@ -86,10 +86,10 @@ public sealed class NetObjectIdentity : MonoBehaviour
         foreach (var behaviour in m_Behaviours)
         {
             var behaviourType = behaviour.GetType();
-            foreach (var methodInfo in NetObjectRPCUtils.GetAutoRegisterRPCHandlers(behaviourType))
+            foreach (var methodInfo in NetObjectRpcUtils.GetAutoRegisterRpcHandlers(behaviourType))
             {
                 if (methodInfo.CreateDelegate(typeof(Action<byte[]>), behaviour) is Action<byte[]> action)
-                    RegisterRPCHandler(action);
+                    RegisterRpcHandler(action);
                 else
                     Debug.LogError($"Unable to create delegate for RPC handler '{methodInfo.Name}' on '{behaviourType.FullName}'.", gameObject);
             }
@@ -108,8 +108,8 @@ public sealed class NetObjectIdentity : MonoBehaviour
         // Invokes buffered rpc, must be called after deserialization done.
         // Only for remote objects.
         if (!IsLocal)
-            State.RPCBuffer.ExecuteRemotely(executePersistent: true, ReceiveRPCRemotely);
-    }
+            State.RpcBuffer.ExecuteRemotely(executePersistent: true, ReceiveRpcRemotely);
+    } 
 
     /// <summary>
     /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
@@ -210,18 +210,18 @@ public sealed class NetObjectIdentity : MonoBehaviour
 
         // Receive rpc buffer if object initialized.
         if (Initialized)
-            State.RPCBuffer.ExecuteRemotely(executePersistent: false, ReceiveRPCRemotely);
+            State.RpcBuffer.ExecuteRemotely(executePersistent: false, ReceiveRpcRemotely);
     }
 
     /// <summary>
     /// Register handler to receive RPC (Better to call in OnEnable or OnInit).
     /// </summary>
     /// <param name="handler"></param>
-    public void RegisterRPCHandler(Action<byte[]> handler)
+    public void RegisterRpcHandler(Action<byte[]> handler)
     {
-        var rpcHash = NetObjectRPCUtils.ActionToHash(handler);
+        var rpcHash = NetObjectRpcUtils.ActionToHash(handler);
         // WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
-        if (!m_RPCHandlers.TryAdd(rpcHash, handler))
+        if (!m_RpcHandlers.TryAdd(rpcHash, handler))
             throw new InvalidOperationException(
                 $"'{gameObject.name}' already contains handler for '{handler.Method.DeclaringType!.FullName}.{handler.Method.Name}''{rpcHash}' rpc code.");
     }
@@ -229,47 +229,47 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// <summary>
     /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
     /// </summary>
-    public void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable,
+    public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable,
         bool invokeLocally = true) =>
-        OwnerToOthersRPC(rpcHandlerMethod, data, persistent: false, RPCBufferChangeMethod.Add, deliveryMethod, invokeLocally);
+        OwnerToOthersRpc(rpcHandlerMethod, data, persistent: false, RpcBufferChangeMethod.Add, deliveryMethod, invokeLocally);
 
     /// <summary>
     /// Same as AuthRPC, but buffered.
     /// Only works via RELIABLE delivery.
     /// </summary>
-    public void OwnerToOthersRPCBuffered(Action<byte[]> rpcHandlerMethod, byte[] data,
-        RPCBufferChangeMethod bufferChangeMethod = RPCBufferChangeMethod.Replace, bool invokeLocally = true) =>
-        OwnerToOthersRPC(rpcHandlerMethod, data, persistent: true, bufferChangeMethod, DeliveryMethod.Reliable, invokeLocally);
+    public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data,
+        RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace, bool invokeLocally = true) =>
+        OwnerToOthersRpc(rpcHandlerMethod, data, persistent: true, bufferChangeMethod, DeliveryMethod.Reliable, invokeLocally);
 
-    private void OwnerToOthersRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RPCBufferChangeMethod bufferChangeMethod,
+    private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod,
         DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
     {
         if (!IsLocal)
             throw new Exception(
                 "Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
-        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
 
         // Try to invoke handler locally.
         if (invokeLocally)
             InvokeRpcHandler(hashCode, data);
 
         // Add to sending buffer.
-        State.ScheduleRPC(hashCode, data, persistent, bufferChangeMethod, deliveryMethod);
+        State.ScheduleRpc(hashCode, data, persistent, bufferChangeMethod, deliveryMethod);
     }
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToOwnerRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
+    public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
-        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
         // If we have authority on this object, don't need to send this kind of RPC.
         if (IsLocal)
             InvokeRpcHandler(hashCode, data);
         else
-            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToOwner, hashCode, data, deliveryMethod);
+            State.ScheduleRpcWithoutAuthority(NoAuthorityRpcType.ToOwner, hashCode, data, deliveryMethod);
     }
 
     /// <summary>
@@ -279,38 +279,38 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// </summary>
     public void ToMasterRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
-        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
         // If we have authority on this object, don't need to send this kind of RPC.
         if (IsOwnedByMasterClient)
             InvokeRpcHandler(hashCode, data);
         else
-            State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToMaster, hashCode, data, deliveryMethod);
+            State.ScheduleRpcWithoutAuthority(NoAuthorityRpcType.ToMaster, hashCode, data, deliveryMethod);
     }
 
     /// <summary>
     /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
     /// IF we have authority, just invokes locally without sending data.
     /// </summary>
-    public void ToAllRPC(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
+    public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
     {
-        var hashCode = NetObjectRPCUtils.ActionToHash(rpcHandlerMethod);
+        var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
         if (invokeLocally)
             InvokeRpcHandler(hashCode, data);
 
-        State.ScheduleRPCWithoutAuthority(NoAuthorityRPCType.ToAll, hashCode, data, deliveryMethod);
+        State.ScheduleRpcWithoutAuthority(NoAuthorityRpcType.ToAll, hashCode, data, deliveryMethod);
     }
 
     /// <summary>
     /// Remove RPC from buffer
     /// </summary>
     /// <param name="rpcHandlerMethod"></param>
-    public void RemoveRPCFromBuffer(Action<byte[]> rpcHandlerMethod) =>
-        State.ScheduleRemovePersistentRPC(NetObjectRPCUtils.ActionToHash(rpcHandlerMethod));
+    public void RemoveRpcFromBuffer(Action<byte[]> rpcHandlerMethod) =>
+        State.ScheduleRemovePersistentRpc(NetObjectRpcUtils.ActionToHash(rpcHandlerMethod));
 
     /// <summary>
     /// Receive rpc on object WITHOUT authority..
     /// </summary>
-    private void ReceiveRPCRemotely(int hashCode, byte[] data)
+    private void ReceiveRpcRemotely(int hashCode, byte[] data)
     {
         if (IsLocal)
             throw new Exception("Trying to receive NO-AUTHORITY RPC on local object behaviour, this is not allowed.");
@@ -321,35 +321,35 @@ public sealed class NetObjectIdentity : MonoBehaviour
     /// <summary>
     /// Receive rpc on object with authority.
     /// </summary>
-    internal void ReceiveRPCLocally(RPCWithoutAuthorityState state)
+    internal void ReceiveRpcLocally(RpcWithoutAuthorityState state)
     {
         if (!IsLocal)
             throw new Exception("Trying to receive AUTHORITY RPC on remote object behaviour, this is not allowed");
 
-        InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
+        InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
     }
 
     /// <summary>
     /// Receive rpc on master client. (Called from GSTransport).
     /// </summary>
-    internal void ReceiveRPCOnMasterClient(RPCWithoutAuthorityState state)
+    internal void ReceiveRpcOnMasterClient(RpcWithoutAuthorityState state)
     {
         if (!IsOwnedByMasterClient)
             throw new Exception("Trying to receive MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
 
-        InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
+        InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
     }
 
     /// <summary>
     /// Receive prc anywhere.
     /// </summary>
     /// <param name="state"></param>
-    internal void ReceiveRPC(RPCWithoutAuthorityState state) =>
-        InvokeRpcHandler(state.RPCState.Hash, state.RPCState.Payload);
+    internal void ReceiveRpc(RpcWithoutAuthorityState state) =>
+        InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
 
     private void InvokeRpcHandler(int hashCode, byte[] data)
     {
-        if (m_RPCHandlers.TryGetValue(hashCode, out var handler))
+        if (m_RpcHandlers.TryGetValue(hashCode, out var handler))
             handler.Invoke(data);
         else
         {
@@ -357,7 +357,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             var handlerInfoString = $"Hash: '{hashCode}'";
-            var handlerMethodInfo = NetObjectRPCUtils.TryFindMethodInfoByHashSlow(hashCode);
+            var handlerMethodInfo = NetObjectRpcUtils.TryFindMethodInfoByHashSlow(hashCode);
             handlerInfoString = handlerMethodInfo != null
                 ? $"{handlerInfoString} Method: '{handlerMethodInfo.DeclaringType!.FullName}.{handlerMethodInfo.Name}'"
                 : $"{handlerInfoString} Method: 'UNKNOWN'";

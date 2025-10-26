@@ -47,7 +47,7 @@ namespace LROTech.Network.StateManagement
         private readonly NetWriter m_Writer = new();
         private readonly NetReader m_Reader = new();
 
-        public NetWorldRuntime(string worldName = "NetworkWorldRoot") : base(NetWorldID.Allocate(), worldName)
+        public NetWorldRuntime(string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
             NetObjectUid.Reset();
             m_LastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
@@ -82,7 +82,7 @@ namespace LROTech.Network.StateManagement
             UpdatePlayerStates();
             UpdateObjectStateBasedOnRemovedPlayers();
             UpdateObjectStateBasedOnRemoteData();
-            UpdateRPCRequestsWithoutAuthority();
+            UpdateRpcRequestsWithoutAuthority();
             UpdateLocalObjectState();
 
             #region Internal
@@ -135,13 +135,13 @@ namespace LROTech.Network.StateManagement
                             break;
                         }
 
-                        case MessageCodes.RPC:
+                        case MessageCodes.Rpc:
                         {
-                            var state = RPCWithoutAuthorityState.FromReader(m_Reader);
+                            var state = RpcWithoutAuthorityState.FromReader(m_Reader);
                             if (!state.IsValid)
                                 throw new ArgumentException();
 
-                            var objectIdentity = FindObjectView(state.ObjectUID);
+                            var objectIdentity = FindObjectView(state.ObjectUid);
 
                             // We need to handle rpc receive for objects, which are doesn't exist.
                             // It is probably already destroyed.
@@ -149,37 +149,37 @@ namespace LROTech.Network.StateManagement
                             if (objectIdentity == null)
                             {
 #if NETWORK_DEBUG
-                                var rpcHandlerMethod = NetObjectRPCUtils.TryFindMethodInfoByHashSlow(state.RPCState.Hash);
+                                var rpcHandlerMethod = NetObjectRpcUtils.TryFindMethodInfoByHashSlow(state.RpcState.Hash);
                                 var rpcHandlerMethodName = rpcHandlerMethod == null
                                     ? "UNKNOWN"
                                     : $"{rpcHandlerMethod.DeclaringType!.FullName}.{rpcHandlerMethod.Name}";
 
                                 Debug.LogError(
-                                    $"Trying to receive rpc with code '{state.RPCState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUID}' that doesnt exists, maybe it is already destroyed.");
+                                    $"Trying to receive rpc with code '{state.RpcState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUid}' that doesnt exists, maybe it is already destroyed.");
 #endif
                                 break;
                             }
 
                             switch (state.Type)
                             {
-                                case NoAuthorityRPCType.ToOwner:
+                                case NoAuthorityRpcType.ToOwner:
                                 {
                                     // Check if we are this object's owner.
                                     if (objectIdentity.IsLocal)
-                                        objectIdentity.ReceiveRPCLocally(state);
+                                        objectIdentity.ReceiveRpcLocally(state);
 
                                     break;
                                 }
-                                case NoAuthorityRPCType.ToMaster:
+                                case NoAuthorityRpcType.ToMaster:
                                 {
                                     if (objectIdentity.IsOwnedByMasterClient)
-                                        objectIdentity.ReceiveRPCOnMasterClient(state);
+                                        objectIdentity.ReceiveRpcOnMasterClient(state);
 
                                     break;
                                 }
-                                case NoAuthorityRPCType.ToAll:
+                                case NoAuthorityRpcType.ToAll:
                                 {
-                                    objectIdentity.ReceiveRPC(state);
+                                    objectIdentity.ReceiveRpc(state);
                                     break;
                                 }
                             }
@@ -395,13 +395,13 @@ namespace LROTech.Network.StateManagement
             }
 
             // Update RPC requests - calling rpc without authority.
-            void UpdateRPCRequestsWithoutAuthority()
+            void UpdateRpcRequestsWithoutAuthority()
             {
                 foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
                 {
                     var state = ObjectStates[uid];
-                    foreach (var request in state.RPCWithoutAuthorityRequests)
-                        DataSendRequested(userDataOpCode: MessageCodes.RPC, data: request.State.ToData(), request.DeliveryMethod);
+                    foreach (var request in state.RpcWithoutAuthorityRequests)
+                        DataSendRequested(userDataOpCode: MessageCodes.Rpc, data: request.State.ToData(), request.DeliveryMethod);
                 }
             }
 

@@ -4,36 +4,36 @@ using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
 {
-    public sealed class NetObjectRPCBuffer
+    public sealed class NetObjectRpcBuffer
     {
-        internal struct NewPRCData
+        internal struct NewRpcData
         {
             internal int HashCode;
             internal byte[] Data;
             internal bool Persistent;
-            internal RPCBufferChangeMethod BufferChangeMethod;
+            internal RpcBufferChangeMethod BufferChangeMethod;
         }
 
-        public IReadOnlyCollection<NetObjectRPCState> PersistentBuffer => m_PersistentBuffer;
-        public IReadOnlyCollection<NetObjectRPCState> TemporalBuffer => m_TemporalBuffer;
+        public IReadOnlyCollection<NetObjectRpcState> PersistentBuffer => m_PersistentBuffer;
+        public IReadOnlyCollection<NetObjectRpcState> TemporalBuffer => m_TemporalBuffer;
 
-        private readonly List<NetObjectRPCState> m_PersistentBuffer = new();
-        private readonly List<NetObjectRPCState> m_TemporalBuffer = new();
+        private readonly List<NetObjectRpcState> m_PersistentBuffer = new();
+        private readonly List<NetObjectRpcState> m_TemporalBuffer = new();
         private readonly HashSet<uint> m_ReceiveCollisions = new();
 
-        internal void AddOrUpdate(NewPRCData mutator)
+        internal void AddOrUpdate(NewRpcData mutator)
         {
-            var uid = NetObjectRPCUtils.UIDAllocator.NextUid();
-            var data = new NetObjectRPCState(mutator.HashCode, uid, mutator.Data);
+            var uid = NetObjectRpcUtils.UidAllocator.NextUid();
+            var data = new NetObjectRpcState(mutator.HashCode, uid, mutator.Data);
 
             PushTo(m_TemporalBuffer, data, mutator.BufferChangeMethod);
             if (mutator.Persistent)
                 PushTo(m_PersistentBuffer, data, mutator.BufferChangeMethod);
         }
 
-        private static void PushTo(List<NetObjectRPCState> targetBuffer, NetObjectRPCState newData, RPCBufferChangeMethod changeMethod)
+        private static void PushTo(List<NetObjectRpcState> targetBuffer, NetObjectRpcState newData, RpcBufferChangeMethod changeMethod)
         {
-            if (changeMethod == RPCBufferChangeMethod.Replace)
+            if (changeMethod == RpcBufferChangeMethod.Replace)
             {
                 for (var i = targetBuffer.Count - 1; i >= 0; i--)
                 {
@@ -54,17 +54,17 @@ namespace LROTech.Network.StateManagement
                 foreach (var rpcState in m_PersistentBuffer)
                 {
                     handler(rpcState.Hash, rpcState.Payload);
-                    m_ReceiveCollisions.Add(rpcState.UID);
+                    m_ReceiveCollisions.Add(rpcState.Uid);
                 }
             }
 
             foreach (var rpcState in m_TemporalBuffer)
             {
-                if (m_ReceiveCollisions.Contains(rpcState.UID))
+                if (m_ReceiveCollisions.Contains(rpcState.Uid))
                     continue;
 
                 handler(rpcState.Hash, rpcState.Payload);
-                m_ReceiveCollisions.Add(rpcState.UID);
+                m_ReceiveCollisions.Add(rpcState.Uid);
             }
         }
 
@@ -83,18 +83,18 @@ namespace LROTech.Network.StateManagement
         internal void RemovePersistent(int hashCode) =>
             m_PersistentBuffer.RemoveAll(d => d.Hash.Equals(hashCode));
 
-        internal void RestoreFormSnapshot(NetObjectRPCBufferSnapshot snapshot)
+        internal void RestoreFormSnapshot(NetObjectRpcBufferSnapshot snapshot)
         {
             m_PersistentBuffer.Clear();
             foreach (var rpcSnapshot in snapshot.PersistentBuffer)
-                m_PersistentBuffer.Add(new NetObjectRPCState(rpcSnapshot));
+                m_PersistentBuffer.Add(new NetObjectRpcState(rpcSnapshot));
 
             m_TemporalBuffer.Clear();
             foreach (var rpcSnapshot in snapshot.TemporalBuffer)
-                m_TemporalBuffer.Add(new NetObjectRPCState(rpcSnapshot));
+                m_TemporalBuffer.Add(new NetObjectRpcState(rpcSnapshot));
         }
 
-        public NetObjectRPCBufferSnapshot ToSnapshot() =>
+        public NetObjectRpcBufferSnapshot ToSnapshot() =>
             new(state: this);
 
         internal int GetVersionHash()

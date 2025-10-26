@@ -15,7 +15,7 @@
     /// <summary>
     /// Remote procedure call.
     /// </summary>
-    public const uint RPC = Min + 4;
+    public const uint Rpc = Min + 4;
 
     /// <summary>
     /// Generic custom message.

@@ -188,14 +188,14 @@ public sealed class GSAnimatorSync : GSInstanceBehaviour<GSAnimatorSync.StateDat
         m_Writer.WriteInt32(hash);
         m_Writer.WriteByte((byte)action);
 
-        OwnerToOthersRPC(
+        OwnerToOthersRpc(
             SyncAnimatorTriggersHandler,
             data: m_Writer.ToArray(), 
             DeliveryMethod.Unreliable, 
             invokeLocally: false);
     }
 
-    [AutoRegisterRPCHandler]
+    [AutoRegisterRpcHandler]
     private void SyncAnimatorTriggersHandler(byte[] data)
     {
         if (IsLocal)

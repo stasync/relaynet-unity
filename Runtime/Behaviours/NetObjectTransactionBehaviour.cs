@@ -82,10 +82,10 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
         m_Writer.SeekZero();
         m_Writer.WriteInstanceId(sender);
         m_Writer.WriteBool(interactionState);
-        ToOwnerRPC(ChangeTransactionStateRequestRPC, data: m_Writer.ToArray());
+        ToOwnerRpc(ChangeTransactionStateRequestRPC, data: m_Writer.ToArray());
     }
 
-    [AutoRegisterRPCHandler]
+    [AutoRegisterRpcHandler]
     protected void ChangeTransactionStateRequestRPC(byte[] data)
     {
         m_Reader.Replace(data);
@@ -110,10 +110,10 @@ public abstract class GSObjectTransaction<TData> : GSInstanceBehaviour<TData> wh
                 Data.LastInteraction.Set(sender);
         }
 
-        OwnerToOthersRPC(ChangeTransactionResponseRPC, data: m_Writer.ToArray());
+        OwnerToOthersRpc(ChangeTransactionResponseRPC, data: m_Writer.ToArray());
     }
 
-    [AutoRegisterRPCHandler]
+    [AutoRegisterRpcHandler]
     protected void ChangeTransactionResponseRPC(byte[] data)
     {
         m_Reader.Replace(data);

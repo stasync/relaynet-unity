@@ -12,9 +12,9 @@ namespace LROTech.Network.StateManagement
 
         public bool IsValid => ID.IsValid;
 
-        public NetWorldID UID { get; private set; }
-        public NetWorldID ID { get; private set; }
-        public NetWorldID SourceID { get; private set; }
+        public NetWorldId UID { get; private set; }
+        public NetWorldId ID { get; private set; }
+        public NetWorldId SourceID { get; private set; }
         public float Time { get; protected set; }
         public float LocalTime { get; private set; }
         public string Name { get; private set; }
@@ -30,13 +30,13 @@ namespace LROTech.Network.StateManagement
 
         private readonly Queue<Action> m_ViewInitActionQueue = new();
 
-        protected NetWorld(NetWorldID uid, string worldName) : this(uid, worldName, NetWorldID.Invalid)
+        protected NetWorld(NetWorldId uid, string worldName) : this(uid, worldName, NetWorldId.Invalid)
         {
         }
 
-        protected NetWorld(NetWorldID uid, string worldName, NetWorldID sourceId)
+        protected NetWorld(NetWorldId uid, string worldName, NetWorldId sourceId)
         {
-            UID = NetWorldID.Allocate();
+            UID = NetWorldId.Allocate();
             ID = uid;
             SourceID = sourceId;
 
@@ -118,9 +118,9 @@ namespace LROTech.Network.StateManagement
 
         public virtual void Dispose()
         {
-            UID = NetWorldID.Invalid;
-            ID = NetWorldID.Invalid;
-            SourceID = NetWorldID.Invalid;
+            UID = NetWorldId.Invalid;
+            ID = NetWorldId.Invalid;
+            SourceID = NetWorldId.Invalid;
 
             Updated = delegate { };
 
