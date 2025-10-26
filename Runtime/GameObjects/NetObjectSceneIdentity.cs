@@ -102,8 +102,9 @@ public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.B
         ValidateSceneObjects();
     }
 
-    private static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> c, GSSceneObjectIdentity obj) => c
-        .Where(o => o != obj)
-        .FirstOrDefault(o => o.m_SceneObjectId == obj.m_SceneObjectId);
+    private static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> sceneObjects, GSSceneObjectIdentity target) =>
+        sceneObjects
+            .Where(o => o != target)
+            .FirstOrDefault(o => o.m_SceneObjectId == target.m_SceneObjectId);
 #endif
 }

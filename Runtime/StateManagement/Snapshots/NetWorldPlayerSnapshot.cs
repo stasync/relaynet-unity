@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Core;
 using Core.Networking;
 
 namespace LROTech.Network.StateManagement.Snapshots
@@ -8,7 +9,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         public readonly ClientUid UID;
         public readonly string Name;
         public readonly bool IsInGameScene;
-        public readonly UserDeviceType.Platform Platform;
+        public readonly UserDevice.Platform Platform;
         public readonly int RTTMs;
         public readonly IReadOnlyCollection<NetObjectUid> TagObjectUIDs;
         public readonly NetObjectUid MainTagObjectUID;
@@ -31,7 +32,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             UID = reader.ReadClientUid();
             Name = reader.ReadString();
             IsInGameScene = reader.ReadBoolean();
-            Platform = (UserDeviceType.Platform)reader.ReadInt32();
+            Platform = (UserDevice.Platform)reader.ReadInt32();
             RTTMs = reader.ReadInt32();
             TagObjectUIDs = reader.ReadHashSet(netReader => netReader.ReadInstanceId());
             MainTagObjectUID = reader.ReadInstanceId();
@@ -56,7 +57,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             result += ClientUid.Size; // Uid
             result += Name.Length;
             result += sizeof(bool); // IsInGameScene
-            result += sizeof(UserDeviceType.Platform); // Platform
+            result += sizeof(UserDevice.Platform); // Platform
             result += sizeof(int); // RTT
 
             result += NetObjectUid.Size * TagObjectUIDs.Count;

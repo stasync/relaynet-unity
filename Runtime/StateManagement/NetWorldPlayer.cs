@@ -1,6 +1,7 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
+using Core;
 using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
@@ -37,7 +38,7 @@ namespace LROTech.Network.StateManagement
 
         private bool m_IsReady;
 
-        public UserDeviceType.Platform Platform
+        public UserDevice.Platform Platform
         {
             get => m_Platform;
             set
@@ -48,7 +49,7 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        private UserDeviceType.Platform m_Platform = UserDeviceType.Platform.Unknown;
+        private UserDevice.Platform m_Platform = UserDevice.Platform.Unknown;
 
         public int RTTMs
         {
