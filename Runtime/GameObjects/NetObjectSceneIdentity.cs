@@ -2,110 +2,112 @@
 using System.Collections.Generic;
 using System.Linq;
 using Core.Utils.Math;
-using LROTech.Network;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.BehaviourData>
+namespace LROTech.Network
 {
-    public sealed class BehaviourData : NetObjectStateData
+    [DisallowMultipleComponent]
+    public class GSSceneObjectIdentity : GSInstanceBehaviour<GSSceneObjectIdentity.BehaviourData>
     {
-        public BehaviourData(Func<bool> writePermission) : base(writePermission)
+        public sealed class BehaviourData : NetObjectStateData
         {
+            public BehaviourData(Func<bool> writePermission) : base(writePermission)
+            {
+            }
         }
-    }
 
-    [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
-    private int m_SceneObjectId;
+        [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
+        private int m_SceneObjectId;
 
-    public NetObjectUid SceneObjectId => (uint)m_SceneObjectId;
+        public NetObjectUid SceneObjectId => (uint)m_SceneObjectId;
 
-    [SerializeField] private string m_PrefabId;
-    public string PrefabID => m_PrefabId;
+        [SerializeField] private string m_PrefabId;
+        public string PrefabID => m_PrefabId;
 
-    /// <summary>
-    /// We need to register this object in object factory, if it placed in scene by default.
-    /// </summary>
-    private void Start()
-    {
-        // Register scene object.
-        // Initialize object if we on master client, so new clients will not initialize this objects, but will receive updates.
-        // TODO: fix situations when object can be not initialized.
-        TryRegisterOrInitialize();
-    }
-
-    protected override void OnDisconnected(ClientUid clientUid)
-    {
-        base.OnDisconnected(clientUid);
-        if (Identity.World.Players.LocalPlayerIsMaster)
+        /// <summary>
+        /// We need to register this object in object factory, if it placed in scene by default.
+        /// </summary>
+        private void Start()
+        {
+            // Register scene object.
+            // Initialize object if we on master client, so new clients will not initialize this objects, but will receive updates.
+            // TODO: fix situations when object can be not initialized.
             TryRegisterOrInitialize();
-    }
+        }
 
-    private void TryRegisterOrInitialize()
-    {
-        if (!Identity.Initialized)
-            Network.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
-    }
+        protected override void OnDisconnected(ClientUid clientUid)
+        {
+            base.OnDisconnected(clientUid);
+            if (Identity.World.Players.LocalPlayerIsMaster)
+                TryRegisterOrInitialize();
+        }
 
-    public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) =>
-        value.Identity;
+        private void TryRegisterOrInitialize()
+        {
+            if (!Identity.Initialized)
+                Network.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
+        }
+
+        public static implicit operator NetObjectIdentity(GSSceneObjectIdentity value) =>
+            value.Identity;
 
 #if UNITY_EDITOR
-    [UnityEditor.MenuItem("System/Network/Validate scene objects")]
-    private static void ValidateSceneObjects()
-    {
-        if (UnityEditor.EditorApplication.isPlaying)
+        [UnityEditor.MenuItem("System/Network/Validate scene objects")]
+        private static void ValidateSceneObjects()
         {
-            Debug.LogWarning("Unable to validate in play mode");
-            return;
-        }
-
-        var sceneObjects = FindObjectsOfType<GSSceneObjectIdentity>();
-        foreach (var obj in sceneObjects)
-        {
-            if (!obj.SceneObjectId.IsValid)
+            if (UnityEditor.EditorApplication.isPlaying)
             {
-                Debug.LogError($"{obj.gameObject.name} has ivalid id {obj.SceneObjectId} (Has to be fixed manually)");
-                continue;
+                Debug.LogWarning("Unable to validate in play mode");
+                return;
             }
 
-            var objectWithSameId = ObjectWithSameId(sceneObjects, obj);
+            var sceneObjects = FindObjectsOfType<GSSceneObjectIdentity>();
+            foreach (var obj in sceneObjects)
+            {
+                if (!obj.SceneObjectId.IsValid)
+                {
+                    Debug.LogError($"{obj.gameObject.name} has ivalid id {obj.SceneObjectId} (Has to be fixed manually)");
+                    continue;
+                }
 
-            if (objectWithSameId == null)
-                continue;
+                var objectWithSameId = ObjectWithSameId(sceneObjects, obj);
 
-            Debug.LogErrorFormat(
-                $"'{obj.gameObject.name}' and '{objectWithSameId.gameObject.name}' game objects has same scene id '{obj.m_SceneObjectId}'.");
+                if (objectWithSameId == null)
+                    continue;
+
+                Debug.LogErrorFormat(
+                    $"'{obj.gameObject.name}' and '{objectWithSameId.gameObject.name}' game objects has same scene id '{obj.m_SceneObjectId}'.");
+            }
+
+            Debug.LogWarning("Validation finished");
         }
 
-        Debug.LogWarning("Validation finished");
-    }
-
-    [UnityEditor.MenuItem("System/Network/Fix scene objects")]
-    private static void FixSceneObjects()
-    {
-        if (UnityEditor.EditorApplication.isPlaying)
+        [UnityEditor.MenuItem("System/Network/Fix scene objects")]
+        private static void FixSceneObjects()
         {
-            Debug.LogWarning("Unable to validate in play mode");
-            return;
+            if (UnityEditor.EditorApplication.isPlaying)
+            {
+                Debug.LogWarning("Unable to validate in play mode");
+                return;
+            }
+
+            var sceneObjects = FindObjectsByType<GSSceneObjectIdentity>(FindObjectsSortMode.None);
+            foreach (var sceneObjectIdentity in sceneObjects)
+            {
+                UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
+                while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
+                    sceneObjectIdentity.m_SceneObjectId =
+                        RandomExtended.Default.Int(NetObjectUid.FIRST_VALID_UID, NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE);
+            }
+
+            ValidateSceneObjects();
         }
 
-        var sceneObjects = FindObjectsByType<GSSceneObjectIdentity>(FindObjectsSortMode.None);
-        foreach (var sceneObjectIdentity in sceneObjects)
-        {
-            UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
-            while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
-                sceneObjectIdentity.m_SceneObjectId =
-                    RandomExtended.Default.Int(NetObjectUid.FIRST_VALID_UID, NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE);
-        }
-
-        ValidateSceneObjects();
-    }
-
-    private static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> sceneObjects, GSSceneObjectIdentity target) =>
-        sceneObjects
-            .Where(o => o != target)
-            .FirstOrDefault(o => o.m_SceneObjectId == target.m_SceneObjectId);
+        private static GSSceneObjectIdentity ObjectWithSameId(IEnumerable<GSSceneObjectIdentity> sceneObjects, GSSceneObjectIdentity target) =>
+            sceneObjects
+                .Where(o => o != target)
+                .FirstOrDefault(o => o.m_SceneObjectId == target.m_SceneObjectId);
 #endif
+    }
 }
