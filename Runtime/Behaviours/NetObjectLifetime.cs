@@ -3,7 +3,7 @@ using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 
-namespace LROTech.Network.DefaultBehaviours
+namespace LROTech.NetworkBehaviours
 {
     public sealed class NetObjectLifetimeData : NetObjectStateData
     {

@@ -5,7 +5,7 @@ using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace LROTech.Network.DefaultBehaviours
+namespace LROTech.NetworkBehaviours
 {
     [DisallowMultipleComponent]
     public sealed class NetObjectTransformSync : NetObjectBehaviour<NetObjectTransformData>
