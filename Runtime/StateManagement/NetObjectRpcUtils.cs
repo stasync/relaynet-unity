@@ -99,12 +99,12 @@ namespace LROTech.Network.StateManagement
 
             return methodCollection;
         }
-        
+
         internal static class UidAllocator
         {
             private static uint m_Counter;
 
-            internal static uint NextUid() => 
+            internal static uint NextUid() =>
                 ++m_Counter;
         }
     }

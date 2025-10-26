@@ -21,8 +21,6 @@ namespace LROTech.Network.StateManagement
         public bool LocalPlayerIsMaster => IsValid && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
         public NetWorldPlayer LocalPlayer => Find(LocalPlayerUid);
         public NetWorldPlayer MasterPlayer => Find(MasterPlayerUid);
-        public NetWorldPlayer Find(ClientUid uid) => IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
-        public bool Contains(ClientUid uid) => IsValid && m_PlayersCollection.ContainsKey(uid);
 
         private Func<bool> m_Validator;
         private bool IsValid => m_Validator != null && m_Validator();
@@ -70,6 +68,12 @@ namespace LROTech.Network.StateManagement
 
             return playerRemoved;
         }
+        
+        public NetWorldPlayer Find(ClientUid uid) => 
+            IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
+        
+        public bool Contains(ClientUid uid) => 
+            IsValid && m_PlayersCollection.ContainsKey(uid);
 
         private void RecalculateMasterPlayerUid()
         {
@@ -93,7 +97,7 @@ namespace LROTech.Network.StateManagement
         }
 
         public NetWorldPlayersCollectionsSnapshot ToSnapshot() =>
-            new (collection: this);
+            new(collection: this);
 
         internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
         {

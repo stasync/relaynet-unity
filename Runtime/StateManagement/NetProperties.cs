@@ -45,6 +45,28 @@ namespace LROTech.Network.StateManagement
             m_Reader.Replace(snapshot.Data);
             Deserialize(m_Reader, firstTime: false);
         }
+        
+        internal void Serialize(NetWriter writer)
+        {
+            writer.WriteDictionary(m_ByteData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteByte(v));
+            writer.WriteDictionary(m_UIntData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WritePackedUInt32(v));
+            writer.WriteDictionary(m_IntData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteInt32(v));
+            writer.WriteDictionary(m_FloatData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteSingle(v));
+            writer.WriteDictionary(m_BoolData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteBool(v));
+            writer.WriteDictionary(m_StringData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteString(v));
+            writer.WriteDictionary(m_Vector3Data, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteVector3(v));
+        }
+
+        internal void Deserialize(NetReader reader, bool firstTime)
+        {
+            reader.ReadDictionaryTo(m_ByteData, r => r.ReadPackedUInt32(), r => r.ReadByte());
+            reader.ReadDictionaryTo(m_UIntData, r => r.ReadPackedUInt32(), r => r.ReadPackedUInt32());
+            reader.ReadDictionaryTo(m_IntData, r => r.ReadPackedUInt32(), r => r.ReadInt32());
+            reader.ReadDictionaryTo(m_FloatData, r => r.ReadPackedUInt32(), r => r.ReadSingle());
+            reader.ReadDictionaryTo(m_BoolData, r => r.ReadPackedUInt32(), r => r.ReadBoolean());
+            reader.ReadDictionaryTo(m_StringData, r => r.ReadPackedUInt32(), r => r.ReadString());
+            reader.ReadDictionaryTo(m_Vector3Data, r => r.ReadPackedUInt32(), r => r.ReadVector3());
+        }
 
         internal int GetVersionHash()
         {
@@ -150,28 +172,6 @@ namespace LROTech.Network.StateManagement
 
         public UnityEngine.Vector3 GetVector(uint id) =>
             m_Vector3Data.GetValueOrDefault(id);
-
-        internal void Serialize(NetWriter writer)
-        {
-            writer.WriteDictionary(m_ByteData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteByte(v));
-            writer.WriteDictionary(m_UIntData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WritePackedUInt32(v));
-            writer.WriteDictionary(m_IntData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteInt32(v));
-            writer.WriteDictionary(m_FloatData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteSingle(v));
-            writer.WriteDictionary(m_BoolData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteBool(v));
-            writer.WriteDictionary(m_StringData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteString(v));
-            writer.WriteDictionary(m_Vector3Data, (k, w) => w.WritePackedUInt32(k), (v, w) => w.Write(v));
-        }
-
-        internal void Deserialize(NetReader reader, bool firstTime)
-        {
-            reader.ReadDictionaryTo(m_ByteData, r => r.ReadPackedUInt32(), r => r.ReadByte());
-            reader.ReadDictionaryTo(m_UIntData, r => r.ReadPackedUInt32(), r => r.ReadPackedUInt32());
-            reader.ReadDictionaryTo(m_IntData, r => r.ReadPackedUInt32(), r => r.ReadInt32());
-            reader.ReadDictionaryTo(m_FloatData, r => r.ReadPackedUInt32(), r => r.ReadSingle());
-            reader.ReadDictionaryTo(m_BoolData, r => r.ReadPackedUInt32(), r => r.ReadBoolean());
-            reader.ReadDictionaryTo(m_StringData, r => r.ReadPackedUInt32(), r => r.ReadString());
-            reader.ReadDictionaryTo(m_Vector3Data, r => r.ReadPackedUInt32(), r => r.ReadVector3());
-        }
 
         #endregion
     }

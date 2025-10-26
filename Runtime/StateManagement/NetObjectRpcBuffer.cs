@@ -45,7 +45,7 @@ namespace LROTech.Network.StateManagement
             targetBuffer.Add(newData);
         }
 
-        public void ExecuteRemotely(bool executePersistent, Action<int, byte[]> handler)
+        internal void ExecuteRemotely(bool executePersistent, Action<int, byte[]> handler)
         {
             m_ReceiveCollisions.Clear();
 

@@ -7,7 +7,7 @@ namespace LROTech.Network.StateManagement
     public static class HLNetWriterExtension
     {
         public static void WritePlayer(this NetWriter writer, NetWorldPlayer value) =>
-            writer.WriteClientUid(value == null ? ClientUid.Invalid : value.Uid);
+            writer.WriteClientUid(value?.Uid ?? ClientUid.Invalid);
 
         public static void WriteInstanceId(this NetWriter writer, NetObjectUid value) =>
             writer.WritePackedUInt32(value);
@@ -15,32 +15,20 @@ namespace LROTech.Network.StateManagement
         public static void WriteIdentity(this NetWriter writer, NetObjectIdentity value) =>
             WriteInstanceId(writer, value == null ? NetObjectUid.Invalid : value.InstanceId);
 
-        public static void WriteBehaviour(this NetWriter writer, GSInstanceBehaviourBase value) =>
-            WriteIdentity(writer, value == null ? null : value.Identity);
-
-        public static void WriteGameObject(this NetWriter writer, GameObject value)
-        {
-            var identity = value.GetComponent<NetObjectIdentity>();
-            if (identity == null)
-                throw new InvalidOperationException("Unable to write object without 'GSInstanceIdentity'");
-
-            WriteIdentity(writer, identity);
-        }
-
-        public static void Write(this NetWriter writer, Vector2 value)
+        public static void WriteVector2(this NetWriter writer, Vector2 value)
         {
             writer.WriteSingle(value.x);
             writer.WriteSingle(value.y);
         }
 
-        public static void Write(this NetWriter writer, Vector3 value)
+        public static void WriteVector3(this NetWriter writer, Vector3 value)
         {
             writer.WriteSingle(value.x);
             writer.WriteSingle(value.y);
             writer.WriteSingle(value.z);
         }
 
-        public static void Write(this NetWriter writer, Vector4 value)
+        public static void WriteVector4(this NetWriter writer, Vector4 value)
         {
             writer.WriteSingle(value.x);
             writer.WriteSingle(value.y);
@@ -48,7 +36,7 @@ namespace LROTech.Network.StateManagement
             writer.WriteSingle(value.w);
         }
 
-        public static void Write(this NetWriter writer, Color value)
+        public static void WriteColor(this NetWriter writer, Color value)
         {
             writer.WriteSingle(value.r);
             writer.WriteSingle(value.g);
@@ -56,7 +44,7 @@ namespace LROTech.Network.StateManagement
             writer.WriteSingle(value.a);
         }
 
-        public static void Write(this NetWriter writer, Color32 value)
+        public static void WriteColor32(this NetWriter writer, Color32 value)
         {
             writer.WriteSingle(value.r);
             writer.WriteSingle(value.g);
@@ -64,7 +52,7 @@ namespace LROTech.Network.StateManagement
             writer.WriteSingle(value.a);
         }
 
-        public static void Write(this NetWriter writer, Quaternion value)
+        public static void WriteQuaternion(this NetWriter writer, Quaternion value)
         {
             writer.WriteSingle(value.x);
             writer.WriteSingle(value.y);
@@ -72,7 +60,7 @@ namespace LROTech.Network.StateManagement
             writer.WriteSingle(value.w);
         }
 
-        public static void Write(this NetWriter writer, Rect value)
+        public static void WriteRect(this NetWriter writer, Rect value)
         {
             writer.WriteSingle(value.xMin);
             writer.WriteSingle(value.yMin);
@@ -80,20 +68,21 @@ namespace LROTech.Network.StateManagement
             writer.WriteSingle(value.height);
         }
 
-        public static void Write(this NetWriter writer, Plane value)
+        public static void WritePlane(this NetWriter writer, Plane value)
         {
-            writer.Write(value.normal);
+            writer.WriteVector3(value.normal);
             writer.WriteSingle(value.distance);
         }
 
-        public static void Write(this NetWriter writer, Ray value)
+        public static void WriteRay(this NetWriter writer, Ray value)
         {
-            writer.Write(value.direction);
-            writer.Write(value.origin);
+            writer.WriteVector3(value.direction);
+            writer.WriteVector3(value.origin);
         }
 
-        public static void Write(this NetWriter writer, Matrix4x4 value)
+        public static void WriteMatrix4x4(this NetWriter writer, Matrix4x4 value)
         {
+            // TODO: CHANGE TO WRITE BLITTABLE.
             writer.WriteSingle(value.m00);
             writer.WriteSingle(value.m01);
             writer.WriteSingle(value.m02);

@@ -8,7 +8,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         public readonly NetObjectUid ObjectUID;
         public readonly string PrefabId;
         public readonly bool IsSceneObject;
-        public readonly ObjectStateChangeRequestType StateChangeType;
+        public readonly NetObjectStateChangeRequestType StateChangeType;
         public readonly NetObjectRpcBufferSnapshot RpcState;
         public readonly NetObjectDataCollectionSnapshot DataState;
 
@@ -18,7 +18,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             ObjectUID = reader.ReadInstanceId();
             PrefabId = reader.ReadString();
             IsSceneObject = reader.ReadBoolean();
-            StateChangeType = (ObjectStateChangeRequestType)reader.ReadByte();
+            StateChangeType = (NetObjectStateChangeRequestType)reader.ReadByte();
             RpcState = new NetObjectRpcBufferSnapshot(reader);
             DataState = new NetObjectDataCollectionSnapshot(reader);
         }
@@ -55,7 +55,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             result += NetObjectUid.Size; // ObjectUID
             result += PrefabId.Length;
             result += sizeof(bool); // IsSceneObject
-            result += sizeof(ObjectStateChangeRequestType); // StateChangeType
+            result += sizeof(NetObjectStateChangeRequestType); // StateChangeType
             result += RpcState.GetSize();
             result += DataState.GetSize();
             return result;

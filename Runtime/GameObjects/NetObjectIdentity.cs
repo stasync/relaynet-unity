@@ -120,7 +120,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
             behaviour.OnDisconnectedInternal(clientUid);
     }
 
-    private void OnLocalUpdateRequest(ObjectStateChangeRequestType stateChangeType)
+    private void OnLocalUpdateRequest(NetObjectStateChangeRequestType stateChangeType)
     {
         if (!Initialized)
             throw new InvalidOperationException($"Object {gameObject.name} not initialized");
@@ -131,7 +131,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         foreach (var behaviour in m_Behaviours)
             behaviour.OnAuthorityUpdateInternal();
 
-        State.ChangeObjectViewDataLocally(Serialize(), stateChangeType == ObjectStateChangeRequestType.InitializationUpdate);
+        State.ChangeObjectViewDataLocally(Serialize(), stateChangeType == NetObjectStateChangeRequestType.InitializationUpdate);
     }
 
     /// <summary>
@@ -377,7 +377,7 @@ public sealed class NetObjectIdentity : MonoBehaviour
         foreach (var behaviour in m_Behaviours)
             behaviour.OnSoftDestroyRequestedLocallyInternal();
 
-        State.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateSoft);
+        State.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveUpdateSoft);
     }
 
     /// <summary>

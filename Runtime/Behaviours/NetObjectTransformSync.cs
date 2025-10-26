@@ -134,8 +134,8 @@ public sealed class GSTransformSync : GSInstanceBehaviour<NetObjectTransformData
 
         foreach (var nestedTransform in m_NestedTransforms)
         {
-            writer.Write(nestedTransform.localPosition);
-            writer.Write(nestedTransform.localRotation);
+            writer.WriteVector3(nestedTransform.localPosition);
+            writer.WriteQuaternion(nestedTransform.localRotation);
         }
     }
 

@@ -137,7 +137,7 @@ namespace LROTech.Network.StateManagement
 
                         case MessageCodes.Rpc:
                         {
-                            var state = RpcWithoutAuthorityState.FromReader(m_Reader);
+                            var state = new RpcWithoutAuthorityState(m_Reader);
                             if (!state.IsValid)
                                 throw new ArgumentException();
 
@@ -264,7 +264,7 @@ namespace LROTech.Network.StateManagement
                             {
                                 var state = ObjectStates[objectUid];
                                 if (state.IsOwnedByLocalPlayer)
-                                    state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
+                                    state.ScheduleUpdate(NetObjectStateChangeRequestType.InitializationUpdate);
                             }
                         }
 
@@ -352,14 +352,14 @@ namespace LROTech.Network.StateManagement
                         objState.ChangeObjectRemotely(snapshot);
                         remoteObjectUpdateRequests.Remove(uid);
 
-                        if (objState.StateChangeType == ObjectStateChangeRequestType.RemoveUpdateHard)
+                        if (objState.StateChangeType == NetObjectStateChangeRequestType.RemoveUpdateHard)
                             RemoveObject(snapshot.ObjectUID);
 
                         continue;
                     }
 
                     // Object doesn't exists.
-                    if (snapshot.StateChangeType is ObjectStateChangeRequestType.RemoveUpdateHard or ObjectStateChangeRequestType.RemoveUpdateSoft)
+                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard or NetObjectStateChangeRequestType.RemoveUpdateSoft)
                     {
                         Debug.LogError(
                             $"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
@@ -370,7 +370,7 @@ namespace LROTech.Network.StateManagement
                     }
 
                     // Add new or get pending.
-                    if (snapshot.StateChangeType != ObjectStateChangeRequestType.InitializationUpdate)
+                    if (snapshot.StateChangeType != NetObjectStateChangeRequestType.InitializationUpdate)
                     {
                         m_TemporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
                         continue;
@@ -424,7 +424,7 @@ namespace LROTech.Network.StateManagement
                     }
                     else
                     {
-                        state.ScheduleUpdate(ObjectStateChangeRequestType.InitializationUpdate);
+                        state.ScheduleUpdate(NetObjectStateChangeRequestType.InitializationUpdate);
                         TryAddObject(state);
                     }
 
@@ -437,7 +437,7 @@ namespace LROTech.Network.StateManagement
                     var state = ObjectStates[uid];
 
                     var deliveryMethod = DeliveryMethod.Unreliable;
-                    if (state.StateChangeType >= ObjectStateChangeRequestType.ReliableUpdate)
+                    if (state.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate)
                         deliveryMethod = DeliveryMethod.Reliable;
 
                     state.PrepareForSerialization();
@@ -445,12 +445,12 @@ namespace LROTech.Network.StateManagement
 
                     switch (state.StateChangeType)
                     {
-                        case ObjectStateChangeRequestType.RemoveUpdateHard:
+                        case NetObjectStateChangeRequestType.RemoveUpdateHard:
                             RemoveObject(uid);
                             break;
 
-                        case ObjectStateChangeRequestType.RemoveUpdateSoft:
-                            state.ScheduleUpdate(ObjectStateChangeRequestType.RemoveUpdateHard);
+                        case NetObjectStateChangeRequestType.RemoveUpdateSoft:
+                            state.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveUpdateHard);
                             break;
                     }
                 }

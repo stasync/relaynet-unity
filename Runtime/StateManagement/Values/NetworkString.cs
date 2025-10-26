@@ -94,14 +94,14 @@ namespace LROTech.Network.StateManagement
 
     public class SerializableVector3 : SerializableValue<Vector3>
     {
-        public SerializableVector3(Vector3 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector3(), (w, v) => w.Write(v))
+        public SerializableVector3(Vector3 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector3(), (w, v) => w.WriteVector3(v))
         {
         }
     }
 
     public class SerializableVector2 : SerializableValue<Vector2>
     {
-        public SerializableVector2(Vector2 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector2(), (w, v) => w.Write(v))
+        public SerializableVector2(Vector2 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector2(), (w, v) => w.WriteVector2(v))
         {
         }
     }
@@ -112,7 +112,7 @@ namespace LROTech.Network.StateManagement
         {
         }
 
-        public SerializableQuaternion(Quaternion defaultValue) : base(defaultValue, (r, f) => r.ReadQuaternion(), (w, v) => w.Write(v))
+        public SerializableQuaternion(Quaternion defaultValue) : base(defaultValue, (r, f) => r.ReadQuaternion(), (w, v) => w.WriteQuaternion(v))
         {
         }
     }

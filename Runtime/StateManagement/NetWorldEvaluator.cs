@@ -111,7 +111,7 @@ namespace LROTech.Network.StateManagement
         {
             if (m_HistoryBuffer.Count == 0)
             {
-                UnityEngine.Debug.LogError($"[{Name}] [{UID}] history buffer is empty");
+                UnityEngine.Debug.LogError($"[{Name}] [{UID}] history buffer is empty.");
                 return 0f;
             }
 
@@ -125,7 +125,7 @@ namespace LROTech.Network.StateManagement
         {
             if (m_HistoryBuffer.Count == 0)
             {
-                UnityEngine.Debug.LogError($"[{Name}] [{UID}] history buffer is empty");
+                UnityEngine.Debug.LogError($"[{Name}] [{UID}] history buffer is empty.");
                 return 0f;
             }
 

@@ -7,12 +7,6 @@ using UnityEngine.SceneManagement;
 
 namespace LROTech.Network.StateManagement
 {
-    public enum NetWorldViewInitMode
-    {
-        Default,
-        SeparatePhysicsSimulation,
-    }
-
     public class NetWorldView : MonoBehaviour
     {
         public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
