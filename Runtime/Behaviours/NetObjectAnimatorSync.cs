@@ -12,7 +12,7 @@ namespace LROTech.NetworkBehaviours
     public interface IAnimatorValueProxy
     {
         void OnUpdate(float deltaTime, bool hasAuthority);
-    
+
         void Serialize(NetWriter writer);
         void Deserialize(NetReader reader, bool firstTime);
     }
@@ -29,9 +29,12 @@ namespace LROTech.NetworkBehaviours
             Parameter = parameter;
         }
 
-        public virtual void OnUpdate(float deltaTime, bool hasAuthority) { }
+        public virtual void OnUpdate(float deltaTime, bool hasAuthority)
+        {
+        }
 
         public abstract void Serialize(NetWriter writer);
+
         public virtual void Deserialize(NetReader reader, bool firstTime) =>
             LastDeserializedValue = DeserializeValue(reader, firstTime);
 
@@ -41,13 +44,14 @@ namespace LROTech.NetworkBehaviours
     public class AnimatorFloatParameterValueProxy : AnimatorParameterValueProxy<float>
     {
         public AnimatorFloatParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
-        { }
+        {
+        }
 
-        public override void OnUpdate(float deltaTime, bool hasAuthority) 
+        public override void OnUpdate(float deltaTime, bool hasAuthority)
         {
             base.OnUpdate(deltaTime, hasAuthority);
 
-            if(!hasAuthority)
+            if (!hasAuthority)
                 Animator.SetFloat(Parameter.nameHash, LastDeserializedValue, 0.1f, deltaTime);
         }
 
@@ -56,13 +60,13 @@ namespace LROTech.NetworkBehaviours
 
         protected override float DeserializeValue(NetReader reader, bool firstTime) =>
             reader.ReadSingle();
-
     }
 
     public class AnimatorIntParameterValueProxy : AnimatorParameterValueProxy<int>
     {
         public AnimatorIntParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
-        { }
+        {
+        }
 
         public override void Serialize(NetWriter writer) =>
             writer.WriteInt32(Animator.GetInteger(Parameter.nameHash));
@@ -80,7 +84,8 @@ namespace LROTech.NetworkBehaviours
     public class AnimatorBoolParameterValueProxy : AnimatorParameterValueProxy<bool>
     {
         public AnimatorBoolParameterValueProxy(Animator animator, AnimatorControllerParameter parameter) : base(animator, parameter)
-        { }
+        {
+        }
 
         public override void Serialize(NetWriter writer) =>
             writer.WriteBool(Animator.GetBool(Parameter.nameHash));
@@ -100,41 +105,36 @@ namespace LROTech.NetworkBehaviours
     {
         public sealed class StateData : NetObjectStateData
         {
-            public StateData(Func<bool> writePermission) : base(writePermission)
-            {
-            }
         }
-    
+
         private enum AnimatorStateChangeMethod : byte
         {
-            Play, CrossFade,
+            Play,
+            CrossFade,
         }
 
         private enum AnimatorTriggerAction : byte
         {
-            Set, Reset,
+            Set,
+            Reset,
         }
 
-        [SerializeField]
-        private Animator m_Animator;
+        [SerializeField] private Animator m_Animator;
 
-        [SerializeField]
-        private AnimatorStateChangeMethod m_StateChangeMethod = AnimatorStateChangeMethod.CrossFade;
+        [SerializeField] private AnimatorStateChangeMethod m_StateChangeMethod = AnimatorStateChangeMethod.CrossFade;
 
-        [SerializeField, Range(0f, 1f)]
-        private float m_CrossFadeDuration = 0.1f;
+        [SerializeField, Range(0f, 1f)] private float m_CrossFadeDuration = 0.1f;
 
-        [FormerlySerializedAs("m_RemoteLayerWeightChnageSpeed")] 
-        [SerializeField, Range(0f, 10f)]
+        [FormerlySerializedAs("m_RemoteLayerWeightChnageSpeed")] [SerializeField, Range(0f, 10f)]
         private float m_RemoteLayerWeightChangeSpeed = 5f;
 
-        private readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new ();
+        private readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new();
         private readonly List<float> m_RemoteLayerWeights = new();
         private bool[] m_LayersSyncFlags;
-    
+
         private readonly NetWriter m_Writer = new();
         private readonly NetReader m_Reader = new();
-    
+
         private void Awake()
         {
             foreach (var parameter in m_Animator.parameters)
@@ -157,9 +157,9 @@ namespace LROTech.NetworkBehaviours
 
             for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
                 m_RemoteLayerWeights.Add(m_Animator.GetLayerWeight(layerIndex));
-        
+
             var runtimeController = (UnityEditor.Animations.AnimatorController)m_Animator.runtimeAnimatorController;
-       
+
             m_LayersSyncFlags = new bool[runtimeController.layers.Length];
             for (var index = 0; index < runtimeController.layers.Length; index++)
                 m_LayersSyncFlags[index] = (uint)runtimeController.layers[index].syncedLayerIndex < (uint)runtimeController.layers.Length;
@@ -197,8 +197,8 @@ namespace LROTech.NetworkBehaviours
 
             OwnerToOthersRpc(
                 SyncAnimatorTriggersHandler,
-                data: m_Writer.ToArray(), 
-                DeliveryMethod.Unreliable, 
+                data: m_Writer.ToArray(),
+                DeliveryMethod.Unreliable,
                 invokeLocally: false);
         }
 
@@ -265,11 +265,11 @@ namespace LROTech.NetworkBehaviours
                 writer.WriteBool(syncFlag);
                 if (syncFlag)
                     continue;
-            
+
                 var stateToSync =
-                    m_Animator.IsInTransition(layerIndex) ?
-                        m_Animator.GetNextAnimatorStateInfo(layerIndex) :
-                        m_Animator.GetCurrentAnimatorStateInfo(layerIndex);
+                    m_Animator.IsInTransition(layerIndex)
+                        ? m_Animator.GetNextAnimatorStateInfo(layerIndex)
+                        : m_Animator.GetCurrentAnimatorStateInfo(layerIndex);
 
                 var layerWeight = m_Animator.GetLayerWeight(layerIndex);
 
@@ -293,11 +293,11 @@ namespace LROTech.NetworkBehaviours
                 var remoteSyncFlag = reader.ReadBoolean();
                 if (remoteSyncFlag)
                     continue;
-            
+
                 var targetLayerWeight = reader.ReadSingle();
                 var targetStateHash = reader.ReadInt32();
                 var targetNormalizedTime = reader.ReadSingle();
-            
+
                 var localSyncFlag = m_LayersSyncFlags[layerIndex];
                 if (localSyncFlag)
                     continue;

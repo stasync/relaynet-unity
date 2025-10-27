@@ -6,13 +6,7 @@ namespace LROTech.Network.StateManagement
     public sealed class NetObjectViewStateData : NetObjectStateData
     {
         public bool ViewInitialized { get; private set; }
-        public byte[] UnstructuredData { get; private set; }
-
-        public NetObjectViewStateData(Func<bool> writePermission) : base(writePermission)
-        {
-            ViewInitialized = false;
-            UnstructuredData = Array.Empty<byte>();
-        }
+        public byte[] UnstructuredData { get; private set; } = Array.Empty<byte>();
 
         protected override void OnSerialize(NetWriter writer)
         {
@@ -32,7 +26,7 @@ namespace LROTech.Network.StateManagement
 
         public void SetData(byte[] data, bool initialization = false)
         {
-            if (!WritePermission())
+            if (!HasWritePermission)
                 throw new InvalidOperationException();
 
             UnstructuredData = data;

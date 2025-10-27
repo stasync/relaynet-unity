@@ -3,10 +3,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableList<TValue> : SerializableValueDefinition<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>, ICollectionWithCount
+    public class SerializableList<TValue> : SerializableValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>, ICollectionWithCount
     {
         public SerializableList(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
             this(new List<TValue>(), valueReader, valueWriter)

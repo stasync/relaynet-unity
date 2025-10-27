@@ -1,28 +1,19 @@
-﻿using Core.Networking;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Core.Networking;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Values
 {
-    public abstract class SerializableValue
+    public abstract class SerializableValueBase
     {
-        private readonly Func<bool> m_WritePermission = null;
-        protected bool HasPermission => m_WritePermission();
+        internal Func<bool> InternalWritePermission = null;
+        protected bool HasPermission => InternalWritePermission();
 
-        public abstract void DeserializeAndApply(NetReader reader, bool firstTime);
-        public abstract void ApplyLastDeserialized();
-        public abstract void Serialize(NetWriter writer);
-        public abstract void Deserialize(NetReader reader, bool firstTime);
+        internal abstract void InternalDeserialize(NetReader reader, bool firstTime);
+        internal abstract void InternalSerialize(NetWriter writer);
 
-        internal static readonly FieldInfo WritePermissionFieldInfo;
         private static readonly Dictionary<Type, IReadOnlyList<FieldInfo>> _fieldCache = new();
-
-        static SerializableValue()
-        {
-            WritePermissionFieldInfo = typeof(SerializableValue)
-                .GetField(nameof(m_WritePermission), bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
-        }
 
         internal static IReadOnlyList<FieldInfo> GetFields(Type type)
         {
@@ -34,7 +25,7 @@ namespace LROTech.Network.StateManagement
 
             foreach (var filedInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
-                if (typeof(SerializableValue).IsAssignableFrom(filedInfo.FieldType))
+                if (typeof(SerializableValueBase).IsAssignableFrom(filedInfo.FieldType))
                     newFiledList.Add(filedInfo);
             }
 
@@ -42,9 +33,9 @@ namespace LROTech.Network.StateManagement
         }
     }
 
-    public abstract class SerializableValueDefinition<TValue, TExposed> : SerializableValue where TValue : TExposed
+    public abstract class SerializableValueBase<TValue, TExposed> : SerializableValueBase where TValue : TExposed
     {
-        protected SerializableValueDefinition(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer)
+        protected SerializableValueBase(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer)
         {
             m_InternalValue = defaultValue;
             m_Reader = reader;
@@ -72,20 +63,27 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        public override void DeserializeAndApply(NetReader reader, bool firstTime)
+        internal override void InternalDeserialize(NetReader reader, bool firstTime)
         {
-            Deserialize(reader, firstTime);
-            ApplyLastDeserialized();
+            m_LastDeserializedValue = m_Reader(reader, firstTime);
+            m_InternalValue = m_LastDeserializedValue;
+            
+            OnDeserialize(reader, firstTime);
         }
 
-        public override void ApplyLastDeserialized() =>
-            m_InternalValue = m_LastDeserializedValue;
-
-        public override void Deserialize(NetReader reader, bool firstTime) =>
-            m_LastDeserializedValue = m_Reader(reader, firstTime);
-
-        public override void Serialize(NetWriter writer) =>
+        internal override void InternalSerialize(NetWriter writer)
+        {
             m_Writer(writer, InternalValue);
+            OnSerialize(writer);
+        }
+
+        protected virtual void OnDeserialize(NetReader reader, bool firstTime)
+        {
+        }
+
+        protected virtual void OnSerialize(NetWriter writer)
+        {
+        }
 
         public int GetValueHashCode() =>
             m_InternalValue.GetHashCode();

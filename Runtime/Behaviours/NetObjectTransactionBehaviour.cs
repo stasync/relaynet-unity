@@ -14,10 +14,6 @@ namespace LROTech.NetworkBehaviours
             public readonly SerializableObjectUID CurrentInteraction = new();
             public readonly SerializableObjectUID LastInteraction = new();
             public readonly SerializableBool InteractionsEnabled = new();
-
-            public TransactionNetworkData(Func<bool> writePermission) : base(writePermission)
-            {
-            }
         }
     }
 

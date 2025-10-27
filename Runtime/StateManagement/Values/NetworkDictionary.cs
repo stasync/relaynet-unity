@@ -3,10 +3,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableDictionary<TKey, TValue> : SerializableValueDefinition<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
+    public class SerializableDictionary<TKey, TValue> : SerializableValueBase<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
         IDictionary<TKey, TValue>, ICollectionWithCount
     {
         public SerializableDictionary(

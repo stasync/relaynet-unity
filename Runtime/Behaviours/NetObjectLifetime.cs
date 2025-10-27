@@ -7,8 +7,6 @@ namespace LROTech.NetworkBehaviours
 {
     public sealed class NetObjectLifetimeData : NetObjectStateData
     {
-        public NetObjectLifetimeData(Func<bool> writePermission) : base(writePermission) { }
-
         public readonly SerializableFloat Lifetime = new();
         public readonly SerializableFloat CurrentLifetime = new ();
 

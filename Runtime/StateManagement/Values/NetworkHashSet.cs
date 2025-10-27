@@ -2,10 +2,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableHashSet<TValue> : SerializableValueDefinition<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>,
+    public class SerializableHashSet<TValue> : SerializableValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>,
         ICollectionWithCount
     {
         public SerializableHashSet(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :

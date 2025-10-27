@@ -94,9 +94,15 @@ namespace LROTech.Network.StateManagement
 
     public class SerializableVector3 : SerializableValue<Vector3>
     {
-        public SerializableVector3(Vector3 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector3(), (w, v) => w.WriteVector3(v))
+        public SerializableVector3(Vector3 defaultValue = default) : base(defaultValue, Read, Write)
         {
         }
+
+        private static void Write(NetWriter writer, Vector3 value) => 
+            writer.WriteVector3(value);
+
+        private static Vector3 Read(NetReader reader, bool firstTime) =>
+            reader.ReadVector3();
     }
 
     public class SerializableVector2 : SerializableValue<Vector2>

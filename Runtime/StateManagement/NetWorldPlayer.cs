@@ -6,7 +6,7 @@ using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
 {
-    public class NetWorldPlayer
+    public sealed class NetWorldPlayer
     {
         public ClientUid Uid { get; private set; }
 

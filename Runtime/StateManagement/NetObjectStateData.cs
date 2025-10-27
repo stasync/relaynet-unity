@@ -1,30 +1,49 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using LROTech.Network.StateManagement.Values;
 using UnityEngine;
 
 namespace LROTech.Network.StateManagement
 {
     public abstract class NetObjectStateData
     {
-        public bool HasWritePermission => WritePermission();
-        public readonly int TypeHashCode;
-
-        protected readonly Func<bool> WritePermission;
-
-        public IReadOnlyDictionary<string, SerializableValue> SerializableValues => m_InternalValueCollection;
-        private readonly Dictionary<string, SerializableValue> m_InternalValueCollection = new();
-
-        protected NetObjectStateData(Func<bool> writePermission)
+        public bool HasWritePermission
         {
-            WritePermission = writePermission;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _writePermission();
+        }
+
+        public int TypeHashCode
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private set;
+        }
+
+        private Func<bool> _writePermission;
+
+        public IReadOnlyDictionary<string, SerializableValueBase> SerializableValues => m_InternalValueCollection;
+        private readonly Dictionary<string, SerializableValueBase> m_InternalValueCollection = new();
+
+        private void Init(Func<bool> writePermission)
+        {
+            _writePermission = writePermission;
             TypeHashCode = GetTypeIndex(GetType());
 
             // Collect serializable values.
-            foreach (var filedInfo in SerializableValue.GetFields(GetType()))
+            foreach (var filedInfo in SerializableValueBase.GetFields(GetType()))
             {
-                if (filedInfo.GetValue(this) is SerializableValue value)
-                    AddValueManual(filedInfo.Name, value);
+                if (filedInfo.GetValue(this) is SerializableValueBase value)
+                {
+                    if (m_InternalValueCollection.ContainsKey(filedInfo.Name))
+                        throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{filedInfo.Name}'.");
+
+                    value.InternalWritePermission = _writePermission;
+                    m_InternalValueCollection.Add(filedInfo.Name, value);
+                }
                 else
                     Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
             }
@@ -39,10 +58,10 @@ namespace LROTech.Network.StateManagement
             return hash;
         }
 
-        internal virtual void SerializeInternal(NetWriter writer)
+        internal void SerializeInternal(NetWriter writer)
         {
-            foreach (var kvp in m_InternalValueCollection)
-                kvp.Value.Serialize(writer);
+            foreach (var serializableValue in m_InternalValueCollection.Values)
+                serializableValue.InternalSerialize(writer);
 
             OnSerialize(writer);
         }
@@ -51,10 +70,10 @@ namespace LROTech.Network.StateManagement
         {
         }
 
-        internal virtual void DeserializeInternal(NetReader reader, bool firstTime)
+        internal void DeserializeInternal(NetReader reader, bool firstTime)
         {
             foreach (var value in m_InternalValueCollection.Values)
-                value.DeserializeAndApply(reader, firstTime);
+                value.InternalDeserialize(reader, firstTime);
 
             OnDeserialize(reader, firstTime);
         }
@@ -72,23 +91,15 @@ namespace LROTech.Network.StateManagement
             return result;
         }
 
-        protected void AddValueManual(string valueName, SerializableValue value)
-        {
-            if (m_InternalValueCollection.ContainsKey(valueName))
-                throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{valueName}'.");
-
-            SerializableValue.WritePermissionFieldInfo.SetValue(value, WritePermission);
-            m_InternalValueCollection.Add(valueName, value);
-        }
-
         public static NetObjectStateData Provide(Type type, Func<bool> writePermission)
         {
             var dataType = typeof(NetObjectStateData);
             if (!dataType.IsAssignableFrom(type))
                 throw new InvalidOperationException($"'{type.FullName} must derive '{dataType.FullName}'.");
 
-            // TODO: we need to avoid having to implement default constructor. https://stackoverflow.com/questions/40700550/set-field-or-property-value-before-constructor
-            return Activator.CreateInstance(type, writePermission) as NetObjectStateData;
+            var dataInstance = (NetObjectStateData)Activator.CreateInstance(type);
+            dataInstance.Init(writePermission);
+            return dataInstance;
         }
 
         internal static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData

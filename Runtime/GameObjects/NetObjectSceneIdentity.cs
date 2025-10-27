@@ -13,9 +13,6 @@ namespace LROTech.Network.GameObjects
     {
         public sealed class BehaviourData : NetObjectStateData
         {
-            public BehaviourData(Func<bool> writePermission) : base(writePermission)
-            {
-            }
         }
 
         [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
