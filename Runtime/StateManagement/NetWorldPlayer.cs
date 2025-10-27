@@ -1,5 +1,4 @@
-﻿using Core.Networking;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Core;
 using LROTech.Network.Sessions;
@@ -68,11 +67,78 @@ namespace LROTech.Network.StateManagement
         public readonly NetworkProperties Properties;
 
         public IReadOnlyCollection<NetObjectUid> TagObjectUidCollection => m_TagObjectUidCollection;
-        private HashSet<NetObjectUid> m_TagObjectUidCollection;
+        private readonly HashSet<NetObjectUid> m_TagObjectUidCollection = new();
 
         public NetObjectUid MainTagObjectUid { get; private set; } = NetObjectUid.Invalid;
 
         #endregion
+
+        public bool IsLocal => IsValid() && Uid.Equals(other: m_LocalPlayerUidProvider());
+        public bool IsMaster => IsValid() && Uid.Equals(other: m_MasterPlayerUidProvider());
+
+        private readonly Func<ClientUid> m_LocalPlayerUidProvider;
+        private readonly Func<ClientUid> m_MasterPlayerUidProvider;
+        private readonly Func<ClientUid, bool> m_Validator;
+
+        internal NetWorldPlayer(Func<ClientUid, bool> validator, ClientUid uid, string name, Func<ClientUid> localPlayerUidProvider, Func<ClientUid> masterPlayerUidProvider)
+        {
+            m_Validator = validator;
+            Uid = uid;
+            m_Name = name;
+            m_LocalPlayerUidProvider = localPlayerUidProvider;
+            m_MasterPlayerUidProvider = masterPlayerUidProvider;
+
+            Properties = new NetworkProperties(writePermission: () => IsLocal);
+        }
+
+        internal void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
+        {
+            Uid = snapshot.UID;
+            m_Name = snapshot.Name;
+            m_IsReady = snapshot.IsInGameScene;
+            m_Platform = snapshot.Platform;
+            m_RTTMS = snapshot.RTTMs;
+
+            m_TagObjectUidCollection.Clear();
+            foreach (var tagObject in snapshot.TagObjectUIDs)
+                m_TagObjectUidCollection.Add(tagObject);
+
+            Properties.RestoreFromSnapshot(snapshot.Properties);
+        }
+
+        private bool IsValid() => 
+            Uid.IsValid && m_Validator != null && m_Validator(Uid);
+
+        public bool HasTagObject(NetObjectUid uid)
+        {
+            return uid.IsValid && m_TagObjectUidCollection.Contains(uid);
+        }
+           
+        public bool HasTagObject(NetObjectState state)
+        {
+            return state != null && HasTagObject(state.Uid);
+        }
+
+        public NetWorldPlayerSnapshot ToSnapshot()
+        {
+            return new NetWorldPlayerSnapshot(player: this);
+        }
+
+        public override string ToString()
+        {
+            return $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
+        }
+
+        internal int GetVersionHash()
+        {
+            var hash = 13;
+            hash = hash * 7 + Uid.GetHashCode();
+            hash = hash * 7 + Name.GetHashCode();
+            hash = hash * 7 + IsReady.GetHashCode();
+            hash = hash * 7 + Platform.GetHashCode();
+            hash = hash * 7 + Properties.GetVersionHash();
+            return hash;
+        }
 
         public void RegisterTagObject(NetObjectUid uid, bool main = false)
         {
@@ -98,63 +164,6 @@ namespace LROTech.Network.StateManagement
             m_TagObjectUidCollection.Remove(uid);
             if (MainTagObjectUid == uid)
                 MainTagObjectUid = NetObjectUid.Invalid;
-        }
-
-        public bool IsValid => Uid.IsValid;
-        public bool IsLocal => IsValid && Uid.Equals(other: m_LocalPlayerUidProvider());
-        public bool IsMaster => IsValid && Uid.Equals(other: m_MasterPlayerUidProvider());
-
-        private readonly Func<ClientUid> m_LocalPlayerUidProvider;
-        private readonly Func<ClientUid> m_MasterPlayerUidProvider;
-        private readonly NetWriter m_Writer = new();
-
-        internal NetWorldPlayer(ClientUid uid, string name, Func<ClientUid> localPlayerUidProvider, Func<ClientUid> masterPlayerUidProvider)
-        {
-            Uid = uid;
-            m_Name = name;
-            m_LocalPlayerUidProvider = localPlayerUidProvider;
-            m_MasterPlayerUidProvider = masterPlayerUidProvider;
-
-            Properties = new NetworkProperties(writePermission: () => IsLocal);
-            m_TagObjectUidCollection = new HashSet<NetObjectUid>();
-        }
-
-        internal void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
-        {
-            Uid = snapshot.UID;
-            m_Name = snapshot.Name;
-            m_IsReady = snapshot.IsInGameScene;
-            m_Platform = snapshot.Platform;
-            m_RTTMS = snapshot.RTTMs;
-            
-            m_TagObjectUidCollection.Clear();
-            foreach (var tagObject in snapshot.TagObjectUIDs)
-                m_TagObjectUidCollection.Add(tagObject);
-
-            Properties.RestoreFromSnapshot(snapshot.Properties);
-        }
-
-        public bool HasTagObject(NetObjectUid uid) =>
-            uid.IsValid && m_TagObjectUidCollection.Contains(uid);
-
-        public bool HasTagObject(NetObjectState state) =>
-            state != null && HasTagObject(state.Uid);
-
-        public NetWorldPlayerSnapshot ToSnapshot() =>
-            new(player: this);
-
-        public override string ToString() =>
-            $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
-
-        internal int GetVersionHash()
-        {
-            var hash = 13;
-            hash = hash * 7 + Uid.GetHashCode();
-            hash = hash * 7 + Name.GetHashCode();
-            hash = hash * 7 + IsReady.GetHashCode();
-            hash = hash * 7 + Platform.GetHashCode();
-            hash = hash * 7 + Properties.GetVersionHash();
-            return hash;
         }
     }
 }

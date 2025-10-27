@@ -19,12 +19,11 @@ namespace LROTech.Network.StateManagement
 
         #endregion
 
-        public bool LocalPlayerIsMaster => IsValid && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
+        public bool LocalPlayerIsMaster => IsValid() && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
         public NetWorldPlayer LocalPlayer => Find(LocalPlayerUid);
         public NetWorldPlayer MasterPlayer => Find(MasterPlayerUid);
 
         private Func<bool> m_Validator;
-        private bool IsValid => m_Validator != null && m_Validator();
 
         internal NetWorldPlayersCollection(Func<bool> validator)
         {
@@ -35,6 +34,9 @@ namespace LROTech.Network.StateManagement
 
             m_PlayersCollection = new Dictionary<ClientUid, NetWorldPlayer>();
         }
+        
+        private bool IsValid() => 
+            m_Validator != null && m_Validator();
 
         internal void OnBeforeUpdateWorldState(float worldDelta)
         {
@@ -45,7 +47,9 @@ namespace LROTech.Network.StateManagement
             if (m_PlayersCollection.ContainsKey(uid))
                 throw new InvalidOperationException();
 
-            var player = new NetWorldPlayer(uid,
+            var player = new NetWorldPlayer(
+                validator: m_PlayersCollection.ContainsKey, 
+                uid,
                 name: "Unknown",
                 localPlayerUidProvider: () => LocalPlayerUid,
                 masterPlayerUidProvider: () => MasterPlayerUid);
@@ -71,10 +75,10 @@ namespace LROTech.Network.StateManagement
         }
         
         public NetWorldPlayer Find(ClientUid uid) => 
-            IsValid ? m_PlayersCollection.GetValueOrDefault(uid) : null;
+            IsValid() ? m_PlayersCollection.GetValueOrDefault(uid) : null;
         
         public bool Contains(ClientUid uid) => 
-            IsValid && m_PlayersCollection.ContainsKey(uid);
+            IsValid() && m_PlayersCollection.ContainsKey(uid);
 
         private void RecalculateMasterPlayerUid()
         {
@@ -122,11 +126,13 @@ namespace LROTech.Network.StateManagement
                 if (m_PlayersCollection.TryGetValue(clientUid, out var player))
                     player.RestoreFromSnapshot(playerSnapshot);
                 else
-                    m_PlayersCollection.Add(clientUid, new NetWorldPlayer(
-                        playerSnapshot.UID,
-                        playerSnapshot.Name,
-                        localPlayerUidProvider: () => LocalPlayerUid,
-                        masterPlayerUidProvider: () => MasterPlayerUid));
+                    m_PlayersCollection.Add(clientUid, 
+                        new NetWorldPlayer(
+                            validator: m_PlayersCollection.ContainsKey,
+                            playerSnapshot.UID,
+                            playerSnapshot.Name,
+                            localPlayerUidProvider: () => LocalPlayerUid,
+                            masterPlayerUidProvider: () => MasterPlayerUid));
             }
         }
 
