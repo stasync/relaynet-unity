@@ -67,7 +67,7 @@ namespace LROTech.Network.StateManagement.Values
         {
             m_LastDeserializedValue = m_Reader(reader, firstTime);
             m_InternalValue = m_LastDeserializedValue;
-            
+
             OnDeserialize(reader, firstTime);
         }
 
@@ -84,6 +84,47 @@ namespace LROTech.Network.StateManagement.Values
         protected virtual void OnSerialize(NetWriter writer)
         {
         }
+
+        public int GetValueHashCode() =>
+            m_InternalValue.GetHashCode();
+
+        public override string ToString() =>
+            m_InternalValue.ToString();
+    }
+
+    public abstract class SerializableValueBaseNew<TValue, TExposed> : SerializableValueBase where TValue : TExposed
+    {
+        public TExposed Value => InternalValue;
+        public void Set(TValue value) => InternalValue = value;
+
+        private TValue m_InternalValue;
+
+        protected TValue InternalValue
+        {
+            get => m_InternalValue;
+            set
+            {
+                if (!HasPermission)
+                    throw new InvalidOperationException($"No authority to change value '{typeof(TValue).FullName}'.");
+
+                m_InternalValue = value;
+            }
+        }
+
+        protected SerializableValueBaseNew(TValue defaultValue)
+        {
+            m_InternalValue = defaultValue;
+        }
+
+        internal override void InternalDeserialize(NetReader reader, bool firstTime) =>
+            m_InternalValue = OnDeserialize(reader, firstTime);
+
+        internal override void InternalSerialize(NetWriter writer) =>
+            OnSerialize(writer);
+
+        protected abstract TValue OnDeserialize(NetReader reader, bool firstTime);
+
+        protected abstract void OnSerialize(NetWriter writer);
 
         public int GetValueHashCode() =>
             m_InternalValue.GetHashCode();

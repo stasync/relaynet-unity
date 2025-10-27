@@ -114,7 +114,7 @@ namespace LROTech.Network.StateManagement
             for (var i = 0; i < Count; i++)
             {
                 var kvp = this.ElementAt(i);
-                if (kvp.GetHashCode() >= 0)
+                if (kvp.Key.GetHashCode() >= 0)
                     array[arrayIndex++] = new KeyValuePair<TKey, TValue>(kvp.Key, kvp.Value);
             }
         }

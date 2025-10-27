@@ -2,29 +2,26 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Core.Utils;
 using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableHashSet<TValue> : SerializableValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>,
-        ICollectionWithCount
+    public class SerializableHashSet<TValue> : SerializableValueBaseNew<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>, ICollectionWithCount 
+        where TValue : unmanaged
     {
-        public SerializableHashSet(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
-            this(new HashSet<TValue>(), valueReader, valueWriter)
+        
+        private readonly HashSet<TValue> m_CachedValue = new();
+        
+        public SerializableHashSet() : this(defaultValue: new HashSet<TValue>())
         {
         }
 
-        public SerializableHashSet(
-            HashSet<TValue> defaultValue,
-            Func<NetReader, bool, TValue> valueReader,
-            Action<NetWriter, TValue> valueWriter) :
-            base(
-                defaultValue,
-                (r, f) => r.ReadHashSet(
-                    cValueReader => valueReader(cValueReader, f)),
-                (w, v) => w.WriteCollection(v,
-                    (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
+        public SerializableHashSet(HashSet<TValue> defaultValue) : base(defaultValue)
         {
+            // Check if blittable.
+            if (!TypeInfo<TValue>.IsBlittable)
+                throw new InvalidOperationException();
         }
 
         public int Count => InternalValue.Count;
@@ -58,6 +55,24 @@ namespace LROTech.Network.StateManagement
             InternalValue.Clear();
         }
 
+        protected override HashSet<TValue> OnDeserialize(NetReader reader, bool firstTime)
+        {
+            reader.ReadHashSetTo(m_CachedValue, ReadFunction);
+            return m_CachedValue;
+            
+            TValue ReadFunction(NetReader arg) =>
+                arg.ReadBlittableUnsafe<TValue>();
+        }
+        
+        protected override void OnSerialize(NetWriter writer)
+        {
+            writer.WriteCollection(InternalValue, WriteFunction);
+            return;
+
+            void WriteFunction(TValue value, NetWriter argument) =>
+                argument.WriteBlittableUnsafe(value);
+        }
+        
         public override string ToString() =>
             $"{InternalValue.Count} [{string.Join("; ", InternalValue)}]";
 
