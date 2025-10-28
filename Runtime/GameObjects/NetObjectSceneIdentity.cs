@@ -18,7 +18,7 @@ namespace LROTech.Network.GameObjects
         [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
         private int m_SceneObjectId;
 
-        public NetObjectUid SceneObjectId => (uint)m_SceneObjectId;
+        public NetObjectUid SceneObjectId => new((uint)m_SceneObjectId);
 
         [SerializeField] private string m_PrefabId;
         public string PrefabID => m_PrefabId;

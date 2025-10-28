@@ -8,16 +8,16 @@ namespace LROTech.Network.StateManagement
     public static class HLNetReaderExtension
     {
         public static NetObjectUid ReadNetObjectUid(this NetReader reader) =>
-            reader.ReadPackedUInt32();
+            new (reader.ReadPackedUInt32());
 
         public static NetWorldPlayer ReadPlayer(this NetReader reader, NetWorld targetWorld) =>
             targetWorld.Players.Find(reader.ReadClientUid());
 
         public static NetObjectState ReadObjectState(this NetReader reader, NetWorld targetWorld) =>
-            targetWorld.FindObject(instanceId: reader.ReadPackedUInt32());
+            targetWorld.FindObject(instanceId: new NetObjectUid(reader.ReadPackedUInt32()));
 
         public static T ReadObjectViewOfType<T>(this NetReader reader, NetWorld targetWorld) where T : NetObjectBehaviourBase =>
-            targetWorld.FindObjectView<T>(instanceId: reader.ReadPackedUInt32());
+            targetWorld.FindObjectView<T>(instanceId: new NetObjectUid(reader.ReadPackedUInt32()));
 
         public static Vector2 ReadVector2(this NetReader reader) =>
             new(reader.ReadSingle(), reader.ReadSingle());

@@ -11,7 +11,7 @@ namespace LROTech.Network.StateManagement
             writer.WriteClientUid(value?.Uid ?? ClientUid.Invalid);
 
         public static void WriteNetObjectUid(this NetWriter writer, NetObjectUid value) =>
-            writer.WritePackedUInt32(value);
+            writer.WritePackedUInt32((uint)value);
 
         public static void WriteIdentity(this NetWriter writer, NetObjectIdentity value) =>
             WriteNetObjectUid(writer, value == null ? NetObjectUid.Invalid : value.InstanceId);

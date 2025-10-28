@@ -532,7 +532,7 @@ namespace LROTech.Network.StateManagement
             if (!owner.IsLocal)
                 throw new InvalidOperationException();
 
-            var state = new NetObjectState(new NetObjectUid(owner.Uid), prefabId, isSceneObject, owner.Uid, Players.Find);
+            var state = new NetObjectState(NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid, Players.Find);
             m_TemporaryUnregisteredObjects.Add(state.Uid, state);
             return View.CreateImmediate(state, position, rotation);
         }
