@@ -2,15 +2,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Core.Utils;
 using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableHashSet<TValue> : SerializableValueBaseNew<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>, ICollectionWithCount 
+    public class SerializableHashSet<TValue> : SerializableValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
         where TValue : unmanaged
     {
-        
         private readonly HashSet<TValue> m_CachedValue = new();
         
         public SerializableHashSet() : this(defaultValue: new HashSet<TValue>())
@@ -19,9 +17,6 @@ namespace LROTech.Network.StateManagement
 
         public SerializableHashSet(HashSet<TValue> defaultValue) : base(defaultValue)
         {
-            // Check if blittable.
-            if (!TypeInfo<TValue>.IsBlittable)
-                throw new InvalidOperationException();
         }
 
         public int Count => InternalValue.Count;
@@ -42,7 +37,8 @@ namespace LROTech.Network.StateManagement
             return InternalValue.Remove(value);
         }
 
-        public bool Contains(TValue value) => InternalValue.Contains(value);
+        public bool Contains(TValue value) => 
+            InternalValue.Contains(value);
 
         public void Clear()
         {

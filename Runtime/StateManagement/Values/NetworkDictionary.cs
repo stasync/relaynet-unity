@@ -7,8 +7,8 @@ using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableDictionary<TKey, TValue> : SerializableValueBase<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
-        IDictionary<TKey, TValue>, ICollectionWithCount
+    public class SerializableDictionary<TKey, TValue> : SerializableValueBase_Legacy<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
+        IDictionary<TKey, TValue>
     {
         public SerializableDictionary(
             Func<NetReader, bool, TKey> keyReader,
