@@ -61,7 +61,7 @@ namespace LROTech.Network.StateManagement
             return m_CachedValue;
             
             TValue ReadFunction(NetReader arg) =>
-                arg.ReadBlittableUnsafe<TValue>();
+                arg.ReadUnmanaged<TValue>();
         }
         
         protected override void OnSerialize(NetWriter writer)
@@ -70,7 +70,7 @@ namespace LROTech.Network.StateManagement
             return;
 
             void WriteFunction(TValue value, NetWriter argument) =>
-                argument.WriteBlittableUnsafe(value);
+                argument.WriteUnmanaged(value);
         }
         
         public override string ToString() =>

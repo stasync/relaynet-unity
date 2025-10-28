@@ -5,8 +5,8 @@ namespace LROTech.Network.StateManagement.Snapshots
 {
     public readonly struct NetObjectRpcBufferSnapshot
     {
-        public readonly IReadOnlyCollection<NetObjectRpcStateSnapshot> PersistentBuffer;
-        public readonly IReadOnlyCollection<NetObjectRpcStateSnapshot> TemporalBuffer;
+        public readonly IReadOnlyList<NetObjectRpcStateSnapshot> PersistentBuffer;
+        public readonly IReadOnlyList<NetObjectRpcStateSnapshot> TemporalBuffer;
 
         internal NetObjectRpcBufferSnapshot(NetObjectRpcBuffer state)
         {
@@ -24,19 +24,31 @@ namespace LROTech.Network.StateManagement.Snapshots
 
         internal NetObjectRpcBufferSnapshot(NetReader reader)
         {
-            PersistentBuffer = reader.ReadList(netReader => new NetObjectRpcStateSnapshot(netReader));
-            TemporalBuffer = reader.ReadList(netReader => new NetObjectRpcStateSnapshot(netReader));
+            var persistentBufferLength = reader.ReadPackedUInt32();
+            var persistentBuffer = new List<NetObjectRpcStateSnapshot>((int)persistentBufferLength);
+            for (var index = 0; index < persistentBufferLength; index++)
+                persistentBuffer.Add(new NetObjectRpcStateSnapshot(reader));
+            
+            var temporalBufferLength = reader.ReadPackedUInt32();
+            var temporalBuffer = new List<NetObjectRpcStateSnapshot>((int)temporalBufferLength);
+            for (var index = 0; index < temporalBufferLength; index++)
+                temporalBuffer.Add(new NetObjectRpcStateSnapshot(reader));
+            
+            PersistentBuffer = persistentBuffer;
+            TemporalBuffer = temporalBuffer;
         }
 
         internal void Serialize(NetWriter writer)
         {
-            writer.WriteCollection(PersistentBuffer, SerializeRpcState);
-            writer.WriteCollection(TemporalBuffer, SerializeRpcState);
+            writer.WritePackedUInt32((uint)PersistentBuffer.Count);
+            foreach (var rpcStateSnapshot in PersistentBuffer)
+                rpcStateSnapshot.Serialize(writer);
+            
+            writer.WritePackedUInt32((uint)TemporalBuffer.Count);
+            foreach (var rpcStateSnapshot in TemporalBuffer)
+                rpcStateSnapshot.Serialize(writer);
         }
-
-        private static void SerializeRpcState(NetObjectRpcStateSnapshot rpcStateSnapshot, NetWriter netWriter) =>
-            rpcStateSnapshot.Serialize(netWriter);
-
+        
         public int GetSize()
         {
             var result = 0;

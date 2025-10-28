@@ -1,23 +1,22 @@
-﻿using Core.Networking;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Core.Networking;
 using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableList<TValue> : SerializableValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>, ICollectionWithCount
+    public class SerializableList<TValue> : SerializableValueBaseNew<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>, ICollectionWithCount
+        where TValue : unmanaged
     {
-        public SerializableList(Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
-            this(new List<TValue>(), valueReader, valueWriter)
+        private readonly List<TValue> m_CachedValue = new();
+
+        public SerializableList() : this(defaultValue: new List<TValue>())
         {
         }
-
-        public SerializableList(List<TValue> defaultValue, Func<NetReader, bool, TValue> valueReader, Action<NetWriter, TValue> valueWriter) :
-            base(defaultValue,
-                (r, f) => r.ReadList(cValueReader => valueReader(cValueReader, f)),
-                (w, v) => w.WriteCollection(v, (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
+        
+        public SerializableList(List<TValue> defaultValue) : base(defaultValue)
         {
         }
 
@@ -111,51 +110,22 @@ namespace LROTech.Network.StateManagement
 
         #endregion
 
+        protected override List<TValue> OnDeserialize(NetReader reader, bool firstTime)
+        {
+            reader.ReadListTo<TValue>(m_CachedValue, Reader);
+            return InternalValue;
+        }
+
+        private TValue Reader(NetReader arg) =>
+            arg.ReadUnmanaged<TValue>();
+
+        protected override void OnSerialize(NetWriter writer) =>
+            writer.WriteCollection(InternalValue, ElementWrite);
+        
+        private void ElementWrite(TValue value, NetWriter writer) =>
+            writer.WriteUnmanaged(value);
+
         public override string ToString() =>
             $"[{string.Join("; ", InternalValue)}]";
-    }
-
-    public class SerializableFloatList : SerializableList<float>
-    {
-        public SerializableFloatList() : this(new List<float>())
-        {
-        }
-
-        public SerializableFloatList(List<float> defaultValue) : base(defaultValue, (r, f) => r.ReadSingle(), (w, v) => w.WriteSingle(v))
-        {
-        }
-    }
-
-    public class SerializableIntList : SerializableList<int>
-    {
-        public SerializableIntList() : this(new List<int>())
-        {
-        }
-
-        public SerializableIntList(List<int> defaultValue) : base(defaultValue, (r, f) => r.ReadInt32(), (w, v) => w.WriteInt32(v))
-        {
-        }
-    }
-
-    public class SerializableBoolList : SerializableList<bool>
-    {
-        public SerializableBoolList() : this(new List<bool>())
-        {
-        }
-
-        public SerializableBoolList(List<bool> defaultValue) : base(defaultValue, (r, f) => r.ReadBoolean(), (w, v) => w.WriteBool(v))
-        {
-        }
-    }
-
-    public class SerializableStringList : SerializableList<string>
-    {
-        public SerializableStringList() : this(new List<string>())
-        {
-        }
-
-        public SerializableStringList(List<string> defaultValue) : base(defaultValue, (r, f) => r.ReadString(), (w, v) => w.WriteString(v))
-        {
-        }
     }
 }
