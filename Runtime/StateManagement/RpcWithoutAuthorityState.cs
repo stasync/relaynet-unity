@@ -20,14 +20,14 @@ namespace LROTech.Network.StateManagement
 
         internal RpcWithoutAuthorityState(NetReader reader)
         {
-            ObjectUid = reader.ReadInstanceId();
+            ObjectUid = reader.ReadNetObjectUid();
             Type = (NoAuthorityRpcType)reader.ReadByte();
             RpcState = new NetObjectRpcState(new NetObjectRpcStateSnapshot(reader));
         }
 
         internal void Serialize(NetWriter writer)
         {
-            writer.WriteInstanceId(ObjectUid);
+            writer.WriteNetObjectUid(ObjectUid);
             writer.WriteByte((byte)Type);
             RpcState.ToSnapshot().Serialize(writer);
         }

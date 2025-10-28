@@ -1,14 +1,18 @@
 ﻿using Core.Networking;
-using System;
 using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableValue<TValue> : SerializableValueBase_Legacy<TValue, TValue>
+    public class SerializableValue<TValue> : SerializableValueBase<TValue, TValue> where TValue : unmanaged
     {
-        public SerializableValue(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) :
-            base(defaultValue, reader, writer)
+        public SerializableValue(TValue defaultValue = default) : base(defaultValue)
         {
         }
+
+        protected override TValue OnDeserialize(NetReader reader, bool firstTime) =>
+            reader.ReadUnmanaged<TValue>();
+
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WriteUnmanaged(Value);
     }
 }

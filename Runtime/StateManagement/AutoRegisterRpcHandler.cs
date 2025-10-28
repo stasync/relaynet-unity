@@ -2,7 +2,7 @@
 
 namespace LROTech.Network.StateManagement
 {
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(validOn: AttributeTargets.Method)]
     public sealed class AutoRegisterRpcHandler : Attribute
     {
     }

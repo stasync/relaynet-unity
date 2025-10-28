@@ -46,13 +46,13 @@ namespace LROTech.Network.StateManagement
         }
 
 #if UNITY_EDITOR
-        public override System.Collections.Generic.IEnumerable<string> GetValuesInfo_Editor()
+        public override System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> GetValuesInfo_Editor()
         {
             foreach (var pair in base.GetValuesInfo_Editor())
                 yield return pair;
 
-            yield return $"{nameof(ViewInitialized)}:{ViewInitialized}";
-            yield return $"{nameof(UnstructuredData)}:{UnstructuredData.Length}";
+            yield return new System.Collections.Generic.KeyValuePair<string, string>(nameof(ViewInitialized), ViewInitialized.ToString());
+            yield return new System.Collections.Generic.KeyValuePair<string, string>(nameof(UnstructuredData), UnstructuredData.Length.ToString());
         }
 #endif
     }

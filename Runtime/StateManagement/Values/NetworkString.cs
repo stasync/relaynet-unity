@@ -1,13 +1,13 @@
 ﻿using System;
 using Core.Networking;
+using LROTech.Network.StateManagement.Values;
 using UnityEngine;
 
 namespace LROTech.Network.StateManagement
 {
-    public abstract class SerializableNumeric<TValue> : SerializableValue<TValue> where TValue : struct, IComparable<TValue>
+    public abstract class SerializableNumeric<TValue> : SerializableValueBase<TValue, TValue> where TValue : struct, IComparable<TValue>
     {
-        public SerializableNumeric(TValue defaultValue, Func<NetReader, bool, TValue> reader, Action<NetWriter, TValue> writer) : base(defaultValue,
-            reader, writer)
+        protected SerializableNumeric(TValue defaultValue = default) : base(defaultValue)
         {
         }
 
@@ -16,58 +16,77 @@ namespace LROTech.Network.StateManagement
     }
 
 
-    public class SerializableFloat : SerializableNumeric<float>
+    public sealed class SerializableFloat : SerializableNumeric<float>
     {
-        public SerializableFloat(float defaultValue = default) : base(defaultValue, (r, f) => r.ReadSingle(), (w, v) => w.WriteSingle(v))
-        {
-        }
+        public override void Change(float value) => 
+            Set(InternalValue + value);
+        
+        public override void ChangeClamped(float value, float min, float max) => 
+            Set(Mathf.Clamp(InternalValue + value, min, max));
 
-        public override void Change(float value) => Set(InternalValue + value);
-        public override void ChangeClamped(float value, float min, float max) => Set(Mathf.Clamp(InternalValue + value, min, max));
+        protected override float OnDeserialize(NetReader reader, bool firstTime) => 
+            reader.ReadSingle();
+
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WriteSingle(InternalValue);
     }
 
-    public class SerializableInt : SerializableNumeric<int>
+    public sealed class SerializableInt : SerializableNumeric<int>
     {
-        public SerializableInt(int defaultValue = default) : base(defaultValue, (r, f) => r.ReadInt32(), (w, v) => w.WriteInt32(v))
-        {
-        }
+        public override void Change(int value) => 
+            Set(InternalValue + value);
+        
+        public override void ChangeClamped(int value, int min, int max) => 
+            Set(Mathf.Clamp(InternalValue + value, min, max));
+        
+        protected override int OnDeserialize(NetReader reader, bool firstTime) => 
+            reader.ReadInt32();
 
-        public override void Change(int value) => Set(InternalValue + value);
-        public override void ChangeClamped(int value, int min, int max) => Set(Mathf.Clamp(InternalValue + value, min, max));
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WriteInt32(InternalValue);
     }
 
-    public class SerializableBool : SerializableValue<bool>
+    public sealed class SerializableBool : SerializableValue<bool>
     {
-        public SerializableBool(bool defaultValue = default) : base(defaultValue, (r, f) => r.ReadBoolean(), (w, v) => w.WriteBool(v))
-        {
-        }
+        protected override bool OnDeserialize(NetReader reader, bool firstTime) => 
+            reader.ReadBoolean();
+
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WriteBool(InternalValue);
     }
 
-    public class SerializableByte : SerializableValue<byte>
+    public sealed class SerializableByte : SerializableValue<byte>
     {
-        public SerializableByte(byte defaultValue = default) : base(defaultValue, (r, f) => r.ReadByte(), (w, v) => w.WriteByte(v))
-        {
-        }
+        protected override byte OnDeserialize(NetReader reader, bool firstTime) => 
+            reader.ReadByte();
+
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WriteByte(InternalValue);
     }
 
-    public class SerializableString : SerializableValue<string>
+    public sealed class SerializableString : SerializableValueBase<string, string>
     {
-        public SerializableString() : this(string.Empty)
+        public SerializableString(string defaultValue = "") : base(defaultValue)
         {
         }
 
-        public SerializableString(string defaultValue) : base(defaultValue, (r, f) => r.ReadString(), (w, v) => w.WriteString(v))
-        {
-        }
+        protected override string OnDeserialize(NetReader reader, bool firstTime) => 
+            reader.ReadString();
+
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WriteString(InternalValue);
     }
 
-    public class SerializableUInt : SerializableNumeric<uint>
+    public sealed class SerializableUInt : SerializableNumeric<uint>
     {
-        public SerializableUInt(uint defaultValue = default) : base(defaultValue, (r, f) => r.ReadPackedUInt32(), (w, v) => w.WritePackedUInt32(v))
-        {
-        }
+        protected override uint OnDeserialize(NetReader reader, bool firstTime) => 
+            reader.ReadPackedUInt32();
 
-        public override void Change(uint value) => Set(InternalValue + value);
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WritePackedUInt32(InternalValue);
+
+        public override void Change(uint value) => 
+            Set(InternalValue + value);
 
         public override void ChangeClamped(uint value, uint min, uint max)
         {
@@ -81,45 +100,12 @@ namespace LROTech.Network.StateManagement
         }
     }
 
-    public class SerializableObjectUID : SerializableValue<NetObjectUid>
+    public sealed class SerializableObjectUID : SerializableValue<NetObjectUid>
     {
-        public SerializableObjectUID() : this(NetObjectUid.Invalid)
-        {
-        }
+        protected override NetObjectUid OnDeserialize(NetReader reader, bool firstTime) => 
+            reader.ReadNetObjectUid();
 
-        public SerializableObjectUID(NetObjectUid defaultValue) : base(defaultValue, (r, f) => r.ReadInstanceId(), (w, v) => w.WriteInstanceId(v))
-        {
-        }
-    }
-
-    public class SerializableVector3 : SerializableValue<Vector3>
-    {
-        public SerializableVector3(Vector3 defaultValue = default) : base(defaultValue, Read, Write)
-        {
-        }
-
-        private static void Write(NetWriter writer, Vector3 value) => 
-            writer.WriteVector3(value);
-
-        private static Vector3 Read(NetReader reader, bool firstTime) =>
-            reader.ReadVector3();
-    }
-
-    public class SerializableVector2 : SerializableValue<Vector2>
-    {
-        public SerializableVector2(Vector2 defaultValue = default) : base(defaultValue, (r, f) => r.ReadVector2(), (w, v) => w.WriteVector2(v))
-        {
-        }
-    }
-
-    public class SerializableQuaternion : SerializableValue<Quaternion>
-    {
-        public SerializableQuaternion() : this(Quaternion.identity)
-        {
-        }
-
-        public SerializableQuaternion(Quaternion defaultValue) : base(defaultValue, (r, f) => r.ReadQuaternion(), (w, v) => w.WriteQuaternion(v))
-        {
-        }
+        protected override void OnSerialize(NetWriter writer) => 
+            writer.WriteNetObjectUid(InternalValue);
     }
 }

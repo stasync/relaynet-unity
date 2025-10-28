@@ -16,7 +16,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         internal NetObjectStateSnapshot(NetReader reader)
         {
             OwnerUID = reader.ReadClientUid();
-            ObjectUID = reader.ReadInstanceId();
+            ObjectUID = reader.ReadNetObjectUid();
             PrefabId = reader.ReadString();
             IsSceneObject = reader.ReadBoolean();
             StateChangeType = (NetObjectStateChangeRequestType)reader.ReadByte();
@@ -38,7 +38,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         internal void Serialize(NetWriter writer)
         {
             writer.WriteClientUid(OwnerUID);
-            writer.WriteInstanceId(ObjectUID);
+            writer.WriteNetObjectUid(ObjectUID);
             writer.WriteString(PrefabId);
             writer.WriteBool(IsSceneObject);
             writer.WriteByte((byte)StateChangeType);

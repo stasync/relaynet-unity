@@ -36,8 +36,6 @@ namespace LROTech.Network.StateManagement.Values
     public abstract class SerializableValueBase<TValue, TExposed> : SerializableValueBase where TValue : TExposed
     {
         public TExposed Value => InternalValue;
-        public void Set(TValue value) => InternalValue = value;
-
         private TValue m_InternalValue;
 
         protected TValue InternalValue
@@ -54,6 +52,9 @@ namespace LROTech.Network.StateManagement.Values
 
         protected SerializableValueBase(TValue defaultValue) =>
             m_InternalValue = defaultValue;
+        
+        public void Set(TValue value) => 
+            InternalValue = value;
 
         internal override void InternalDeserialize(NetReader reader, bool firstTime) =>
             m_InternalValue = OnDeserialize(reader, firstTime);

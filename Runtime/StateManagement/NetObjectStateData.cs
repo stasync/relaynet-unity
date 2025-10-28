@@ -12,7 +12,7 @@ namespace LROTech.Network.StateManagement
         public bool HasWritePermission
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _writePermission();
+            get => _writePermission != null && _writePermission();
         }
 
         public int TypeHashCode
@@ -91,7 +91,7 @@ namespace LROTech.Network.StateManagement
             return result;
         }
 
-        public static NetObjectStateData Provide(Type type, Func<bool> writePermission)
+        internal static NetObjectStateData Provide(Type type, Func<bool> writePermission)
         {
             var dataType = typeof(NetObjectStateData);
             if (!dataType.IsAssignableFrom(type))
@@ -102,7 +102,7 @@ namespace LROTech.Network.StateManagement
             return dataInstance;
         }
 
-        internal static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData
+        internal static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData, new()
         {
             if (Provide(typeof(T), writePermission) is not T instance)
                 throw new InvalidOperationException($"Unable to produce instance of data of type '{typeof(T).FullName}'.");
@@ -113,17 +113,17 @@ namespace LROTech.Network.StateManagement
         private static byte GetTypeIndex(Type dataType) =>
             Core.Utils.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 
-        internal static int GetTypeIndex<TData>() where TData : NetObjectStateData =>
+        internal static int GetTypeIndex<TData>() where TData : NetObjectStateData, new() =>
             GetTypeIndex(typeof(TData));
 
         internal static bool TryGetType(byte index, out Type type) =>
             Core.Utils.Types.Lookup<NetObjectStateData>.WithIndex(index, out type);
 
 #if UNITY_EDITOR
-        public virtual IEnumerable<string> GetValuesInfo_Editor()
+        public virtual IEnumerable<KeyValuePair<string, string>> GetValuesInfo_Editor()
         {
             foreach (var kvp in m_InternalValueCollection)
-                yield return $"{kvp.Key.Replace("k__BackingField", string.Empty)}:{kvp.Value}";
+                yield return new KeyValuePair<string, string>(kvp.Key, kvp.Value.ToString());
         }
 
         public int GetSerializedSize_Editor()

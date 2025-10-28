@@ -4,7 +4,7 @@ using LROTech.Network.StateManagement;
 
 namespace LROTech.Network.GameObjects
 {
-    public abstract class NetObjectBehaviour<TObjectData> : NetObjectBehaviourBase where TObjectData : NetObjectStateData
+    public abstract class NetObjectBehaviour<TObjectData> : NetObjectBehaviourBase where TObjectData : NetObjectStateData, new()
     {
         protected TObjectData Data { get; private set; }
 

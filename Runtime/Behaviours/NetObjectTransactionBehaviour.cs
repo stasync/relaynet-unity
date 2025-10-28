@@ -19,7 +19,7 @@ namespace LROTech.NetworkBehaviours
 
     [DisallowMultipleComponent]
     public abstract class NetObjectTransactionBehaviour<TData> : NetObjectBehaviour<TData>
-        where TData : NetObjectTransactionBehaviour.TransactionNetworkData
+        where TData : NetObjectTransactionBehaviour.TransactionNetworkData, new()
     {
         public NetObjectUid CurrentInteraction => Data.CurrentInteraction.Value;
         public NetObjectUid LastInteraction => Data.LastInteraction.Value;
@@ -83,7 +83,7 @@ namespace LROTech.NetworkBehaviours
             m_InteractionChangeRequestCallbacks.Add(sender, callback);
 
             m_Writer.SeekZero();
-            m_Writer.WriteInstanceId(sender);
+            m_Writer.WriteNetObjectUid(sender);
             m_Writer.WriteBool(interactionState);
             ToOwnerRpc(ChangeTransactionStateRequestRPC, data: m_Writer.ToArray());
         }
@@ -92,7 +92,7 @@ namespace LROTech.NetworkBehaviours
         protected void ChangeTransactionStateRequestRPC(byte[] data)
         {
             m_Reader.Replace(data);
-            var sender = m_Reader.ReadInstanceId();
+            var sender = m_Reader.ReadNetObjectUid();
             var state = m_Reader.ReadBoolean();
 
             var currentInteractionObject = Data.CurrentInteraction.Value;
@@ -101,7 +101,7 @@ namespace LROTech.NetworkBehaviours
                 state ? currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value : currentInteractionObject.Equals(sender);
 
             m_Writer.SeekZero();
-            m_Writer.WriteInstanceId(sender);
+            m_Writer.WriteNetObjectUid(sender);
             m_Writer.WriteBool(canChangeInteractionState);
 
             if (canChangeInteractionState)
@@ -118,7 +118,7 @@ namespace LROTech.NetworkBehaviours
         protected void ChangeTransactionResponseRPC(byte[] data)
         {
             m_Reader.Replace(data);
-            var sender = m_Reader.ReadInstanceId();
+            var sender = m_Reader.ReadNetObjectUid();
             var success = m_Reader.ReadBoolean();
 
             if (m_InteractionChangeRequestCallbacks.TryGetValue(sender, out var callback))

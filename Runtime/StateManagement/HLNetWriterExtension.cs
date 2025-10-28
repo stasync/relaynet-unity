@@ -10,11 +10,11 @@ namespace LROTech.Network.StateManagement
         public static void WritePlayer(this NetWriter writer, NetWorldPlayer value) =>
             writer.WriteClientUid(value?.Uid ?? ClientUid.Invalid);
 
-        public static void WriteInstanceId(this NetWriter writer, NetObjectUid value) =>
+        public static void WriteNetObjectUid(this NetWriter writer, NetObjectUid value) =>
             writer.WritePackedUInt32(value);
 
         public static void WriteIdentity(this NetWriter writer, NetObjectIdentity value) =>
-            WriteInstanceId(writer, value == null ? NetObjectUid.Invalid : value.InstanceId);
+            WriteNetObjectUid(writer, value == null ? NetObjectUid.Invalid : value.InstanceId);
 
         public static void WriteVector2(this NetWriter writer, Vector2 value)
         {

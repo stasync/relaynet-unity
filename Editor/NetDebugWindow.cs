@@ -31,22 +31,22 @@ namespace LROTech.Network.Editor
 
             public void Draw()
             {
-                m_Draw = EditorGUILayout.Foldout(m_Draw, $"Uid: {m_State.Uid} Prefab: {m_State.PrefabId}");
+                m_Draw = EditorGUILayout.Foldout(m_Draw, content: $"Uid: {m_State.Uid} Prefab: {m_State.PrefabId}");
                 if (!m_Draw)
                     return;
 
                 EditorGUI.indentLevel++;
                 {
                     EditorGUILayout.LabelField($"Uid: {m_State.Uid} Scene: {m_State.IsSceneObject} Prefab: {m_State.PrefabId}", EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField($"Change type: {m_State.StateChangeType}", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField($"Change Type: {m_State.StateChangeType}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Owner: {m_State.Owner}");
                     EditorGUILayout.LabelField($"Local: {m_State.IsOwnedByLocalPlayer}");
                     EditorGUILayout.LabelField($"Master: {m_State.IsOwnedByMasterClient}");
 
-                    EditorGUILayout.LabelField($"Total size: {m_State.ToSnapshot().GetSize()}");
+                    EditorGUILayout.LabelField($"Total Size: {m_State.ToSnapshot().GetSize()}");
 
                     if (m_State.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
-                        EditorGUILayout.LabelField($"View data size: {viewData.UnstructuredData.Length}");
+                        EditorGUILayout.LabelField($"View Data Size: {viewData.UnstructuredData.Length}");
 
                     var temporalBuffer = m_State.RpcBuffer.TemporalBuffer;
                     var persistentBuffer = m_State.RpcBuffer.PersistentBuffer;
@@ -75,8 +75,8 @@ namespace LROTech.Network.Editor
                         {
                             EditorGUILayout.LabelField($"{data.GetType().FullName}  Size: {data.GetSerializedSize_Editor()}  Type: {data.TypeHashCode}:", EditorStyles.boldLabel);
                             EditorGUI.indentLevel++;
-                            foreach(var dataValueDefinition in data.GetValuesInfo_Editor())
-                                EditorGUILayout.LabelField(dataValueDefinition);
+                            foreach (var (fieldName, fieldValueString) in data.GetValuesInfo_Editor())
+                                EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldName)}: {fieldValueString}");
                             EditorGUI.indentLevel--;
                         }
                         EditorGUI.indentLevel--;
@@ -85,7 +85,7 @@ namespace LROTech.Network.Editor
                     if (m_World.View != null)
                     {
                         EditorGUI.BeginDisabledGroup(true);
-                        EditorGUILayout.ObjectField("View", m_World.FindObjectView(m_State.Uid), typeof(GameObject), true);
+                        EditorGUILayout.ObjectField(label: "View", m_World.FindObjectView(m_State.Uid), typeof(GameObject), allowSceneObjects: true);
                         EditorGUI.EndDisabledGroup();
                     }
                 }
@@ -99,7 +99,7 @@ namespace LROTech.Network.Editor
                     ? "UNKNOWN"
                     : $"{handlerMethod.DeclaringType!.FullName}.{handlerMethod.Name}";
             
-                EditorGUILayout.LabelField($"{rpc.Uid} Hash: {rpc.Hash} '{handlerInfo}' Payload size: {rpc.Payload.Length}");
+                EditorGUILayout.LabelField($"{rpc.Uid} Hash: {rpc.Hash} '{handlerInfo}' Payload Size: {rpc.Payload.Length}");
             }
         }
 
@@ -144,7 +144,7 @@ namespace LROTech.Network.Editor
                 EditorGUILayout.LabelField($"Hash: {m_World.GetVersionHash()}", EditorStyles.boldLabel);
                 EditorGUILayout.Space();
 
-                //Players
+                // Players.
                 {
                     EditorGUILayout.LabelField("Players: ", EditorStyles.boldLabel);
                     var players = m_World.Players;
@@ -156,12 +156,12 @@ namespace LROTech.Network.Editor
                         DrawPlayer(string.Empty, worldPlayer);
                 }
 
-                //Obejcts
+                // Objects.
                 {
-                    foreach (var UID in m_ObjectViews.Keys.ToList())
+                    foreach (var uid in m_ObjectViews.Keys.ToList())
                     {
-                        if (!m_World.ObjectExists(UID))
-                            m_ObjectViews.Remove(UID);
+                        if (!m_World.ObjectExists(uid))
+                            m_ObjectViews.Remove(uid);
                     }
 
                     // Expand/Collapse all objects;
@@ -205,25 +205,20 @@ namespace LROTech.Network.Editor
                     EditorGUI.indentLevel++;
                     foreach (var fieldInfo in player.Properties.GetType().GetFields(bindingAttr: BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                     {
-                        if (typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType))
-                        {
-                            var dictionary = (IDictionary)fieldInfo.GetValue(player!.Properties);
+                        if (!typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType)) 
+                            continue;
+                        
+                        var dictionary = (IDictionary)fieldInfo.GetValue(player!.Properties);
 
-                            EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldInfo.Name)}: {dictionary.Keys.Count}");
-                            EditorGUI.indentLevel++;
-                            foreach (var key in dictionary.Keys)
-                                EditorGUILayout.LabelField($"{key}: {dictionary[key]}");
-                            EditorGUI.indentLevel--;
-                        }
+                        EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldInfo.Name)}: {dictionary.Keys.Count}");
+                        EditorGUI.indentLevel++;
+                        foreach (var key in dictionary.Keys)
+                            EditorGUILayout.LabelField($"{key}: {dictionary[key]}");
+                        EditorGUI.indentLevel--;
                     }
                     EditorGUI.indentLevel--;
                 }
             }
-        }
-
-        private class BaseWorldDrawer : WorldDrawer<NetWorld>
-        {
-            public BaseWorldDrawer(NetWorld world) : base(world) { }
         }
 
         private class MainWorldDrawer : WorldDrawer<NetWorldRuntime>
@@ -361,7 +356,9 @@ namespace LROTech.Network.Editor
         
             EditorGUILayout.Space();
 
+#pragma warning disable CS0618 // Type or member is obsolete
             var mainWorld = realtime.MainWorld;
+#pragma warning restore CS0618 // Type or member is obsolete
             if (mainWorld == null)
             {
                 EditorGUILayout.HelpBox("World not represented yet", MessageType.Error);

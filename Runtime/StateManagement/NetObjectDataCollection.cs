@@ -21,7 +21,7 @@ namespace LROTech.Network.StateManagement
             m_DataWritePermission = dataWritePermission;
         }
 
-        public T GetOrCreateData<T>() where T : NetObjectStateData
+        public T GetOrCreateData<T>() where T : NetObjectStateData, new()
         {
             var typIndex = NetObjectStateData.GetTypeIndex<T>();
             if (!m_InternalCollection.TryGetValue(typIndex, out var data))
@@ -36,10 +36,10 @@ namespace LROTech.Network.StateManagement
             return data as T;
         }
 
-        public bool HasData<T>() where T : NetObjectStateData =>
+        public bool HasData<T>() where T : NetObjectStateData, new() =>
             m_InternalCollection.ContainsKey(NetObjectStateData.GetTypeIndex<T>());
 
-        public bool TryGetData<T>(out T data) where T : NetObjectStateData
+        public bool TryGetData<T>(out T data) where T : NetObjectStateData, new()
         {
             data = null;
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
@@ -50,7 +50,7 @@ namespace LROTech.Network.StateManagement
             return dataExists;
         }
 
-        public T GetData<T>() where T : NetObjectStateData
+        public T GetData<T>() where T : NetObjectStateData, new()
         {
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
             return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;

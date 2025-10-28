@@ -35,8 +35,8 @@ namespace LROTech.Network.StateManagement.Snapshots
             IsInGameScene = reader.ReadBoolean();
             Platform = (UserDevice.Platform)reader.ReadInt32();
             RTTMs = reader.ReadInt32();
-            TagObjectUIDs = reader.ReadHashSet(netReader => netReader.ReadInstanceId());
-            MainTagObjectUID = reader.ReadInstanceId();
+            TagObjectUIDs = reader.ReadHashSet(netReader => netReader.ReadNetObjectUid());
+            MainTagObjectUID = reader.ReadNetObjectUid();
             Properties = new NetworkPropertiesSnapshot(reader.ReadBytesAndSize());
         }
         
@@ -47,8 +47,8 @@ namespace LROTech.Network.StateManagement.Snapshots
             writer.WriteBool(IsInGameScene);
             writer.WriteInt32((int)Platform);
             writer.WriteSingle(RTTMs);
-            writer.WriteCollection(TagObjectUIDs, (netObjectUid, netWriter) => netWriter.WriteInstanceId(netObjectUid));
-            writer.WriteInstanceId(MainTagObjectUID);
+            writer.WriteCollection(TagObjectUIDs, (netObjectUid, netWriter) => netWriter.WriteNetObjectUid(netObjectUid));
+            writer.WriteNetObjectUid(MainTagObjectUID);
             writer.WriteBytesAndSize(Properties.Data);
         }
 
