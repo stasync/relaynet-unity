@@ -126,7 +126,7 @@ namespace LROTech.Network.Sessions
                         }
                         
                         // Handle local connection.
-                        if (newConnectionId == _reliableUdpClient.ConnectionUid)
+                        if (newConnectionId == (ClientUid)_reliableUdpClient.ConnectionUid)
                         {
                             ConnectionUid = newConnectionId;
                             LocalUserConnected();
