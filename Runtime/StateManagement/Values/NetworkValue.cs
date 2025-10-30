@@ -10,7 +10,7 @@ namespace LROTech.Network.StateManagement
         {
         }
 
-        protected override TValue OnDeserialize(NetReader reader, bool firstTime) =>
+        protected override TValue OnDeserialize(NetReader reader) =>
             SerializationAPI<TValue>.Serializer.Deserialize(reader);
 
         protected override void OnSerialize(NetWriter writer) => 

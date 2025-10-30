@@ -78,7 +78,7 @@ namespace LROTech.Network.StateManagement
                     _internalCollection.Add(typeHashCode, data);
                 }
 
-                data.DeserializeInternal(_reader, firstTime: false);
+                data.DeserializeInternal(_reader);
             }
         }
         

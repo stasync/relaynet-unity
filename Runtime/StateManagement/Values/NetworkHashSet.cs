@@ -51,7 +51,7 @@ namespace LROTech.Network.StateManagement
             InternalValue.Clear();
         }
 
-        protected override HashSet<TValue> OnDeserialize(NetReader reader, bool firstTime)
+        protected override HashSet<TValue> OnDeserialize(NetReader reader)
         {
             reader.ReadHashSetTo(m_CachedValue, ReadFunction);
             return m_CachedValue;

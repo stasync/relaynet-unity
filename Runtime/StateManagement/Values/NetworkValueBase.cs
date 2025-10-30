@@ -10,18 +10,18 @@ namespace LROTech.Network.StateManagement.Values
         internal Func<bool> InternalWritePermission = null;
         protected bool HasPermission => InternalWritePermission();
 
-        internal abstract void InternalDeserialize(NetReader reader, bool firstTime);
+        internal abstract void InternalDeserialize(NetReader reader);
         internal abstract void InternalSerialize(NetWriter writer);
 
-        private static readonly Dictionary<Type, IReadOnlyList<FieldInfo>> _fieldCache = new();
+        private static readonly Dictionary<Type, IReadOnlyList<FieldInfo>> s_fieldCache = new();
 
         internal static IReadOnlyList<FieldInfo> GetFields(Type type)
         {
-            if (_fieldCache.TryGetValue(type, out var result))
+            if (s_fieldCache.TryGetValue(type, out var result))
                 return result;
 
             var newFiledList = new List<FieldInfo>();
-            _fieldCache.Add(type, newFiledList);
+            s_fieldCache.Add(type, newFiledList);
 
             foreach (var filedInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
@@ -56,13 +56,13 @@ namespace LROTech.Network.StateManagement.Values
         public void Set(TValue value) => 
             InternalValue = value;
 
-        internal override void InternalDeserialize(NetReader reader, bool firstTime) =>
-            _internalValue = OnDeserialize(reader, firstTime);
+        internal override void InternalDeserialize(NetReader reader) =>
+            _internalValue = OnDeserialize(reader);
 
         internal override void InternalSerialize(NetWriter writer) =>
             OnSerialize(writer);
 
-        protected abstract TValue OnDeserialize(NetReader reader, bool firstTime);
+        protected abstract TValue OnDeserialize(NetReader reader);
 
         protected abstract void OnSerialize(NetWriter writer);
 

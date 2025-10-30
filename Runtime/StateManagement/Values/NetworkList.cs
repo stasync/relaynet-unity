@@ -20,7 +20,7 @@ namespace LROTech.Network.StateManagement
         {
         }
 
-        protected override List<TValue> OnDeserialize(NetReader reader, bool firstTime)
+        protected override List<TValue> OnDeserialize(NetReader reader)
         {
             reader.ReadListTo(m_CachedValue, ReadFunction);
             return InternalValue;

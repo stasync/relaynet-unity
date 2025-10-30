@@ -24,7 +24,7 @@ namespace LROTech.Network.StateManagement
         public override void ChangeClamped(float value, float min, float max) => 
             Set(Mathf.Clamp(InternalValue + value, min, max));
 
-        protected override float OnDeserialize(NetReader reader, bool firstTime) => 
+        protected override float OnDeserialize(NetReader reader) => 
             reader.ReadSingle();
 
         protected override void OnSerialize(NetWriter writer) => 
@@ -39,7 +39,7 @@ namespace LROTech.Network.StateManagement
         public override void ChangeClamped(int value, int min, int max) => 
             Set(Mathf.Clamp(InternalValue + value, min, max));
         
-        protected override int OnDeserialize(NetReader reader, bool firstTime) => 
+        protected override int OnDeserialize(NetReader reader) => 
             reader.ReadInt32();
 
         protected override void OnSerialize(NetWriter writer) => 
@@ -48,7 +48,7 @@ namespace LROTech.Network.StateManagement
 
     public sealed class SerializableBool : SerializableValue<bool>
     {
-        protected override bool OnDeserialize(NetReader reader, bool firstTime) => 
+        protected override bool OnDeserialize(NetReader reader) => 
             reader.ReadBoolean();
 
         protected override void OnSerialize(NetWriter writer) => 
@@ -57,7 +57,7 @@ namespace LROTech.Network.StateManagement
 
     public sealed class SerializableByte : SerializableValue<byte>
     {
-        protected override byte OnDeserialize(NetReader reader, bool firstTime) => 
+        protected override byte OnDeserialize(NetReader reader) => 
             reader.ReadByte();
 
         protected override void OnSerialize(NetWriter writer) => 
@@ -70,7 +70,7 @@ namespace LROTech.Network.StateManagement
         {
         }
 
-        protected override string OnDeserialize(NetReader reader, bool firstTime) => 
+        protected override string OnDeserialize(NetReader reader) => 
             reader.ReadString();
 
         protected override void OnSerialize(NetWriter writer) => 
@@ -79,7 +79,7 @@ namespace LROTech.Network.StateManagement
 
     public sealed class SerializableUInt : SerializableNumeric<uint>
     {
-        protected override uint OnDeserialize(NetReader reader, bool firstTime) => 
+        protected override uint OnDeserialize(NetReader reader) => 
             reader.ReadPackedUInt32();
 
         protected override void OnSerialize(NetWriter writer) => 
@@ -102,7 +102,7 @@ namespace LROTech.Network.StateManagement
 
     public sealed class SerializableObjectUID : SerializableValue<NetObjectUid>
     {
-        protected override NetObjectUid OnDeserialize(NetReader reader, bool firstTime) => 
+        protected override NetObjectUid OnDeserialize(NetReader reader) => 
             reader.ReadNetObjectUid();
 
         protected override void OnSerialize(NetWriter writer) => 

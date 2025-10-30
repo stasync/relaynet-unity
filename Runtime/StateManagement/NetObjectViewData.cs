@@ -16,9 +16,9 @@ namespace LROTech.Network.StateManagement
             writer.WriteBytesAndSize(UnstructuredData);
         }
 
-        protected override void OnDeserialize(NetReader reader, bool firstTime)
+        protected override void OnDeserialize(NetReader reader)
         {
-            base.OnDeserialize(reader, firstTime);
+            base.OnDeserialize(reader);
 
             ViewInitialized = reader.ReadBoolean();
             UnstructuredData = reader.ReadBytesAndSize();

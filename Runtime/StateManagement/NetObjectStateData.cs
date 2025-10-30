@@ -72,15 +72,15 @@ namespace LROTech.Network.StateManagement
         {
         }
 
-        internal void DeserializeInternal(NetReader reader, bool firstTime)
+        internal void DeserializeInternal(NetReader reader)
         {
             foreach (var value in _internalValueCollection.Values)
-                value.InternalDeserialize(reader, firstTime);
+                value.InternalDeserialize(reader);
 
-            OnDeserialize(reader, firstTime);
+            OnDeserialize(reader);
         }
 
-        protected virtual void OnDeserialize(NetReader reader, bool firstTime)
+        protected virtual void OnDeserialize(NetReader reader)
         {
         }
 
