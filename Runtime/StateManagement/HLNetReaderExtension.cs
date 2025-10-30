@@ -36,37 +36,5 @@ namespace LROTech.Network.StateManagement
 
         public static Quaternion ReadQuaternion(this NetReader reader) =>
             new(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-
-        public static Rect ReadRect(this NetReader reader) =>
-            new(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
-
-        public static Plane ReadPlane(this NetReader reader) =>
-            new(inNormal: reader.ReadVector3(), d: reader.ReadSingle());
-
-        public static Ray ReadRay(this NetReader reader) =>
-            new(origin: reader.ReadVector3(), direction: reader.ReadVector3());
-
-        public static Matrix4x4 ReadMatrix4x4(this NetReader reader) =>
-            new()
-            {
-                // TODO: CHANGE TO READ BLITTABLE.
-
-                m00 = reader.ReadSingle(),
-                m01 = reader.ReadSingle(),
-                m02 = reader.ReadSingle(),
-                m03 = reader.ReadSingle(),
-                m10 = reader.ReadSingle(),
-                m11 = reader.ReadSingle(),
-                m12 = reader.ReadSingle(),
-                m13 = reader.ReadSingle(),
-                m20 = reader.ReadSingle(),
-                m21 = reader.ReadSingle(),
-                m22 = reader.ReadSingle(),
-                m23 = reader.ReadSingle(),
-                m30 = reader.ReadSingle(),
-                m31 = reader.ReadSingle(),
-                m32 = reader.ReadSingle(),
-                m33 = reader.ReadSingle()
-            };
     }
 }

@@ -67,7 +67,7 @@ namespace LROTech.Network.StateManagement
             StateChangeType = NetObjectStateChangeRequestType.UnreliableUpdate;
 
             RpcBuffer = new NetObjectRpcBuffer();
-            DataCollection = new NetObjectDataCollection(() => IsOwnedByLocalPlayer);
+            DataCollection = new NetObjectDataCollection(validator: IsValid, dataWritePermission: () => IsOwnedByLocalPlayer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

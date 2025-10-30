@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
@@ -10,14 +11,16 @@ namespace LROTech.Network.StateManagement
     {
         private readonly NetReader m_Reader;
         private readonly Dictionary<int, NetObjectStateData> m_InternalCollection;
+        private readonly Func<bool> _validator;
         private readonly Func<bool> m_DataWritePermission;
 
         public int Count => m_InternalCollection.Count;
 
-        public NetObjectDataCollection(Func<bool> dataWritePermission)
+        internal NetObjectDataCollection(Func<bool> validator, Func<bool> dataWritePermission)
         {
             m_Reader = new NetReader();
             m_InternalCollection = new Dictionary<int, NetObjectStateData>();
+            _validator = validator;
             m_DataWritePermission = dataWritePermission;
         }
 
@@ -101,5 +104,16 @@ namespace LROTech.Network.StateManagement
 
         IEnumerator IEnumerable.GetEnumerator() =>
             m_InternalCollection.Values.GetEnumerator();
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsValid() =>
+            _validator != null && _validator();
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureValid()
+        {
+            if (!IsValid())
+                throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
+        }
     }
 }

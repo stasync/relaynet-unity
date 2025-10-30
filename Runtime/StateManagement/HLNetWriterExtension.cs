@@ -60,46 +60,5 @@ namespace LROTech.Network.StateManagement
             writer.WriteSingle(value.z);
             writer.WriteSingle(value.w);
         }
-
-        public static void WriteRect(this NetWriter writer, Rect value)
-        {
-            writer.WriteSingle(value.xMin);
-            writer.WriteSingle(value.yMin);
-            writer.WriteSingle(value.width);
-            writer.WriteSingle(value.height);
-        }
-
-        public static void WritePlane(this NetWriter writer, Plane value)
-        {
-            writer.WriteVector3(value.normal);
-            writer.WriteSingle(value.distance);
-        }
-
-        public static void WriteRay(this NetWriter writer, Ray value)
-        {
-            writer.WriteVector3(value.direction);
-            writer.WriteVector3(value.origin);
-        }
-
-        public static void WriteMatrix4x4(this NetWriter writer, Matrix4x4 value)
-        {
-            // TODO: CHANGE TO WRITE BLITTABLE.
-            writer.WriteSingle(value.m00);
-            writer.WriteSingle(value.m01);
-            writer.WriteSingle(value.m02);
-            writer.WriteSingle(value.m03);
-            writer.WriteSingle(value.m10);
-            writer.WriteSingle(value.m11);
-            writer.WriteSingle(value.m12);
-            writer.WriteSingle(value.m13);
-            writer.WriteSingle(value.m20);
-            writer.WriteSingle(value.m21);
-            writer.WriteSingle(value.m22);
-            writer.WriteSingle(value.m23);
-            writer.WriteSingle(value.m30);
-            writer.WriteSingle(value.m31);
-            writer.WriteSingle(value.m32);
-            writer.WriteSingle(value.m33);
-        }
     }
 }
