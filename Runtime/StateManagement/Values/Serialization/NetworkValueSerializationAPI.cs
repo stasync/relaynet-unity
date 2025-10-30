@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LROTech.Network.StateManagement.Values.Serialization.Default;
 
 namespace LROTech.Network.StateManagement.Values.Serialization
 {
@@ -36,7 +35,7 @@ namespace LROTech.Network.StateManagement.Values.Serialization
 
         internal static VariableSerializer<T> GetSerializer<T>() where T : unmanaged
         {
-            s_serializers.TryGetValue(typeof(T), out VariableSerializer serializer);
+            s_serializers.TryGetValue(typeof(T), out var serializer);
             return serializer as VariableSerializer<T>;
         }
     }

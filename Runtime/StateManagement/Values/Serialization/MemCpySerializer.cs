@@ -1,6 +1,6 @@
 using Core.Networking;
 
-namespace LROTech.Network.StateManagement.Values.Serialization.Default
+namespace LROTech.Network.StateManagement.Values.Serialization
 {
     internal sealed class MemCpySerializer<T> : VariableSerializer<T> where T : unmanaged
     {
