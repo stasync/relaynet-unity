@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LROTech.Network.StateManagement.Values.Serialization.Default;
 
 namespace LROTech.Network.StateManagement.Values.Serialization
 {

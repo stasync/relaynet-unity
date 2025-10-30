@@ -1,6 +1,6 @@
 using Core.Networking;
 
-namespace LROTech.Network.StateManagement.Values.Serialization
+namespace LROTech.Network.StateManagement.Values.Serialization.Default
 {
     internal sealed class Int16Serializer : VariableSerializer<short>
     {

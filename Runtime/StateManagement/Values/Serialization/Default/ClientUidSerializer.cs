@@ -1,7 +1,7 @@
 using Core.Networking;
 using LROTech.Network.Sessions;
 
-namespace LROTech.Network.StateManagement.Values.Serialization
+namespace LROTech.Network.StateManagement.Values.Serialization.Default
 {
     internal sealed class ClientUidSerializer : VariableSerializer<ClientUid>
     {
