@@ -38,7 +38,7 @@ namespace LROTech.Network.StateManagement.Values
         public TExposed Value => InternalValue;
         private TValue _internalValue;
 
-        protected TValue InternalValue
+        internal TValue InternalValue
         {
             get => _internalValue;
             set

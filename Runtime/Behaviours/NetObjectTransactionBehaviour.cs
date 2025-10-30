@@ -11,9 +11,9 @@ namespace LROTech.NetworkBehaviours
     {
         public class TransactionNetworkData : NetObjectStateData
         {
-            public readonly SerializableObjectUID CurrentInteraction = new();
-            public readonly SerializableObjectUID LastInteraction = new();
-            public readonly SerializableBool InteractionsEnabled = new();
+            public readonly SerializableValue<NetObjectUid> CurrentInteraction = new();
+            public readonly SerializableValue<NetObjectUid> LastInteraction = new();
+            public readonly SerializableValue<bool> InteractionsEnabled = new();
         }
     }
 
@@ -25,10 +25,10 @@ namespace LROTech.NetworkBehaviours
         public NetObjectUid LastInteraction => Data.LastInteraction.Value;
         public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
 
-        private readonly Dictionary<NetObjectUid, Action<bool>> m_InteractionChangeRequestCallbacks = new();
+        private readonly Dictionary<NetObjectUid, Action<bool>> _interactionChangeRequestCallbacks = new();
 
-        private readonly NetWriter m_Writer = new();
-        private readonly NetReader m_Reader = new();
+        private readonly NetWriter _writer = new();
+        private readonly NetReader _reader = new();
 
         protected override void OnInitializeViewData()
         {
@@ -50,7 +50,7 @@ namespace LROTech.NetworkBehaviours
 
         public void ChangeTransactionRequest(NetObjectUid sender, bool interactionState, Action<bool> callback)
         {
-            if (m_InteractionChangeRequestCallbacks.TryGetValue(sender, out _))
+            if (_interactionChangeRequestCallbacks.TryGetValue(sender, out _))
             {
                 Debug.LogError($"Callback already registered for transaction with object '{sender}' on '{gameObject.name}' and will be merged");
                 callback(false);
@@ -80,29 +80,29 @@ namespace LROTech.NetworkBehaviours
                 return;
             }
 
-            m_InteractionChangeRequestCallbacks.Add(sender, callback);
+            _interactionChangeRequestCallbacks.Add(sender, callback);
 
-            m_Writer.SeekZero();
-            m_Writer.WriteNetObjectUid(sender);
-            m_Writer.WriteBool(interactionState);
-            ToOwnerRpc(ChangeTransactionStateRequestRPC, data: m_Writer.ToArray());
+            _writer.SeekZero();
+            _writer.WriteNetObjectUid(sender);
+            _writer.WriteBool(interactionState);
+            ToOwnerRpc(ChangeTransactionStateRequestRPC, data: _writer.ToArray());
         }
 
         [AutoRegisterRpcHandler]
         protected void ChangeTransactionStateRequestRPC(byte[] data)
         {
-            m_Reader.Replace(data);
-            var sender = m_Reader.ReadNetObjectUid();
-            var state = m_Reader.ReadBoolean();
+            _reader.Replace(data);
+            var sender = _reader.ReadNetObjectUid();
+            var state = _reader.ReadBoolean();
 
             var currentInteractionObject = Data.CurrentInteraction.Value;
 
             var canChangeInteractionState =
                 state ? currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value : currentInteractionObject.Equals(sender);
 
-            m_Writer.SeekZero();
-            m_Writer.WriteNetObjectUid(sender);
-            m_Writer.WriteBool(canChangeInteractionState);
+            _writer.SeekZero();
+            _writer.WriteNetObjectUid(sender);
+            _writer.WriteBool(canChangeInteractionState);
 
             if (canChangeInteractionState)
             {
@@ -111,20 +111,20 @@ namespace LROTech.NetworkBehaviours
                     Data.LastInteraction.Set(sender);
             }
 
-            OwnerToOthersRpc(ChangeTransactionResponseRPC, data: m_Writer.ToArray());
+            OwnerToOthersRpc(ChangeTransactionResponseRPC, data: _writer.ToArray());
         }
 
         [AutoRegisterRpcHandler]
         protected void ChangeTransactionResponseRPC(byte[] data)
         {
-            m_Reader.Replace(data);
-            var sender = m_Reader.ReadNetObjectUid();
-            var success = m_Reader.ReadBoolean();
+            _reader.Replace(data);
+            var sender = _reader.ReadNetObjectUid();
+            var success = _reader.ReadBoolean();
 
-            if (m_InteractionChangeRequestCallbacks.TryGetValue(sender, out var callback))
+            if (_interactionChangeRequestCallbacks.TryGetValue(sender, out var callback))
                 callback(success);
 
-            m_InteractionChangeRequestCallbacks.Remove(sender);
+            _interactionChangeRequestCallbacks.Remove(sender);
         }
     }
 }
