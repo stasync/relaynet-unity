@@ -3,17 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Core.Networking;
-using LROTech.Network.StateManagement.Values;
 using LROTech.Network.StateManagement.Values.Serialization;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Values
 {
-    public class SerializableList<TValue> : NetworkValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
+    public class NetworkList<TValue> : NetworkValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
         where TValue : unmanaged
     {
         private readonly List<TValue> _cachedValue = new();
         
-        public SerializableList(List<TValue> defaultValue = null) : base(defaultValue ?? new List<TValue>())
+        public NetworkList(List<TValue> defaultValue = null) : base(defaultValue ?? new List<TValue>())
         {
         }
 
@@ -22,7 +21,7 @@ namespace LROTech.Network.StateManagement
             _cachedValue.Clear();
             var length = reader.ReadPackedUInt32();
             for (var i = 0; i < length; i++)
-                _cachedValue.Add(SerializationAPI<TValue>.Serializer.Deserialize(reader));
+                _cachedValue.Add(NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader));
             
             return _cachedValue;
         }
@@ -31,7 +30,7 @@ namespace LROTech.Network.StateManagement
         {
             writer.WritePackedUInt32((uint)InternalValue.Count);
             foreach (var value in InternalValue)
-                SerializationAPI<TValue>.Serializer.Serialize(writer, value);
+                NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, value);
         }
 
         #region IList

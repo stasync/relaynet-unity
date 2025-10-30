@@ -1,6 +1,7 @@
 ﻿using System;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
+using LROTech.Network.StateManagement.Values;
 using UnityEngine;
 
 namespace LROTech.NetworkBehaviours

@@ -1,9 +1,8 @@
 ﻿using System;
 using Core.Networking;
-using LROTech.Network.StateManagement.Values;
 using LROTech.Network.StateManagement.Values.Serialization;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Values
 {
     public sealed class NetworkValue<TValue> : NetworkValueBase where TValue : unmanaged
     {
@@ -24,10 +23,10 @@ namespace LROTech.Network.StateManagement
             _value = defaultValue;
         
         internal override void InternalDeserialize(NetReader reader) =>
-            _value = SerializationAPI<TValue>.Serializer.Deserialize(reader);
+            _value = NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader);
 
         internal override void InternalSerialize(NetWriter writer) =>
-            SerializationAPI<TValue>.Serializer.Serialize(writer, Value);
+            NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, Value);
         
         public int GetValueHashCode() =>
             _value.GetHashCode();

@@ -62,7 +62,7 @@ namespace LROTech.Network.StateManagement
                 writer.WritePackedUInt32((uint)_stringData.Count);
                 foreach (var kvp in _stringData)
                 {
-                    SerializationAPI<uint>.Serializer.Serialize(writer, kvp.Key);
+                    NetworkValueSerializationAPI<uint>.Serializer.Serialize(writer, kvp.Key);
                     writer.WriteString(kvp.Value);
                 }
             }
@@ -83,7 +83,7 @@ namespace LROTech.Network.StateManagement
                 var count = reader.ReadPackedUInt32();
                 for(var i = 0; i < count; i++)
                 {
-                    var key = SerializationAPI<uint>.Serializer.Deserialize(reader);
+                    var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
                     var value = reader.ReadString();
                     _stringData.Add(key, value);
                 }
@@ -109,8 +109,8 @@ namespace LROTech.Network.StateManagement
             writer.WritePackedUInt32((uint)dictionary.Count);
             foreach (var kvp in dictionary)
             {
-                SerializationAPI<uint>.Serializer.Serialize(writer, kvp.Key);
-                SerializationAPI<TValue>.Serializer.Serialize(writer, kvp.Value);
+                NetworkValueSerializationAPI<uint>.Serializer.Serialize(writer, kvp.Key);
+                NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, kvp.Value);
             }
         }
         
@@ -120,8 +120,8 @@ namespace LROTech.Network.StateManagement
             var count = reader.ReadPackedUInt32();
             for(var i = 0; i < count; i++)
             {
-                var key = SerializationAPI<uint>.Serializer.Deserialize(reader);
-                var value = SerializationAPI<TValue>.Serializer.Deserialize(reader);
+                var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
+                var value = NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader);
                 dictionary.Add(key, value);
             }
         }

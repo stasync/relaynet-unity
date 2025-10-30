@@ -1,18 +1,17 @@
-﻿using Core.Networking;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using LROTech.Network.StateManagement.Values;
+using Core.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Values
 {
-    public class SerializableHashSet<TValue> : NetworkValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
+    public class NetworkHashSet<TValue> : NetworkValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
         where TValue : unmanaged
     {
         private readonly HashSet<TValue> _cachedValue = new();
         
-        public SerializableHashSet(HashSet<TValue> defaultValue = null) : base(defaultValue ?? new HashSet<TValue>())
+        public NetworkHashSet(HashSet<TValue> defaultValue = null) : base(defaultValue ?? new HashSet<TValue>())
         {
         }
 
@@ -53,7 +52,7 @@ namespace LROTech.Network.StateManagement
             _cachedValue.Clear();
             var length = reader.ReadPackedUInt32();
             for (var i = 0; i < length; i++)
-                _cachedValue.Add(SerializationAPI<TValue>.Serializer.Deserialize(reader));
+                _cachedValue.Add(NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader));
             
             return _cachedValue;
         }
@@ -62,7 +61,7 @@ namespace LROTech.Network.StateManagement
         {
             writer.WritePackedUInt32((uint)InternalValue.Count);
             foreach (var value in InternalValue)
-                SerializationAPI<TValue>.Serializer.Serialize(writer, value);
+                NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, value);
         }
         
         public override string ToString() =>

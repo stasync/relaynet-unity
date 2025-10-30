@@ -1,11 +1,10 @@
 ﻿using Core.Networking;
-using LROTech.Network.StateManagement.Values;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Values
 {
-    public sealed class SerializableString : NetworkValueBase<string, string>
+    public sealed class NetworkString : NetworkValueBase<string, string>
     {
-        public SerializableString(string defaultValue = "") : base(defaultValue)
+        public NetworkString(string defaultValue = "") : base(defaultValue)
         {
         }
 

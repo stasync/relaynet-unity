@@ -1,21 +1,20 @@
-﻿using Core.Networking;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using LROTech.Network.StateManagement.Values;
+using Core.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.StateManagement.Values
 {
-    public class SerializableDictionary<TKey, TValue> : NetworkValueBase<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
+    public class NetworkDictionary<TKey, TValue> : NetworkValueBase<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
         IDictionary<TKey, TValue>
         where TKey : unmanaged
         where TValue : unmanaged
     {
         private readonly Dictionary<TKey, TValue> _cachedValue = new();
 
-        public SerializableDictionary(Dictionary<TKey, TValue> defaultValue = null) : base(defaultValue ?? new Dictionary<TKey, TValue>())
+        public NetworkDictionary(Dictionary<TKey, TValue> defaultValue = null) : base(defaultValue ?? new Dictionary<TKey, TValue>())
         {
         }
 
@@ -25,8 +24,8 @@ namespace LROTech.Network.StateManagement
             var length = reader.ReadPackedUInt32();
             for (var i = 0; i < length; i++)
             {
-                var key = SerializationAPI<TKey>.Serializer.Deserialize(reader);
-                var value = SerializationAPI<TValue>.Serializer.Deserialize(reader);
+                var key = NetworkValueSerializationAPI<TKey>.Serializer.Deserialize(reader);
+                var value = NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader);
                 _cachedValue.Add(key, value);
             }
 
@@ -38,8 +37,8 @@ namespace LROTech.Network.StateManagement
             writer.WritePackedUInt32((uint)InternalValue.Count);
             foreach (var kvp in InternalValue)
             {
-                SerializationAPI<TKey>.Serializer.Serialize(writer, kvp.Key);
-                SerializationAPI<TValue>.Serializer.Serialize(writer, kvp.Value);
+                NetworkValueSerializationAPI<TKey>.Serializer.Serialize(writer, kvp.Key);
+                NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, kvp.Value);
             }
         }
 
