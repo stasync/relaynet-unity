@@ -5,7 +5,7 @@ using Core.Networking;
 
 namespace LROTech.Network.StateManagement.Values
 {
-    public abstract class SerializableValueBase
+    public abstract class NetworkValueBase
     {
         internal Func<bool> InternalWritePermission = null;
         protected bool HasPermission => InternalWritePermission();
@@ -25,7 +25,7 @@ namespace LROTech.Network.StateManagement.Values
 
             foreach (var filedInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
-                if (typeof(SerializableValueBase).IsAssignableFrom(filedInfo.FieldType))
+                if (typeof(NetworkValueBase).IsAssignableFrom(filedInfo.FieldType))
                     newFiledList.Add(filedInfo);
             }
 
@@ -33,31 +33,31 @@ namespace LROTech.Network.StateManagement.Values
         }
     }
     
-    public abstract class SerializableValueBase<TValue, TExposed> : SerializableValueBase where TValue : TExposed
+    public abstract class NetworkValueBase<TValue, TExposed> : NetworkValueBase where TValue : TExposed
     {
         public TExposed Value => InternalValue;
-        private TValue m_InternalValue;
+        private TValue _internalValue;
 
         protected TValue InternalValue
         {
-            get => m_InternalValue;
+            get => _internalValue;
             set
             {
                 if (!HasPermission)
                     throw new InvalidOperationException($"No authority to change value '{typeof(TValue).FullName}'.");
 
-                m_InternalValue = value;
+                _internalValue = value;
             }
         }
 
-        protected SerializableValueBase(TValue defaultValue) =>
-            m_InternalValue = defaultValue;
+        protected NetworkValueBase(TValue defaultValue) =>
+            _internalValue = defaultValue;
         
         public void Set(TValue value) => 
             InternalValue = value;
 
         internal override void InternalDeserialize(NetReader reader, bool firstTime) =>
-            m_InternalValue = OnDeserialize(reader, firstTime);
+            _internalValue = OnDeserialize(reader, firstTime);
 
         internal override void InternalSerialize(NetWriter writer) =>
             OnSerialize(writer);
@@ -67,9 +67,9 @@ namespace LROTech.Network.StateManagement.Values
         protected abstract void OnSerialize(NetWriter writer);
 
         public int GetValueHashCode() =>
-            m_InternalValue.GetHashCode();
+            _internalValue.GetHashCode();
 
         public override string ToString() =>
-            m_InternalValue.ToString();
+            _internalValue.ToString();
     }
 }

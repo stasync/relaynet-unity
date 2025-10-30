@@ -7,7 +7,7 @@ using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableList<TValue> : SerializableValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
+    public class SerializableList<TValue> : NetworkValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
         where TValue : unmanaged
     {
         private readonly List<TValue> m_CachedValue = new();

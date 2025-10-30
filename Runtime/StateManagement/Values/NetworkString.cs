@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace LROTech.Network.StateManagement
 {
-    public abstract class SerializableNumeric<TValue> : SerializableValueBase<TValue, TValue> where TValue : struct, IComparable<TValue>
+    public abstract class SerializableNumeric<TValue> : NetworkValueBase<TValue, TValue> where TValue : struct, IComparable<TValue>
     {
         protected SerializableNumeric(TValue defaultValue = default) : base(defaultValue)
         {
@@ -64,7 +64,7 @@ namespace LROTech.Network.StateManagement
             writer.WriteByte(InternalValue);
     }
 
-    public sealed class SerializableString : SerializableValueBase<string, string>
+    public sealed class SerializableString : NetworkValueBase<string, string>
     {
         public SerializableString(string defaultValue = "") : base(defaultValue)
         {

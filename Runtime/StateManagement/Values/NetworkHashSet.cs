@@ -6,7 +6,7 @@ using LROTech.Network.StateManagement.Values;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableHashSet<TValue> : SerializableValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
+    public class SerializableHashSet<TValue> : NetworkValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
         where TValue : unmanaged
     {
         private readonly HashSet<TValue> m_CachedValue = new();

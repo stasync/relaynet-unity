@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LROTech.Network.StateManagement.Values;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace LROTech.Network.StateManagement
 {
+    [RequireDerived]
     public abstract class NetObjectStateData
     {
         public bool HasWritePermission
@@ -25,8 +27,8 @@ namespace LROTech.Network.StateManagement
 
         private Func<bool> _writePermission;
 
-        public IReadOnlyDictionary<string, SerializableValueBase> SerializableValues => m_InternalValueCollection;
-        private readonly Dictionary<string, SerializableValueBase> m_InternalValueCollection = new();
+        public IReadOnlyDictionary<string, NetworkValueBase> SerializableValues => _internalValueCollection;
+        private readonly Dictionary<string, NetworkValueBase> _internalValueCollection = new();
 
         private void Init(Func<bool> writePermission)
         {
@@ -34,15 +36,15 @@ namespace LROTech.Network.StateManagement
             TypeHashCode = GetTypeIndex(GetType());
 
             // Collect serializable values.
-            foreach (var filedInfo in SerializableValueBase.GetFields(GetType()))
+            foreach (var filedInfo in NetworkValueBase.GetFields(GetType()))
             {
-                if (filedInfo.GetValue(this) is SerializableValueBase value)
+                if (filedInfo.GetValue(this) is NetworkValueBase value)
                 {
-                    if (m_InternalValueCollection.ContainsKey(filedInfo.Name))
+                    if (_internalValueCollection.ContainsKey(filedInfo.Name))
                         throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{filedInfo.Name}'.");
 
                     value.InternalWritePermission = _writePermission;
-                    m_InternalValueCollection.Add(filedInfo.Name, value);
+                    _internalValueCollection.Add(filedInfo.Name, value);
                 }
                 else
                     Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
@@ -52,7 +54,7 @@ namespace LROTech.Network.StateManagement
         internal virtual int GetVersionHash()
         {
             var hash = TypeHashCode;
-            foreach (var value in m_InternalValueCollection.Values)
+            foreach (var value in _internalValueCollection.Values)
                 hash = hash * 7 + value.GetHashCode();
 
             return hash;
@@ -60,7 +62,7 @@ namespace LROTech.Network.StateManagement
 
         internal void SerializeInternal(NetWriter writer)
         {
-            foreach (var serializableValue in m_InternalValueCollection.Values)
+            foreach (var serializableValue in _internalValueCollection.Values)
                 serializableValue.InternalSerialize(writer);
 
             OnSerialize(writer);
@@ -72,7 +74,7 @@ namespace LROTech.Network.StateManagement
 
         internal void DeserializeInternal(NetReader reader, bool firstTime)
         {
-            foreach (var value in m_InternalValueCollection.Values)
+            foreach (var value in _internalValueCollection.Values)
                 value.InternalDeserialize(reader, firstTime);
 
             OnDeserialize(reader, firstTime);
@@ -85,7 +87,7 @@ namespace LROTech.Network.StateManagement
         public override string ToString()
         {
             var result = $"'{GetType().FullName}'";
-            foreach (var kvp in m_InternalValueCollection)
+            foreach (var kvp in _internalValueCollection)
                 result += $" {kvp.Key}:{kvp.Value}";
 
             return result;
@@ -122,7 +124,7 @@ namespace LROTech.Network.StateManagement
 #if UNITY_EDITOR
         public virtual IEnumerable<KeyValuePair<string, string>> GetValuesInfo_Editor()
         {
-            foreach (var kvp in m_InternalValueCollection)
+            foreach (var kvp in _internalValueCollection)
                 yield return new KeyValuePair<string, string>(kvp.Key, kvp.Value.ToString());
         }
 
