@@ -9,55 +9,21 @@ namespace LROTech.Network.StateManagement
 {
     public sealed class NetObjectState
     {
-        public event Action OnOwnerChanged = delegate { };
-        public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
-        public event Action Invalidated = delegate { };
+        private readonly Queue<int> _persistentRpcToRemoveQueue = new();
+        private readonly Func<ClientUid, NetWorldPlayer> _playerProvider;
+        private readonly Queue<NetObjectRpcBuffer.NewRpcData> _rpcBufferUpdateQueue = new();
+        private readonly Queue<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityQueue = new();
+        private readonly List<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityRequests = new();
 
-        private readonly Func<NetObjectUid, bool> m_Validator;
-        private readonly Func<ClientUid, NetWorldPlayer> m_PlayerProvider;
+        private readonly Queue<NetObjectStateChangeRequestType> _mStateChangeTypeQueue = new();
 
-        #region SYNCRONIZED STATE
-
-        public NetObjectUid Uid { get; private set; }
-
-        /// <summary>
-        /// TODO: Should be changed to long or uint
-        /// </summary>
-        public string PrefabId { get; private set; }
-
-        public bool IsSceneObject { get; private set; }
-
-        public ClientUid OwnerUid { get; private set; }
-
-        public NetObjectStateChangeRequestType StateChangeType { get; private set; }
-
-        public readonly NetObjectRpcBuffer RpcBuffer;
-
-        public readonly NetObjectDataCollection DataCollection;
-
-        #endregion
-
-        public bool IsOwnedByLocalPlayer => Owner is { IsLocal: true };
-
-        public bool IsOwnedByMasterClient => Owner is { IsMaster: true };
-
-        public NetWorldPlayer Owner => m_PlayerProvider(OwnerUid);
-
-        public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(Uid);
-
-        internal IReadOnlyCollection<RpcWithoutAuthorityRequest> RpcWithoutAuthorityRequests => m_RpcWithoutAuthorityRequests;
-        private readonly List<RpcWithoutAuthorityRequest> m_RpcWithoutAuthorityRequests = new();
-
-        private readonly Queue<NetObjectStateChangeRequestType> m_StateChangeTypeQueue = new();
-        private readonly Queue<NetObjectRpcBuffer.NewRpcData> m_RpcBufferUpdateQueue = new();
-        private readonly Queue<RpcWithoutAuthorityRequest> m_RpcWithoutAuthorityQueue = new();
-        private readonly Queue<int> m_PersistentRpcToRemoveQueue = new();
+        private readonly Func<NetObjectUid, bool> _mValidator;
 
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId,
             bool isSceneObject, ClientUid owner)
         {
-            m_Validator = validator;
-            m_PlayerProvider = playerProvider;
+            _mValidator = validator;
+            _playerProvider = playerProvider;
 
             Uid = uid;
             PrefabId = prefabId ?? string.Empty;
@@ -70,13 +36,30 @@ namespace LROTech.Network.StateManagement
             DataCollection = new NetObjectDataCollection(validator: IsValid, dataWritePermission: () => IsOwnedByLocalPlayer);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsValid() =>
-            Uid.IsValid && m_Validator != null && m_Validator(Uid);
-
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
-            this(validator, playerProvider, snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID) =>
+            this(validator, playerProvider, snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID)
+        {
             ChangeObjectRemotely(snapshot);
+        }
+
+        public bool IsOwnedByLocalPlayer => Owner is { IsLocal: true };
+
+        public bool IsOwnedByMasterClient => Owner is { IsMaster: true };
+
+        public NetWorldPlayer Owner => _playerProvider(OwnerUid);
+
+        public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(Uid);
+
+        internal IReadOnlyCollection<RpcWithoutAuthorityRequest> RpcWithoutAuthorityRequests => _rpcWithoutAuthorityRequests;
+        public event Action OnOwnerChanged = delegate { };
+        public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
+        public event Action Invalidated = delegate { };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsValid()
+        {
+            return Uid.IsValid && _mValidator != null && _mValidator(Uid);
+        }
 
         public bool IsOwnedBy(ClientUid uid)
         {
@@ -84,8 +67,10 @@ namespace LROTech.Network.StateManagement
             return OwnerUid == uid;
         }
 
-        internal void InvalidateOwner() =>
+        internal void InvalidateOwner()
+        {
             OwnerUid = ClientUid.Invalid;
+        }
 
         internal void Invalidate()
         {
@@ -100,12 +85,12 @@ namespace LROTech.Network.StateManagement
 
             RpcBuffer.Clear();
             DataCollection.Clear();
-            m_RpcWithoutAuthorityRequests.Clear();
+            _rpcWithoutAuthorityRequests.Clear();
 
-            m_StateChangeTypeQueue.Clear();
-            m_RpcBufferUpdateQueue.Clear();
-            m_RpcWithoutAuthorityQueue.Clear();
-            m_PersistentRpcToRemoveQueue.Clear();
+            _mStateChangeTypeQueue.Clear();
+            _rpcBufferUpdateQueue.Clear();
+            _rpcWithoutAuthorityQueue.Clear();
+            _persistentRpcToRemoveQueue.Clear();
 
             Invalidated();
 
@@ -167,13 +152,13 @@ namespace LROTech.Network.StateManagement
         public NetObjectStateSnapshot ToSnapshot()
         {
             EnsureValid();
-            return new NetObjectStateSnapshot(state: this);
+            return new NetObjectStateSnapshot(this);
         }
 
         internal void OnBeforeUpdateWorldState(float worldDelta)
         {
             // Clear rpc request without authority.
-            m_RpcWithoutAuthorityRequests.Clear();
+            _rpcWithoutAuthorityRequests.Clear();
 
             // Clear temporal rpc buffer.
             RpcBuffer.ClearTemporal();
@@ -182,23 +167,21 @@ namespace LROTech.Network.StateManagement
             StateChangeType = NetObjectStateChangeRequestType.UnreliableUpdate;
 
             // New RPC requests.
-            while (m_RpcBufferUpdateQueue.TryDequeue(out var newRpcState))
+            while (_rpcBufferUpdateQueue.TryDequeue(out var newRpcState))
                 RpcBuffer.AddOrUpdate(newRpcState);
 
             // Persistent RPC remove request.
-            while (m_PersistentRpcToRemoveQueue.TryDequeue(out var rpcHash))
+            while (_persistentRpcToRemoveQueue.TryDequeue(out var rpcHash))
                 RpcBuffer.RemovePersistent(rpcHash);
 
             // Update no-authority RPC requests. Note that is not a part of the state.
-            while (m_RpcWithoutAuthorityQueue.TryDequeue(out var rpcWithoutAuthorityRequest))
-                m_RpcWithoutAuthorityRequests.Add(rpcWithoutAuthorityRequest);
+            while (_rpcWithoutAuthorityQueue.TryDequeue(out var rpcWithoutAuthorityRequest))
+                _rpcWithoutAuthorityRequests.Add(rpcWithoutAuthorityRequest);
 
             // State change type requests.
-            while (m_StateChangeTypeQueue.TryDequeue(out var newRequestType))
-            {
+            while (_mStateChangeTypeQueue.TryDequeue(out var newRequestType))
                 if (StateChangeType < newRequestType)
                     StateChangeType = newRequestType;
-            }
         }
 
         internal void ScheduleUpdate(NetObjectStateChangeRequestType requestType)
@@ -209,7 +192,7 @@ namespace LROTech.Network.StateManagement
             if (StateChangeType > requestType)
                 Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
             else
-                m_StateChangeTypeQueue.Enqueue(requestType);
+                _mStateChangeTypeQueue.Enqueue(requestType);
         }
 
         internal void ChangedOwner(ClientUid newOwner)
@@ -220,10 +203,12 @@ namespace LROTech.Network.StateManagement
             if (newOwner.IsValid)
             {
                 UpdateOwnerInternal(newOwner);
-                m_StateChangeTypeQueue.Enqueue(NetObjectStateChangeRequestType.ReliableUpdateOwnerChange);
+                _mStateChangeTypeQueue.Enqueue(NetObjectStateChangeRequestType.ReliableUpdateOwnerChange);
             }
             else
+            {
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");
+            }
         }
 
         public override string ToString()
@@ -239,30 +224,34 @@ namespace LROTech.Network.StateManagement
                    $"rpc: t:{RpcBuffer.TemporalBuffer.Count} p:{RpcBuffer.PersistentBuffer.Count}";
         }
 
-        internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
-            m_RpcWithoutAuthorityQueue.Enqueue(new RpcWithoutAuthorityRequest(Uid, type, hashCode, data, deliveryMethod));
+        internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod)
+        {
+            _rpcWithoutAuthorityQueue.Enqueue(new RpcWithoutAuthorityRequest(Uid, type, hashCode, data, deliveryMethod));
+        }
 
         internal void ScheduleRpc(int hashCode, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod)
         {
-            m_RpcBufferUpdateQueue.Enqueue(new NetObjectRpcBuffer.NewRpcData
+            _rpcBufferUpdateQueue.Enqueue(new NetObjectRpcBuffer.NewRpcData
             {
                 HashCode = hashCode,
                 Data = data,
                 Persistent = persistent,
-                BufferChangeMethod = bufferChangeMethod,
+                BufferChangeMethod = bufferChangeMethod
             });
 
             if (deliveryMethod == DeliveryMethod.Reliable)
                 ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
         }
 
-        internal void ScheduleRemovePersistentRpc(int hashCode) =>
-            m_PersistentRpcToRemoveQueue.Enqueue(hashCode);
+        internal void ScheduleRemovePersistentRpc(int hashCode)
+        {
+            _persistentRpcToRemoveQueue.Enqueue(hashCode);
+        }
 
         internal int GetVersionHash()
         {
             EnsureValid();
-            
+
             var hash = 13;
             hash = hash * 7 + Uid.GetHashCode();
             hash = hash * 7 + PrefabId.GetHashCode();
@@ -286,12 +275,33 @@ namespace LROTech.Network.StateManagement
             public readonly RpcWithoutAuthorityState State;
             public readonly DeliveryMethod DeliveryMethod;
 
-            internal RpcWithoutAuthorityRequest(NetObjectUid objectUID, NoAuthorityRpcType type, int hashCode, byte[] payload,
+            internal RpcWithoutAuthorityRequest(NetObjectUid objectUid, NoAuthorityRpcType type, int hashCode, byte[] payload,
                 DeliveryMethod deliveryMethod)
             {
-                State = new RpcWithoutAuthorityState(objectUID, type, hashCode, payload);
+                State = new RpcWithoutAuthorityState(objectUid, type, hashCode, payload);
                 DeliveryMethod = deliveryMethod;
             }
         }
+
+        #region SYNCRONIZED STATE
+
+        public NetObjectUid Uid { get; private set; }
+
+        /// <summary>
+        ///     TODO: Should be changed to long or uint
+        /// </summary>
+        public string PrefabId { get; private set; }
+
+        public bool IsSceneObject { get; private set; }
+
+        public ClientUid OwnerUid { get; private set; }
+
+        public NetObjectStateChangeRequestType StateChangeType { get; private set; }
+
+        public readonly NetObjectRpcBuffer RpcBuffer;
+
+        public readonly NetObjectDataCollection DataCollection;
+
+        #endregion
     }
 }

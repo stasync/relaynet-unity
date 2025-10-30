@@ -9,44 +9,43 @@ namespace LROTech.Network.StateManagement
 {
     public sealed class NetObjectDataCollection : IReadOnlyCollection<NetObjectStateData>
     {
-        private readonly NetReader m_Reader;
-        private readonly Dictionary<int, NetObjectStateData> m_InternalCollection;
+        private readonly NetReader _reader;
+        private readonly Dictionary<int, NetObjectStateData> _internalCollection;
         private readonly Func<bool> _validator;
-        private readonly Func<bool> m_DataWritePermission;
+        private readonly Func<bool> _dataWritePermission;
 
-        public int Count => m_InternalCollection.Count;
+        public int Count => _internalCollection.Count;
 
         internal NetObjectDataCollection(Func<bool> validator, Func<bool> dataWritePermission)
         {
-            m_Reader = new NetReader();
-            m_InternalCollection = new Dictionary<int, NetObjectStateData>();
+            _reader = new NetReader();
+            _internalCollection = new Dictionary<int, NetObjectStateData>();
             _validator = validator;
-            m_DataWritePermission = dataWritePermission;
+            _dataWritePermission = dataWritePermission;
         }
 
         public T GetOrCreateData<T>() where T : NetObjectStateData, new()
         {
             var typIndex = NetObjectStateData.GetTypeIndex<T>();
-            if (!m_InternalCollection.TryGetValue(typIndex, out var data))
-            {
-                data = NetObjectStateData.Provide<T>(m_DataWritePermission);
-                if (data == null)
-                    throw new InvalidOperationException();
+            if (_internalCollection.TryGetValue(typIndex, out var data)) 
+                return data as T;
+            
+            data = NetObjectStateData.Provide<T>(_dataWritePermission);
+            if (data == null)
+                throw new InvalidOperationException();
 
-                m_InternalCollection.Add(typIndex, data);
-            }
-
-            return data as T;
+            _internalCollection.Add(typIndex, data);
+            return (T)data;
         }
 
         public bool HasData<T>() where T : NetObjectStateData, new() =>
-            m_InternalCollection.ContainsKey(NetObjectStateData.GetTypeIndex<T>());
+            _internalCollection.ContainsKey(NetObjectStateData.GetTypeIndex<T>());
 
         public bool TryGetData<T>(out T data) where T : NetObjectStateData, new()
         {
             data = null;
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
-            var dataExists = m_InternalCollection.TryGetValue(typeHashCode, out var internalData);
+            var dataExists = _internalCollection.TryGetValue(typeHashCode, out var internalData);
             if (dataExists)
                 data = internalData as T;
 
@@ -56,41 +55,41 @@ namespace LROTech.Network.StateManagement
         public T GetData<T>() where T : NetObjectStateData, new()
         {
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
-            return m_InternalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
+            return _internalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
         }
         
         public NetObjectDataCollectionSnapshot ToSnapshot() =>
-            new(m_InternalCollection.Values);
+            new(_internalCollection.Values);
 
         internal void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
         {
-            m_Reader.Replace(snapshot.Data);
+            _reader.Replace(snapshot.Data);
 
-            var dataCount = m_Reader.ReadInt32();
+            var dataCount = _reader.ReadInt32();
             for (var i = 0; i < dataCount; i++)
             {
-                var typeHashCode = m_Reader.ReadInt32();
+                var typeHashCode = _reader.ReadInt32();
                 if (!NetObjectStateData.TryGetType((byte)typeHashCode, out var type))
                     throw new InvalidOperationException($"Unknown type with hash code '{typeHashCode}'.");
 
-                if (!m_InternalCollection.TryGetValue(typeHashCode, out var data))
+                if (!_internalCollection.TryGetValue(typeHashCode, out var data))
                 {
-                    data = NetObjectStateData.Provide(type, m_DataWritePermission);
-                    m_InternalCollection.Add(typeHashCode, data);
+                    data = NetObjectStateData.Provide(type, _dataWritePermission);
+                    _internalCollection.Add(typeHashCode, data);
                 }
 
-                data.DeserializeInternal(m_Reader, firstTime: false);
+                data.DeserializeInternal(_reader, firstTime: false);
             }
         }
         
         internal void Clear() =>
-            m_InternalCollection.Clear();
+            _internalCollection.Clear();
 
         internal int GetVersionHash()
         {
             var hash = 13;
-            hash = hash * 7 + m_InternalCollection.Count.GetHashCode();
-            foreach (var kvp in m_InternalCollection)
+            hash = hash * 7 + _internalCollection.Count.GetHashCode();
+            foreach (var kvp in _internalCollection)
             {
                 hash = hash * 7 + kvp.Key.GetHashCode();
                 hash = hash * 7 + kvp.Value.GetVersionHash();
@@ -100,10 +99,10 @@ namespace LROTech.Network.StateManagement
         }
 
         public IEnumerator<NetObjectStateData> GetEnumerator() =>
-            m_InternalCollection.Values.GetEnumerator();
+            _internalCollection.Values.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() =>
-            m_InternalCollection.Values.GetEnumerator();
+            _internalCollection.Values.GetEnumerator();
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
