@@ -9,30 +9,15 @@ namespace LROTech.Network.GameObjects
     [RequireComponent(typeof(NetObjectIdentity))]
     public abstract class NetObjectBehaviourBase : MonoBehaviour
     {
-        protected IBroadcasterService Broadcaster => m_Broadcaster.Instance;
-        private readonly ServiceProvider<IBroadcasterService> m_Broadcaster = new ();
-
-        private ClientSession _mBackingClientSession;
-
-        [System.Obsolete]
-        protected ClientSession Network
-        {
-            get
-            {
-                // TODO: JUST A HACK TO COMPILE THE PROJECT.
-                if (_mBackingClientSession == null)
-                    _mBackingClientSession = FindAnyObjectByType<ClientSession>(FindObjectsInactive.Exclude);
-            
-                return _mBackingClientSession;
-            }
-        }
+        protected IBroadcasterService Broadcaster => _broadcaster.Instance;
+        private readonly ServiceProvider<IBroadcasterService> _broadcaster = new ();
 
         public NetObjectIdentity Identity =>
-            m_Identity != null ?
-                m_Identity :
-                m_Identity = GetComponent<NetObjectIdentity>();
+            _identity != null ?
+                _identity :
+                _identity = GetComponent<NetObjectIdentity>();
 
-        private NetObjectIdentity m_Identity;
+        private NetObjectIdentity _identity;
     
         internal void OnPreInitializeInternal() => 
             OnPreInitialize();

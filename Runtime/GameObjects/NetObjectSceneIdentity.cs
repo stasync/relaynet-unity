@@ -47,7 +47,11 @@ namespace LROTech.Network.GameObjects
         private void TryRegisterOrInitialize()
         {
             if (!Identity.Initialized)
-                Network.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
+            {
+                // TODO: This is pretty bad - refactor.
+                var ctx = FindAnyObjectByType<ClientSession>(FindObjectsInactive.Exclude);
+                ctx.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
+            }
         }
 
         public static implicit operator NetObjectIdentity(NetObjectSceneIdentity value) =>
