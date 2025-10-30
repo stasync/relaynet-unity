@@ -6,7 +6,7 @@ using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement.Values
 {
-    public class NetworkHashSet<TValue> : NetworkValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
+    public class NetworkHashSet<TValue> : NetworkValueManaged<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
         where TValue : unmanaged
     {
         private readonly HashSet<TValue> _cachedValue = new();
@@ -64,10 +64,13 @@ namespace LROTech.Network.StateManagement.Values
                 NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, value);
         }
         
+        public IEnumerator<TValue> GetEnumerator() => 
+            InternalValue.GetEnumerator();
+        
+        IEnumerator IEnumerable.GetEnumerator() => 
+            InternalValue.GetEnumerator();
+        
         public override string ToString() =>
             $"{InternalValue.Count} [{string.Join("; ", InternalValue)}]";
-
-        public IEnumerator<TValue> GetEnumerator() => InternalValue.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => InternalValue.GetEnumerator();
     }
 }

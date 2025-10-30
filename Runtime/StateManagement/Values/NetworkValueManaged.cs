@@ -3,14 +3,14 @@ using Core.Networking;
 
 namespace LROTech.Network.StateManagement.Values
 {
-    public abstract class NetworkValueBase<TValue, TExposed> : NetworkValueBase where TValue : TExposed
+    public abstract class NetworkValueManaged<TValue, TExposed> : NetworkValueBase where TValue : TExposed
     {
         public TExposed Value => InternalValue;
         protected TValue InternalValue => _internalValue;
         
         private TValue _internalValue;
 
-        protected NetworkValueBase(TValue defaultValue) =>
+        protected NetworkValueManaged(TValue defaultValue) =>
             _internalValue = defaultValue;
 
         public void Set(TValue value)

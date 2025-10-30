@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Core.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement.Values
 {
-    public class NetworkList<TValue> : NetworkValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
+    public class NetworkList<TValue> : NetworkValueManaged<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
         where TValue : unmanaged
     {
         private readonly List<TValue> _cachedValue = new();
@@ -75,7 +74,7 @@ namespace LROTech.Network.StateManagement.Values
         }
 
         public bool Contains(TValue item) =>
-            Value.Contains(item);
+            InternalValue.Contains(item);
 
         public void CopyTo(TValue[] array, int arrayIndex) =>
             InternalValue.CopyTo(array, arrayIndex);

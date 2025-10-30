@@ -2,7 +2,7 @@
 
 namespace LROTech.Network.StateManagement.Values
 {
-    public sealed class NetworkString : NetworkValueBase<string, string>
+    public sealed class NetworkString : NetworkValueManaged<string, string>
     {
         public NetworkString(string defaultValue = "") : base(defaultValue)
         {
