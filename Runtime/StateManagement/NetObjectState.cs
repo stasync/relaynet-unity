@@ -12,10 +12,7 @@ namespace LROTech.Network.StateManagement
         #region SYNCRONIZED STATE
 
         public NetObjectUid Uid { get; private set; }
-
-        /// <summary>
-        ///     TODO: Should be changed to long or uint
-        /// </summary>
+        
         public string PrefabId { get; private set; }
 
         public bool IsSceneObject { get; private set; }
@@ -35,9 +32,7 @@ namespace LROTech.Network.StateManagement
         private readonly Queue<NetObjectRpcBuffer.NewRpcData> _rpcBufferUpdateQueue = new();
         private readonly Queue<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityQueue = new();
         private readonly List<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityRequests = new();
-
         private readonly Queue<NetObjectStateChangeRequestType> _mStateChangeTypeQueue = new();
-
         private readonly Func<NetObjectUid, bool> _mValidator;
 
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId,
