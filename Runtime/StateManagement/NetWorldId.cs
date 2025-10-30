@@ -4,10 +4,12 @@ namespace LROTech.Network.StateManagement
 {
     public readonly struct NetWorldId : IComparable<NetWorldId>, IEquatable<NetWorldId>
     {
+        public const int Size = sizeof(int);
+
         #region STATIC
 
-        public static NetWorldId Allocate() => new(++s_IdCounter);
-        public static NetWorldId Invalid => 0;
+        internal static NetWorldId Allocate() => new(++s_IdCounter);
+        internal static NetWorldId Invalid => new(0);
         private static int s_IdCounter;
 
         #endregion
@@ -16,13 +18,11 @@ namespace LROTech.Network.StateManagement
             m_Value = value;
 
         private readonly int m_Value;
-        public const int Size = sizeof(int);
 
-        public bool IsValid => m_Value > Invalid;
+        public bool IsValid => m_Value > Invalid.m_Value;
 
         public int CompareTo(NetWorldId other) => m_Value.CompareTo(other.m_Value);
         public static implicit operator int(NetWorldId value) => value.m_Value;
-        public static implicit operator NetWorldId(int value) => new(value);
 
         public static bool operator ==(NetWorldId value0, NetWorldId value1) => value0.m_Value == value1.m_Value;
         public static bool operator !=(NetWorldId value0, NetWorldId value1) => value0.m_Value != value1.m_Value;

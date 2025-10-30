@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement.Snapshots;
 
@@ -19,7 +20,7 @@ namespace LROTech.Network.StateManagement
 
         #endregion
 
-        public bool LocalPlayerIsMaster => IsValid() && MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
+        public bool LocalPlayerIsMaster => MasterPlayerUid.IsValid && MasterPlayerUid.Equals(LocalPlayerUid);
         public NetWorldPlayer LocalPlayer => Find(LocalPlayerUid);
         public NetWorldPlayer MasterPlayer => Find(MasterPlayerUid);
 
@@ -35,6 +36,7 @@ namespace LROTech.Network.StateManagement
             m_PlayersCollection = new Dictionary<ClientUid, NetWorldPlayer>();
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsValid() => 
             m_Validator != null && m_Validator();
 
@@ -73,12 +75,18 @@ namespace LROTech.Network.StateManagement
 
             return playerRemoved;
         }
-        
-        public NetWorldPlayer Find(ClientUid uid) => 
-            IsValid() ? m_PlayersCollection.GetValueOrDefault(uid) : null;
-        
-        public bool Contains(ClientUid uid) => 
-            IsValid() && m_PlayersCollection.ContainsKey(uid);
+
+        public NetWorldPlayer Find(ClientUid uid)
+        {
+            EnsureValid();
+            return m_PlayersCollection.GetValueOrDefault(uid);
+        }
+
+        public bool Contains(ClientUid uid)
+        {
+            EnsureValid();
+            return m_PlayersCollection.ContainsKey(uid);
+        }
 
         private void RecalculateMasterPlayerUid()
         {
@@ -101,8 +109,11 @@ namespace LROTech.Network.StateManagement
             m_PlayersCollection = null;
         }
 
-        public NetWorldPlayersCollectionsSnapshot ToSnapshot() =>
-            new(collection: this);
+        public NetWorldPlayersCollectionsSnapshot ToSnapshot()
+        {
+            EnsureValid();
+            return new NetWorldPlayersCollectionsSnapshot(collection: this);
+        }
 
         internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
         {
@@ -150,7 +161,23 @@ namespace LROTech.Network.StateManagement
             return hash;
         }
 
-        public IEnumerator<NetWorldPlayer> GetEnumerator() => All.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => All.GetEnumerator();
+        public IEnumerator<NetWorldPlayer> GetEnumerator()
+        {
+            EnsureValid();
+            return All.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            EnsureValid();
+            return All.GetEnumerator();
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureValid()
+        {
+            if (!IsValid())
+                throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
+        }
     }
 }

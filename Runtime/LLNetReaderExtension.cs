@@ -2,9 +2,8 @@ using Core.Networking;
 
 namespace LROTech.Network.Sessions
 {
-    public static class LLNetReaderExtension 
+    public static class LLNetReaderExtension
     {
-        public static ClientUid ReadClientUid(this NetReader reader) =>
-             (ClientUid)reader.ReadPackedUInt32();
+        public static ClientUid ReadClientUid(this NetReader reader) => new(reader.ReadPackedUInt32());
     }
 }

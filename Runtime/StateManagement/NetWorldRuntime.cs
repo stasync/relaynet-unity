@@ -22,7 +22,7 @@ namespace LROTech.Network.StateManagement
         public event DataSendRequestDelegate DataSendRequested = delegate { };
 
         public IReadOnlyCollection<byte[]> IncomingStateChangeRequests => m_IncomingStateChangeRequests;
-        private readonly Queue<byte[]>  m_IncomingStateChangeRequests = new();
+        private readonly Queue<byte[]> m_IncomingStateChangeRequests = new();
 
         public IReadOnlyDictionary<NetObjectUid, NetObjectState> TemporaryUnregisteredObjects => m_TemporaryUnregisteredObjects;
         private readonly Dictionary<NetObjectUid, NetObjectState> m_TemporaryUnregisteredObjects = new();
@@ -83,7 +83,7 @@ namespace LROTech.Network.StateManagement
                 {
                     m_Reader.Replace(stateChangeData);
                     var worldChangeOpCode = (NetWorldRuntimeChangeOp)m_Reader.ReadByte();
-                    
+
                     switch (worldChangeOpCode)
                     {
                         // Other client wants to tell us about its player state.
@@ -389,7 +389,7 @@ namespace LROTech.Network.StateManagement
                             Debug.LogError($"Unable to restore object {newState} form {snapshot}");
                     }
                     else
-                        newState = new NetObjectState(snapshot, Players.Find);
+                        newState = new NetObjectState(IsObjectValid, Players.Find, snapshot);
 
                     TryAddObject(newState);
                     remoteObjectUpdateRequests.Remove(uid);
@@ -448,7 +448,7 @@ namespace LROTech.Network.StateManagement
                         deliveryMethod = DeliveryMethod.Reliable;
 
                     state.PrepareForSerialization();
-                    
+
                     m_Writer.SeekZero();
                     m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.ObjectStateUpdate);
                     state.ToSnapshot().Serialize(m_Writer);
@@ -499,8 +499,11 @@ namespace LROTech.Network.StateManagement
         /// Create another world that could evaluate and re-player this world's history buffer.
         /// </summary>
         /// <returns></returns>
-        public NetWorldEvaluator Replicate() =>
-            new(runtime: this);
+        public NetWorldEvaluator Replicate()
+        {
+            EnsureValid();
+            return new NetWorldEvaluator(runtime: this);
+        }
 
         protected override void RemoveObject(NetObjectUid stateUID)
         {
@@ -529,10 +532,12 @@ namespace LROTech.Network.StateManagement
         /// </summary>
         public NetObjectIdentity CreateObject(NetWorldPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
         {
+            EnsureValid();
+
             if (!owner.IsLocal)
                 throw new InvalidOperationException();
 
-            var state = new NetObjectState(NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid, Players.Find);
+            var state = new NetObjectState(IsObjectValid, Players.Find, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
             m_TemporaryUnregisteredObjects.Add(state.Uid, state);
             return View.CreateImmediate(state, position, rotation);
         }
@@ -559,8 +564,7 @@ namespace LROTech.Network.StateManagement
 
             // Create state from scene object identity.
             // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-            var newState = new NetObjectState(sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid,
-                Players.Find);
+            var newState = new NetObjectState(IsObjectValid, Players.Find, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid);
             m_TemporaryUnregisteredObjects.Add(newState.Uid, newState);
             var newStateUID = newState.Uid;
 
@@ -599,6 +603,9 @@ namespace LROTech.Network.StateManagement
             return existed;
         }
 
+        protected override bool IsObjectValid(NetObjectUid instanceId) =>
+            base.IsObjectValid(instanceId) || m_TemporaryUnregisteredObjects.ContainsKey(instanceId);
+
         /// <summary>
         /// Get object before in was actually created by the world replication.
         /// Note that this object will not be in valid state, until update happens.
@@ -611,7 +618,7 @@ namespace LROTech.Network.StateManagement
             if (identity != null)
                 return identity;
 
-            var state = new NetObjectState(instanceId, prefabId, isSceneObject, owner.Uid, Players.Find);
+            var state = new NetObjectState(IsObjectValid, Players.Find, instanceId, prefabId, isSceneObject, owner.Uid);
             m_TemporaryUnregisteredObjects.Add(instanceId, state);
             return View.CreateImmediate(state, position, rotation);
         }
@@ -624,14 +631,19 @@ namespace LROTech.Network.StateManagement
             return networkObject == null ? null : networkObject.GetComponent<T>();
         }
 
-        public int GetHistoryBufferSize() =>
-            HistoryBuffer.Size;
+        public int GetHistoryBufferSize()
+        {
+            EnsureValid();
+            return HistoryBuffer.Size;
+        }
 
         /// <summary>
         /// World has to be notified, when game world is loaded.
         /// </summary>
         public void OnSceneLoaded()
         {
+            EnsureValid();
+
             // Check for player exists.
             var player = Players.LocalPlayer;
             if (player != null)

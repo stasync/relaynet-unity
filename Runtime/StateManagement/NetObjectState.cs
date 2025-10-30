@@ -1,6 +1,6 @@
-using Core.Networking;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement.Snapshots;
 using UnityEngine;
@@ -13,9 +13,8 @@ namespace LROTech.Network.StateManagement
         public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
         public event Action Invalidated = delegate { };
 
+        private readonly Func<NetObjectUid, bool> m_Validator;
         private readonly Func<ClientUid, NetWorldPlayer> m_PlayerProvider;
-
-        public bool IsValid => Uid.IsValid;
 
         #region SYNCRONIZED STATE
 
@@ -41,7 +40,7 @@ namespace LROTech.Network.StateManagement
         public bool IsOwnedByLocalPlayer => Owner is { IsLocal: true };
 
         public bool IsOwnedByMasterClient => Owner is { IsMaster: true };
-        
+
         public NetWorldPlayer Owner => m_PlayerProvider(OwnerUid);
 
         public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(Uid);
@@ -54,11 +53,10 @@ namespace LROTech.Network.StateManagement
         private readonly Queue<RpcWithoutAuthorityRequest> m_RpcWithoutAuthorityQueue = new();
         private readonly Queue<int> m_PersistentRpcToRemoveQueue = new();
 
-        private readonly NetWriter m_Writer = new();
-
-        internal NetObjectState(NetObjectUid uid, string prefabId, bool isSceneObject, ClientUid owner,
-            Func<ClientUid, NetWorldPlayer> playerProvider)
+        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId,
+            bool isSceneObject, ClientUid owner)
         {
+            m_Validator = validator;
             m_PlayerProvider = playerProvider;
 
             Uid = uid;
@@ -72,19 +70,26 @@ namespace LROTech.Network.StateManagement
             DataCollection = new NetObjectDataCollection(() => IsOwnedByLocalPlayer);
         }
 
-        internal NetObjectState(NetObjectStateSnapshot snapshot, Func<ClientUid, NetWorldPlayer> playerProvider) :
-            this(snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID, playerProvider) =>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsValid() =>
+            Uid.IsValid && m_Validator != null && m_Validator(Uid);
+
+        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
+            this(validator, playerProvider, snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID) =>
             ChangeObjectRemotely(snapshot);
-        
-        public bool IsOwnedBy(ClientUid uid) => 
-            OwnerUid == uid;
+
+        public bool IsOwnedBy(ClientUid uid)
+        {
+            EnsureValid();
+            return OwnerUid == uid;
+        }
 
         internal void InvalidateOwner() =>
             OwnerUid = ClientUid.Invalid;
 
         internal void Invalidate()
         {
-            var wasValid = IsValid;
+            EnsureValid();
 
             Uid = NetObjectUid.Invalid;
             InvalidateOwner();
@@ -102,8 +107,7 @@ namespace LROTech.Network.StateManagement
             m_RpcWithoutAuthorityQueue.Clear();
             m_PersistentRpcToRemoveQueue.Clear();
 
-            if (wasValid)
-                Invalidated();
+            Invalidated();
 
             LocalUpdateRequest = null;
             Invalidated = null;
@@ -160,8 +164,11 @@ namespace LROTech.Network.StateManagement
                 OnOwnerChanged();
         }
 
-        public NetObjectStateSnapshot ToSnapshot() =>
-            new(state: this);
+        public NetObjectStateSnapshot ToSnapshot()
+        {
+            EnsureValid();
+            return new NetObjectStateSnapshot(state: this);
+        }
 
         internal void OnBeforeUpdateWorldState(float worldDelta)
         {
@@ -219,14 +226,18 @@ namespace LROTech.Network.StateManagement
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");
         }
 
-        public override string ToString() =>
-            $"{Uid}:{PrefabId} " +
-            $"s:{IsSceneObject} " +
-            $"st:{StateChangeType} " +
-            $"own:{OwnerUid}:{(Owner == null ? "null" : Owner.ToString())} " +
-            $"l:{IsOwnedByLocalPlayer} " +
-            $"m:{IsOwnedByMasterClient} " +
-            $"rpc: t:{RpcBuffer.TemporalBuffer.Count} p:{RpcBuffer.PersistentBuffer.Count}";
+        public override string ToString()
+        {
+            EnsureValid();
+
+            return $"{Uid}:{PrefabId} " +
+                   $"s:{IsSceneObject} " +
+                   $"st:{StateChangeType} " +
+                   $"own:{OwnerUid}:{(Owner == null ? "null" : Owner.ToString())} " +
+                   $"l:{IsOwnedByLocalPlayer} " +
+                   $"m:{IsOwnedByMasterClient} " +
+                   $"rpc: t:{RpcBuffer.TemporalBuffer.Count} p:{RpcBuffer.PersistentBuffer.Count}";
+        }
 
         internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
             m_RpcWithoutAuthorityQueue.Enqueue(new RpcWithoutAuthorityRequest(Uid, type, hashCode, data, deliveryMethod));
@@ -250,6 +261,8 @@ namespace LROTech.Network.StateManagement
 
         internal int GetVersionHash()
         {
+            EnsureValid();
+            
             var hash = 13;
             hash = hash * 7 + Uid.GetHashCode();
             hash = hash * 7 + PrefabId.GetHashCode();
@@ -259,6 +272,13 @@ namespace LROTech.Network.StateManagement
             hash = hash * 7 + RpcBuffer.GetVersionHash();
             hash = hash * 7 + DataCollection.GetVersionHash();
             return hash;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureValid()
+        {
+            if (!IsValid())
+                throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
         }
 
         internal readonly struct RpcWithoutAuthorityRequest

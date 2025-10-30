@@ -10,7 +10,7 @@ namespace LROTech.Network.Sessions
         public bool IsValid => m_Value > Invalid.m_Value;
         private readonly uint m_Value;
 
-        private ClientUid(uint value) => m_Value = value;
+        internal ClientUid(uint value) => m_Value = value;
 
         public static bool operator ==(ClientUid value0, ClientUid value1) => value0.m_Value == value1.m_Value;
         public static bool operator !=(ClientUid value0, ClientUid value1) => value0.m_Value != value1.m_Value;
@@ -22,7 +22,6 @@ namespace LROTech.Network.Sessions
         public static bool operator >=(ClientUid value0, ClientUid value1) => value0.m_Value >= value1.m_Value;
         
         public static explicit operator uint(ClientUid value) => value.m_Value;
-        public static explicit operator ClientUid(uint value) => new(value);
 
         public int CompareTo(ClientUid other) =>
             m_Value.CompareTo(other.m_Value);

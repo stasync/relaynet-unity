@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement.Snapshots;
 using UnityEngine;
@@ -64,15 +65,15 @@ namespace LROTech.Network.StateManagement
 
         public void Update(float deltaTime)
         {
-            if (IsValid)
-                UpdateImplementation(deltaTime);
+            EnsureValid();
+            UpdateImplementation(deltaTime);
         }
 
         protected abstract void UpdateImplementation(float deltaTime);
 
         protected bool TryAddObject(NetObjectState state)
         {
-            if (!state.IsValid)
+            if (!state.Uid.IsValid)
                 throw new InvalidOperationException();
 
             var canAddObject = !ObjectExists(state.Uid);
@@ -119,6 +120,8 @@ namespace LROTech.Network.StateManagement
 
         public virtual void Dispose()
         {
+            EnsureValid();
+            
             UID = NetWorldId.Invalid;
             ID = NetWorldId.Invalid;
             SourceID = NetWorldId.Invalid;
@@ -143,20 +146,34 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        public virtual bool ObjectExists(NetObjectUid uid) =>
-            m_CurrentObjectStates.ContainsKey(uid);
+        public virtual bool ObjectExists(NetObjectUid uid)
+        {
+            EnsureValid();
+            return m_CurrentObjectStates.ContainsKey(uid);
+        }
 
-        public NetObjectIdentity FindObjectView(NetObjectUid instanceId) =>
-            View == null ? null : View.FindObjectView(instanceId);
+        public NetObjectIdentity FindObjectView(NetObjectUid instanceId)
+        {
+            EnsureValid();
+            return View == null ? null : View.FindObjectView(instanceId);
+        }
 
-        public T FindObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase =>
-            View == null ? null : View.FindObjectView<T>(instanceId);
+        public T FindObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase
+        {
+            EnsureValid();
+            return View == null ? null : View.FindObjectView<T>(instanceId);
+        }
 
-        public IEnumerable<T> FindObjectViewsOfType<T>() where T : NetObjectBehaviourBase =>
-            View == null ? null : View.FindObjectViewsOfType<T>();
+        public IEnumerable<T> FindObjectViewsOfType<T>() where T : NetObjectBehaviourBase
+        {
+            EnsureValid();
+            return View == null ? null : View.FindObjectViewsOfType<T>();
+        }
 
         public T FindObjectViewOfType<T>() where T : NetObjectBehaviourBase
         {
+            EnsureValid();
+
             if (View == null)
                 return null;
 
@@ -170,14 +187,25 @@ namespace LROTech.Network.StateManagement
             return null;
         }
 
-        public virtual NetObjectState FindObject(NetObjectUid instanceId) =>
-            m_CurrentObjectStates.GetValueOrDefault(instanceId);
+        public virtual NetObjectState FindObject(NetObjectUid instanceId)
+        {
+            EnsureValid();
+            return m_CurrentObjectStates.GetValueOrDefault(instanceId);
+        }
 
-        public bool TryGetObject(NetObjectUid instanceId, out NetObjectState state) =>
-            m_CurrentObjectStates.TryGetValue(instanceId, out state);
+        public bool TryGetObject(NetObjectUid instanceId, out NetObjectState state)
+        {
+            EnsureValid();
+            return m_CurrentObjectStates.TryGetValue(instanceId, out state);
+        }
+        
+        protected virtual bool IsObjectValid(NetObjectUid instanceId) => 
+            m_CurrentObjectStates.ContainsKey(instanceId);
 
         protected virtual void RemoveObject(NetObjectUid stateUID)
         {
+            EnsureValid();
+
             if (!m_CurrentObjectStates.TryGetValue(stateUID, out var state))
                 return;
 
@@ -185,8 +213,11 @@ namespace LROTech.Network.StateManagement
             m_CurrentObjectStates.Remove(stateUID);
         }
 
-        public NetWorldSnapshot ToSnapshot(float deltaTime = 0f) =>
-            new(deltaTime, world: this);
+        public NetWorldSnapshot ToSnapshot(float deltaTime = 0f)
+        {
+            EnsureValid();
+            return new NetWorldSnapshot(deltaTime, world: this);
+        }
 
         protected void RestoreFromSnapshot(NetWorldSnapshot snapshot)
         {
@@ -201,12 +232,12 @@ namespace LROTech.Network.StateManagement
             Properties.RestoreFromSnapshot(snapshot.Properties);
 
             // Add or update objects.
-            foreach (var kvp in snapshot.Objects)
+            foreach (var (uid, objectStateSnapshot) in snapshot.Objects)
             {
-                if (m_CurrentObjectStates.TryGetValue(kvp.Key, out var state))
-                    state.ChangeObjectRemotely(kvp.Value);
+                if (m_CurrentObjectStates.TryGetValue(uid, out var state))
+                    state.ChangeObjectRemotely(objectStateSnapshot);
                 else
-                    TryAddObject(new NetObjectState(kvp.Value, Players.Find));
+                    TryAddObject(new NetObjectState(IsObjectValid, Players.Find, objectStateSnapshot));
             }
 
             // Remove absent objects.
@@ -227,6 +258,8 @@ namespace LROTech.Network.StateManagement
 
         public int GetVersionHash()
         {
+            EnsureValid();
+
             var hash = 13;
             hash = hash * 7 + ID.GetHashCode();
             hash = hash * 7 + Time.GetHashCode();
@@ -241,6 +274,13 @@ namespace LROTech.Network.StateManagement
             hash = hash * 7 + Properties.GetVersionHash();
 
             return hash;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected void EnsureValid()
+        {
+            if (!IsValid)
+                throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
         }
     }
 }
