@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace LROTech.Network.StateManagement
 {
-    public class NetWorldView : MonoBehaviour
+    public sealed class NetWorldView : MonoBehaviour
     {
         public event Action<NetObjectIdentity> NewObjectInitialized = delegate { };
 

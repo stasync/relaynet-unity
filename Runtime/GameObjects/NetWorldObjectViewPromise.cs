@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using LROTech.Network.GameObjects;
+using LROTech.Network.StateManagement;
 
-namespace LROTech.Network.StateManagement
+namespace LROTech.Network.GameObjects
 {
     public sealed class NetWorldObjectViewWaiter : IDisposable
     {

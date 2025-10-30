@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Core.Utils.Math;
 using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace LROTech.Network.GameObjects
 {
@@ -15,13 +15,16 @@ namespace LROTech.Network.GameObjects
         {
         }
 
+        [FormerlySerializedAs("m_SceneObjectId")] 
         [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
-        private int m_SceneObjectId;
+        private int _sceneObjectId;
 
-        public NetObjectUid SceneObjectId => new((uint)m_SceneObjectId);
+        public NetObjectUid SceneObjectId => new((uint)_sceneObjectId);
 
-        [SerializeField] private string m_PrefabId;
-        public string PrefabID => m_PrefabId;
+        [FormerlySerializedAs("m_PrefabId")] 
+        [SerializeField] 
+        private string _prefabId;
+        public string PrefabID => _prefabId;
 
         /// <summary>
         /// We need to register this object in object factory, if it placed in scene by default.
@@ -75,7 +78,7 @@ namespace LROTech.Network.GameObjects
                     continue;
 
                 Debug.LogErrorFormat(
-                    $"'{obj.gameObject.name}' and '{objectWithSameId.gameObject.name}' game objects has same scene id '{obj.m_SceneObjectId}'.");
+                    $"'{obj.gameObject.name}' and '{objectWithSameId.gameObject.name}' game objects has same scene id '{obj._sceneObjectId}'.");
             }
 
             Debug.LogWarning("Validation finished");
@@ -95,7 +98,7 @@ namespace LROTech.Network.GameObjects
             {
                 UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
                 while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
-                    sceneObjectIdentity.m_SceneObjectId =
+                    sceneObjectIdentity._sceneObjectId =
                         RandomExtended.Default.Int(NetObjectUid.FIRST_VALID_UID, NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE);
             }
 
@@ -105,7 +108,7 @@ namespace LROTech.Network.GameObjects
         private static NetObjectSceneIdentity ObjectWithSameId(IEnumerable<NetObjectSceneIdentity> sceneObjects, NetObjectSceneIdentity target) =>
             sceneObjects
                 .Where(o => o != target)
-                .FirstOrDefault(o => o.m_SceneObjectId == target.m_SceneObjectId);
+                .FirstOrDefault(o => o._sceneObjectId == target._sceneObjectId);
 #endif
     }
 }
