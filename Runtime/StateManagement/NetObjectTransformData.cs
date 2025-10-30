@@ -4,10 +4,10 @@ namespace LROTech.Network.StateManagement
 {
     public sealed class NetObjectTransformData : NetObjectStateData
     {
-        public readonly SerializableValue<Vector3> Position = new();
-        public readonly SerializableValue<Quaternion> Rotation = new();
-        public readonly SerializableValue<Vector3> Velocity = new();
-        public readonly SerializableValue<float> WorldTime = new();
-        public readonly SerializableValue<bool> HasParent = new();
+        public readonly NetworkValue<Vector3> Position = new();
+        public readonly NetworkValue<Quaternion> Rotation = new();
+        public readonly NetworkValue<Vector3> Velocity = new();
+        public readonly NetworkValue<float> WorldTime = new();
+        public readonly NetworkValue<bool> HasParent = new();
     }
 }

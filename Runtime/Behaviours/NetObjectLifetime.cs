@@ -7,8 +7,8 @@ namespace LROTech.NetworkBehaviours
 {
     public sealed class NetObjectLifetimeData : NetObjectStateData
     {
-        public readonly SerializableValue<float> Lifetime = new();
-        public readonly SerializableValue<float> CurrentLifetime = new();
+        public readonly NetworkValue<float> Lifetime = new();
+        public readonly NetworkValue<float> CurrentLifetime = new();
 
         public float NormalizedLifetime => CurrentLifetime.Value / Lifetime.Value;
     }

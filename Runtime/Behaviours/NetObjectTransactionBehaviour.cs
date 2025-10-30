@@ -11,9 +11,9 @@ namespace LROTech.NetworkBehaviours
     {
         public class TransactionNetworkData : NetObjectStateData
         {
-            public readonly SerializableValue<NetObjectUid> CurrentInteraction = new();
-            public readonly SerializableValue<NetObjectUid> LastInteraction = new();
-            public readonly SerializableValue<bool> InteractionsEnabled = new();
+            public readonly NetworkValue<NetObjectUid> CurrentInteraction = new();
+            public readonly NetworkValue<NetObjectUid> LastInteraction = new();
+            public readonly NetworkValue<bool> InteractionsEnabled = new();
         }
     }
 
