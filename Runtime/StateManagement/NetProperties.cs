@@ -2,84 +2,128 @@
 using System;
 using System.Collections.Generic;
 using LROTech.Network.StateManagement.Snapshots;
+using LROTech.Network.StateManagement.Values.Serialization;
+using Unity.VisualScripting.YamlDotNet.Core.Tokens;
 
 namespace LROTech.Network.StateManagement
 {
     public sealed class NetworkProperties
     {
-        private readonly Dictionary<uint, byte> m_ByteData = new();
-        private readonly Dictionary<uint, uint> m_UIntData = new();
-        private readonly Dictionary<uint, int> m_IntData = new();
-        private readonly Dictionary<uint, float> m_FloatData = new();
-        private readonly Dictionary<uint, bool> m_BoolData = new();
-        private readonly Dictionary<uint, string> m_StringData = new();
-        private readonly Dictionary<uint, UnityEngine.Vector3> m_Vector3Data = new();
+        private readonly Dictionary<uint, byte> _byteData = new();
+        private readonly Dictionary<uint, uint> _uIntData = new();
+        private readonly Dictionary<uint, int> _intData = new();
+        private readonly Dictionary<uint, float> _floatData = new();
+        private readonly Dictionary<uint, bool> _boolData = new();
+        private readonly Dictionary<uint, string> _stringData = new();
+        private readonly Dictionary<uint, UnityEngine.Vector3> _vector3Data = new();
 
-        private readonly Func<bool> m_WritePermission;
-        private readonly NetWriter m_Writer = new();
-        private readonly NetReader m_Reader = new();
+        private readonly Func<bool> _writePermission;
+        private readonly NetWriter _writer = new();
+        private readonly NetReader _reader = new();
 
         internal NetworkProperties(Func<bool> writePermission) =>
-            m_WritePermission = writePermission ?? throw new ArgumentNullException(nameof(writePermission));
+            _writePermission = writePermission ?? throw new ArgumentNullException(nameof(writePermission));
 
         public NetworkPropertiesSnapshot ToSnapshot()
         {
-            m_Writer.SeekZero();
-            Serialize(m_Writer);
-            return new NetworkPropertiesSnapshot(m_Writer.ToArray());
+            _writer.SeekZero();
+            Serialize(_writer);
+            return new NetworkPropertiesSnapshot(_writer.ToArray());
         }
 
         internal void Clean()
         {
-            m_ByteData.Clear();
-            m_UIntData.Clear();
-            m_IntData.Clear();
-            m_FloatData.Clear();
-            m_BoolData.Clear();
-            m_StringData.Clear();
-            m_Vector3Data.Clear();
+            _byteData.Clear();
+            _uIntData.Clear();
+            _intData.Clear();
+            _floatData.Clear();
+            _boolData.Clear();
+            _vector3Data.Clear();
+            _stringData.Clear();
         }
 
         internal void RestoreFromSnapshot(NetworkPropertiesSnapshot snapshot)
         {
-            m_Reader.Replace(snapshot.Data);
-            Deserialize(m_Reader, firstTime: false);
+            _reader.Replace(snapshot.Data);
+            Deserialize(_reader);
         }
         
         internal void Serialize(NetWriter writer)
         {
-            writer.WriteDictionary(m_ByteData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteByte(v));
-            writer.WriteDictionary(m_UIntData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WritePackedUInt32(v));
-            writer.WriteDictionary(m_IntData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteInt32(v));
-            writer.WriteDictionary(m_FloatData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteSingle(v));
-            writer.WriteDictionary(m_BoolData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteBool(v));
-            writer.WriteDictionary(m_StringData, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteString(v));
-            writer.WriteDictionary(m_Vector3Data, (k, w) => w.WritePackedUInt32(k), (v, w) => w.WriteVector3(v));
+            WriteUnmanagedDictionary(writer, _byteData);
+            WriteUnmanagedDictionary(writer, _uIntData);
+            WriteUnmanagedDictionary(writer, _intData);
+            WriteUnmanagedDictionary(writer, _floatData);
+            WriteUnmanagedDictionary(writer, _boolData);
+            WriteUnmanagedDictionary(writer, _vector3Data);
+
+            // String is a special case here, as its unmanaged.
+            {
+                writer.WritePackedUInt32((uint)_stringData.Count);
+                foreach (var kvp in _stringData)
+                {
+                    SerializationAPI<uint>.Serializer.Serialize(writer, kvp.Key);
+                    writer.WriteString(kvp.Value);
+                }
+            }
         }
 
-        internal void Deserialize(NetReader reader, bool firstTime)
+        internal void Deserialize(NetReader reader)
         {
-            reader.ReadDictionaryTo(m_ByteData, r => r.ReadPackedUInt32(), r => r.ReadByte());
-            reader.ReadDictionaryTo(m_UIntData, r => r.ReadPackedUInt32(), r => r.ReadPackedUInt32());
-            reader.ReadDictionaryTo(m_IntData, r => r.ReadPackedUInt32(), r => r.ReadInt32());
-            reader.ReadDictionaryTo(m_FloatData, r => r.ReadPackedUInt32(), r => r.ReadSingle());
-            reader.ReadDictionaryTo(m_BoolData, r => r.ReadPackedUInt32(), r => r.ReadBoolean());
-            reader.ReadDictionaryTo(m_StringData, r => r.ReadPackedUInt32(), r => r.ReadString());
-            reader.ReadDictionaryTo(m_Vector3Data, r => r.ReadPackedUInt32(), r => r.ReadVector3());
+            ReadUnmanagedDictionary(reader, _byteData);
+            ReadUnmanagedDictionary(reader, _uIntData);
+            ReadUnmanagedDictionary(reader, _intData);
+            ReadUnmanagedDictionary(reader, _floatData);
+            ReadUnmanagedDictionary(reader, _boolData);
+            ReadUnmanagedDictionary(reader, _vector3Data);
+
+            // String is a special case here, as its unmanaged.
+            {
+                _stringData.Clear();
+                var count = reader.ReadPackedUInt32();
+                for(var i = 0; i < count; i++)
+                {
+                    var key = SerializationAPI<uint>.Serializer.Deserialize(reader);
+                    var value = reader.ReadString();
+                    _stringData.Add(key, value);
+                }
+            }
         }
 
         internal int GetVersionHash()
         {
             var hash = 0;
-            hash += GetDictionaryHashCode(m_ByteData);
-            hash += GetDictionaryHashCode(m_UIntData);
-            hash += GetDictionaryHashCode(m_IntData);
-            hash += GetDictionaryHashCode(m_FloatData);
-            hash += GetDictionaryHashCode(m_StringData);
-            hash += GetDictionaryHashCode(m_BoolData);
-            hash += GetDictionaryHashCode(m_Vector3Data);
+            hash += GetDictionaryHashCode(_byteData);
+            hash += GetDictionaryHashCode(_uIntData);
+            hash += GetDictionaryHashCode(_intData);
+            hash += GetDictionaryHashCode(_floatData);
+            hash += GetDictionaryHashCode(_boolData);
+            hash += GetDictionaryHashCode(_vector3Data);
+            hash += GetDictionaryHashCode(_stringData);
 
             return hash;
+        }
+        
+        private static void WriteUnmanagedDictionary<TValue>(NetWriter writer, Dictionary<uint, TValue> dictionary) where TValue : unmanaged
+        {
+            writer.WritePackedUInt32((uint)dictionary.Count);
+            foreach (var kvp in dictionary)
+            {
+                SerializationAPI<uint>.Serializer.Serialize(writer, kvp.Key);
+                SerializationAPI<TValue>.Serializer.Serialize(writer, kvp.Value);
+            }
+        }
+        
+        private static void ReadUnmanagedDictionary<TValue>(NetReader reader, Dictionary<uint, TValue> dictionary) where TValue : unmanaged
+        {
+            dictionary.Clear();
+            var count = reader.ReadPackedUInt32();
+            for(var i = 0; i < count; i++)
+            {
+                var key = SerializationAPI<uint>.Serializer.Deserialize(reader);
+                var value = SerializationAPI<TValue>.Serializer.Deserialize(reader);
+                dictionary.Add(key, value);
+            }
         }
 
         private static int GetDictionaryHashCode<TKey, TValue>(Dictionary<TKey, TValue> dictionary)
@@ -94,84 +138,84 @@ namespace LROTech.Network.StateManagement
             return hash;
         }
 
-        #region CUSTOM_PROPERTIES_API
+        #region CUSTOPROPERTIES_API
 
         public void SetByte(uint id, byte value)
         {
-            if (!m_WritePermission())
+            if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
-            m_ByteData[id] = value;
+            _byteData[id] = value;
         }
 
         public byte GetByte(uint id) =>
-            m_ByteData.GetValueOrDefault(id);
+            _byteData.GetValueOrDefault(id);
 
         public void SetUInt(uint id, uint value)
         {
-            if (!m_WritePermission())
+            if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
-            m_UIntData[id] = value;
+            _uIntData[id] = value;
         }
 
         public uint GetUInt(uint id) =>
-            m_UIntData.GetValueOrDefault(id);
+            _uIntData.GetValueOrDefault(id);
 
         public void SetInt(uint id, int value)
         {
-            if (!m_WritePermission())
+            if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
-            m_IntData[id] = value;
+            _intData[id] = value;
         }
 
         public int GetInt(uint id) =>
-            m_IntData.GetValueOrDefault(id);
-
-        public void SetString(uint id, string value)
-        {
-            if (!m_WritePermission())
-                throw new InvalidOperationException("No authority");
-
-            m_StringData[id] = value;
-        }
-
-        public string GetString(uint id) =>
-            m_StringData.GetValueOrDefault(id);
+            _intData.GetValueOrDefault(id);
 
         public void SetFloat(uint id, float value)
         {
-            if (!m_WritePermission())
+            if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
-            m_FloatData[id] = value;
+            _floatData[id] = value;
         }
 
         public float GetFloat(uint id) =>
-            m_FloatData.GetValueOrDefault(id);
+            _floatData.GetValueOrDefault(id);
 
         public void SetBool(uint id, bool value)
         {
-            if (!m_WritePermission())
+            if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
-            m_BoolData[id] = value;
+            _boolData[id] = value;
         }
 
         public bool GetBool(uint id) =>
-            m_BoolData.GetValueOrDefault(id);
+            _boolData.GetValueOrDefault(id);
 
         public void SetVector(uint id, UnityEngine.Vector3 value)
         {
-            if (!m_WritePermission())
+            if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
-            m_Vector3Data[id] = value;
+            _vector3Data[id] = value;
         }
 
         public UnityEngine.Vector3 GetVector(uint id) =>
-            m_Vector3Data.GetValueOrDefault(id);
+            _vector3Data.GetValueOrDefault(id);
+        
+        public void SetString(uint id, string value)
+        {
+            if (!_writePermission())
+                throw new InvalidOperationException("No authority");
+
+            _stringData[id] = value;
+        }
+
+        public string GetString(uint id) =>
+            _stringData.GetValueOrDefault(id);
 
         #endregion
     }

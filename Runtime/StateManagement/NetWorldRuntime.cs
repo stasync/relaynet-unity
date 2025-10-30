@@ -21,34 +21,34 @@ namespace LROTech.Network.StateManagement
         public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
         public event DataSendRequestDelegate DataSendRequested = delegate { };
 
-        public IReadOnlyCollection<byte[]> IncomingStateChangeRequests => m_IncomingStateChangeRequests;
-        private readonly Queue<byte[]> m_IncomingStateChangeRequests = new();
+        public IReadOnlyCollection<byte[]> IncomingStateChangeRequests => _incomingStateChangeRequests;
+        private readonly Queue<byte[]> _incomingStateChangeRequests = new();
 
-        public IReadOnlyDictionary<NetObjectUid, NetObjectState> TemporaryUnregisteredObjects => m_TemporaryUnregisteredObjects;
-        private readonly Dictionary<NetObjectUid, NetObjectState> m_TemporaryUnregisteredObjects = new();
+        public IReadOnlyDictionary<NetObjectUid, NetObjectState> TemporaryUnregisteredObjects => _temporaryUnregisteredObjects;
+        private readonly Dictionary<NetObjectUid, NetObjectState> _temporaryUnregisteredObjects = new();
 
         public readonly NetWorldHistoryBuffer HistoryBuffer = new();
 
-        private readonly HashSet<ClientUid> m_LocalPlayerRegisterQueue = new();
-        private readonly HashSet<ClientUid> m_PlayerUnregisterQueue = new();
+        private readonly HashSet<ClientUid> _localPlayerRegisterQueue = new();
+        private readonly HashSet<ClientUid> _playerUnregisterQueue = new();
 
-        private float m_LastUpdateTime;
+        private float _lastUpdateTime;
 
-        private readonly NetWriter m_Writer = new();
-        private readonly NetReader m_Reader = new();
+        private readonly NetWriter _writer = new();
+        private readonly NetReader _reader = new();
 
         public NetWorldRuntime(string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
             NetObjectUid.Reset();
-            m_LastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
+            _lastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
         }
 
         protected override void UpdateImplementation(float deltaTime)
         {
-            var worldDelta = UnityEngine.Time.fixedUnscaledTime - m_LastUpdateTime;
+            var worldDelta = UnityEngine.Time.fixedUnscaledTime - _lastUpdateTime;
             if (worldDelta >= MIN_UPDATE_INTERVAL)
             {
-                m_LastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
+                _lastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
                 UpdateWorldState(worldDelta);
             }
         }
@@ -79,10 +79,10 @@ namespace LROTech.Network.StateManagement
 
             void ProcessIncomingData()
             {
-                while (m_IncomingStateChangeRequests.TryDequeue(out var stateChangeData))
+                while (_incomingStateChangeRequests.TryDequeue(out var stateChangeData))
                 {
-                    m_Reader.Replace(stateChangeData);
-                    var worldChangeOpCode = (NetWorldRuntimeChangeOp)m_Reader.ReadByte();
+                    _reader.Replace(stateChangeData);
+                    var worldChangeOpCode = (NetWorldRuntimeChangeOp)_reader.ReadByte();
 
                     switch (worldChangeOpCode)
                     {
@@ -92,15 +92,15 @@ namespace LROTech.Network.StateManagement
                             // Add player, if not exists.
                             // Deserialize other player.
                             // Adding player id duplicated logic.
-                            var snapshot = new NetWorldPlayerSnapshot(m_Reader);
-                            if (!remotePlayersUpdateRequests.TryAdd(snapshot.UID, snapshot))
-                                Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.UID}': already scheduled.");
+                            var snapshot = new NetWorldPlayerSnapshot(_reader);
+                            if (!remotePlayersUpdateRequests.TryAdd(snapshot.Uid, snapshot))
+                                Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.Uid}': already scheduled.");
 
                             break;
                         }
                         case NetWorldRuntimeChangeOp.ObjectStateUpdate:
                         {
-                            var snapshot = new NetObjectStateSnapshot(m_Reader);
+                            var snapshot = new NetObjectStateSnapshot(_reader);
                             if (!snapshot.ObjectUID.IsValid)
                             {
                                 Debug.LogError(
@@ -129,7 +129,7 @@ namespace LROTech.Network.StateManagement
 
                         case NetWorldRuntimeChangeOp.Rpc:
                         {
-                            var state = new RpcWithoutAuthorityState(m_Reader);
+                            var state = new RpcWithoutAuthorityState(_reader);
                             if (!state.IsValid)
                                 throw new ArgumentException();
 
@@ -191,11 +191,11 @@ namespace LROTech.Network.StateManagement
                 if (!Players.LocalPlayerIsMaster)
                     return;
 
-                m_Writer.SeekZero();
-                m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldCommunication);
-                m_Writer.WriteSingle(Time);
-                Properties.Serialize(m_Writer);
-                DataSendRequested(data: m_Writer.ToArray(), DeliveryMethod.Unreliable);
+                _writer.SeekZero();
+                _writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldCommunication);
+                _writer.WriteSingle(Time);
+                Properties.Serialize(_writer);
+                DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Unreliable);
             }
 
             void UpdateRemoteMasterWorldData()
@@ -205,9 +205,9 @@ namespace LROTech.Network.StateManagement
 
                 while (remoteWorldDataUpdateRequests.Count > 0)
                 {
-                    m_Reader.Replace(buffer: remoteWorldDataUpdateRequests.Dequeue());
-                    Time = m_Reader.ReadSingle();
-                    Properties.Deserialize(m_Reader, firstTime: false);
+                    _reader.Replace(buffer: remoteWorldDataUpdateRequests.Dequeue());
+                    Time = _reader.ReadSingle();
+                    Properties.Deserialize(_reader);
                 }
             }
 
@@ -215,30 +215,30 @@ namespace LROTech.Network.StateManagement
             {
                 // Add local.
                 {
-                    foreach (var clientUid in m_LocalPlayerRegisterQueue)
+                    foreach (var clientUid in _localPlayerRegisterQueue)
                     {
                         // Add player and notify.
                         var player = Players.RegisterImmediate(clientUid, isLocal: true);
                         PlayerAdded(player.ToSnapshot());
                     }
 
-                    m_LocalPlayerRegisterQueue.Clear();
+                    _localPlayerRegisterQueue.Clear();
                 }
 
                 // Remove all.
                 {
-                    foreach (var clientUid in m_PlayerUnregisterQueue)
+                    foreach (var clientUid in _playerUnregisterQueue)
                     {
                         var player = Players.Find(clientUid);
                         var playerSnapshot = player?.ToSnapshot() ?? default;
                         if (Players.UnregisterImmediate(clientUid))
                             removedPlayers.Enqueue(clientUid);
 
-                        if (playerSnapshot.UID.IsValid)
+                        if (playerSnapshot.Uid.IsValid)
                             PlayerRemoved(playerSnapshot);
                     }
 
-                    m_PlayerUnregisterQueue.Clear();
+                    _playerUnregisterQueue.Clear();
                 }
 
                 // Update remotes.
@@ -252,7 +252,7 @@ namespace LROTech.Network.StateManagement
                         if (player == null)
                         {
                             // Create new.
-                            player = Players.RegisterImmediate(snapshot.UID, isLocal: false);
+                            player = Players.RegisterImmediate(snapshot.Uid, isLocal: false);
 
                             // Notify player registered.
                             PlayerAdded(player.ToSnapshot());
@@ -284,10 +284,10 @@ namespace LROTech.Network.StateManagement
                         Debug.LogError("Unable to send local player: doesn't exists");
                     else
                     {
-                        m_Writer.SeekZero();
-                        m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.PlayerStateUpdate);
-                        localPlayer.ToSnapshot().Serialize(m_Writer);
-                        DataSendRequested(data: m_Writer.ToArray(), DeliveryMethod.Reliable);
+                        _writer.SeekZero();
+                        _writer.WriteByte((byte)NetWorldRuntimeChangeOp.PlayerStateUpdate);
+                        localPlayer.ToSnapshot().Serialize(_writer);
+                        DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Reliable);
                     }
                 }
             }
@@ -366,7 +366,7 @@ namespace LROTech.Network.StateManagement
                         Debug.LogError(
                             $"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
 
-                        m_TemporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
+                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
                         remoteObjectUpdateRequests.Remove(uid);
                         continue;
                     }
@@ -374,16 +374,16 @@ namespace LROTech.Network.StateManagement
                     // Add new or get pending.
                     if (snapshot.StateChangeType != NetObjectStateChangeRequestType.InitializationUpdate)
                     {
-                        m_TemporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
+                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
                         continue;
                     }
 
-                    if (m_TemporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUID, out var newState))
+                    if (_temporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUID, out var newState))
                     {
                         if (newState.IsOwnedBy(snapshot.OwnerUID))
                         {
                             newState.ChangeObjectRemotely(snapshot);
-                            m_TemporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
+                            _temporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
                         }
                         else
                             Debug.LogError($"Unable to restore object {newState} form {snapshot}");
@@ -404,10 +404,10 @@ namespace LROTech.Network.StateManagement
                     var state = ObjectStates[uid];
                     foreach (var request in state.RpcWithoutAuthorityRequests)
                     {
-                        m_Writer.SeekZero();
-                        m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.Rpc);
-                        request.State.Serialize(m_Writer);
-                        DataSendRequested(data: m_Writer.ToArray(), request.DeliveryMethod);
+                        _writer.SeekZero();
+                        _writer.WriteByte((byte)NetWorldRuntimeChangeOp.Rpc);
+                        request.State.Serialize(_writer);
+                        DataSendRequested(data: _writer.ToArray(), request.DeliveryMethod);
                     }
                 }
             }
@@ -416,9 +416,9 @@ namespace LROTech.Network.StateManagement
             void UpdateLocalObjectState()
             {
                 // Register new local object, that was just created.
-                foreach (var uid in new List<NetObjectUid>(m_TemporaryUnregisteredObjects.Keys))
+                foreach (var uid in new List<NetObjectUid>(_temporaryUnregisteredObjects.Keys))
                 {
-                    var state = m_TemporaryUnregisteredObjects[uid];
+                    var state = _temporaryUnregisteredObjects[uid];
                     // Skip remote objects.
                     if (!state.IsOwnedByLocalPlayer)
                         continue;
@@ -435,7 +435,7 @@ namespace LROTech.Network.StateManagement
                         TryAddObject(state);
                     }
 
-                    m_TemporaryUnregisteredObjects.Remove(uid);
+                    _temporaryUnregisteredObjects.Remove(uid);
                 }
 
                 // Update and send local objects.
@@ -449,10 +449,10 @@ namespace LROTech.Network.StateManagement
 
                     state.PrepareForSerialization();
 
-                    m_Writer.SeekZero();
-                    m_Writer.WriteByte((byte)NetWorldRuntimeChangeOp.ObjectStateUpdate);
-                    state.ToSnapshot().Serialize(m_Writer);
-                    DataSendRequested(data: m_Writer.ToArray(), deliveryMethod);
+                    _writer.SeekZero();
+                    _writer.WriteByte((byte)NetWorldRuntimeChangeOp.ObjectStateUpdate);
+                    state.ToSnapshot().Serialize(_writer);
+                    DataSendRequested(data: _writer.ToArray(), deliveryMethod);
 
                     switch (state.StateChangeType)
                     {
@@ -488,8 +488,8 @@ namespace LROTech.Network.StateManagement
         {
             base.Dispose();
 
-            m_LocalPlayerRegisterQueue.Clear();
-            m_PlayerUnregisterQueue.Clear();
+            _localPlayerRegisterQueue.Clear();
+            _playerUnregisterQueue.Clear();
             HistoryBuffer.Clear();
 
             PlayerAdded = null;
@@ -505,26 +505,26 @@ namespace LROTech.Network.StateManagement
             return new NetWorldEvaluator(runtime: this);
         }
 
-        protected override void RemoveObject(NetObjectUid stateUID)
+        protected override void RemoveObject(NetObjectUid stateUid)
         {
-            base.RemoveObject(stateUID);
-            m_TemporaryUnregisteredObjects.Remove(stateUID);
+            base.RemoveObject(stateUid);
+            _temporaryUnregisteredObjects.Remove(stateUid);
         }
 
         internal void RegisterLocalPlayer(ClientUid clientUid) =>
-            m_LocalPlayerRegisterQueue.Add(clientUid);
+            _localPlayerRegisterQueue.Add(clientUid);
 
         internal void OnDisconnect(ClientUid clientUid)
         {
-            m_LocalPlayerRegisterQueue.Remove(clientUid);
-            m_PlayerUnregisterQueue.Add(clientUid);
+            _localPlayerRegisterQueue.Remove(clientUid);
+            _playerUnregisterQueue.Add(clientUid);
         }
 
         internal void ScheduleRemoteUpdate(byte[] data) =>
-            m_IncomingStateChangeRequests.Enqueue(data);
+            _incomingStateChangeRequests.Enqueue(data);
 
         private bool TryGetExistedOrPendingState(NetObjectUid instanceId, out NetObjectState state) =>
-            TryGetObject(instanceId, out state) || m_TemporaryUnregisteredObjects.TryGetValue(instanceId, out state);
+            TryGetObject(instanceId, out state) || _temporaryUnregisteredObjects.TryGetValue(instanceId, out state);
 
         /// <summary>
         /// Create object with position and rotation input.
@@ -538,7 +538,7 @@ namespace LROTech.Network.StateManagement
                 throw new InvalidOperationException();
 
             var state = new NetObjectState(IsObjectValid, Players.Find, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
-            m_TemporaryUnregisteredObjects.Add(state.Uid, state);
+            _temporaryUnregisteredObjects.Add(state.Uid, state);
             return View.CreateImmediate(state, position, rotation);
         }
 
@@ -565,27 +565,27 @@ namespace LROTech.Network.StateManagement
             // Create state from scene object identity.
             // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
             var newState = new NetObjectState(IsObjectValid, Players.Find, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid);
-            m_TemporaryUnregisteredObjects.Add(newState.Uid, newState);
-            var newStateUID = newState.Uid;
+            _temporaryUnregisteredObjects.Add(newState.Uid, newState);
+            var newStateUid = newState.Uid;
 
             // Wait for view initialization.
             ScheduleOnViewInit(() =>
             {
-                if (TryGetExistedOrPendingState(newStateUID, out var state))
+                if (TryGetExistedOrPendingState(newStateUid, out var state))
                 {
                     // Initialize immateriality on master client.
                     if (Players.LocalPlayerIsMaster)
                         View.InitializeObjectView(sceneIdentity.Identity, state.Uid);
 
                     // Add view to be used in the future.
-                    View.RegisterAsPending(newStateUID, sceneIdentity.Identity);
+                    View.RegisterAsPending(newStateUid, sceneIdentity.Identity);
                 }
                 else
                 {
                     UnityEngine.Object.Destroy(sceneIdentity.gameObject);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                     Debug.LogError(
-                        $"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newStateUID}' not exist.");
+                        $"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newStateUid}' not exist.");
 #endif
                 }
             });
@@ -598,13 +598,13 @@ namespace LROTech.Network.StateManagement
         {
             var existed = base.FindObject(instanceId);
             if (existed == null)
-                m_TemporaryUnregisteredObjects.TryGetValue(instanceId, out existed);
+                _temporaryUnregisteredObjects.TryGetValue(instanceId, out existed);
 
             return existed;
         }
 
         protected override bool IsObjectValid(NetObjectUid instanceId) =>
-            base.IsObjectValid(instanceId) || m_TemporaryUnregisteredObjects.ContainsKey(instanceId);
+            base.IsObjectValid(instanceId) || _temporaryUnregisteredObjects.ContainsKey(instanceId);
 
         /// <summary>
         /// Get object before in was actually created by the world replication.
@@ -619,7 +619,7 @@ namespace LROTech.Network.StateManagement
                 return identity;
 
             var state = new NetObjectState(IsObjectValid, Players.Find, instanceId, prefabId, isSceneObject, owner.Uid);
-            m_TemporaryUnregisteredObjects.Add(instanceId, state);
+            _temporaryUnregisteredObjects.Add(instanceId, state);
             return View.CreateImmediate(state, position, rotation);
         }
 

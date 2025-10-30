@@ -96,14 +96,14 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
             
-            Uid = snapshot.UID;
+            Uid = snapshot.Uid;
             m_Name = snapshot.Name;
             m_IsReady = snapshot.IsInGameScene;
             m_Platform = snapshot.Platform;
             m_RTTMS = snapshot.RTTMs;
 
             m_TagObjectUidCollection.Clear();
-            foreach (var tagObject in snapshot.TagObjectUIDs)
+            foreach (var tagObject in snapshot.TagObjects)
                 m_TagObjectUidCollection.Add(tagObject);
 
             Properties.RestoreFromSnapshot(snapshot.Properties);

@@ -140,7 +140,7 @@ namespace LROTech.Network.StateManagement
                     m_PlayersCollection.Add(clientUid, 
                         new NetWorldPlayer(
                             validator: m_PlayersCollection.ContainsKey,
-                            playerSnapshot.UID,
+                            playerSnapshot.Uid,
                             playerSnapshot.Name,
                             localPlayerUidProvider: () => LocalPlayerUid,
                             masterPlayerUidProvider: () => MasterPlayerUid));

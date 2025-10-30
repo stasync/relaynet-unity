@@ -3,19 +3,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using LROTech.Network.StateManagement.Values;
+using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement
 {
     public class SerializableHashSet<TValue> : NetworkValueBase<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
         where TValue : unmanaged
     {
-        private readonly HashSet<TValue> m_CachedValue = new();
+        private readonly HashSet<TValue> _cachedValue = new();
         
-        public SerializableHashSet() : this(defaultValue: new HashSet<TValue>())
-        {
-        }
-
-        public SerializableHashSet(HashSet<TValue> defaultValue) : base(defaultValue)
+        public SerializableHashSet(HashSet<TValue> defaultValue = null) : base(defaultValue ?? new HashSet<TValue>())
         {
         }
 
@@ -53,20 +50,19 @@ namespace LROTech.Network.StateManagement
 
         protected override HashSet<TValue> OnDeserialize(NetReader reader)
         {
-            reader.ReadHashSetTo(m_CachedValue, ReadFunction);
-            return m_CachedValue;
+            _cachedValue.Clear();
+            var length = reader.ReadPackedUInt32();
+            for (var i = 0; i < length; i++)
+                _cachedValue.Add(SerializationAPI<TValue>.Serializer.Deserialize(reader));
             
-            TValue ReadFunction(NetReader arg) =>
-                arg.ReadUnmanaged<TValue>();
+            return _cachedValue;
         }
-        
+
         protected override void OnSerialize(NetWriter writer)
         {
-            writer.WriteCollection(InternalValue, WriteFunction);
-            return;
-
-            void WriteFunction(TValue value, NetWriter argument) =>
-                argument.WriteUnmanaged(value);
+            writer.WritePackedUInt32((uint)InternalValue.Count);
+            foreach (var value in InternalValue)
+                SerializationAPI<TValue>.Serializer.Serialize(writer, value);
         }
         
         public override string ToString() =>

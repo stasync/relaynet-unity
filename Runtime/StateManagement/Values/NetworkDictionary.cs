@@ -4,38 +4,44 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using LROTech.Network.StateManagement.Values;
+using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement
 {
-    public class SerializableDictionary<TKey, TValue> : SerializableValueBase_Legacy<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
+    public class SerializableDictionary<TKey, TValue> : NetworkValueBase<Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>>,
         IDictionary<TKey, TValue>
+        where TKey : unmanaged
+        where TValue : unmanaged
     {
-        public SerializableDictionary(
-            Func<NetReader, bool, TKey> keyReader,
-            Action<NetWriter, TKey> keyWriter,
-            Func<NetReader, bool, TValue> valueReader,
-            Action<NetWriter, TValue> valueWriter) :
-            this(new Dictionary<TKey, TValue>(), keyReader, keyWriter, valueReader, valueWriter)
+        private readonly Dictionary<TKey, TValue> _cachedValue = new();
+
+        public SerializableDictionary(Dictionary<TKey, TValue> defaultValue = null) : base(defaultValue ?? new Dictionary<TKey, TValue>())
         {
         }
 
-        public SerializableDictionary(
-            Dictionary<TKey, TValue> defaultValue,
-            Func<NetReader, bool, TKey> keyReader,
-            Action<NetWriter, TKey> keyWriter,
-            Func<NetReader, bool, TValue> valueReader,
-            Action<NetWriter, TValue> valueWriter) :
-            base(
-                defaultValue,
-                (r, f) => r.ReadDictionary(
-                    cKeyReader => keyReader(cKeyReader, f),
-                    cValueReader => valueReader(cValueReader, f)),
-                (w, v) => w.WriteDictionary(v,
-                    (cKey, cKeyWriter) => keyWriter(cKeyWriter, cKey),
-                    (cValue, cValueWriter) => valueWriter(cValueWriter, cValue)))
+        protected override Dictionary<TKey, TValue> OnDeserialize(NetReader reader)
         {
+            _cachedValue.Clear();
+            var length = reader.ReadPackedUInt32();
+            for (var i = 0; i < length; i++)
+            {
+                var key = SerializationAPI<TKey>.Serializer.Deserialize(reader);
+                var value = SerializationAPI<TValue>.Serializer.Deserialize(reader);
+                _cachedValue.Add(key, value);
+            }
+
+            return _cachedValue;
         }
 
+        protected override void OnSerialize(NetWriter writer)
+        {
+            writer.WritePackedUInt32((uint)InternalValue.Count);
+            foreach (var kvp in InternalValue)
+            {
+                SerializationAPI<TKey>.Serializer.Serialize(writer, kvp.Key);
+                SerializationAPI<TValue>.Serializer.Serialize(writer, kvp.Value);
+            }
+        }
 
         public override string ToString()
         {
@@ -44,7 +50,6 @@ namespace LROTech.Network.StateManagement
                 result += $"[{kvp.Key}:{kvp.Value}] ";
 
             return result.TrimEnd();
-
         }
 
         #region IDictionary
@@ -136,25 +141,5 @@ namespace LROTech.Network.StateManagement
         IEnumerator IEnumerable.GetEnumerator() => Value.GetEnumerator();
 
         #endregion
-    }
-
-    public class SerializableCollectionDictionary<TKey, TValue> : SerializableDictionary<TKey, List<TValue>>
-    {
-        public SerializableCollectionDictionary(
-            Dictionary<TKey, List<TValue>> defaultValue,
-            Func<NetReader, bool, TKey> keyReader,
-            Action<NetWriter, TKey> keyWriter,
-            Func<NetReader, bool, TValue> valueReader,
-            Action<NetWriter, TValue> valueWriter) :
-            base(
-                defaultValue,
-                keyReader,
-                keyWriter,
-                (vr, f) =>
-                    vr.ReadList(r => valueReader(r, f)),
-                (vw, collection) =>
-                    vw.WriteCollection(collection, (v, w) => valueWriter(w, v)))
-        {
-        }
     }
 }

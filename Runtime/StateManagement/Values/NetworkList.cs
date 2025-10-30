@@ -4,38 +4,34 @@ using System.Collections.Generic;
 using System.Linq;
 using Core.Networking;
 using LROTech.Network.StateManagement.Values;
+using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement
 {
     public class SerializableList<TValue> : NetworkValueBase<List<TValue>, IReadOnlyList<TValue>>, IList<TValue>
         where TValue : unmanaged
     {
-        private readonly List<TValue> m_CachedValue = new();
-
-        public SerializableList() : this(defaultValue: new List<TValue>())
-        {
-        }
-
-        public SerializableList(List<TValue> defaultValue) : base(defaultValue)
+        private readonly List<TValue> _cachedValue = new();
+        
+        public SerializableList(List<TValue> defaultValue = null) : base(defaultValue ?? new List<TValue>())
         {
         }
 
         protected override List<TValue> OnDeserialize(NetReader reader)
         {
-            reader.ReadListTo(m_CachedValue, ReadFunction);
-            return InternalValue;
-
-            static TValue ReadFunction(NetReader arg) =>
-                arg.ReadUnmanaged<TValue>();
+            _cachedValue.Clear();
+            var length = reader.ReadPackedUInt32();
+            for (var i = 0; i < length; i++)
+                _cachedValue.Add(SerializationAPI<TValue>.Serializer.Deserialize(reader));
+            
+            return _cachedValue;
         }
 
         protected override void OnSerialize(NetWriter writer)
         {
-            writer.WriteCollection(InternalValue, WriteFunction);
-            return;
-
-            static void WriteFunction(TValue value, NetWriter writer) =>
-                writer.WriteUnmanaged(value);
+            writer.WritePackedUInt32((uint)InternalValue.Count);
+            foreach (var value in InternalValue)
+                SerializationAPI<TValue>.Serializer.Serialize(writer, value);
         }
 
         #region IList

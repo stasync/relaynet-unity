@@ -7,48 +7,58 @@ namespace LROTech.Network.StateManagement.Snapshots
 {
     public readonly struct NetWorldPlayerSnapshot
     {
-        public readonly ClientUid UID;
+        public readonly ClientUid Uid;
         public readonly string Name;
         public readonly bool IsInGameScene;
         public readonly UserDevice.Platform Platform;
         public readonly int RTTMs;
-        public readonly IReadOnlyCollection<NetObjectUid> TagObjectUIDs;
-        public readonly NetObjectUid MainTagObjectUID;
+        public readonly IReadOnlyCollection<NetObjectUid> TagObjects;
+        public readonly NetObjectUid MainTagObject;
         public readonly NetworkPropertiesSnapshot Properties;
 
         internal NetWorldPlayerSnapshot(NetWorldPlayer player)
         {
-            UID = player.Uid;
+            Uid = player.Uid;
             Name = player.Name;
             IsInGameScene = player.IsReady;
             Platform = player.Platform;
             RTTMs = player.RTTMs;
-            TagObjectUIDs = new HashSet<NetObjectUid>(player.TagObjectUidCollection);
-            MainTagObjectUID = player.MainTagObjectUid;
+            TagObjects = new HashSet<NetObjectUid>(player.TagObjectUidCollection);
+            MainTagObject = player.MainTagObjectUid;
             Properties = player.Properties.ToSnapshot();
         }
 
         internal NetWorldPlayerSnapshot(NetReader reader)
         {
-            UID = reader.ReadClientUid();
+            Uid = reader.ReadClientUid();
             Name = reader.ReadString();
             IsInGameScene = reader.ReadBoolean();
             Platform = (UserDevice.Platform)reader.ReadInt32();
             RTTMs = reader.ReadInt32();
-            TagObjectUIDs = reader.ReadHashSet(netReader => netReader.ReadNetObjectUid());
-            MainTagObjectUID = reader.ReadNetObjectUid();
+
+            var targetObjectCount = reader.ReadPackedUInt32();
+            var newTagObjects = new List<NetObjectUid>((int)targetObjectCount);
+            for (var i = 0; i < targetObjectCount; i++)
+                newTagObjects.Add(reader.ReadNetObjectUid());
+
+            TagObjects = newTagObjects;
+            MainTagObject = reader.ReadNetObjectUid();
             Properties = new NetworkPropertiesSnapshot(reader.ReadBytesAndSize());
         }
-        
+
         internal void Serialize(NetWriter writer)
         {
-            writer.WriteClientUid(UID);
+            writer.WriteClientUid(Uid);
             writer.WriteString(Name);
             writer.WriteBool(IsInGameScene);
             writer.WriteInt32((int)Platform);
             writer.WriteSingle(RTTMs);
-            writer.WriteCollection(TagObjectUIDs, (netObjectUid, netWriter) => netWriter.WriteNetObjectUid(netObjectUid));
-            writer.WriteNetObjectUid(MainTagObjectUID);
+
+            writer.WritePackedUInt32((uint)TagObjects.Count);
+            foreach (var tagObjectUid in TagObjects)
+                writer.WriteNetObjectUid(tagObjectUid);
+
+            writer.WriteNetObjectUid(MainTagObject);
             writer.WriteBytesAndSize(Properties.Data);
         }
 
@@ -61,7 +71,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             result += sizeof(UserDevice.Platform); // Platform
             result += sizeof(int); // RTT
 
-            result += NetObjectUid.Size * TagObjectUIDs.Count;
+            result += NetObjectUid.Size * TagObjects.Count;
 
             result += NetObjectUid.Size; // Main tag object
             result += Properties.GetSize();
