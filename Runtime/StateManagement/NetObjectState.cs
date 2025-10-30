@@ -35,6 +35,19 @@ namespace LROTech.Network.StateManagement
         private readonly Queue<NetObjectStateChangeRequestType> _mStateChangeTypeQueue = new();
         private readonly Func<NetObjectUid, bool> _mValidator;
 
+        public bool IsOwnedByLocalPlayer => Owner is { IsLocal: true };
+
+        public bool IsOwnedByMasterClient => Owner is { IsMaster: true };
+
+        public NetWorldPlayer Owner => _playerProvider(OwnerUid);
+
+        public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(Uid);
+
+        internal IReadOnlyCollection<RpcWithoutAuthorityRequest> RpcWithoutAuthorityRequests => _rpcWithoutAuthorityRequests;
+        public event Action OwnerChanged = delegate { };
+        public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
+        public event Action Invalidated = delegate { };
+        
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId,
             bool isSceneObject, ClientUid owner)
         {
@@ -57,19 +70,6 @@ namespace LROTech.Network.StateManagement
         {
             ChangeObjectRemotely(snapshot);
         }
-
-        public bool IsOwnedByLocalPlayer => Owner is { IsLocal: true };
-
-        public bool IsOwnedByMasterClient => Owner is { IsMaster: true };
-
-        public NetWorldPlayer Owner => _playerProvider(OwnerUid);
-
-        public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(Uid);
-
-        internal IReadOnlyCollection<RpcWithoutAuthorityRequest> RpcWithoutAuthorityRequests => _rpcWithoutAuthorityRequests;
-        public event Action OnOwnerChanged = delegate { };
-        public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
-        public event Action Invalidated = delegate { };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
@@ -160,7 +160,7 @@ namespace LROTech.Network.StateManagement
             OwnerUid = newOwner;
 
             if (previousOwner != OwnerUid)
-                OnOwnerChanged();
+                OwnerChanged();
         }
 
         public NetObjectStateSnapshot ToSnapshot()

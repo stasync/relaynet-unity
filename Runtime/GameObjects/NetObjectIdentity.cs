@@ -40,34 +40,34 @@ namespace LROTech.Network.GameObjects
 
         public bool Initialized { get; private set; }
 
-        private NetObjectBehaviourBase[] m_Behaviours;
+        private NetObjectBehaviourBase[] _behaviours;
 
-        private NetWriter m_ObjectWriter;
-        private NetReader m_ObjectReader;
+        private NetWriter _objectWriter;
+        private NetReader _objectReader;
 
-        public NetObjectState State => m_NetObjectStateReference.State;
-        private readonly NetObjectStateReference m_NetObjectStateReference = new();
+        public NetObjectState State => _netObjectStateReference.State;
+        private readonly NetObjectStateReference _netObjectStateReference = new();
 
-        private readonly Dictionary<Type, NetObjectBehaviourBase> m_CachedBehaviours = new();
-        private readonly Dictionary<int, Action<byte[]>> m_RpcHandlers = new();
+        private readonly Dictionary<Type, NetObjectBehaviourBase> _cachedBehaviours = new();
+        private readonly Dictionary<int, Action<byte[]>> _rpcHandlers = new();
 
         /// <summary>
         /// Initialization. Called from GSInstanceFactory. 
         /// Shouldn't be called from top-level API.
         /// </summary>
-        internal void Initialize(NetWorld world, NetObjectUid stateUID)
+        internal void Initialize(NetWorld world, NetObjectUid stateUid)
         {
             if (Initialized)
                 throw new Exception("Object already initialized");
 
-            m_Behaviours = gameObject.GetComponents<NetObjectBehaviourBase>();
+            _behaviours = gameObject.GetComponents<NetObjectBehaviourBase>();
 
             World = world;
 
-            m_NetObjectStateReference.SetTargetUid(stateUID);
-            m_NetObjectStateReference.SetTargetWorld(world);
+            _netObjectStateReference.SetTargetUid(stateUid);
+            _netObjectStateReference.SetTargetWorld(world);
 
-            State.OnOwnerChanged += OnOwnerChanged;
+            State.OwnerChanged += OwnerChanged;
             State.LocalUpdateRequest += OnLocalUpdateRequest;
 
             var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
@@ -75,17 +75,17 @@ namespace LROTech.Network.GameObjects
                 Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
 
             // Pre initialization.
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
                 behaviour.OnPreInitializeInternal();
 
             // Mark object as initialized.
             Initialized = true;
 
             // Owner changed.
-            OnOwnerChanged();
+            OwnerChanged();
 
             // Register RPC handlers.
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
             {
                 var behaviourType = behaviour.GetType();
                 foreach (var methodInfo in NetObjectRpcUtils.GetAutoRegisterRpcHandlers(behaviourType))
@@ -98,13 +98,13 @@ namespace LROTech.Network.GameObjects
             }
 
             // Tell components about object was initialized.
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
             {
                 if (!viewStateData.ViewInitialized)
                     behaviour.OnInitializeViewDataInternal();
             }
 
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
                 behaviour.OnPostInitializeInternal();
 
             // Invokes buffered rpc, must be called after deserialization done.
@@ -118,7 +118,7 @@ namespace LROTech.Network.GameObjects
         /// </summary>
         internal void OnDisconnected(ClientUid clientUid)
         {
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
                 behaviour.OnDisconnectedInternal(clientUid);
         }
 
@@ -130,7 +130,7 @@ namespace LROTech.Network.GameObjects
             if (!IsLocal)
                 return;
 
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
                 behaviour.OnAuthorityUpdateInternal();
 
             State.ChangeObjectViewDataLocally(Serialize(), stateChangeType == NetObjectStateChangeRequestType.InitializationUpdate);
@@ -139,10 +139,10 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// Object owner was changed.
         /// </summary>
-        private void OnOwnerChanged()
+        private void OwnerChanged()
         {
             Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner}");
-            foreach (var behavior in m_Behaviours)
+            foreach (var behavior in _behaviours)
                 behavior.OnOwnerChangedInternal();
         }
 
@@ -163,10 +163,10 @@ namespace LROTech.Network.GameObjects
         private byte[] Serialize()
         {
             // Serialize object.
-            m_ObjectWriter ??= new NetWriter();
+            _objectWriter ??= new NetWriter();
 
-            SerializeTo(m_ObjectWriter);
-            return m_ObjectWriter.ToArray();
+            SerializeTo(_objectWriter);
+            return _objectWriter.ToArray();
         }
 
         private void SerializeTo(NetWriter writer)
@@ -175,7 +175,7 @@ namespace LROTech.Network.GameObjects
                 throw new ArgumentNullException(nameof(writer));
 
             writer.SeekZero();
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
                 behaviour.OnSerializeInternal(writer);
         }
 
@@ -204,11 +204,11 @@ namespace LROTech.Network.GameObjects
             if (data == null)
                 return;
 
-            m_ObjectReader ??= new NetReader();
-            m_ObjectReader.Replace(data);
+            _objectReader ??= new NetReader();
+            _objectReader.Replace(data);
 
-            foreach (var behaviour in m_Behaviours)
-                behaviour.OnDeserializeInternal(m_ObjectReader);
+            foreach (var behaviour in _behaviours)
+                behaviour.OnDeserializeInternal(_objectReader);
 
             // Receive rpc buffer if object initialized.
             if (Initialized)
@@ -223,7 +223,7 @@ namespace LROTech.Network.GameObjects
         {
             var rpcHash = NetObjectRpcUtils.ActionToHash(handler);
             // WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
-            if (!m_RpcHandlers.TryAdd(rpcHash, handler))
+            if (!_rpcHandlers.TryAdd(rpcHash, handler))
                 throw new InvalidOperationException(
                     $"'{gameObject.name}' already contains handler for '{handler.Method.DeclaringType!.FullName}.{handler.Method.Name}''{rpcHash}' rpc code.");
         }
@@ -351,7 +351,7 @@ namespace LROTech.Network.GameObjects
 
         private void InvokeRpcHandler(int hashCode, byte[] data)
         {
-            if (m_RpcHandlers.TryGetValue(hashCode, out var handler))
+            if (_rpcHandlers.TryGetValue(hashCode, out var handler))
                 handler.Invoke(data);
             else
             {
@@ -376,7 +376,7 @@ namespace LROTech.Network.GameObjects
             if (!IsLocal)
                 throw new Exception("Trying to destroy remote object, this is not allowed");
 
-            foreach (var behaviour in m_Behaviours)
+            foreach (var behaviour in _behaviours)
                 behaviour.OnSoftDestroyRequestedLocallyInternal();
 
             State.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveUpdateSoft);
@@ -388,11 +388,11 @@ namespace LROTech.Network.GameObjects
         public T GetBehaviour<T>() where T : NetObjectBehaviourBase
         {
             var type = typeof(T);
-            if (!m_CachedBehaviours.TryGetValue(type, out var behaviour))
+            if (!_cachedBehaviours.TryGetValue(type, out var behaviour))
             {
                 behaviour = GetComponent<T>();
                 if (behaviour != null)
-                    m_CachedBehaviours.Add(type, behaviour);
+                    _cachedBehaviours.Add(type, behaviour);
             }
 
             return behaviour as T;
@@ -403,11 +403,11 @@ namespace LROTech.Network.GameObjects
             if (State == null)
                 return;
 
-            State.OnOwnerChanged -= OnOwnerChanged;
+            State.OwnerChanged -= OwnerChanged;
             State.LocalUpdateRequest -= OnLocalUpdateRequest;
 
-            m_NetObjectStateReference.SetTargetUid(NetObjectUid.Invalid);
-            m_NetObjectStateReference.SetTargetWorld(null);
+            _netObjectStateReference.SetTargetUid(NetObjectUid.Invalid);
+            _netObjectStateReference.SetTargetWorld(null);
         }
 
 #if UNITY_EDITOR
