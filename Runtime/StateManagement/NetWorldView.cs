@@ -100,7 +100,7 @@ namespace LROTech.Network.StateManagement
                 if (netObjectView.Initialized)
                 {
                     if (!state.IsOwnedByLocalPlayer && state.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
-                        netObjectView.Deserialize(viewData.UnstructuredData, force: false, firstTime: false);
+                        netObjectView.Deserialize(viewData.UnstructuredData, force: false);
                 }
                 else
                     InitializeObjectView(netObjectView, state.Uid);

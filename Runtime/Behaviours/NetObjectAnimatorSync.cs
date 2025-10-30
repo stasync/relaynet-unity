@@ -14,7 +14,7 @@ namespace LROTech.NetworkBehaviours
         void OnUpdate(float deltaTime, bool hasAuthority);
 
         void Serialize(NetWriter writer);
-        void Deserialize(NetReader reader, bool firstTime);
+        void Deserialize(NetReader reader);
     }
 
     public abstract class AnimatorParameterValueProxy<T> : IAnimatorValueProxy where T : struct
@@ -35,10 +35,10 @@ namespace LROTech.NetworkBehaviours
 
         public abstract void Serialize(NetWriter writer);
 
-        public virtual void Deserialize(NetReader reader, bool firstTime) =>
-            LastDeserializedValue = DeserializeValue(reader, firstTime);
+        public virtual void Deserialize(NetReader reader) =>
+            LastDeserializedValue = DeserializeValue(reader);
 
-        protected abstract T DeserializeValue(NetReader reader, bool firstTime);
+        protected abstract T DeserializeValue(NetReader reader);
     }
 
     public class AnimatorFloatParameterValueProxy : AnimatorParameterValueProxy<float>
@@ -58,7 +58,7 @@ namespace LROTech.NetworkBehaviours
         public override void Serialize(NetWriter writer) =>
             writer.WriteSingle(Animator.GetFloat(Parameter.nameHash));
 
-        protected override float DeserializeValue(NetReader reader, bool firstTime) =>
+        protected override float DeserializeValue(NetReader reader) =>
             reader.ReadSingle();
     }
 
@@ -71,12 +71,12 @@ namespace LROTech.NetworkBehaviours
         public override void Serialize(NetWriter writer) =>
             writer.WriteInt32(Animator.GetInteger(Parameter.nameHash));
 
-        protected override int DeserializeValue(NetReader reader, bool firstTime) =>
+        protected override int DeserializeValue(NetReader reader) =>
             reader.ReadInt32();
 
-        public override void Deserialize(NetReader reader, bool firstTime)
+        public override void Deserialize(NetReader reader)
         {
-            base.Deserialize(reader, firstTime);
+            base.Deserialize(reader);
             Animator.SetInteger(Parameter.nameHash, LastDeserializedValue);
         }
     }
@@ -90,12 +90,12 @@ namespace LROTech.NetworkBehaviours
         public override void Serialize(NetWriter writer) =>
             writer.WriteBool(Animator.GetBool(Parameter.nameHash));
 
-        protected override bool DeserializeValue(NetReader reader, bool firstTime) =>
+        protected override bool DeserializeValue(NetReader reader) =>
             reader.ReadBoolean();
 
-        public override void Deserialize(NetReader reader, bool firstTime)
+        public override void Deserialize(NetReader reader)
         {
-            base.Deserialize(reader, firstTime);
+            base.Deserialize(reader);
             Animator.SetBool(Parameter.nameHash, LastDeserializedValue);
         }
     }
@@ -279,13 +279,13 @@ namespace LROTech.NetworkBehaviours
             }
         }
 
-        protected override void OnDeserialize(NetReader reader, bool firstTime)
+        protected override void OnDeserialize(NetReader reader)
         {
-            base.OnDeserialize(reader, firstTime);
+            base.OnDeserialize(reader);
 
             // Parameters.
-            foreach (var p in m_AnimatorParameterValueProxyCollection)
-                p.Deserialize(reader, firstTime);
+            foreach (var animatorValueProxy in m_AnimatorParameterValueProxyCollection)
+                animatorValueProxy.Deserialize(reader);
 
             // Layers.
             for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)

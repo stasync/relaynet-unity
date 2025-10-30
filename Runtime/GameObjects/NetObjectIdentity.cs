@@ -72,8 +72,7 @@ namespace LROTech.Network.GameObjects
 
             var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
             if (!IsLocal)
-                Deserialize(viewStateData.UnstructuredData, force: true,
-                    firstTime: true); // Force true to allow deserialization before object initialized.
+                Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
 
             // Pre initialization.
             foreach (var behaviour in m_Behaviours)
@@ -183,7 +182,7 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// Deserialize whole object.
         /// </summary>
-        internal void Deserialize(byte[] data, bool force, bool firstTime)
+        internal void Deserialize(byte[] data, bool force)
         {
             if (IsLocal)
             {
@@ -209,7 +208,7 @@ namespace LROTech.Network.GameObjects
             m_ObjectReader.Replace(data);
 
             foreach (var behaviour in m_Behaviours)
-                behaviour.OnDeserializeInternal(m_ObjectReader, firstTime);
+                behaviour.OnDeserializeInternal(m_ObjectReader);
 
             // Receive rpc buffer if object initialized.
             if (Initialized)

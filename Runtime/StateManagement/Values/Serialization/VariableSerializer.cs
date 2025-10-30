@@ -4,7 +4,7 @@ using UnityEngine.Scripting;
 namespace LROTech.Network.StateManagement.Values.Serialization
 {
     [RequireDerived]
-    public abstract class VariableSerializer
+    internal abstract class VariableSerializer
     {
     }
     

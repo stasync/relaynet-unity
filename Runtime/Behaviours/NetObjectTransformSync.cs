@@ -129,9 +129,9 @@ namespace LROTech.NetworkBehaviours
             }
         }
 
-        protected override void OnDeserialize(NetReader reader, bool firstTime)
+        protected override void OnDeserialize(NetReader reader)
         {
-            base.OnDeserialize(reader, firstTime);
+            base.OnDeserialize(reader);
 
             foreach (var nestedTransform in m_NestedTransforms)
             {

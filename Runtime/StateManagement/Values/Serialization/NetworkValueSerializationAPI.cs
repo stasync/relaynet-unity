@@ -22,14 +22,14 @@ namespace LROTech.Network.StateManagement.Values.Serialization
         {
             foreach (var type in Core.Utils.Types.Lookup<VariableSerializer>.Value)
             {
-                foreach (var interfaceImpl in type.GetInterfaces())
-                {
-                    if (interfaceImpl != typeof(VariableSerializer<>))
-                        continue;
-
-                    var genericTypeDefinition = interfaceImpl.GetGenericTypeDefinition();
-                    s_serializers.Add(genericTypeDefinition, (VariableSerializer)Activator.CreateInstance(type));
-                }
+                var genericArguments = type.BaseType!.GetGenericArguments();
+                var targetType = genericArguments[0];
+                if (s_serializers.TryAdd(targetType, (VariableSerializer)Activator.CreateInstance(type))) 
+                    continue;
+                
+                var alreadyRegisteredType = s_serializers[targetType].GetType();
+                throw new InvalidOperationException(
+                    $"Serializer '{type.FullName}' could not be registered for type '{targetType.FullName}'. It's already registered with type '{alreadyRegisteredType.FullName}'.");
             }
         }
 

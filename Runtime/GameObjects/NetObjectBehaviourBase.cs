@@ -61,9 +61,9 @@ namespace LROTech.Network.GameObjects
 #endif
         }
 
-        internal void OnDeserializeInternal(NetReader reader, bool firstTime)
+        internal void OnDeserializeInternal(NetReader reader)
         {
-            OnDeserialize(reader, firstTime);
+            OnDeserialize(reader);
         
 #if NETWORK_DEBUG
             var typeName = GetType().FullName;
@@ -74,7 +74,7 @@ namespace LROTech.Network.GameObjects
                 Debug.LogError($"Potential serialization problem in '{typeName}' on '{gameObject.name}'.");
 #endif
         
-            OnDataDeserialized(firstTime);
+            OnDataDeserialized();
         }
     
         internal void OnSoftDestroyRequestedLocallyInternal() => 
@@ -130,14 +130,14 @@ namespace LROTech.Network.GameObjects
         {
         }
     
-        protected virtual void OnDeserialize(NetReader reader, bool firstTime)
+        protected virtual void OnDeserialize(NetReader reader)
         {
         }
     
         /// <summary>
         /// Called, when network data was deserialized.
         /// </summary>
-        protected virtual void OnDataDeserialized(bool firstTime)
+        protected virtual void OnDataDeserialized()
         {
         }
 
