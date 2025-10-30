@@ -9,6 +9,27 @@ namespace LROTech.Network.StateManagement
 {
     public sealed class NetObjectState
     {
+        #region SYNCRONIZED STATE
+
+        public NetObjectUid Uid { get; private set; }
+
+        /// <summary>
+        ///     TODO: Should be changed to long or uint
+        /// </summary>
+        public string PrefabId { get; private set; }
+
+        public bool IsSceneObject { get; private set; }
+
+        public ClientUid OwnerUid { get; private set; }
+
+        public NetObjectStateChangeRequestType StateChangeType { get; private set; }
+
+        public readonly NetObjectRpcBuffer RpcBuffer;
+
+        public readonly NetObjectDataCollection DataCollection;
+
+        #endregion
+        
         private readonly Queue<int> _persistentRpcToRemoveQueue = new();
         private readonly Func<ClientUid, NetWorldPlayer> _playerProvider;
         private readonly Queue<NetObjectRpcBuffer.NewRpcData> _rpcBufferUpdateQueue = new();
@@ -56,11 +77,9 @@ namespace LROTech.Network.StateManagement
         public event Action Invalidated = delegate { };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsValid()
-        {
-            return Uid.IsValid && _mValidator != null && _mValidator(Uid);
-        }
-
+        public bool IsValid() =>
+            Uid.IsValid && _mValidator != null && _mValidator(Uid);
+        
         public bool IsOwnedBy(ClientUid uid)
         {
             EnsureValid();
@@ -282,26 +301,5 @@ namespace LROTech.Network.StateManagement
                 DeliveryMethod = deliveryMethod;
             }
         }
-
-        #region SYNCRONIZED STATE
-
-        public NetObjectUid Uid { get; private set; }
-
-        /// <summary>
-        ///     TODO: Should be changed to long or uint
-        /// </summary>
-        public string PrefabId { get; private set; }
-
-        public bool IsSceneObject { get; private set; }
-
-        public ClientUid OwnerUid { get; private set; }
-
-        public NetObjectStateChangeRequestType StateChangeType { get; private set; }
-
-        public readonly NetObjectRpcBuffer RpcBuffer;
-
-        public readonly NetObjectDataCollection DataCollection;
-
-        #endregion
     }
 }
