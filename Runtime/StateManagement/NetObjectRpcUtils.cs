@@ -7,9 +7,9 @@ namespace LROTech.Network.StateManagement
 {
     public static class NetObjectRpcUtils
     {
-        private static readonly Dictionary<MethodInfo, bool> s_MethodValidityCache = new();
-        private static readonly Dictionary<MethodInfo, int> s_RpcMethodToHashLookup = new();
-        private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> m_AutoRegisterRpcHandlerMethodsCache = new();
+        private static readonly Dictionary<MethodInfo, bool> s_methodValidityCache = new();
+        private static readonly Dictionary<MethodInfo, int> s_rpcMethodToHashLookup = new();
+        private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> s_mAutoRegisterRpcHandlerMethodsCache = new();
 
         /// <summary>
         /// Converts action to RPC code.
@@ -21,22 +21,22 @@ namespace LROTech.Network.StateManagement
             if (!IsValidMethod(a.Method))
                 throw new InvalidOperationException("Unable to create RPC code with anonymous delegates.");
 
-            if (s_RpcMethodToHashLookup.TryGetValue(a.Method, out var result))
+            if (s_rpcMethodToHashLookup.TryGetValue(a.Method, out var result))
                 return result;
 
             result = NameToHash($"{a.Method.DeclaringType!.FullName}.{a.Method.Name}");
-            s_RpcMethodToHashLookup.Add(a.Method, result);
+            s_rpcMethodToHashLookup.Add(a.Method, result);
             return result;
         }
 
         private static bool IsValidMethod(MethodInfo method)
         {
-            if (s_MethodValidityCache.TryGetValue(method, out var result))
+            if (s_methodValidityCache.TryGetValue(method, out var result))
                 return result;
 
             // Anonymous delegate method name usually looks like '<Foo>m__0';
             // TODO: More 'beautiful' way to know is delegate is anonymous.
-            s_MethodValidityCache.Add(method, result = !method.Name.StartsWith("<"));
+            s_methodValidityCache.Add(method, result = !method.Name.StartsWith("<"));
             return result;
         }
 
@@ -63,7 +63,7 @@ namespace LROTech.Network.StateManagement
         /// </summary>
         public static MethodInfo TryFindMethodInfoByHashSlow(int hash)
         {
-            foreach (var kvp in s_RpcMethodToHashLookup)
+            foreach (var kvp in s_rpcMethodToHashLookup)
             {
                 if (kvp.Value == hash)
                     return kvp.Key;
@@ -74,11 +74,11 @@ namespace LROTech.Network.StateManagement
 
         public static IReadOnlyList<MethodInfo> GetAutoRegisterRpcHandlers(Type type)
         {
-            if (m_AutoRegisterRpcHandlerMethodsCache.TryGetValue(type, out var result))
+            if (s_mAutoRegisterRpcHandlerMethodsCache.TryGetValue(type, out var result))
                 return result;
 
             var methodCollection = new List<MethodInfo>();
-            m_AutoRegisterRpcHandlerMethodsCache.Add(type, methodCollection);
+            s_mAutoRegisterRpcHandlerMethodsCache.Add(type, methodCollection);
 
             foreach (var methodInfo in type.GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
@@ -102,10 +102,10 @@ namespace LROTech.Network.StateManagement
 
         internal static class UidAllocator
         {
-            private static uint m_Counter;
+            private static uint _counter;
 
             internal static uint NextUid() =>
-                ++m_Counter;
+                ++_counter;
         }
     }
 }

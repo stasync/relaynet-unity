@@ -64,7 +64,7 @@ namespace LROTech.Network.GameObjects
 
             World = world;
 
-            m_NetObjectStateReference.SetTargetUID(stateUID);
+            m_NetObjectStateReference.SetTargetUid(stateUID);
             m_NetObjectStateReference.SetTargetWorld(world);
 
             State.OnOwnerChanged += OnOwnerChanged;
@@ -407,7 +407,7 @@ namespace LROTech.Network.GameObjects
             State.OnOwnerChanged -= OnOwnerChanged;
             State.LocalUpdateRequest -= OnLocalUpdateRequest;
 
-            m_NetObjectStateReference.SetTargetUID(NetObjectUid.Invalid);
+            m_NetObjectStateReference.SetTargetUid(NetObjectUid.Invalid);
             m_NetObjectStateReference.SetTargetWorld(null);
         }
 

@@ -12,25 +12,25 @@ namespace LROTech.Network.StateManagement
         public event Action Updated = delegate { };
         public event Action<NetObjectUid> ObjectCreated = delegate { };
 
-        public bool IsValid => ID.IsValid;
+        public bool IsValid => Id.IsValid;
 
-        public NetWorldId UID { get; private set; }
-        public NetWorldId ID { get; private set; }
-        public NetWorldId SourceID { get; private set; }
+        public NetWorldId Uid { get; private set; }
+        public NetWorldId Id { get; private set; }
+        public NetWorldId SourceId { get; private set; }
         public float Time { get; protected set; }
         public float LocalTime { get; private set; }
         public string Name { get; private set; }
         public NetWorldView View { get; private set; }
 
-        public bool IsReplica => SourceID.IsValid;
+        public bool IsReplica => SourceId.IsValid;
 
-        public IReadOnlyDictionary<NetObjectUid, NetObjectState> ObjectStates => m_CurrentObjectStates;
-        private readonly Dictionary<NetObjectUid, NetObjectState> m_CurrentObjectStates;
+        public IReadOnlyDictionary<NetObjectUid, NetObjectState> ObjectStates => _currentObjectStates;
+        private readonly Dictionary<NetObjectUid, NetObjectState> _currentObjectStates = new();
 
         public readonly NetWorldPlayersCollection Players;
         public readonly NetworkProperties Properties;
 
-        private readonly Queue<Action> m_ViewInitActionQueue = new();
+        private readonly Queue<Action> _viewInitActionQueue = new();
 
         protected NetWorld(NetWorldId uid, string worldName) : this(uid, worldName, NetWorldId.Invalid)
         {
@@ -38,15 +38,14 @@ namespace LROTech.Network.StateManagement
 
         protected NetWorld(NetWorldId uid, string worldName, NetWorldId sourceId)
         {
-            UID = NetWorldId.Allocate();
-            ID = uid;
-            SourceID = sourceId;
+            Uid = NetWorldId.Allocate();
+            Id = uid;
+            SourceId = sourceId;
 
             Time = 0f;
             LocalTime = 0f;
-            Name = $"{ID}:{worldName}";
+            Name = $"{Id}:{worldName}";
 
-            m_CurrentObjectStates = new Dictionary<NetObjectUid, NetObjectState>();
             Players = new NetWorldPlayersCollection(validator: () => IsValid);
             Properties = new NetworkProperties(writePermission: () => Players.LocalPlayerIsMaster);
         }
@@ -59,8 +58,8 @@ namespace LROTech.Network.StateManagement
             View = new GameObject(Name).AddComponent<NetWorldView>();
             View.Init(world: this, viewInitMode);
 
-            while (m_ViewInitActionQueue.Count > 0)
-                m_ViewInitActionQueue.Dequeue()();
+            while (_viewInitActionQueue.Count > 0)
+                _viewInitActionQueue.Dequeue()();
         }
 
         public void Update(float deltaTime)
@@ -79,7 +78,7 @@ namespace LROTech.Network.StateManagement
             var canAddObject = !ObjectExists(state.Uid);
             if (canAddObject)
             {
-                m_CurrentObjectStates.Add(state.Uid, state);
+                _currentObjectStates.Add(state.Uid, state);
                 ObjectCreated(state.Uid);
             }
 
@@ -102,7 +101,7 @@ namespace LROTech.Network.StateManagement
 
         protected virtual void OnBeforeUpdateWorldState(float worldDelta)
         {
-            foreach (var state in m_CurrentObjectStates.Values)
+            foreach (var state in _currentObjectStates.Values)
                 state.OnBeforeUpdateWorldState(worldDelta);
 
             Players.OnBeforeUpdateWorldState(worldDelta);
@@ -121,20 +120,20 @@ namespace LROTech.Network.StateManagement
         public virtual void Dispose()
         {
             EnsureValid();
-            
-            UID = NetWorldId.Invalid;
-            ID = NetWorldId.Invalid;
-            SourceID = NetWorldId.Invalid;
+
+            Uid = NetWorldId.Invalid;
+            Id = NetWorldId.Invalid;
+            SourceId = NetWorldId.Invalid;
 
             Updated = delegate { };
 
-            foreach (var netObject in m_CurrentObjectStates.Values)
+            foreach (var netObject in _currentObjectStates.Values)
                 netObject.Invalidate();
 
-            m_CurrentObjectStates.Clear();
+            _currentObjectStates.Clear();
             Players.Clear();
             Properties.Clean();
-            m_ViewInitActionQueue.Clear();
+            _viewInitActionQueue.Clear();
 
             if (View == null)
                 Debug.LogError("View already destroyed (Maybe it's done by unity via exiting play mode)");
@@ -149,7 +148,7 @@ namespace LROTech.Network.StateManagement
         public virtual bool ObjectExists(NetObjectUid uid)
         {
             EnsureValid();
-            return m_CurrentObjectStates.ContainsKey(uid);
+            return _currentObjectStates.ContainsKey(uid);
         }
 
         public NetObjectIdentity FindObjectView(NetObjectUid instanceId)
@@ -190,27 +189,27 @@ namespace LROTech.Network.StateManagement
         public virtual NetObjectState FindObject(NetObjectUid instanceId)
         {
             EnsureValid();
-            return m_CurrentObjectStates.GetValueOrDefault(instanceId);
+            return _currentObjectStates.GetValueOrDefault(instanceId);
         }
 
         public bool TryGetObject(NetObjectUid instanceId, out NetObjectState state)
         {
             EnsureValid();
-            return m_CurrentObjectStates.TryGetValue(instanceId, out state);
+            return _currentObjectStates.TryGetValue(instanceId, out state);
         }
-        
-        protected virtual bool IsObjectValid(NetObjectUid instanceId) => 
-            m_CurrentObjectStates.ContainsKey(instanceId);
 
-        protected virtual void RemoveObject(NetObjectUid stateUID)
+        protected virtual bool IsObjectValid(NetObjectUid instanceId) =>
+            _currentObjectStates.ContainsKey(instanceId);
+
+        protected virtual void RemoveObject(NetObjectUid stateUid)
         {
             EnsureValid();
 
-            if (!m_CurrentObjectStates.TryGetValue(stateUID, out var state))
+            if (!_currentObjectStates.TryGetValue(stateUid, out var state))
                 return;
 
             state.Invalidate();
-            m_CurrentObjectStates.Remove(stateUID);
+            _currentObjectStates.Remove(stateUid);
         }
 
         public NetWorldSnapshot ToSnapshot(float deltaTime = 0f)
@@ -234,14 +233,14 @@ namespace LROTech.Network.StateManagement
             // Add or update objects.
             foreach (var (uid, objectStateSnapshot) in snapshot.Objects)
             {
-                if (m_CurrentObjectStates.TryGetValue(uid, out var state))
+                if (_currentObjectStates.TryGetValue(uid, out var state))
                     state.ChangeObjectRemotely(objectStateSnapshot);
                 else
                     TryAddObject(new NetObjectState(IsObjectValid, Players.Find, objectStateSnapshot));
             }
 
             // Remove absent objects.
-            foreach (var objectUid in new List<NetObjectUid>(m_CurrentObjectStates.Keys))
+            foreach (var objectUid in new List<NetObjectUid>(_currentObjectStates.Keys))
             {
                 if (!snapshot.Objects.ContainsKey(objectUid))
                     RemoveObject(objectUid);
@@ -253,7 +252,7 @@ namespace LROTech.Network.StateManagement
             if (View != null)
                 action();
             else
-                m_ViewInitActionQueue.Enqueue(action);
+                _viewInitActionQueue.Enqueue(action);
         }
 
         public int GetVersionHash()
@@ -261,10 +260,10 @@ namespace LROTech.Network.StateManagement
             EnsureValid();
 
             var hash = 13;
-            hash = hash * 7 + ID.GetHashCode();
+            hash = hash * 7 + Id.GetHashCode();
             hash = hash * 7 + Time.GetHashCode();
             hash = hash * 7 + LocalTime.GetHashCode(); //Do we need local time in hash code?
-            foreach (var kvp in m_CurrentObjectStates)
+            foreach (var kvp in _currentObjectStates)
             {
                 hash += kvp.Key.GetHashCode();
                 hash += kvp.Value.GetVersionHash();

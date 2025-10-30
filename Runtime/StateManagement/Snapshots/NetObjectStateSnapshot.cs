@@ -53,7 +53,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         {
             var result = 0;
             result += ClientUid.Size; // OwnerUid
-            result += NetObjectUid.Size; // ObjectUID
+            result += NetObjectUid.SIZE; // ObjectUID
             result += PrefabId.Length;
             result += sizeof(bool); // IsSceneObject
             result += sizeof(NetObjectStateChangeRequestType); // StateChangeType

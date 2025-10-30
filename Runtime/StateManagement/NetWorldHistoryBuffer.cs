@@ -8,15 +8,15 @@ namespace LROTech.Network.StateManagement
     {
         public int Size { get; private set; }
         public int AverageFrameSize { get; private set; }
-        public float SizeMB => Size * 0.000001f;
-        public int Count => m_HistoryBuffer.Count;
+        public float SizeMb => Size * 0.000001f;
+        public int Count => _historyBuffer.Count;
         public float LengthInSeconds { get; private set; }
 
-        private readonly Queue<NetWorldSnapshot> m_HistoryBuffer = new();
+        private readonly Queue<NetWorldSnapshot> _historyBuffer = new();
 
         internal void Enqueue(NetWorldSnapshot snapshot)
         {
-            m_HistoryBuffer.Enqueue(snapshot);
+            _historyBuffer.Enqueue(snapshot);
 
             Size += snapshot.GetSize();
             LengthInSeconds += snapshot.DeltaTime;
@@ -26,7 +26,7 @@ namespace LROTech.Network.StateManagement
 
         internal void Dequeue()
         {
-            var snapshot = m_HistoryBuffer.Dequeue();
+            var snapshot = _historyBuffer.Dequeue();
 
             Size -= snapshot.GetSize();
             LengthInSeconds -= snapshot.DeltaTime;
@@ -36,7 +36,7 @@ namespace LROTech.Network.StateManagement
 
         internal void Clear()
         {
-            m_HistoryBuffer.Clear();
+            _historyBuffer.Clear();
 
             Size = 0;
             LengthInSeconds = 0f;
@@ -48,9 +48,9 @@ namespace LROTech.Network.StateManagement
             AverageFrameSize = Count == 0 ? 0 : Size / Count;
 
         public IEnumerator<NetWorldSnapshot> GetEnumerator() =>
-            m_HistoryBuffer.GetEnumerator();
+            _historyBuffer.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() =>
-            m_HistoryBuffer.GetEnumerator();
+            _historyBuffer.GetEnumerator();
     }
 }

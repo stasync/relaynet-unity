@@ -6,30 +6,30 @@ namespace LROTech.Network.StateManagement
 {
     public sealed class NetWorldObjectViewWaiter : IDisposable
     {
-        private NetWorld m_World;
-        private Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>> m_NewObjectWaiters;
+        private NetWorld _world;
+        private Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>> _newObjectWaiters;
 
         public NetWorldObjectViewWaiter(NetWorld world)
         {
-            m_World = world;
-            m_NewObjectWaiters = new Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>>();
+            _world = world;
+            _newObjectWaiters = new Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>>();
 
-            m_World.View.NewObjectInitialized += OnNewObjectInitialized;
+            _world.View.NewObjectInitialized += OnNewObjectInitialized;
         }
 
         public void GetOrWaitFor(NetObjectUid uid, Action<NetObjectIdentity> a)
         {
-            var existedView = m_World.FindObjectView(uid);
+            var existedView = _world.FindObjectView(uid);
             if (existedView != null)
             {
                 a(existedView);
                 return;
             }
 
-            if (!m_NewObjectWaiters.TryGetValue(uid, out var waiters))
+            if (!_newObjectWaiters.TryGetValue(uid, out var waiters))
             {
                 waiters = new List<Action<NetObjectIdentity>>();
-                m_NewObjectWaiters.Add(uid, waiters);
+                _newObjectWaiters.Add(uid, waiters);
             }
 
             waiters.Add(a);
@@ -37,7 +37,7 @@ namespace LROTech.Network.StateManagement
 
         private void OnNewObjectInitialized(NetObjectIdentity identity)
         {
-            if (!m_NewObjectWaiters.TryGetValue(identity.InstanceId, out var waiters))
+            if (!_newObjectWaiters.TryGetValue(identity.InstanceId, out var waiters))
                 return;
 
             foreach (var action in waiters)
@@ -48,12 +48,12 @@ namespace LROTech.Network.StateManagement
 
         public void Dispose()
         {
-            if (m_World.IsValid && m_World.View != null)
-                m_World.View.NewObjectInitialized -= OnNewObjectInitialized;
+            if (_world.IsValid && _world.View != null)
+                _world.View.NewObjectInitialized -= OnNewObjectInitialized;
 
-            m_World = null;
-            m_NewObjectWaiters.Clear();
-            m_NewObjectWaiters = null;
+            _world = null;
+            _newObjectWaiters.Clear();
+            _newObjectWaiters = null;
         }
     }
 }

@@ -4,33 +4,33 @@ namespace LROTech.Network.StateManagement
 {
     public readonly struct NetWorldId : IComparable<NetWorldId>, IEquatable<NetWorldId>
     {
-        public const int Size = sizeof(int);
+        public const int SIZE = sizeof(int);
 
         #region STATIC
 
-        internal static NetWorldId Allocate() => new(++s_IdCounter);
+        internal static NetWorldId Allocate() => new(++s_idCounter);
         internal static NetWorldId Invalid => new(0);
-        private static int s_IdCounter;
+        private static int s_idCounter;
 
         #endregion
 
         private NetWorldId(int value) =>
-            m_Value = value;
+            _value = value;
 
-        private readonly int m_Value;
+        private readonly int _value;
 
-        public bool IsValid => m_Value > Invalid.m_Value;
+        public bool IsValid => _value > Invalid._value;
 
-        public int CompareTo(NetWorldId other) => m_Value.CompareTo(other.m_Value);
-        public static implicit operator int(NetWorldId value) => value.m_Value;
+        public int CompareTo(NetWorldId other) => _value.CompareTo(other._value);
+        public static implicit operator int(NetWorldId value) => value._value;
 
-        public static bool operator ==(NetWorldId value0, NetWorldId value1) => value0.m_Value == value1.m_Value;
-        public static bool operator !=(NetWorldId value0, NetWorldId value1) => value0.m_Value != value1.m_Value;
+        public static bool operator ==(NetWorldId value0, NetWorldId value1) => value0._value == value1._value;
+        public static bool operator !=(NetWorldId value0, NetWorldId value1) => value0._value != value1._value;
 
-        public bool Equals(NetWorldId other) => m_Value.Equals(other.m_Value);
+        public bool Equals(NetWorldId other) => _value.Equals(other._value);
 
-        public override string ToString() => m_Value.ToString();
-        public override bool Equals(object obj) => m_Value.Equals(obj);
-        public override int GetHashCode() => m_Value.GetHashCode();
+        public override string ToString() => _value.ToString();
+        public override bool Equals(object obj) => _value.Equals(obj);
+        public override int GetHashCode() => _value.GetHashCode();
     }
 }

@@ -16,8 +16,8 @@ namespace LROTech.Network.StateManagement.Snapshots
         internal NetWorldSnapshot(float deltaTime, NetWorld world)
         {
             DeltaTime = deltaTime;
-            Uid = world.UID;
-            Id = world.ID;
+            Uid = world.Uid;
+            Id = world.Id;
             Time = world.Time;
             LocalTime = world.LocalTime;
 
@@ -35,14 +35,14 @@ namespace LROTech.Network.StateManagement.Snapshots
         {
             var size = 0;
             size += sizeof(float); // DeltaTime
-            size += NetWorldId.Size; // Uid
-            size += NetWorldId.Size; // ID
+            size += NetWorldId.SIZE; // Uid
+            size += NetWorldId.SIZE; // ID
             size += sizeof(float); // Time
             size += sizeof(float); // Local time
 
             foreach (var netObject in Objects.Values)
             {
-                size += NetObjectUid.Size; // NetObjectUid
+                size += NetObjectUid.SIZE; // NetObjectUid
                 size += netObject.GetSize();
             }
 

@@ -15,79 +15,79 @@ namespace LROTech.Network.StateManagement
 
         public string Name
         {
-            get => m_Name;
+            get => _name;
             set
             {
                 if (!IsLocal)
                     throw new Exception($"Trying to change remote player name, this is not allowed. Player id: {Uid}.");
-                m_Name = value;
+                _name = value;
             }
         }
 
-        private string m_Name;
+        private string _name;
 
         public bool IsReady
         {
-            get => m_IsReady;
+            get => _isReady;
             set
             {
                 if (!IsLocal)
                     throw new Exception($"Trying to change is ready on remote player, this is not allowed. Player id: {Uid}.");
-                m_IsReady = value;
+                _isReady = value;
             }
         }
 
-        private bool m_IsReady;
+        private bool _isReady;
 
         public UserDevice.Platform Platform
         {
-            get => m_Platform;
+            get => _platform;
             set
             {
                 if (!IsLocal)
                     throw new Exception($"Trying to change platform without authority, this is not allowed. Player id: {Uid}.");
-                m_Platform = value;
+                _platform = value;
             }
         }
 
-        private UserDevice.Platform m_Platform = UserDevice.Platform.Unknown;
+        private UserDevice.Platform _platform = UserDevice.Platform.Unknown;
 
-        public int RTTMs
+        public int RttMs
         {
-            get => m_RTTMS;
+            get => _rttMs;
             set
             {
                 if (!IsLocal)
                     throw new Exception($"Trying to change RTT value without authority, this is not allowed. Player id: {Uid}.");
-                m_RTTMS = value;
+                _rttMs = value;
             }
         }
 
-        private int m_RTTMS;
+        private int _rttMs;
 
         public readonly NetworkProperties Properties;
 
-        public IReadOnlyCollection<NetObjectUid> TagObjectUidCollection => m_TagObjectUidCollection;
-        private readonly HashSet<NetObjectUid> m_TagObjectUidCollection = new();
+        public IReadOnlyCollection<NetObjectUid> TagObjectUidCollection => _tagObjectUidCollection;
+        private readonly HashSet<NetObjectUid> _tagObjectUidCollection = new();
 
         public NetObjectUid MainTagObjectUid { get; private set; } = NetObjectUid.Invalid;
 
         #endregion
 
-        public bool IsLocal => IsValid() && Uid.Equals(other: m_LocalPlayerUidProvider());
-        public bool IsMaster => IsValid() && Uid.Equals(other: m_MasterPlayerUidProvider());
+        public bool IsLocal => IsValid() && Uid.Equals(other: _localPlayerUidProvider());
+        public bool IsMaster => IsValid() && Uid.Equals(other: _masterPlayerUidProvider());
 
-        private readonly Func<ClientUid> m_LocalPlayerUidProvider;
-        private readonly Func<ClientUid> m_MasterPlayerUidProvider;
-        private readonly Func<ClientUid, bool> m_Validator;
+        private readonly Func<ClientUid> _localPlayerUidProvider;
+        private readonly Func<ClientUid> _masterPlayerUidProvider;
+        private readonly Func<ClientUid, bool> _validator;
 
         internal NetWorldPlayer(Func<ClientUid, bool> validator, ClientUid uid, string name, Func<ClientUid> localPlayerUidProvider, Func<ClientUid> masterPlayerUidProvider)
         {
-            m_Validator = validator;
+            _validator = validator;
             Uid = uid;
-            m_Name = name;
-            m_LocalPlayerUidProvider = localPlayerUidProvider;
-            m_MasterPlayerUidProvider = masterPlayerUidProvider;
+            _name = name;
+            _localPlayerUidProvider = localPlayerUidProvider;
+            _masterPlayerUidProvider = masterPlayerUidProvider;
 
             Properties = new NetworkProperties(writePermission: () => IsLocal);
         }
@@ -97,26 +97,26 @@ namespace LROTech.Network.StateManagement
             EnsureValid();
             
             Uid = snapshot.Uid;
-            m_Name = snapshot.Name;
-            m_IsReady = snapshot.IsInGameScene;
-            m_Platform = snapshot.Platform;
-            m_RTTMS = snapshot.RTTMs;
+            _name = snapshot.Name;
+            _isReady = snapshot.IsInGameScene;
+            _platform = snapshot.Platform;
+            _rttMs = snapshot.RTTMs;
 
-            m_TagObjectUidCollection.Clear();
+            _tagObjectUidCollection.Clear();
             foreach (var tagObject in snapshot.TagObjects)
-                m_TagObjectUidCollection.Add(tagObject);
+                _tagObjectUidCollection.Add(tagObject);
 
             Properties.RestoreFromSnapshot(snapshot.Properties);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsValid() => 
-            Uid.IsValid && m_Validator != null && m_Validator(Uid);
+            Uid.IsValid && _validator != null && _validator(Uid);
 
         public bool HasTagObject(NetObjectUid uid)
         {
             EnsureValid();
-            return uid.IsValid && m_TagObjectUidCollection.Contains(uid);
+            return uid.IsValid && _tagObjectUidCollection.Contains(uid);
         }
            
         public bool HasTagObject(NetObjectState state)
@@ -160,7 +160,7 @@ namespace LROTech.Network.StateManagement
             if (!uid.IsValid)
                 throw new InvalidOperationException("Trying to register invalid object Uid as tag object.");
 
-            m_TagObjectUidCollection.Add(uid);
+            _tagObjectUidCollection.Add(uid);
             if (main)
                 MainTagObjectUid = uid;
         }
@@ -175,7 +175,7 @@ namespace LROTech.Network.StateManagement
             if (!uid.IsValid)
                 throw new InvalidOperationException("Trying to register invalid object Uid as tag object.");
 
-            m_TagObjectUidCollection.Remove(uid);
+            _tagObjectUidCollection.Remove(uid);
             if (MainTagObjectUid == uid)
                 MainTagObjectUid = NetObjectUid.Invalid;
         }
