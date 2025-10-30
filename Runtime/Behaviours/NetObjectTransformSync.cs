@@ -26,8 +26,8 @@ namespace LROTech.NetworkBehaviours
         [SerializeField]
         private List<Transform> m_NestedTransforms = new ();
 
-        private Vector3 m_LastFramePosition;
-        private Vector3 m_Velocity;
+        private Vector3 _lastFramePosition;
+        private Vector3 _velocity;
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -49,15 +49,15 @@ namespace LROTech.NetworkBehaviours
             ResetTemporaryData();
             if (IsLocal)
             {
-                Data.Position.Set(transform.position);
-                Data.Rotation.Set(transform.rotation);
+                Data.Position.Value = transform.position;
+                Data.Rotation.Value = transform.rotation;
             }
         }
 
         private void ResetTemporaryData()
         {
-            m_LastFramePosition = transform.position;
-            m_Velocity = Vector3.zero;
+            _lastFramePosition = transform.position;
+            _velocity = Vector3.zero;
 
             if (IsLocal) 
                 return;
@@ -73,17 +73,17 @@ namespace LROTech.NetworkBehaviours
 
             var hasParentLocally = transform.parent != transform.root && transform.parent != null;
 
-            m_Velocity = transform.position - m_LastFramePosition;
-            m_LastFramePosition = transform.position;
+            _velocity = transform.position - _lastFramePosition;
+            _lastFramePosition = transform.position;
 
             if (IsLocal)
             {
-                Data.Position.Set(transform.position);
-                Data.Rotation.Set(transform.rotation);
+                Data.Position.Value = transform.position;
+                Data.Rotation.Value = transform.rotation;
 
-                Data.Velocity.Set(m_Velocity);
-                Data.WorldTime.Set(Identity.World.Time);
-                Data.HasParent.Set(hasParentLocally);
+                Data.Velocity.Value = _velocity;
+                Data.WorldTime.Value = Identity.World.Time;
+                Data.HasParent.Value = hasParentLocally;
             }
             else
             {

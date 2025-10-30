@@ -42,7 +42,7 @@ namespace LROTech.NetworkBehaviours
             if (!IsLocal)
                 throw new InvalidOperationException("No authority");
 
-            Data.InteractionsEnabled.Set(value);
+            Data.InteractionsEnabled.Value = value;
         }
 
         public void ChangeTransactionRequest(NetObjectUid sender, bool interactionState) =>
@@ -106,9 +106,9 @@ namespace LROTech.NetworkBehaviours
 
             if (canChangeInteractionState)
             {
-                Data.CurrentInteraction.Set(state ? sender : NetObjectUid.Invalid);
+                Data.CurrentInteraction.Value = state ? sender : NetObjectUid.Invalid;
                 if (state)
-                    Data.LastInteraction.Set(sender);
+                    Data.LastInteraction.Value = sender;
             }
 
             OwnerToOthersRpc(ChangeTransactionResponseRPC, data: _writer.ToArray());

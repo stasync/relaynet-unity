@@ -36,25 +36,20 @@ namespace LROTech.Network.StateManagement.Values
     public abstract class NetworkValueBase<TValue, TExposed> : NetworkValueBase where TValue : TExposed
     {
         public TExposed Value => InternalValue;
+        protected TValue InternalValue => _internalValue;
+        
         private TValue _internalValue;
-
-        internal TValue InternalValue
-        {
-            get => _internalValue;
-            set
-            {
-                if (!HasPermission)
-                    throw new InvalidOperationException($"No authority to change value '{typeof(TValue).FullName}'.");
-
-                _internalValue = value;
-            }
-        }
 
         protected NetworkValueBase(TValue defaultValue) =>
             _internalValue = defaultValue;
-        
-        public void Set(TValue value) => 
-            InternalValue = value;
+
+        public void Set(TValue value)
+        {
+            if (!HasPermission)
+                throw new InvalidOperationException($"No authority to change value '{typeof(TValue).FullName}'.");
+            
+            _internalValue = value;
+        }
 
         internal override void InternalDeserialize(NetReader reader) =>
             _internalValue = OnDeserialize(reader);
