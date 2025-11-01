@@ -84,7 +84,7 @@ namespace LROTech.Network.StateManagement
                 {
                     var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
                     var value = reader.ReadString();
-                    _stringData.Add(key, value);
+                    _stringData.TryAdd(key, value);
                 }
             }
         }
@@ -121,7 +121,7 @@ namespace LROTech.Network.StateManagement
             {
                 var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
                 var value = NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader);
-                dictionary.Add(key, value);
+                dictionary.TryAdd(key, value);
             }
         }
 

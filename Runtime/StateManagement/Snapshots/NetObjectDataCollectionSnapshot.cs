@@ -5,22 +5,22 @@ namespace LROTech.Network.StateManagement.Snapshots
 {
     public readonly struct NetObjectDataCollectionSnapshot
     {
-        private static readonly NetWriter s_Writer = new();
+        private static readonly NetWriter s_writer = new();
 
         public readonly byte[] Data;
 
         internal NetObjectDataCollectionSnapshot(IReadOnlyCollection<NetObjectStateData> dataCollection)
         {
-            s_Writer.SeekZero();
+            s_writer.SeekZero();
 
-            s_Writer.WriteInt32(dataCollection.Count);
+            s_writer.WriteInt32(dataCollection.Count);
             foreach (var data in dataCollection)
             {
-                s_Writer.WriteInt32(data.TypeHashCode);
-                data.SerializeInternal(s_Writer);
+                s_writer.WriteInt32(data.TypeHashCode);
+                data.SerializeInternal(s_writer);
             }
 
-            Data = s_Writer.ToArray();
+            Data = s_writer.ToArray();
         }
 
         internal NetObjectDataCollectionSnapshot(NetReader reader) =>

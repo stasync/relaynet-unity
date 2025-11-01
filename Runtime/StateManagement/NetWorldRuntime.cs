@@ -582,8 +582,7 @@ namespace LROTech.Network.StateManagement
             {
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.LogError(
-                    $"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newState.Uid}' not exist.");
+                Debug.LogError($"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newState.Uid}' not exist.");
 #endif
             }
         }
