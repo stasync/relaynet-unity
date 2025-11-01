@@ -301,11 +301,12 @@ namespace LROTech.Network.StateManagement
             // Update states based on removed player, if player leave, remove object.
             void UpdateObjectStateBasedOnRemovedPlayers()
             {
-                foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
+                while (removedPlayers.TryDequeue(out var removePlayerUid))
                 {
-                    var state = ObjectStates[objectUid];
-                    while (removedPlayers.TryDequeue(out var removePlayerUid))
+                    foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
                     {
+                        var state = ObjectStates[objectUid];
+                        
                         // Object owned by disconnected player.
                         if (state.IsOwnedBy(removePlayerUid))
                         {
