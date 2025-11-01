@@ -158,11 +158,11 @@ namespace LROTech.NetworkBehaviours
             for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
                 m_RemoteLayerWeights.Add(m_Animator.GetLayerWeight(layerIndex));
 
-            var runtimeController = (UnityEditor.Animations.AnimatorController)m_Animator.runtimeAnimatorController;
+            /*var runtimeController = (UnityEditor.Animations.AnimatorController)m_Animator.runtimeAnimatorController;
 
             m_LayersSyncFlags = new bool[runtimeController.layers.Length];
             for (var index = 0; index < runtimeController.layers.Length; index++)
-                m_LayersSyncFlags[index] = (uint)runtimeController.layers[index].syncedLayerIndex < (uint)runtimeController.layers.Length;
+                m_LayersSyncFlags[index] = (uint)runtimeController.layers[index].syncedLayerIndex < (uint)runtimeController.layers.Length;*/
         }
 
         public void SetTrigger(string triggerName) =>
