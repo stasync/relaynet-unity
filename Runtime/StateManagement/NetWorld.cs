@@ -30,8 +30,6 @@ namespace LROTech.Network.StateManagement
         public readonly NetWorldPlayersCollection Players;
         public readonly NetworkProperties Properties;
 
-        private readonly Queue<Action> _viewInitActionQueue = new();
-
         protected NetWorld(NetWorldId uid, string worldName) : this(uid, worldName, NetWorldId.Invalid)
         {
         }
@@ -57,9 +55,6 @@ namespace LROTech.Network.StateManagement
 
             View = new GameObject(Name).AddComponent<NetWorldView>();
             View.Init(world: this, viewInitMode);
-
-            while (_viewInitActionQueue.Count > 0)
-                _viewInitActionQueue.Dequeue()();
         }
 
         public void Update(float deltaTime)
@@ -129,11 +124,10 @@ namespace LROTech.Network.StateManagement
 
             foreach (var netObject in _currentObjectStates.Values)
                 netObject.Invalidate();
-
             _currentObjectStates.Clear();
+
             Players.Clear();
             Properties.Clean();
-            _viewInitActionQueue.Clear();
 
             if (View == null)
                 Debug.LogError("View already destroyed (Maybe it's done by unity via exiting play mode)");
@@ -245,14 +239,6 @@ namespace LROTech.Network.StateManagement
                 if (!snapshot.Objects.ContainsKey(objectUid))
                     RemoveObject(objectUid);
             }
-        }
-
-        protected void ScheduleOnViewInit(Action action)
-        {
-            if (View != null)
-                action();
-            else
-                _viewInitActionQueue.Enqueue(action);
         }
 
         public int GetVersionHash()

@@ -12,7 +12,7 @@ namespace LROTech.Network.StateManagement
         #region SYNCRONIZED STATE
 
         public NetObjectUid Uid { get; private set; }
-        
+
         public string PrefabId { get; private set; }
 
         public bool IsSceneObject { get; private set; }
@@ -26,7 +26,7 @@ namespace LROTech.Network.StateManagement
         public readonly NetObjectDataCollection DataCollection;
 
         #endregion
-        
+
         private readonly Queue<int> _persistentRpcToRemoveQueue = new();
         private readonly Func<ClientUid, NetWorldPlayer> _playerProvider;
         private readonly Queue<NetObjectRpcBuffer.NewRpcData> _rpcBufferUpdateQueue = new();
@@ -47,7 +47,7 @@ namespace LROTech.Network.StateManagement
         public event Action OwnerChanged = delegate { };
         public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
         public event Action Invalidated = delegate { };
-        
+
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId,
             bool isSceneObject, ClientUid owner)
         {
@@ -74,7 +74,7 @@ namespace LROTech.Network.StateManagement
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
             Uid.IsValid && _mValidator != null && _mValidator(Uid);
-        
+
         public bool IsOwnedBy(ClientUid uid)
         {
             EnsureValid();
@@ -83,16 +83,17 @@ namespace LROTech.Network.StateManagement
 
         internal void InvalidateOwner()
         {
+            EnsureValid();
             OwnerUid = ClientUid.Invalid;
         }
 
         internal void Invalidate()
         {
             EnsureValid();
-
+            
             Uid = NetObjectUid.Invalid;
-            InvalidateOwner();
-
+            OwnerUid = ClientUid.Invalid;
+            
             PrefabId = string.Empty;
             IsSceneObject = false;
             StateChangeType = NetObjectStateChangeRequestType.None;

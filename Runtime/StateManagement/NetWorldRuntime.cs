@@ -567,29 +567,25 @@ namespace LROTech.Network.StateManagement
             // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
             var newState = new NetObjectState(IsObjectValid, Players.Find, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid);
             _temporaryUnregisteredObjects.Add(newState.Uid, newState);
-            var newStateUid = newState.Uid;
 
             // Wait for view initialization.
-            ScheduleOnViewInit(() =>
+            if (TryGetExistedOrPendingState(newState.Uid, out var state))
             {
-                if (TryGetExistedOrPendingState(newStateUid, out var state))
-                {
-                    // Initialize immateriality on master client.
-                    if (Players.LocalPlayerIsMaster)
-                        View.InitializeObjectView(sceneIdentity.Identity, state.Uid);
+                // Initialize immateriality on master client.
+                if (Players.LocalPlayerIsMaster)
+                    View.InitializeObjectView(sceneIdentity.Identity, state.Uid);
 
-                    // Add view to be used in the future.
-                    View.RegisterAsPending(newStateUid, sceneIdentity.Identity);
-                }
-                else
-                {
-                    UnityEngine.Object.Destroy(sceneIdentity.gameObject);
+                // Add view to be used in the future.
+                View.RegisterAsPending(newState.Uid, sceneIdentity.Identity);
+            }
+            else
+            {
+                UnityEngine.Object.Destroy(sceneIdentity.gameObject);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    Debug.LogError(
-                        $"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newStateUid}' not exist.");
+                Debug.LogError(
+                    $"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newState.Uid}' not exist.");
 #endif
-                }
-            });
+            }
         }
 
         /// <summary>
@@ -665,7 +661,7 @@ namespace LROTech.Network.StateManagement
                     var sceneIdentities = rootObject.GetComponentsInChildren<NetObjectSceneIdentity>(includeInactive: false);
                     foreach (var sceneIdentity in sceneIdentities)
                     {
-                        if (!sceneIdentity.Identity.Initialized) 
+                        if (!sceneIdentity.Identity.Initialized)
                             TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity);
                     }
                 }

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Core.Utils.Math;
-using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -15,15 +14,14 @@ namespace LROTech.Network.GameObjects
         {
         }
 
-        [FormerlySerializedAs("m_SceneObjectId")] 
-        [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
+        [FormerlySerializedAs("m_SceneObjectId")] [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE)]
         private int _sceneObjectId;
 
         public NetObjectUid SceneObjectId => new((uint)_sceneObjectId);
 
-        [FormerlySerializedAs("m_PrefabId")] 
-        [SerializeField] 
+        [FormerlySerializedAs("m_PrefabId")] [SerializeField]
         private string _prefabId;
+
         public string PrefabID => _prefabId;
 
         public static implicit operator NetObjectIdentity(NetObjectSceneIdentity value) =>
