@@ -94,7 +94,7 @@ namespace LROTech.Network.StateManagement
                             // Deserialize other player.
                             // Adding player id duplicated logic.
                             var snapshot = new NetWorldPlayerSnapshot(_reader);
-                            
+
                             // TODO: As we may process multiple packets per update, we should be a bit more smart about it, and use the latest one.
                             if (!remotePlayersUpdateRequests.TryAdd(snapshot.Uid, snapshot))
                                 Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.Uid}': already scheduled.");
@@ -114,9 +114,18 @@ namespace LROTech.Network.StateManagement
                                 break;
 
                             var currentSnapshot = remoteObjectUpdateRequests[snapshot.ObjectUid];
-                            if (currentSnapshot.StateChangeType <= snapshot.StateChangeType)
-                                remoteObjectUpdateRequests[snapshot.ObjectUid] = snapshot;
+
+                            var isSnapshotReliable = currentSnapshot.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate;
+                            var isRequestReliable = snapshot.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate;
+
+                            if (isSnapshotReliable && isRequestReliable)
+                                Debug.LogError($"Snapshot for object '{snapshot.PrefabId}' must be merged in order to not loose reliable data.");
                             
+                            // Overwrite snapshot with the new one.
+                            // TODO: BOTH STATES COULD BE RELIABLE! We could skip reliable data here!!
+                            if (currentSnapshot.StateChangeType < snapshot.StateChangeType)
+                                remoteObjectUpdateRequests[snapshot.ObjectUid] = snapshot;
+
                             break;
                         }
 
@@ -306,7 +315,7 @@ namespace LROTech.Network.StateManagement
                     foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
                     {
                         var state = ObjectStates[objectUid];
-                        
+
                         // Object owned by disconnected player.
                         if (state.IsOwnedBy(removePlayerUid))
                         {
@@ -368,7 +377,7 @@ namespace LROTech.Network.StateManagement
                     // Object doesn't exists.
                     if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard or NetObjectStateChangeRequestType.RemoveUpdateSoft)
                     {
-                        Debug.LogError($"Remote update snapshot form object with Uid: {snapshot.ObjectUid}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
+                        Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabId}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
 
                         _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                         remoteObjectUpdateRequests.Remove(uid);
@@ -390,7 +399,7 @@ namespace LROTech.Network.StateManagement
                             _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                         }
                         else
-                            Debug.LogError($"Unable to restore object {newState} form {snapshot}");
+                            Debug.LogError($"Unable to restore object '{newState}' form '{snapshot}'.");
                     }
                     else
                         newState = new NetObjectState(IsObjectValid, Players.Find, snapshot);
@@ -547,7 +556,7 @@ namespace LROTech.Network.StateManagement
             var owner = Players.LocalPlayer;
             if (owner == null)
                 throw new InvalidOperationException();
-            
+
             var state = new NetObjectState(IsObjectValid, Players.Find, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
             _temporaryUnregisteredObjects.Add(state.Uid, state);
             return View.CreateImmediate(state, position, rotation);

@@ -80,8 +80,15 @@ namespace LROTech.Network.StateManagement
             ClearTemporal();
         }
 
-        internal void RemovePersistent(int hashCode) =>
-            _persistentBuffer.RemoveAll(d => d.Hash.Equals(hashCode));
+        internal void RemovePersistent(int hashCode)
+        {
+            for (var index = _persistentBuffer.Count - 1; index >= 0; index--)
+            {
+                var state = _persistentBuffer[index];
+                if (state.Hash.Equals(hashCode))
+                    _persistentBuffer.RemoveAt(index);
+            }
+        }
 
         internal void RestoreFormSnapshot(NetObjectRpcBufferSnapshot snapshot)
         {

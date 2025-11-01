@@ -194,8 +194,10 @@ namespace LROTech.Network.StateManagement
 
             // State change type requests.
             while (_mStateChangeTypeQueue.TryDequeue(out var newRequestType))
+            {
                 if (StateChangeType < newRequestType)
                     StateChangeType = newRequestType;
+            }
         }
 
         internal void ScheduleUpdate(NetObjectStateChangeRequestType requestType)
@@ -220,9 +222,7 @@ namespace LROTech.Network.StateManagement
                 _mStateChangeTypeQueue.Enqueue(NetObjectStateChangeRequestType.ReliableUpdateOwnerChange);
             }
             else
-            {
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");
-            }
         }
 
         public override string ToString()
@@ -238,10 +238,8 @@ namespace LROTech.Network.StateManagement
                    $"rpc: t:{RpcBuffer.TemporalBuffer.Count} p:{RpcBuffer.PersistentBuffer.Count}";
         }
 
-        internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod)
-        {
+        internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
             _rpcWithoutAuthorityQueue.Enqueue(new RpcWithoutAuthorityRequest(Uid, type, hashCode, data, deliveryMethod));
-        }
 
         internal void ScheduleRpc(int hashCode, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod)
         {
@@ -257,10 +255,8 @@ namespace LROTech.Network.StateManagement
                 ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
         }
 
-        internal void ScheduleRemovePersistentRpc(int hashCode)
-        {
+        internal void ScheduleRemovePersistentRpc(int hashCode) =>
             _persistentRpcToRemoveQueue.Enqueue(hashCode);
-        }
 
         internal int GetVersionHash()
         {
