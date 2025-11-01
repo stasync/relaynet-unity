@@ -261,7 +261,7 @@ namespace LROTech.NetworkBehaviours
             // Layers.
             for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
             {
-                var syncFlag = m_LayersSyncFlags[layerIndex];
+                var syncFlag = false; //m_LayersSyncFlags[layerIndex];
                 writer.WriteBool(syncFlag);
                 if (syncFlag)
                     continue;
@@ -298,7 +298,7 @@ namespace LROTech.NetworkBehaviours
                 var targetStateHash = reader.ReadInt32();
                 var targetNormalizedTime = reader.ReadSingle();
 
-                var localSyncFlag = m_LayersSyncFlags[layerIndex];
+                var localSyncFlag = false; //m_LayersSyncFlags[layerIndex];
                 if (localSyncFlag)
                     continue;
 
