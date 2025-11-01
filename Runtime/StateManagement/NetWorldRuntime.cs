@@ -104,8 +104,7 @@ namespace LROTech.Network.StateManagement
                             var snapshot = new NetObjectStateSnapshot(_reader);
                             if (!snapshot.ObjectUID.IsValid)
                             {
-                                Debug.LogError(
-                                    $"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid Uid.");
+                                Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid Uid.");
                                 break;
                             }
 
@@ -116,8 +115,7 @@ namespace LROTech.Network.StateManagement
                             if (current.StateChangeType < snapshot.StateChangeType)
                                 remoteObjectUpdateRequests[snapshot.ObjectUID] = snapshot;
                             else
-                                Debug.LogWarning(
-                                    $"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
+                                Debug.LogWarning($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
 
                             break;
                         }
@@ -147,8 +145,7 @@ namespace LROTech.Network.StateManagement
                                     ? "UNKNOWN"
                                     : $"{rpcHandlerMethod.DeclaringType!.FullName}.{rpcHandlerMethod.Name}";
 
-                                Debug.LogError(
-                                    $"Trying to receive rpc with code '{state.RpcState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUid}' that doesnt exists, maybe it is already destroyed.");
+                                Debug.LogError($"Trying to receive rpc with code '{state.RpcState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUid}' that doesnt exists, maybe it is already destroyed.");
 #endif
                                 break;
                             }
@@ -189,6 +186,7 @@ namespace LROTech.Network.StateManagement
 
             void TrySendWorldData()
             {
+                // Only master can send this data.
                 if (!Players.LocalPlayerIsMaster)
                     return;
 
@@ -201,7 +199,8 @@ namespace LROTech.Network.StateManagement
 
             void UpdateRemoteMasterWorldData()
             {
-                if (!Players.LocalPlayerIsMaster)
+                // Only non-master clients could read this data.
+                if (Players.LocalPlayerIsMaster)
                     return;
 
                 while (remoteWorldDataUpdateRequests.Count > 0)
@@ -338,8 +337,7 @@ namespace LROTech.Network.StateManagement
                     var snapshot = remoteObjectUpdateRequests[uid];
 
                     if (!snapshot.ObjectUID.IsValid)
-                        throw new InvalidOperationException(
-                            $"Invalid Uid: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
+                        throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
 
                     // Check if owner exists.
                     if (!Players.Contains(snapshot.OwnerUID))
@@ -361,11 +359,9 @@ namespace LROTech.Network.StateManagement
                     }
 
                     // Object doesn't exists.
-                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard
-                        or NetObjectStateChangeRequestType.RemoveUpdateSoft)
+                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard or NetObjectStateChangeRequestType.RemoveUpdateSoft)
                     {
-                        Debug.LogError(
-                            $"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
+                        Debug.LogError($"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
 
                         _temporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
                         remoteObjectUpdateRequests.Remove(uid);
@@ -420,6 +416,7 @@ namespace LROTech.Network.StateManagement
                 foreach (var uid in new List<NetObjectUid>(_temporaryUnregisteredObjects.Keys))
                 {
                     var state = _temporaryUnregisteredObjects[uid];
+
                     // Skip remote objects.
                     if (!state.IsOwnedByLocalPlayer)
                         continue;
@@ -443,6 +440,10 @@ namespace LROTech.Network.StateManagement
                 foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
                 {
                     var state = ObjectStates[uid];
+
+                    // Skip remote objects.
+                    if (!state.IsOwnedByLocalPlayer)
+                        continue;
 
                     var deliveryMethod = DeliveryMethod.Unreliable;
                     if (state.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate)
@@ -553,8 +554,7 @@ namespace LROTech.Network.StateManagement
             if (ObjectExists(sceneIdentity.SceneObjectId))
             {
 #if NETWORK_DEBUG
-                Debug.LogError(
-                    $"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabID}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
+                Debug.LogError($"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabID}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
 #endif
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
                 return;
@@ -608,8 +608,7 @@ namespace LROTech.Network.StateManagement
         /// Note that this object will not be in valid state, until update happens.
         /// Use in only if it's highly necessary.
         /// </summary>
-        public NetObjectIdentity FindObjectViewOrCreateMock(NetWorldPlayer owner, NetObjectUid instanceId, string prefabId, bool isSceneObject,
-            Vector3 position, Quaternion rotation)
+        public NetObjectIdentity FindObjectViewOrCreateMock(NetWorldPlayer owner, NetObjectUid instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
         {
             var identity = FindObjectView(instanceId);
             if (identity != null)
@@ -621,8 +620,7 @@ namespace LROTech.Network.StateManagement
         }
 
         /// <inheritdoc cref="FindObjectViewOrCreateMock"/>
-        public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUid instanceId, string prefabId, bool isSceneObject, Vector3 position,
-            Quaternion rotation) where T : NetObjectBehaviourBase
+        public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUid instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation) where T : NetObjectBehaviourBase
         {
             var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
             return networkObject == null ? null : networkObject.GetComponent<T>();

@@ -90,10 +90,10 @@ namespace LROTech.Network.StateManagement
         internal void Invalidate()
         {
             EnsureValid();
-            
+
             Uid = NetObjectUid.Invalid;
             OwnerUid = ClientUid.Invalid;
-            
+
             PrefabId = string.Empty;
             IsSceneObject = false;
             StateChangeType = NetObjectStateChangeRequestType.None;
@@ -143,8 +143,7 @@ namespace LROTech.Network.StateManagement
 
             if (checkOwner && IsOwnedByLocalPlayer)
             {
-                Debug.LogError(
-                    $"Unable to restore local object with '{Uid}' : '{PrefabId}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
+                Debug.LogError($"Unable to restore local object with '{Uid}' : '{PrefabId}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
                 return;
             }
 
@@ -202,10 +201,10 @@ namespace LROTech.Network.StateManagement
         internal void ScheduleUpdate(NetObjectStateChangeRequestType requestType)
         {
             if (!IsOwnedByLocalPlayer)
-                throw new InvalidOperationException($"No authority to change {Uid} object with owner {OwnerUid}");
+                throw new InvalidOperationException($"No authority to change '{Uid}' object with owner '{OwnerUid}'.");
 
             if (StateChangeType > requestType)
-                Debug.LogError($"Unable to set request {requestType} because it has less priority than current request {StateChangeType}");
+                Debug.LogError($"Unable to set request '{requestType}' because it has less priority than current request '{StateChangeType}'.");
             else
                 _mStateChangeTypeQueue.Enqueue(requestType);
         }
@@ -290,8 +289,7 @@ namespace LROTech.Network.StateManagement
             public readonly RpcWithoutAuthorityState State;
             public readonly DeliveryMethod DeliveryMethod;
 
-            internal RpcWithoutAuthorityRequest(NetObjectUid objectUid, NoAuthorityRpcType type, int hashCode, byte[] payload,
-                DeliveryMethod deliveryMethod)
+            internal RpcWithoutAuthorityRequest(NetObjectUid objectUid, NoAuthorityRpcType type, int hashCode, byte[] payload, DeliveryMethod deliveryMethod)
             {
                 State = new RpcWithoutAuthorityState(objectUid, type, hashCode, payload);
                 DeliveryMethod = deliveryMethod;
