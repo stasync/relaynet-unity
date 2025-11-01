@@ -40,7 +40,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             writer.WriteClientUid(OwnerUid);
             writer.WriteNetObjectUid(ObjectUid);
             writer.WriteString(PrefabId);
-            writer.WriteBool(IsSceneObject);
+            writer.WriteBoolean(IsSceneObject);
             writer.WriteByte((byte)StateChangeType);
             RpcState.Serialize(writer);
             DataState.Serialize(writer);

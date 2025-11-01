@@ -50,7 +50,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         {
             writer.WriteClientUid(Uid);
             writer.WriteString(Name);
-            writer.WriteBool(IsInGameScene);
+            writer.WriteBoolean(IsInGameScene);
             writer.WriteInt32((int)Platform);
             writer.WriteSingle(RTTMs);
 

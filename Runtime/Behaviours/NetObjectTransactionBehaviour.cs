@@ -95,7 +95,7 @@ namespace LROTech.NetworkBehaviours
 
             _writer.SeekZero();
             _writer.WriteNetObjectUid(sender);
-            _writer.WriteBool(interactionState);
+            _writer.WriteBoolean(interactionState);
             ToOwnerRpc(ChangeTransactionStateRequestRPC, data: _writer.ToArray());
         }
 
@@ -113,7 +113,7 @@ namespace LROTech.NetworkBehaviours
 
             _writer.SeekZero();
             _writer.WriteNetObjectUid(sender);
-            _writer.WriteBool(canChangeInteractionState);
+            _writer.WriteBoolean(canChangeInteractionState);
 
             if (canChangeInteractionState)
             {

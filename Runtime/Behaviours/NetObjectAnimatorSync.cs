@@ -88,7 +88,7 @@ namespace LROTech.NetworkBehaviours
         }
 
         public override void Serialize(NetWriter writer) =>
-            writer.WriteBool(Animator.GetBool(Parameter.nameHash));
+            writer.WriteBoolean(Animator.GetBool(Parameter.nameHash));
 
         protected override bool DeserializeValue(NetReader reader) =>
             reader.ReadBoolean();
@@ -262,7 +262,7 @@ namespace LROTech.NetworkBehaviours
             for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
             {
                 var syncFlag = false; //m_LayersSyncFlags[layerIndex];
-                writer.WriteBool(syncFlag);
+                writer.WriteBoolean(syncFlag);
                 if (syncFlag)
                     continue;
 

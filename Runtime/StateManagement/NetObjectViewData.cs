@@ -12,7 +12,7 @@ namespace LROTech.Network.StateManagement
         {
             base.OnSerialize(writer);
 
-            writer.WriteBool(ViewInitialized);
+            writer.WriteBoolean(ViewInitialized);
             writer.WriteBytesAndSize(UnstructuredData);
         }
 
