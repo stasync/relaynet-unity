@@ -94,6 +94,8 @@ namespace LROTech.Network.StateManagement
                             // Deserialize other player.
                             // Adding player id duplicated logic.
                             var snapshot = new NetWorldPlayerSnapshot(_reader);
+                            
+                            // TODO: As we may process multiple packets per update, we should be a bit more smart about it, and use the latest one.
                             if (!remotePlayersUpdateRequests.TryAdd(snapshot.Uid, snapshot))
                                 Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.Uid}': already scheduled.");
 
