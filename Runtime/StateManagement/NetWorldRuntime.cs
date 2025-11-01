@@ -5,6 +5,7 @@ using Core.Networking;
 using LROTech.Network.GameObjects;
 using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement.Snapshots;
+using UnityEngine.SceneManagement;
 
 namespace LROTech.Network.StateManagement
 {
@@ -547,7 +548,7 @@ namespace LROTech.Network.StateManagement
         /// See 'CreateObject' method.
         /// This is not an initialized object, so object will be invalid, until the very first update happens.
         /// </summary>
-        public void TryRegisterOrInitializeSceneObjectIdentity(NetObjectSceneIdentity sceneIdentity)
+        private void TryRegisterOrInitializeSceneObjectIdentity(NetObjectSceneIdentity sceneIdentity)
         {
             if (ObjectExists(sceneIdentity.SceneObjectId))
             {
@@ -654,6 +655,21 @@ namespace LROTech.Network.StateManagement
 
             // Create view.
             InitializeView();
+
+            // Init scene objects.
+            for (var i = 0; i < SceneManager.loadedSceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                foreach (var rootObject in scene.GetRootGameObjects())
+                {
+                    var sceneIdentities = rootObject.GetComponentsInChildren<NetObjectSceneIdentity>(includeInactive: false);
+                    foreach (var sceneIdentity in sceneIdentities)
+                    {
+                        if (!sceneIdentity.Identity.Initialized) 
+                            TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity);
+                    }
+                }
+            }
         }
     }
 }

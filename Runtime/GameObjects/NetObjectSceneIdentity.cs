@@ -26,34 +26,6 @@ namespace LROTech.Network.GameObjects
         private string _prefabId;
         public string PrefabID => _prefabId;
 
-        /// <summary>
-        /// We need to register this object in object factory, if it placed in scene by default.
-        /// </summary>
-        private void Start()
-        {
-            // Register scene object.
-            // Initialize object if we on master client, so new clients will not initialize this objects, but will receive updates.
-            // TODO: fix situations when object can be not initialized.
-            TryRegisterOrInitialize();
-        }
-
-        protected override void OnDisconnected(ClientUid clientUid)
-        {
-            base.OnDisconnected(clientUid);
-            if (Identity.World.Players.LocalPlayerIsMaster)
-                TryRegisterOrInitialize();
-        }
-
-        private void TryRegisterOrInitialize()
-        {
-            if (!Identity.Initialized)
-            {
-                // TODO: This is pretty bad - refactor.
-                var ctx = FindAnyObjectByType<ClientSession>(FindObjectsInactive.Exclude);
-                ctx.World.TryRegisterOrInitializeSceneObjectIdentity(sceneIdentity: this);
-            }
-        }
-
         public static implicit operator NetObjectIdentity(NetObjectSceneIdentity value) =>
             value.Identity;
 
@@ -72,7 +44,7 @@ namespace LROTech.Network.GameObjects
             {
                 if (!obj.SceneObjectId.IsValid)
                 {
-                    Debug.LogError($"{obj.gameObject.name} has ivalid id {obj.SceneObjectId} (Has to be fixed manually)");
+                    Debug.LogError($"{obj.gameObject.name} has invalid id {obj.SceneObjectId} (Has to be fixed manually)");
                     continue;
                 }
 
