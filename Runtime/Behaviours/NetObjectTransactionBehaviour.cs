@@ -57,13 +57,24 @@ namespace LROTech.NetworkBehaviours
                 callback(false);
                 return;
             }
-
-            if (!InteractionsEnabled || CurrentInteraction.IsValid && interactionState)
+            
+            if (!InteractionsEnabled)
             {
-                Debug.LogError(
-                    $"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: {CurrentInteraction} Enabled: {InteractionsEnabled}");
+                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Enabled: '{InteractionsEnabled}'.");
                 callback(false);
                 return;
+            }
+
+            if (CurrentInteraction.IsValid && interactionState)
+            {
+                // Validate current interaction sate.
+                if (!Identity.World.ObjectExists(CurrentInteraction))
+                {
+                    Data.CurrentInteraction.Value = NetObjectUid.Invalid;
+                    Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: '{CurrentInteraction}' Enabled: '{InteractionsEnabled}'.");
+                    callback(false);
+                    return;
+                }
             }
 
             if (!Identity.World.TryGetObject(sender, out var senderState))
@@ -75,8 +86,7 @@ namespace LROTech.NetworkBehaviours
 
             if (!senderState.IsOwnedByLocalPlayer)
             {
-                Debug.LogError(
-                    $"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' isn't owned by local player.");
+                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' isn't owned by local player.");
                 callback(false);
                 return;
             }
