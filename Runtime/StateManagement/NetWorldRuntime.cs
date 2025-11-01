@@ -539,13 +539,15 @@ namespace LROTech.Network.StateManagement
         /// Create object with position and rotation input.
         /// Should be called on local client to create object across network.
         /// </summary>
-        public NetObjectIdentity CreateObject(NetWorldPlayer owner, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+        public NetObjectIdentity CreateObject(string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
         {
             EnsureValid();
 
-            if (!owner.IsLocal)
+            // TODO: isSceneObject should be renamed to something else, like destroy with owner (when owner disconnected).
+            var owner = Players.LocalPlayer;
+            if (owner == null)
                 throw new InvalidOperationException();
-
+            
             var state = new NetObjectState(IsObjectValid, Players.Find, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
             _temporaryUnregisteredObjects.Add(state.Uid, state);
             return View.CreateImmediate(state, position, rotation);
