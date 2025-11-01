@@ -9,7 +9,7 @@ namespace LROTech.Network.StateManagement
     public sealed class NetworkProperties
     {
         private readonly Dictionary<uint, byte> _byteData = new();
-        private readonly Dictionary<uint, uint> _uIntData = new();
+        private readonly Dictionary<uint, uint> _uintData = new();
         private readonly Dictionary<uint, int> _intData = new();
         private readonly Dictionary<uint, float> _floatData = new();
         private readonly Dictionary<uint, bool> _boolData = new();
@@ -26,7 +26,7 @@ namespace LROTech.Network.StateManagement
         internal void Clean()
         {
             _byteData.Clear();
-            _uIntData.Clear();
+            _uintData.Clear();
             _intData.Clear();
             _floatData.Clear();
             _boolData.Clear();
@@ -50,7 +50,7 @@ namespace LROTech.Network.StateManagement
         internal void Serialize(NetWriter writer)
         {
             WriteUnmanagedDictionary(writer, _byteData);
-            WriteUnmanagedDictionary(writer, _uIntData);
+            WriteUnmanagedDictionary(writer, _uintData);
             WriteUnmanagedDictionary(writer, _intData);
             WriteUnmanagedDictionary(writer, _floatData);
             WriteUnmanagedDictionary(writer, _boolData);
@@ -70,7 +70,7 @@ namespace LROTech.Network.StateManagement
         internal void Deserialize(NetReader reader)
         {
             ReadUnmanagedDictionary(reader, _byteData);
-            ReadUnmanagedDictionary(reader, _uIntData);
+            ReadUnmanagedDictionary(reader, _uintData);
             ReadUnmanagedDictionary(reader, _intData);
             ReadUnmanagedDictionary(reader, _floatData);
             ReadUnmanagedDictionary(reader, _boolData);
@@ -93,7 +93,7 @@ namespace LROTech.Network.StateManagement
         {
             var hash = 0;
             hash += GetDictionaryHashCode(_byteData);
-            hash += GetDictionaryHashCode(_uIntData);
+            hash += GetDictionaryHashCode(_uintData);
             hash += GetDictionaryHashCode(_intData);
             hash += GetDictionaryHashCode(_floatData);
             hash += GetDictionaryHashCode(_boolData);
@@ -155,11 +155,11 @@ namespace LROTech.Network.StateManagement
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
-            _uIntData[id] = value;
+            _uintData[id] = value;
         }
 
         public uint GetUInt(uint id) =>
-            _uIntData.GetValueOrDefault(id);
+            _uintData.GetValueOrDefault(id);
 
         public void SetInt(uint id, int value)
         {
