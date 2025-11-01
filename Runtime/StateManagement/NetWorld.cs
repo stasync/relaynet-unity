@@ -157,12 +157,6 @@ namespace LROTech.Network.StateManagement
             return View == null ? null : View.FindObjectView<T>(instanceId);
         }
 
-        public IEnumerable<T> FindObjectViewsOfType<T>() where T : NetObjectBehaviourBase
-        {
-            EnsureValid();
-            return View == null ? null : View.FindObjectViewsOfType<T>();
-        }
-
         public T FindObjectViewOfType<T>() where T : NetObjectBehaviourBase
         {
             EnsureValid();

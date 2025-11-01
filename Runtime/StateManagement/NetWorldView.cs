@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using LROTech.Network.GameObjects;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -26,6 +25,7 @@ namespace LROTech.Network.StateManagement
         private Dictionary<NetObjectUid, NetObjectIdentity> _temporaryUnregisteredViews;
 
         private Scene _worldScene;
+        private readonly List<NetObjectUid> _objectUidCollectionCache = new();
 
         public void Init(NetWorld world, NetWorldViewInitMode initMode)
         {
@@ -59,7 +59,9 @@ namespace LROTech.Network.StateManagement
             Profiler.BeginSample($"{_world.Name} View.Execute");
 
             // Remove invalid views.
-            foreach (var uid in _currentObjectViews.Keys.ToArray())
+            _objectUidCollectionCache.Clear();
+            _objectUidCollectionCache.AddRange(_currentObjectViews.Keys);
+            foreach (var uid in _objectUidCollectionCache)
             {
                 if (!ShouldUpdateViewForState(uid))
                     RemoveView(uid);
@@ -118,6 +120,9 @@ namespace LROTech.Network.StateManagement
                 return true;
 
             if (!netObjectState.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
+                return true;
+
+            if (_temporaryUnregisteredViews.ContainsKey(uid))
                 return true;
 
             var directionToCamera = Camera.main!.transform.position - transformData.Position.Value;
@@ -256,10 +261,5 @@ namespace LROTech.Network.StateManagement
             var networkObject = FindObjectView(instanceId);
             return networkObject == null ? null : networkObject.GetComponent<T>();
         }
-
-        public IEnumerable<T> FindObjectViewsOfType<T>() where T : NetObjectBehaviourBase =>
-            _currentObjectViews.Values
-                .Select(v => v.GetBehaviour<T>())
-                .Where(b => b != null);
     }
 }
