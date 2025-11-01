@@ -111,12 +111,10 @@ namespace LROTech.Network.StateManagement
                             if (remoteObjectUpdateRequests.TryAdd(snapshot.ObjectUid, snapshot))
                                 break;
 
-                            var current = remoteObjectUpdateRequests[snapshot.ObjectUid];
-                            if (current.StateChangeType < snapshot.StateChangeType)
+                            var currentSnapshot = remoteObjectUpdateRequests[snapshot.ObjectUid];
+                            if (currentSnapshot.StateChangeType <= snapshot.StateChangeType)
                                 remoteObjectUpdateRequests[snapshot.ObjectUid] = snapshot;
-                            else
-                                Debug.LogWarning($"Unable to schedule update for remote object '{snapshot.ObjectUid}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
-
+                            
                             break;
                         }
 
