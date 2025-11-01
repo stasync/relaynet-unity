@@ -66,7 +66,7 @@ namespace LROTech.Network.StateManagement
         }
 
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
-            this(validator, playerProvider, snapshot.ObjectUID, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUID)
+            this(validator, playerProvider, snapshot.ObjectUid, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUid)
         {
             ChangeObjectRemotely(snapshot);
         }
@@ -147,7 +147,7 @@ namespace LROTech.Network.StateManagement
                 return;
             }
 
-            UpdateOwnerInternal(snapshot.OwnerUID);
+            UpdateOwnerInternal(snapshot.OwnerUid);
 
             StateChangeType = snapshot.StateChangeType;
             RpcBuffer.RestoreFormSnapshot(snapshot.RpcState);

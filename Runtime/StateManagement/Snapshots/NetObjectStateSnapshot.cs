@@ -5,8 +5,8 @@ namespace LROTech.Network.StateManagement.Snapshots
 {
     public readonly struct NetObjectStateSnapshot
     {
-        public readonly ClientUid OwnerUID;
-        public readonly NetObjectUid ObjectUID;
+        public readonly ClientUid OwnerUid;
+        public readonly NetObjectUid ObjectUid;
         public readonly string PrefabId;
         public readonly bool IsSceneObject;
         public readonly NetObjectStateChangeRequestType StateChangeType;
@@ -15,8 +15,8 @@ namespace LROTech.Network.StateManagement.Snapshots
 
         internal NetObjectStateSnapshot(NetReader reader)
         {
-            OwnerUID = reader.ReadClientUid();
-            ObjectUID = reader.ReadNetObjectUid();
+            OwnerUid = reader.ReadClientUid();
+            ObjectUid = reader.ReadNetObjectUid();
             PrefabId = reader.ReadString();
             IsSceneObject = reader.ReadBoolean();
             StateChangeType = (NetObjectStateChangeRequestType)reader.ReadByte();
@@ -26,8 +26,8 @@ namespace LROTech.Network.StateManagement.Snapshots
 
         internal NetObjectStateSnapshot(NetObjectState state)
         {
-            OwnerUID = state.OwnerUid;
-            ObjectUID = state.Uid;
+            OwnerUid = state.OwnerUid;
+            ObjectUid = state.Uid;
             PrefabId = state.PrefabId;
             IsSceneObject = state.IsSceneObject;
             StateChangeType = state.StateChangeType;
@@ -37,8 +37,8 @@ namespace LROTech.Network.StateManagement.Snapshots
         
         internal void Serialize(NetWriter writer)
         {
-            writer.WriteClientUid(OwnerUID);
-            writer.WriteNetObjectUid(ObjectUID);
+            writer.WriteClientUid(OwnerUid);
+            writer.WriteNetObjectUid(ObjectUid);
             writer.WriteString(PrefabId);
             writer.WriteBool(IsSceneObject);
             writer.WriteByte((byte)StateChangeType);
@@ -47,7 +47,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         }
 
         public override string ToString() =>
-            $"{ObjectUID}:{PrefabId} owner:{OwnerUID} s:{IsSceneObject} st:{StateChangeType}";
+            $"{ObjectUid}:{PrefabId} owner:{OwnerUid} s:{IsSceneObject} st:{StateChangeType}";
 
         public int GetSize()
         {

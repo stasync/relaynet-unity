@@ -102,20 +102,20 @@ namespace LROTech.Network.StateManagement
                         case NetWorldRuntimeChangeOp.ObjectStateUpdate:
                         {
                             var snapshot = new NetObjectStateSnapshot(_reader);
-                            if (!snapshot.ObjectUID.IsValid)
+                            if (!snapshot.ObjectUid.IsValid)
                             {
-                                Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}', invalid Uid.");
+                                Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUid}' '{snapshot.PrefabId}', invalid Uid.");
                                 break;
                             }
 
-                            if (remoteObjectUpdateRequests.TryAdd(snapshot.ObjectUID, snapshot))
+                            if (remoteObjectUpdateRequests.TryAdd(snapshot.ObjectUid, snapshot))
                                 break;
 
-                            var current = remoteObjectUpdateRequests[snapshot.ObjectUID];
+                            var current = remoteObjectUpdateRequests[snapshot.ObjectUid];
                             if (current.StateChangeType < snapshot.StateChangeType)
-                                remoteObjectUpdateRequests[snapshot.ObjectUID] = snapshot;
+                                remoteObjectUpdateRequests[snapshot.ObjectUid] = snapshot;
                             else
-                                Debug.LogWarning($"Unable to schedule update for remote object '{snapshot.ObjectUID}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
+                                Debug.LogWarning($"Unable to schedule update for remote object '{snapshot.ObjectUid}' '{snapshot.PrefabId}' with '{snapshot.StateChangeType}', already scheduled update with the higher priority.");
 
                             break;
                         }
@@ -206,8 +206,14 @@ namespace LROTech.Network.StateManagement
                 while (remoteWorldDataUpdateRequests.Count > 0)
                 {
                     _reader.Replace(buffer: remoteWorldDataUpdateRequests.Dequeue());
-                    Time = _reader.ReadSingle();
-                    Properties.Deserialize(_reader);
+                    _reader.ReadByte(); // Offset - see ProcessInternalData var worldChangeOpCode = (NetWorldRuntimeChangeOp)_reader.ReadByte();
+
+                    var newTime = _reader.ReadSingle();
+                    if (newTime >= Time)
+                    {
+                        Time = newTime;
+                        Properties.Deserialize(_reader);
+                    }
                 }
             }
 
@@ -336,24 +342,24 @@ namespace LROTech.Network.StateManagement
                 {
                     var snapshot = remoteObjectUpdateRequests[uid];
 
-                    if (!snapshot.ObjectUID.IsValid)
-                        throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUID}'  Prefab: '{snapshot.PrefabId}'");
+                    if (!snapshot.ObjectUid.IsValid)
+                        throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUid}'  Prefab: '{snapshot.PrefabId}'");
 
                     // Check if owner exists.
-                    if (!Players.Contains(snapshot.OwnerUID))
+                    if (!Players.Contains(snapshot.OwnerUid))
                     {
                         remoteObjectUpdateRequests.Remove(uid);
                         continue;
                     }
 
                     // Object exists, just update.
-                    if (ObjectStates.TryGetValue(snapshot.ObjectUID, out var objState))
+                    if (ObjectStates.TryGetValue(snapshot.ObjectUid, out var objState))
                     {
                         objState.ChangeObjectRemotely(snapshot);
                         remoteObjectUpdateRequests.Remove(uid);
 
                         if (objState.StateChangeType == NetObjectStateChangeRequestType.RemoveUpdateHard)
-                            RemoveObject(snapshot.ObjectUID);
+                            RemoveObject(snapshot.ObjectUid);
 
                         continue;
                     }
@@ -361,9 +367,9 @@ namespace LROTech.Network.StateManagement
                     // Object doesn't exists.
                     if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard or NetObjectStateChangeRequestType.RemoveUpdateSoft)
                     {
-                        Debug.LogError($"Remote update snapshot form object with Uid: {snapshot.ObjectUID}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
+                        Debug.LogError($"Remote update snapshot form object with Uid: {snapshot.ObjectUid}:{snapshot.PrefabId} has state {snapshot.StateChangeType}, but object doesn't exists");
 
-                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
+                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                         remoteObjectUpdateRequests.Remove(uid);
                         continue;
                     }
@@ -371,16 +377,16 @@ namespace LROTech.Network.StateManagement
                     // Add new or get pending.
                     if (snapshot.StateChangeType != NetObjectStateChangeRequestType.InitializationUpdate)
                     {
-                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
+                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                         continue;
                     }
 
-                    if (_temporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUID, out var newState))
+                    if (_temporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUid, out var newState))
                     {
-                        if (newState.IsOwnedBy(snapshot.OwnerUID))
+                        if (newState.IsOwnedBy(snapshot.OwnerUid))
                         {
                             newState.ChangeObjectRemotely(snapshot);
-                            _temporaryUnregisteredObjects.Remove(snapshot.ObjectUID);
+                            _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                         }
                         else
                             Debug.LogError($"Unable to restore object {newState} form {snapshot}");

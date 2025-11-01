@@ -23,13 +23,6 @@ namespace LROTech.Network.StateManagement
         internal NetworkProperties(Func<bool> writePermission) =>
             _writePermission = writePermission ?? throw new ArgumentNullException(nameof(writePermission));
 
-        public NetworkPropertiesSnapshot ToSnapshot()
-        {
-            _writer.SeekZero();
-            Serialize(_writer);
-            return new NetworkPropertiesSnapshot(_writer.ToArray());
-        }
-
         internal void Clean()
         {
             _byteData.Clear();
@@ -39,6 +32,13 @@ namespace LROTech.Network.StateManagement
             _boolData.Clear();
             _vector3Data.Clear();
             _stringData.Clear();
+        }
+        
+        public NetworkPropertiesSnapshot ToSnapshot()
+        {
+            _writer.SeekZero();
+            Serialize(_writer);
+            return new NetworkPropertiesSnapshot(_writer.ToArray());
         }
 
         internal void RestoreFromSnapshot(NetworkPropertiesSnapshot snapshot)
@@ -84,7 +84,7 @@ namespace LROTech.Network.StateManagement
                 {
                     var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
                     var value = reader.ReadString();
-                    _stringData.TryAdd(key, value);
+                    _stringData.Add(key, value);
                 }
             }
         }
@@ -121,7 +121,7 @@ namespace LROTech.Network.StateManagement
             {
                 var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
                 var value = NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader);
-                dictionary.TryAdd(key, value);
+                dictionary.Add(key, value);
             }
         }
 
