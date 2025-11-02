@@ -89,8 +89,7 @@ namespace LROTech.Network.StateManagement
                 var parameters = methodInfo.GetParameters();
                 if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
                 {
-                    Debug.LogError(
-                        $"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRpcHandler).FullName}' on '{type.FullName}'.");
+                    Debug.LogError($"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRpcHandler).FullName}' on '{type.FullName}'.");
                     continue;
                 }
 

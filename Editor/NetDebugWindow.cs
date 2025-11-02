@@ -125,7 +125,7 @@ namespace LROTech.Network.Editor
         {
             protected readonly T World;
 
-            public bool IsValid => World != null && World.IsValid;
+            public bool IsValid => World is { IsValid: true };
 
             bool _draw;
             Dictionary<NetObjectUid, ObjectDrawer> _objectViews;
@@ -140,7 +140,7 @@ namespace LROTech.Network.Editor
             {
                 if (!IsValid)
                 {
-                    EditorGUILayout.HelpBox("World is invalid", MessageType.Error);
+                    EditorGUILayout.HelpBox(message: "World is invalid", MessageType.Error);
                     return;
                 }
 
@@ -157,6 +157,7 @@ namespace LROTech.Network.Editor
 
             protected virtual void OnDrawWorld()
             {
+                EditorGUILayout.LabelField($"Uid: {World.Uid}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Time: {World.Time:f1}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Local Time: {World.LocalTime:f1}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Hash: {World.GetVersionHash()}", EditorStyles.boldLabel);
@@ -166,12 +167,12 @@ namespace LROTech.Network.Editor
                 {
                     EditorGUILayout.LabelField("Players: ", EditorStyles.boldLabel);
                     var players = World.Players;
-                    DrawPlayer("Local: ", players.LocalPlayer);
-                    DrawPlayer("Master: ", players.MasterPlayer);
+                    DrawPlayer(prefix: "Local: ", players.LocalPlayer);
+                    DrawPlayer(prefix: "Master: ", players.MasterPlayer);
 
                     EditorGUILayout.Space();
                     foreach (var worldPlayer in players.All)
-                        DrawPlayer(string.Empty, worldPlayer);
+                        DrawPlayer(prefix: string.Empty, worldPlayer);
                 }
 
                 // Objects.
@@ -187,12 +188,12 @@ namespace LROTech.Network.Editor
                         EditorGUILayout.BeginHorizontal();
 
                         if (GUILayout.Button("Collapse all"))
-                            foreach (var d in _objectViews.Values)
-                                d.SetDrawingEnabled(false);
+                            foreach (var drawer in _objectViews.Values)
+                                drawer.SetDrawingEnabled(false);
 
                         if (GUILayout.Button("Expand all"))
-                            foreach (var d in _objectViews.Values)
-                                d.SetDrawingEnabled(true);
+                            foreach (var drawer in _objectViews.Values)
+                                drawer.SetDrawingEnabled(true);
 
                         EditorGUILayout.EndHorizontal();
                     }
@@ -200,12 +201,12 @@ namespace LROTech.Network.Editor
                     EditorGUILayout.Space();
                     var objStates = World.ObjectStates;
                     EditorGUILayout.LabelField($"Objects: {objStates.Count}", EditorStyles.boldLabel);
-                    foreach (var kvp in objStates)
+                    foreach (var (uid, netObject) in objStates)
                     {
-                        if (!_objectViews.TryGetValue(kvp.Key, out var drawer))
+                        if (!_objectViews.TryGetValue(uid, out var drawer))
                         {
-                            drawer = new ObjectDrawer(kvp.Value, World);
-                            _objectViews.Add(kvp.Key, drawer);
+                            drawer = new ObjectDrawer(netObject, World);
+                            _objectViews.Add(uid, drawer);
                         }
 
                         drawer.Draw();
@@ -255,7 +256,7 @@ namespace LROTech.Network.Editor
                 base.OnDrawWorld();
 
                 EditorGUILayout.Space();
-                _drawCommon = EditorGUILayout.Foldout(_drawCommon, "Common");
+                _drawCommon = EditorGUILayout.Foldout(_drawCommon, content: "Common");
                 if (_drawCommon)
                 {
                     EditorGUI.indentLevel++;
@@ -399,7 +400,7 @@ namespace LROTech.Network.Editor
                 return;
             }
 
-            if (_mainWorldDrawer == null || !_mainWorldDrawer.IsValid)
+            if (_mainWorldDrawer is not { IsValid: true })
                 _mainWorldDrawer = new MainWorldDrawer(mainWorld);
 
             EditorGUILayout.Space();
@@ -422,9 +423,9 @@ namespace LROTech.Network.Editor
                     void OnUpdate()
                     {
                         currentReplica.Update(Time.deltaTime);
-                        if (currentReplica.IsValid) 
+                        if (currentReplica.IsValid)
                             return;
-                        
+
                         _currentWorldReplicaDrawer = null;
                         Bootstrap.UnityUpdate -= OnUpdate;
                     }

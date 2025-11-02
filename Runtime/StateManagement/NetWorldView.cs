@@ -39,7 +39,7 @@ namespace LROTech.Network.StateManagement
             _currentObjectViews = new Dictionary<NetObjectUid, NetObjectIdentity>();
             _temporaryUnregisteredViews = new Dictionary<NetObjectUid, NetObjectIdentity>();
 
-            var sceneName = $"{_world.Name} {gameObject.GetInstanceID()}";
+            var sceneName = $"[{_world.Uid}] {_world.Name}";
             switch (initMode)
             {
                 case NetWorldViewInitMode.Default:
@@ -56,7 +56,7 @@ namespace LROTech.Network.StateManagement
 
         public void RebuildAccordingState()
         {
-            Profiler.BeginSample($"{_world.Name} View.Execute");
+            Profiler.BeginSample($"[{_world.Uid}] {_world.Name} View.{nameof(RebuildAccordingState)}");
 
             // Remove invalid views.
             _objectUidCollectionCache.Clear();

@@ -63,7 +63,7 @@ namespace LROTech.Network.StateManagement
             if (View != null)
                 throw new InvalidOperationException($"View for world {Name} already initialized");
 
-            View = new GameObject(Name).AddComponent<NetWorldView>();
+            View = new GameObject(name: $"[{Uid}] {Name} View").AddComponent<NetWorldView>();
             View.Init(world: this, viewInitMode);
         }
 
