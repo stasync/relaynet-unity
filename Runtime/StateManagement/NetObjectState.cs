@@ -48,8 +48,7 @@ namespace LROTech.Network.StateManagement
         public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
         public event Action Invalidated = delegate { };
 
-        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId,
-            bool isSceneObject, ClientUid owner)
+        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId, bool isSceneObject, ClientUid owner)
         {
             _mValidator = validator;
             _playerProvider = playerProvider;
@@ -225,19 +224,6 @@ namespace LROTech.Network.StateManagement
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");
         }
 
-        public override string ToString()
-        {
-            EnsureValid();
-
-            return $"{Uid}:{PrefabId} " +
-                   $"s:{IsSceneObject} " +
-                   $"st:{StateChangeType} " +
-                   $"own:{OwnerUid}:{(Owner == null ? "null" : Owner.ToString())} " +
-                   $"l:{IsOwnedByLocalPlayer} " +
-                   $"m:{IsOwnedByMasterClient} " +
-                   $"rpc: t:{RpcBuffer.TemporalBuffer.Count} p:{RpcBuffer.PersistentBuffer.Count}";
-        }
-
         internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
             _rpcWithoutAuthorityQueue.Enqueue(new RpcWithoutAuthorityRequest(Uid, type, hashCode, data, deliveryMethod));
 
@@ -278,6 +264,19 @@ namespace LROTech.Network.StateManagement
         {
             if (!IsValid())
                 throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
+        }
+
+        public override string ToString()
+        {
+            EnsureValid();
+
+            return $"{Uid}:{PrefabId} " +
+                   $"s:{IsSceneObject} " +
+                   $"st:{StateChangeType} " +
+                   $"own:{OwnerUid}:{(Owner == null ? "null" : Owner.ToString())} " +
+                   $"l:{IsOwnedByLocalPlayer} " +
+                   $"m:{IsOwnedByMasterClient} " +
+                   $"rpc: t:{RpcBuffer.TemporalBuffer.Count} p:{RpcBuffer.PersistentBuffer.Count}";
         }
 
         internal readonly struct RpcWithoutAuthorityRequest

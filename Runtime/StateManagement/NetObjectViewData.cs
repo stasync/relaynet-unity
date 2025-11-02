@@ -24,7 +24,7 @@ namespace LROTech.Network.StateManagement
             UnstructuredData = reader.ReadBytesAndSize();
         }
 
-        public void SetData(byte[] data, bool initialization = false)
+        internal void SetData(byte[] data, bool initialization = false)
         {
             if (!HasWritePermission)
                 throw new InvalidOperationException();

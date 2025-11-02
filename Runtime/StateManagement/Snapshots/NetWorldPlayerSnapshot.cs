@@ -23,7 +23,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             IsInGameScene = player.IsReady;
             Platform = player.Platform;
             RTTMs = player.RttMs;
-            TagObjects = new HashSet<NetObjectUid>(player.TagObjectUidCollection);
+            TagObjects = new List<NetObjectUid>(player.TagObjectUidCollection);
             MainTagObject = player.MainTagObjectUid;
             Properties = player.Properties.ToSnapshot();
         }
@@ -65,7 +65,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         public int GetSize()
         {
             var result = 0;
-            result += ClientUid.Size; // Uid
+            result += ClientUid.SIZE; // Uid
             result += Name.Length;
             result += sizeof(bool); // IsInGameScene
             result += sizeof(UserDevice.Platform); // Platform

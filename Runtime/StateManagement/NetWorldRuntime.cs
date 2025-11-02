@@ -14,7 +14,7 @@ namespace LROTech.Network.StateManagement
         public delegate void DataSendRequestDelegate(byte[] data, DeliveryMethod deliveryMethod);
 
         private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
-        private const float MIN_UPDATE_INTERVAL = 0.1f; // 10 times per second.
+        private const float MIN_UPDATE_INTERVAL_S = 0.1f; // 10 times per second.
 
         public event Action<NetWorldPlayerSnapshot> PlayerAdded = delegate { };
         public event Action<NetWorldPlayerSnapshot> PlayerRemoved = delegate { };
@@ -47,11 +47,11 @@ namespace LROTech.Network.StateManagement
         protected override void UpdateImplementation(float deltaTime)
         {
             var worldDelta = UnityEngine.Time.fixedUnscaledTime - _lastUpdateTime;
-            if (worldDelta >= MIN_UPDATE_INTERVAL)
-            {
-                _lastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
-                UpdateWorldState(worldDelta);
-            }
+            if (worldDelta < MIN_UPDATE_INTERVAL_S)
+                return;
+            
+            _lastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
+            UpdateWorldState(worldDelta);
         }
 
         #region Update

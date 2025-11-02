@@ -4,38 +4,38 @@ namespace LROTech.Network.Sessions
 {
     public readonly struct ClientUid : IComparable<ClientUid>, IEquatable<ClientUid>
     {
-        public const int Size = sizeof(uint);
+        public const int SIZE = sizeof(uint);
         public static readonly ClientUid Invalid = new(0u);
 
-        public bool IsValid => m_Value > Invalid.m_Value;
-        private readonly uint m_Value;
+        public bool IsValid => _value > Invalid._value;
+        private readonly uint _value;
 
-        internal ClientUid(uint value) => m_Value = value;
+        internal ClientUid(uint value) => _value = value;
 
-        public static bool operator ==(ClientUid value0, ClientUid value1) => value0.m_Value == value1.m_Value;
-        public static bool operator !=(ClientUid value0, ClientUid value1) => value0.m_Value != value1.m_Value;
+        public static bool operator ==(ClientUid value0, ClientUid value1) => value0._value == value1._value;
+        public static bool operator !=(ClientUid value0, ClientUid value1) => value0._value != value1._value;
 
-        public static bool operator <(ClientUid value0, ClientUid value1) => value0.m_Value < value1.m_Value;
-        public static bool operator >(ClientUid value0, ClientUid value1) => value0.m_Value > value1.m_Value;
+        public static bool operator <(ClientUid value0, ClientUid value1) => value0._value < value1._value;
+        public static bool operator >(ClientUid value0, ClientUid value1) => value0._value > value1._value;
         
-        public static bool operator <=(ClientUid value0, ClientUid value1) => value0.m_Value <= value1.m_Value;
-        public static bool operator >=(ClientUid value0, ClientUid value1) => value0.m_Value >= value1.m_Value;
+        public static bool operator <=(ClientUid value0, ClientUid value1) => value0._value <= value1._value;
+        public static bool operator >=(ClientUid value0, ClientUid value1) => value0._value >= value1._value;
         
-        public static explicit operator uint(ClientUid value) => value.m_Value;
+        public static explicit operator uint(ClientUid value) => value._value;
 
         public int CompareTo(ClientUid other) =>
-            m_Value.CompareTo(other.m_Value);
+            _value.CompareTo(other._value);
 
         public bool Equals(ClientUid other) =>
-            m_Value.Equals(other.m_Value);
+            _value.Equals(other._value);
 
         public override bool Equals(object obj) =>
             obj is ClientUid other && Equals(other);
 
         public override string ToString() =>
-            m_Value.ToString();
+            _value.ToString();
 
         public override int GetHashCode() =>
-            m_Value.GetHashCode();
+            _value.GetHashCode();
     }
 }

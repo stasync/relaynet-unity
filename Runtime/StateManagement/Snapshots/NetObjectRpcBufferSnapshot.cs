@@ -10,11 +10,11 @@ namespace LROTech.Network.StateManagement.Snapshots
 
         internal NetObjectRpcBufferSnapshot(NetObjectRpcBuffer state)
         {
-            var persistentBuffer = new List<NetObjectRpcStateSnapshot>();
+            var persistentBuffer = new List<NetObjectRpcStateSnapshot>(state.PersistentBuffer.Count);
             foreach (var rpc in state.PersistentBuffer)
                 persistentBuffer.Add(rpc.ToSnapshot());
 
-            var temporalBuffer = new List<NetObjectRpcStateSnapshot>();
+            var temporalBuffer = new List<NetObjectRpcStateSnapshot>(state.TemporalBuffer.Count);
             foreach (var rpc in state.TemporalBuffer)
                 temporalBuffer.Add(rpc.ToSnapshot());
 

@@ -7,20 +7,20 @@ namespace LROTech.Network.StateManagement
     {
         public const int SIZE = sizeof(uint);
 
-        #region STATIC
-
-        public static readonly NetObjectUid Invalid = new(0u);
-        private static uint s_idCounter;
-
         /// <summary>
         /// This id's for network objects that located in scene by default.
         /// If you create scene object in runtime, they use default peer-based id space.
         /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
         /// </summary>
         public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
-        public const uint CLIENT_RESERVED_UID_SPACE = 10000;
 
+        public const uint CLIENT_RESERVED_UID_SPACE = 10000;
         public const uint FIRST_VALID_UID = 1;
+
+        #region STATIC
+
+        public static readonly NetObjectUid Invalid = new(0u);
+        private static uint s_idCounter;
 
         /// <summary>
         /// Reset when stop session.

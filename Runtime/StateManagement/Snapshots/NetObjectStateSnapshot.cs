@@ -52,7 +52,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         public int GetSize()
         {
             var result = 0;
-            result += ClientUid.Size; // OwnerUid
+            result += ClientUid.SIZE; // OwnerUid
             result += NetObjectUid.SIZE; // ObjectUID
             result += PrefabId.Length;
             result += sizeof(bool); // IsSceneObject
@@ -60,6 +60,14 @@ namespace LROTech.Network.StateManagement.Snapshots
             result += RpcState.GetSize();
             result += DataState.GetSize();
             return result;
+        }
+
+        private static readonly NetWriter s_writer = new NetWriter();
+        public int GetNetworkSize()
+        {
+            s_writer.SeekZero();
+            Serialize(s_writer);
+            return s_writer.Position;
         }
     }
 }
