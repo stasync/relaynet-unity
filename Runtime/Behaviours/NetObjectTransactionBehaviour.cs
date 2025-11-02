@@ -109,7 +109,9 @@ namespace LROTech.NetworkBehaviours
             var currentInteractionObject = Data.CurrentInteraction.Value;
 
             var canChangeInteractionState =
-                state ? currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value : currentInteractionObject.Equals(sender);
+                state ? 
+                    currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value : 
+                    currentInteractionObject.Equals(sender);
 
             _writer.SeekZero();
             _writer.WriteNetObjectUid(sender);

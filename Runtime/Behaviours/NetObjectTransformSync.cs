@@ -66,7 +66,7 @@ namespace LROTech.NetworkBehaviours
             transform.rotation = Data.Rotation.Value;
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
             if (!Identity.Initialized)
                 return;
@@ -99,7 +99,7 @@ namespace LROTech.NetworkBehaviours
                         transform.position = Vector3.Lerp(
                             transform.position,
                             targetPosition,
-                            Time.fixedDeltaTime * m_InterpolateMovement * 10);
+                            Time.deltaTime * m_InterpolateMovement * 10);
                     }
                     else
                         transform.position = Data.Position.Value;
@@ -110,7 +110,7 @@ namespace LROTech.NetworkBehaviours
                         transform.rotation = Quaternion.Slerp(
                             transform.rotation,
                             Data.Rotation.Value,
-                            Time.fixedDeltaTime * m_InterpolateRotation * 10);
+                            Time.deltaTime * m_InterpolateRotation * 10);
                     }
                     else
                         transform.rotation = Data.Rotation.Value;

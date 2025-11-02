@@ -3,6 +3,7 @@ using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using LROTech.Network.StateManagement.Values;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace LROTech.NetworkBehaviours
 {
@@ -20,11 +21,14 @@ namespace LROTech.NetworkBehaviours
         public float NormalizedLifetime => Data.NormalizedLifetime;
         public float CurrentLifetime => Data.CurrentLifetime.Value;
 
-        [SerializeField] private bool m_UpdateTime = true;
+        [FormerlySerializedAs("m_UpdateTime")] 
+        [SerializeField] private bool _updateTime = true;
 
-        [SerializeField] private float m_Lifetime = 60f;
+        [FormerlySerializedAs("m_Lifetime")] 
+        [SerializeField] private float _lifetime = 60f;
 
-        [SerializeField] private bool m_AutoDestroy;
+        [FormerlySerializedAs("m_AutoDestroy")] 
+        [SerializeField] private bool _autoDestroy;
 
         public void SetLifetimeWithAuthority(float lifetime)
         {
@@ -37,25 +41,25 @@ namespace LROTech.NetworkBehaviours
             base.OnInitializeViewData();
 
             if (IsLocal)
-                SetLifetimeWithAuthority(m_Lifetime);
+                SetLifetimeWithAuthority(_lifetime);
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
             if (!IsLocal)
                 return;
 
             if (Data.CurrentLifetime.Value > 0f)
             {
-                if (m_UpdateTime)
-                    Data.CurrentLifetime.Value -= Time.fixedDeltaTime;
+                if (_updateTime)
+                    Data.CurrentLifetime.Value -= Time.deltaTime;
 
                 if (Data.CurrentLifetime.Value <= 0f)
                 {
                     Data.CurrentLifetime.Value = 0;
                     TimePassed();
 
-                    if (m_AutoDestroy)
+                    if (_autoDestroy)
                         DestroyObjectViaNetwork();
                 }
             }
