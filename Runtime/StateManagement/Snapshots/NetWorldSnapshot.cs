@@ -21,7 +21,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             Time = world.Time;
             LocalTime = world.LocalTime;
 
-            var objectStates = new Dictionary<NetObjectUid, NetObjectStateSnapshot>();
+            var objectStates = new Dictionary<NetObjectUid, NetObjectStateSnapshot>(world.ObjectStates.Count);
             foreach (var kvp in world.ObjectStates)
                 objectStates.Add(kvp.Key, kvp.Value.ToSnapshot());
 

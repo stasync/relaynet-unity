@@ -4,6 +4,12 @@ namespace LROTech.Network.StateManagement.Values
 {
     public sealed class NetworkString : NetworkValueManaged<string, string>
     {
+        public new string Value
+        {
+            get => InternalValue;
+            set => Set(value);
+        }
+        
         public NetworkString(string defaultValue = "") : base(defaultValue)
         {
         }

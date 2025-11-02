@@ -27,7 +27,7 @@ namespace LROTech.Network.StateManagement
 
         private Func<bool> _writePermission;
 
-        public IReadOnlyDictionary<string, NetworkValueBase> SerializableValues => _internalValueCollection;
+        public IReadOnlyCollection<NetworkValueBase> SerializableValues => _internalValueCollection.Values;
         private readonly Dictionary<string, NetworkValueBase> _internalValueCollection = new();
 
         private void Init(Func<bool> writePermission)
@@ -96,8 +96,8 @@ namespace LROTech.Network.StateManagement
         internal static NetObjectStateData Provide(Type type, Func<bool> writePermission)
         {
             var dataType = typeof(NetObjectStateData);
-            if (!dataType.IsAssignableFrom(type))
-                throw new InvalidOperationException($"'{type.FullName} must derive '{dataType.FullName}'.");
+            if (!dataType.IsAssignableFrom(type) || type == dataType)
+                throw new InvalidOperationException($"'{type.FullName} must derive from '{dataType.FullName}'.");
 
             var dataInstance = (NetObjectStateData)Activator.CreateInstance(type);
             dataInstance.Init(writePermission);

@@ -14,7 +14,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             LocalPlayerUid = collection.LocalPlayer.Uid;
             MasterClientUid = collection.MasterPlayer.Uid;
 
-            var playersCollection = new Dictionary<ClientUid, NetWorldPlayerSnapshot>();
+            var playersCollection = new Dictionary<ClientUid, NetWorldPlayerSnapshot>(collection.All.Count);
             foreach (var worldPlayer in collection.All)
                 playersCollection.Add(worldPlayer.Uid, worldPlayer.ToSnapshot());
 
