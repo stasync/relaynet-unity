@@ -12,7 +12,7 @@ namespace LROTech.Network.StateManagement
         public static IReadOnlyDictionary<NetWorldId, NetWorld> All => s_all;
         private static readonly Dictionary<NetWorldId, NetWorld> s_all = new();
 
-        public event Action Updated = delegate { };
+        public event Action<float> Updated = delegate { };
         public event Action<NetObjectUid> ObjectCreated = delegate { };
 
         public bool IsValid => Id.IsValid;
@@ -61,7 +61,7 @@ namespace LROTech.Network.StateManagement
         internal void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
         {
             if (View != null)
-                throw new InvalidOperationException($"View for world {Name} already initialized");
+                throw new InvalidOperationException($"View for world '{Name}' with uid '{Uid}' already initialized.");
 
             View = new GameObject(name: $"[{Uid}] {Name} View").AddComponent<NetWorldView>();
             View.Init(world: this, viewInitMode);
@@ -101,7 +101,7 @@ namespace LROTech.Network.StateManagement
                 View.RebuildAccordingState();
             }
 
-            Updated();
+            Updated(worldDelta);
         }
 
         protected virtual void OnBeforeUpdateWorldState(float worldDelta)
@@ -130,15 +130,16 @@ namespace LROTech.Network.StateManagement
             UnityEditor.EditorApplication.playModeStateChanged -= OnPlaymodeChange_Editor;
 #endif
 
-            if (View == null)
-                Debug.LogError("View already destroyed (Maybe it's done by unity via exiting play mode)");
-            else
+            if (View != null)
             {
                 // Destroy all net object views.
                 View.Destroy();
                 View = null;
             }
-
+#if UNITY_EDITOR
+            else
+                Debug.LogError($"View already destroyed for world with uid '{Uid}' (Maybe it's done by unity via exiting play mode).");
+#endif
             s_all.Remove(Uid);
 
             Uid = NetWorldId.Invalid;
