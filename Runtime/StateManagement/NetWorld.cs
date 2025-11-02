@@ -9,6 +9,9 @@ namespace LROTech.Network.StateManagement
 {
     public abstract class NetWorld
     {
+        public static IReadOnlyDictionary<NetWorldId, NetWorld> All => s_all;
+        private static readonly Dictionary<NetWorldId, NetWorld> s_all = new();
+
         public event Action Updated = delegate { };
         public event Action<NetObjectUid> ObjectCreated = delegate { };
 
@@ -30,14 +33,14 @@ namespace LROTech.Network.StateManagement
         public readonly NetWorldPlayersCollection Players;
         public readonly NetworkProperties Properties;
 
-        protected NetWorld(NetWorldId uid, string worldName) : this(uid, worldName, NetWorldId.Invalid)
+        protected NetWorld(NetWorldId id, string worldName) : this(id, worldName, NetWorldId.Invalid)
         {
         }
 
-        protected NetWorld(NetWorldId uid, string worldName, NetWorldId sourceId)
+        protected NetWorld(NetWorldId id, string worldName, NetWorldId sourceId)
         {
             Uid = NetWorldId.Allocate();
-            Id = uid;
+            Id = id;
             SourceId = sourceId;
 
             Time = 0f;
@@ -46,6 +49,13 @@ namespace LROTech.Network.StateManagement
 
             Players = new NetWorldPlayersCollection(validator: () => IsValid);
             Properties = new NetworkProperties(writePermission: () => Players.LocalPlayerIsMaster);
+
+            s_all.Add(Uid, this);
+
+#if UNITY_EDITOR
+            // Automatically dispose the world upon exiting playmode.
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlaymodeChange_Editor;
+#endif
         }
 
         internal void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
@@ -116,18 +126,9 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
 
-            Uid = NetWorldId.Invalid;
-            Id = NetWorldId.Invalid;
-            SourceId = NetWorldId.Invalid;
-
-            Updated = delegate { };
-
-            foreach (var netObject in _currentObjectStates.Values)
-                netObject.Invalidate();
-            _currentObjectStates.Clear();
-
-            Players.Clear();
-            Properties.Clean();
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPlaymodeChange_Editor;
+#endif
 
             if (View == null)
                 Debug.LogError("View already destroyed (Maybe it's done by unity via exiting play mode)");
@@ -137,7 +138,33 @@ namespace LROTech.Network.StateManagement
                 View.Destroy();
                 View = null;
             }
+
+            s_all.Remove(Uid);
+
+            Uid = NetWorldId.Invalid;
+            Id = NetWorldId.Invalid;
+            SourceId = NetWorldId.Invalid;
+
+            Time = 0f;
+            LocalTime = 0f;
+
+            Updated = delegate { };
+
+            foreach (var netObject in _currentObjectStates.Values)
+                netObject.Invalidate();
+            _currentObjectStates.Clear();
+
+            Players.Clear();
+            Properties.Clean();
         }
+
+#if UNITY_EDITOR
+        private void OnPlaymodeChange_Editor(UnityEditor.PlayModeStateChange playModeState)
+        {
+            if (playModeState == UnityEditor.PlayModeStateChange.EnteredEditMode && IsValid)
+                Dispose();
+        }
+#endif
 
         public virtual bool ObjectExists(NetObjectUid uid)
         {

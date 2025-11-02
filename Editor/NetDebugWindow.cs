@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Core;
-using Core.DependencyInjection.Services;
 using Core.Networking;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
@@ -12,11 +11,14 @@ using UnityEngine;
 
 namespace LROTech.Network.Editor
 {
-    public sealed class NetDebugWindow : EditorWindow
+    internal sealed class NetDebugWindow : EditorWindow
     {
         #region Drawers
+
         private class ObjectDrawer
         {
+            private static readonly NetWriter s_networkStateSizeWriter = new();
+
             private readonly Dictionary<int, bool> _dataFoldoutStates = new();
             private readonly NetObjectState _state;
             private readonly NetWorld _world;
@@ -45,7 +47,10 @@ namespace LROTech.Network.Editor
 
                     var stateSnapshot = _state.ToSnapshot();
                     EditorGUILayout.LabelField($"Total Size: {stateSnapshot.GetSize()}");
-                    EditorGUILayout.LabelField($"Network Size: {stateSnapshot.GetNetworkSize()}");
+
+                    s_networkStateSizeWriter.SeekZero();
+                    stateSnapshot.Serialize(s_networkStateSizeWriter);
+                    EditorGUILayout.LabelField($"Network Size: {s_networkStateSizeWriter.Position}");
 
                     var temporalBuffer = _state.RpcBuffer.TemporalBuffer;
                     var persistentBuffer = _state.RpcBuffer.PersistentBuffer;
@@ -82,7 +87,7 @@ namespace LROTech.Network.Editor
                             drawData = EditorGUILayout.Foldout(drawData, content: $"{data.GetType().FullName}  Size: {dataSize}  Type: {data.TypeHashCode}");
                             _dataFoldoutStates[data.TypeHashCode] = drawData;
                             GUI.color = color;
-                            
+
                             if (drawData)
                             {
                                 EditorGUI.indentLevel++;
@@ -91,6 +96,7 @@ namespace LROTech.Network.Editor
                                 EditorGUI.indentLevel--;
                             }
                         }
+
                         EditorGUI.indentLevel--;
                     }
 
@@ -110,7 +116,7 @@ namespace LROTech.Network.Editor
                 var handlerInfo = handlerMethod == null
                     ? "UNKNOWN"
                     : $"{handlerMethod.DeclaringType!.FullName}.{handlerMethod.Name}";
-            
+
                 EditorGUILayout.LabelField($"{rpc.Uid} Hash: {rpc.Hash} '{handlerInfo}' Payload Size: {rpc.Payload.Length}");
             }
         }
@@ -132,7 +138,7 @@ namespace LROTech.Network.Editor
 
             public void Draw()
             {
-                if(!IsValid)
+                if (!IsValid)
                 {
                     EditorGUILayout.HelpBox("World is invalid", MessageType.Error);
                     return;
@@ -201,6 +207,7 @@ namespace LROTech.Network.Editor
                             drawer = new ObjectDrawer(kvp.Value, World);
                             _objectViews.Add(kvp.Key, drawer);
                         }
+
                         drawer.Draw();
                     }
                 }
@@ -217,9 +224,9 @@ namespace LROTech.Network.Editor
                     EditorGUI.indentLevel++;
                     foreach (var fieldInfo in player.Properties.GetType().GetFields(bindingAttr: BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                     {
-                        if (!typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType)) 
+                        if (!typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType))
                             continue;
-                        
+
                         var dictionary = (IDictionary)fieldInfo.GetValue(player!.Properties);
 
                         EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldInfo.Name)}: {dictionary.Keys.Count}");
@@ -228,6 +235,7 @@ namespace LROTech.Network.Editor
                             EditorGUILayout.LabelField($"{key}: {dictionary[key]}");
                         EditorGUI.indentLevel--;
                     }
+
                     EditorGUI.indentLevel--;
                 }
             }
@@ -238,7 +246,9 @@ namespace LROTech.Network.Editor
             private bool _drawCommon;
             private bool _drawPendingViews;
 
-            public MainWorldDrawer(NetWorldRuntime runtimeWorld) : base(runtimeWorld) { }
+            public MainWorldDrawer(NetWorldRuntime runtimeWorld) : base(runtimeWorld)
+            {
+            }
 
             protected override void OnDrawWorld()
             {
@@ -256,13 +266,13 @@ namespace LROTech.Network.Editor
                             var registerRequests = World.IncomingStateChangeRequests;
                             EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
                         }
-                    
+
                         // Temporary Unregistered Objects.
                         {
                             EditorGUILayout.Space();
                             var temporaryUnregisteredObjects = World.TemporaryUnregisteredObjects;
                             EditorGUILayout.LabelField($"Unregistered Objects: {temporaryUnregisteredObjects.Count}", EditorStyles.boldLabel);
-                        
+
                             EditorGUI.indentLevel++;
                             foreach (var objectState in temporaryUnregisteredObjects.Values)
                                 EditorGUILayout.LabelField($"[{objectState.Uid}] [{objectState.PrefabId}] Owner: {objectState.Owner} Scene: {objectState.IsSceneObject}");
@@ -291,7 +301,9 @@ namespace LROTech.Network.Editor
 
         private class ReplicaWorldDrawer : WorldDrawer<NetWorldEvaluator>
         {
-            public ReplicaWorldDrawer(NetWorldEvaluator replicaWorld) : base(replicaWorld) { }
+            public ReplicaWorldDrawer(NetWorldEvaluator replicaWorld) : base(replicaWorld)
+            {
+            }
 
             protected override void OnDrawWorld()
             {
@@ -320,12 +332,15 @@ namespace LROTech.Network.Editor
                 base.OnDrawWorld();
             }
         }
+
         #endregion
 
         private bool _showNetworkStatistics;
         private bool _showMainWorldHistoryInfo;
+
         private bool _showMainWorldBuffer;
-        private ServiceProvider<GSNetwork> _networkProvider;
+
+        //private ServiceProvider<GSNetwork> _networkProvider;
         private Vector2 _globalScrollPosition;
 
         private MainWorldDrawer _mainWorldDrawer;
@@ -338,7 +353,7 @@ namespace LROTech.Network.Editor
             window.Show();
             window._showMainWorldHistoryInfo = true;
         }
-    
+
         private void Update()
         {
             Repaint();
@@ -352,25 +367,32 @@ namespace LROTech.Network.Editor
                 return;
             }
 
-            _networkProvider ??= new ServiceProvider<GSNetwork>();
-            if (_networkProvider.Instance == null)
-                return;
+            // _networkProvider ??= new ServiceProvider<GSNetwork>();
+            //if (_networkProvider.Instance == null)
+            //    return;
 
-            var realtime = _networkProvider.Instance.Realtime;
-            EditorGUILayout.LabelField($"RT status: {realtime.IsSessionRunningAndReady}", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField($"RT conn: {realtime.LocalConnectionUID}", EditorStyles.boldLabel);
+            //var realtime = _networkProvider.Instance.Realtime;
+            //EditorGUILayout.LabelField($"RT status: {realtime.IsSessionRunningAndReady}", EditorStyles.boldLabel);
+            //EditorGUILayout.LabelField($"RT conn: {realtime.LocalConnectionUID}", EditorStyles.boldLabel);
 
             EditorGUILayout.Space();
 
             _showNetworkStatistics = EditorGUILayout.Foldout(_showNetworkStatistics, "Network Statistics");
             if (_showNetworkStatistics)
                 EditorGUILayout.HelpBox("Statistics is not available", MessageType.Error);
-        
+
             EditorGUILayout.Space();
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            var mainWorld = realtime.MainWorld;
-#pragma warning restore CS0618 // Type or member is obsolete
+            EditorGUILayout.LabelField($"World Count: {NetWorld.All.Count}", EditorStyles.boldLabel);
+
+            var mainWorld = default(NetWorldRuntime);
+            foreach (var world in NetWorld.All.Values)
+            {
+                mainWorld = world as NetWorldRuntime;
+                if (mainWorld != null)
+                    break;
+            }
+
             if (mainWorld == null)
             {
                 EditorGUILayout.HelpBox("World not represented yet", MessageType.Error);
@@ -395,18 +417,19 @@ namespace LROTech.Network.Editor
                 {
                     var currentReplica = mainWorld.Replicate();
                     _currentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
-                    Bootstrap.UnityFixedUpdate += OnFixedUpdate;
-                
-                    void OnFixedUpdate()
+                    Bootstrap.UnityUpdate += OnUpdate;
+
+                    void OnUpdate()
                     {
-                        currentReplica.Update(Time.fixedDeltaTime);
-                        if (!currentReplica.IsValid)
-                        {
-                            _currentWorldReplicaDrawer = null;
-                            Bootstrap.UnityFixedUpdate -= OnFixedUpdate;
-                        }
+                        currentReplica.Update(Time.deltaTime);
+                        if (currentReplica.IsValid) 
+                            return;
+                        
+                        _currentWorldReplicaDrawer = null;
+                        Bootstrap.UnityUpdate -= OnUpdate;
                     }
                 }
+
                 EditorGUI.EndDisabledGroup();
 
                 _showMainWorldBuffer = EditorGUILayout.Foldout(_showMainWorldBuffer, "Show buffer");
@@ -424,7 +447,7 @@ namespace LROTech.Network.Editor
 
             if (_currentWorldReplicaDrawer != null)
             {
-                if(_currentWorldReplicaDrawer.IsValid)
+                if (_currentWorldReplicaDrawer.IsValid)
                 {
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField("Replica info:", EditorStyles.boldLabel);

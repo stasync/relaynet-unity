@@ -34,6 +34,7 @@ namespace LROTech.Network.StateManagement
         private readonly HashSet<ClientUid> _playerUnregisterQueue = new();
 
         private float _lastUpdateTime;
+        private float _localUpdateTime;
 
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
@@ -41,16 +42,18 @@ namespace LROTech.Network.StateManagement
         public NetWorldRuntime(string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
             NetObjectUid.Reset();
-            _lastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
+            _lastUpdateTime = 0;
         }
 
         protected override void UpdateImplementation(float deltaTime)
         {
-            var worldDelta = UnityEngine.Time.fixedUnscaledTime - _lastUpdateTime;
+            _localUpdateTime += deltaTime;
+
+            var worldDelta = _localUpdateTime - _lastUpdateTime;
             if (worldDelta < MIN_UPDATE_INTERVAL_S)
                 return;
-            
-            _lastUpdateTime = UnityEngine.Time.fixedUnscaledTime;
+
+            _lastUpdateTime = _localUpdateTime;
             UpdateWorldState(worldDelta);
         }
 
@@ -120,7 +123,7 @@ namespace LROTech.Network.StateManagement
 
                             if (isSnapshotReliable && isRequestReliable)
                                 Debug.LogError($"Snapshot for object '{snapshot.PrefabId}' must be merged in order to not loose reliable data.");
-                            
+
                             // Overwrite snapshot with the new one.
                             // TODO: BOTH STATES COULD BE RELIABLE! We could skip reliable data here!!
                             if (currentSnapshot.StateChangeType < snapshot.StateChangeType)
@@ -220,7 +223,7 @@ namespace LROTech.Network.StateManagement
                     var newTime = _reader.ReadSingle();
                     if (newTime >= Time)
                     {
-                        Time = newTime;
+                        Time = newTime + 0.1f; // TODO: we have to take in account round trip time the relay here, to estimate more accurate.
                         Properties.Deserialize(_reader);
                     }
                 }

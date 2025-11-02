@@ -1,0 +1,20 @@
+{
+    "name": "LROTech.Network.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:afb40243426854883806aee4459d32e9",
+        "GUID:30fe14bf48ca6429f89ec80c366d94a0",
+        "GUID:1a2cd10c9895a424fa897c163512f025"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

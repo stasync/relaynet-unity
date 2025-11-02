@@ -61,13 +61,5 @@ namespace LROTech.Network.StateManagement.Snapshots
             result += DataState.GetSize();
             return result;
         }
-
-        private static readonly NetWriter s_writer = new NetWriter();
-        public int GetNetworkSize()
-        {
-            s_writer.SeekZero();
-            Serialize(s_writer);
-            return s_writer.Position;
-        }
     }
 }
