@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.Networking;
+using LROTech.Network;
 using LROTech.Network.GameObjects;
-using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;

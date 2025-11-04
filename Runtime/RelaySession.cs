@@ -7,7 +7,7 @@ using Core.Networking.Udp;
 using Core.Networking.Udp.LowLevel;
 using UnityEngine;
 
-namespace LROTech.Network.Sessions
+namespace LROTech.Network
 {
     internal sealed class RelaySession
     {

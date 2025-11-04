@@ -1,5 +1,4 @@
 ﻿using System;
-using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 
 namespace LROTech.Network.GameObjects

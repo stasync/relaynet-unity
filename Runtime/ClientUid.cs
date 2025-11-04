@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LROTech.Network.Sessions
+namespace LROTech.Network
 {
     public readonly struct ClientUid : IComparable<ClientUid>, IEquatable<ClientUid>
     {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using Core.Networking;
 using LROTech.Network.GameObjects;
-using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement.Snapshots;
 using UnityEngine.SceneManagement;
 
@@ -505,12 +504,14 @@ namespace LROTech.Network.StateManagement
         /// </summary>
         public override void Dispose()
         {
+            EnsureValid();
+
             _localPlayerRegisterQueue.Clear();
             _playerUnregisterQueue.Clear();
             HistoryBuffer.Clear();
 
             PlayerAdded = null;
-            
+
             // Base dispose call.
             base.Dispose();
         }

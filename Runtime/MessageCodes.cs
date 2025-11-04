@@ -1,4 +1,4 @@
-﻿namespace LROTech.Network.Sessions
+﻿namespace LROTech.Network
 {
     public static class MessageCodes
     {

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using LROTech.Network.Sessions;
 
 namespace LROTech.Network.StateManagement.Snapshots
 {
