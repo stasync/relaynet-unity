@@ -1,9 +1,9 @@
 using System;
 using System.Net;
-using Core.Networking;
+using LROTech.Network.Sessions;
 using LROTech.Network.StateManagement;
 
-namespace LROTech.Network.Sessions
+namespace LROTech.Network
 {
     public sealed class NetSession
     {
@@ -12,7 +12,7 @@ namespace LROTech.Network.Sessions
         public NetWorldRuntime MainWorld { get; private set; }
 
         private RelaySession _clientSession;
-        private readonly NetReader _reader = new();
+        //private readonly NetReader _reader = new();
 
         public NetSession(IPAddress address, ushort port)
         {
@@ -21,44 +21,51 @@ namespace LROTech.Network.Sessions
 
             MainWorld = new NetWorldRuntime();
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
+            MainWorld.Disposed += OnWorldDisposed;
 
             _clientSession = new RelaySession(new IPEndPoint(address, port), connectionKey: 0);
-            _clientSession.Disposed += OnSessionDisposed;
+            _clientSession.LocalUserDisconnected += OnLocalUserDisconnected;
             _clientSession.DataReceived += OnDataReceived;
             _clientSession.LocalUserConnected += OnLocalUserConnected;
             _clientSession.RemoteUserDisconnected += OnRemoteUserDisconnected;
             _clientSession.DataReceived += OnDataReceived;
         }
-        
+
+        private void OnWorldDisposed()
+        {
+            if (MainWorld != null)
+            {
+                MainWorld.DataSendRequested -= OnWorldDataSendRequest;
+                MainWorld.Disposed -= OnWorldDisposed;
+            }
+            MainWorld = null;
+            
+            if (_clientSession != null)
+            {
+                _clientSession.TryDispose();
+                
+                _clientSession.LocalUserDisconnected -= OnLocalUserDisconnected;
+                _clientSession.DataReceived -= OnDataReceived;
+                _clientSession.LocalUserConnected -= OnLocalUserConnected;
+                _clientSession.RemoteUserDisconnected -= OnRemoteUserDisconnected;
+                _clientSession.DataReceived -= OnDataReceived;
+            }
+            _clientSession = null;
+            
+            Disposed();
+        }
+
         public void Update(float deltaTime)
         {
             _clientSession?.Update(deltaTime);
             MainWorld?.Update(deltaTime);
         }
 
-        public void Dispose()
-        {
-            if (_clientSession != null)
-            {
-                _clientSession.TryDispose();
-
-                _clientSession.Disposed -= OnSessionDisposed;
-                _clientSession.DataReceived -= OnDataReceived;
-                _clientSession.LocalUserConnected -= OnLocalUserConnected;
-                _clientSession.RemoteUserDisconnected -= OnRemoteUserDisconnected;
-                _clientSession.DataReceived -= OnDataReceived;
-            }
-            
-            _clientSession = null;
-        }
-        
-        private void OnSessionDisposed()
-        {
+        public void Dispose() =>
             MainWorld?.Dispose();
-            MainWorld = null;
-            
-            Disposed();
-        }
+
+        private void OnLocalUserDisconnected() => 
+            MainWorld?.Dispose();
 
         private void OnDataReceived(ClientUid senderConnectionId, uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod)
         {
@@ -74,18 +81,18 @@ namespace LROTech.Network.Sessions
 
                 case MessageCodes.CUSTOM_MESSAGE:
                 {
-                    var messageCode = _reader.ReadInt32();
-                    var messageData = _reader.ReadBytesAndSize();
+                    //var messageCode = _reader.ReadInt32();
+                    //var messageData = _reader.ReadBytesAndSize();
                     //CustomMessageReceived(senderConnectionUid, messageCode, messageData);
 
                     break;
                 }
             }
         }
-        
+
         private void OnLocalUserConnected() =>
             MainWorld.RegisterLocalPlayer(_clientSession.ConnectionUid);
-        
+
         private void OnRemoteUserDisconnected(ClientUid clientUid) =>
             MainWorld.OnDisconnect(clientUid);
 

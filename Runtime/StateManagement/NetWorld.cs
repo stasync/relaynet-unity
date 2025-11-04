@@ -12,6 +12,7 @@ namespace LROTech.Network.StateManagement
         public static IReadOnlyDictionary<NetWorldId, NetWorld> All => s_all;
         private static readonly Dictionary<NetWorldId, NetWorld> s_all = new();
 
+        public event Action Disposed = delegate { };
         public event Action<float> Updated = delegate { };
         public event Action<NetObjectUid> ObjectCreated = delegate { };
 
@@ -149,7 +150,7 @@ namespace LROTech.Network.StateManagement
             Time = 0f;
             LocalTime = 0f;
 
-            Updated = delegate { };
+            Updated = null;
 
             foreach (var netObject in _currentObjectStates.Values)
                 netObject.Invalidate();
@@ -157,6 +158,9 @@ namespace LROTech.Network.StateManagement
 
             Players.Clear();
             Properties.Clean();
+
+            Disposed?.Invoke();
+            Disposed = null;
         }
 
 #if UNITY_EDITOR

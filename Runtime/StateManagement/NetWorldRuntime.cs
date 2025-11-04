@@ -505,13 +505,14 @@ namespace LROTech.Network.StateManagement
         /// </summary>
         public override void Dispose()
         {
-            base.Dispose();
-
             _localPlayerRegisterQueue.Clear();
             _playerUnregisterQueue.Clear();
             HistoryBuffer.Clear();
 
             PlayerAdded = null;
+            
+            // Base dispose call.
+            base.Dispose();
         }
 
         /// <summary>

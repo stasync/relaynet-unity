@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace LROTech.Network.Sessions
 {
-    public sealed class RelaySession
+    internal sealed class RelaySession
     {
         public delegate void DataReceivedDelegate(ClientUid senderConnectionId, uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
 
@@ -29,7 +29,7 @@ namespace LROTech.Network.Sessions
         public IReadOnlyCollection<ClientUid> ConnectedClients => _connectedClients;
         private readonly HashSet<ClientUid> _connectedClients = new();
 
-        public event Action Disposed = delegate { };
+        public event Action LocalUserDisconnected = delegate { };
         public event Action LocalUserConnected = delegate { };
         public event Action<ClientUid> RemoteUserConnected = delegate { };
         public event Action<ClientUid> RemoteUserDisconnected = delegate { };
@@ -86,9 +86,9 @@ namespace LROTech.Network.Sessions
 
             _reliableUdpClient.Disconnect();
             ConnectionUid = ClientUid.Invalid;
+            LocalUserDisconnected();
+            
             _disposed = true;
-
-            Disposed();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
