@@ -298,9 +298,7 @@ namespace LROTech.Network.StateManagement
                 // Send local player.
                 {
                     var localPlayer = Players.LocalPlayer;
-                    if (localPlayer == null)
-                        Debug.LogError("Unable to send local player: doesn't exists");
-                    else
+                    if (localPlayer != null)
                     {
                         _writer.SeekZero();
                         _writer.WriteByte((byte)NetWorldRuntimeChangeOp.PlayerStateUpdate);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 using Core.Networking.Udp;
 using Core.Networking.Udp.LowLevel;
@@ -8,8 +9,7 @@ using UnityEngine;
 
 namespace LROTech.Network.Sessions
 {
-    [DisallowMultipleComponent]
-    internal sealed class InternalClientSession : MonoBehaviour
+    public sealed class RelaySession
     {
         public delegate void DataReceivedDelegate(ClientUid senderConnectionId, uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
 
@@ -29,17 +29,15 @@ namespace LROTech.Network.Sessions
         public IReadOnlyCollection<ClientUid> ConnectedClients => _connectedClients;
         private readonly HashSet<ClientUid> _connectedClients = new();
 
+        public event Action Disposed = delegate { };
+        public event Action LocalUserConnected = delegate { };
         public event Action<ClientUid> RemoteUserConnected = delegate { };
         public event Action<ClientUid> RemoteUserDisconnected = delegate { };
-
-        public event Action LocalUserConnected = delegate { };
-        public event Action LocalUserDisconnected = delegate { };
-
+        
         public event DataReceivedDelegate DataReceived = delegate { };
 
         public bool IsConnected => ConnectionUid.IsValid;
         public ClientUid ConnectionUid { get; private set; }
-        internal ClientUid MasterConnectionUid { get; private set; }
 
         private readonly NetReader _dataReader = new();
         private readonly NetWriter _dataWriter = new();
@@ -47,8 +45,9 @@ namespace LROTech.Network.Sessions
         private readonly ReliableUdpClient _reliableUdpClient = new();
         private bool _disposed;
         private float _lastUpdateTime;
+        private float _currentTime;
 
-        public void Connect(IPEndPoint endPoint, long connectionKey = 0)
+        public RelaySession(IPEndPoint endPoint, long connectionKey = 0)
         {
             if (_reliableUdpClient.IsConnected)
             {
@@ -67,12 +66,46 @@ namespace LROTech.Network.Sessions
             _reliableUdpClient.Connect(endPoint, connectionKey);
         }
 
+        public void Update(float deltaTime)
+        {
+            EnsureValid();
+            _currentTime += deltaTime;
+
+            // Aiming for 20 times per second.
+            if (_currentTime - _lastUpdateTime < 0.05f)
+                return;
+
+            _lastUpdateTime = _currentTime;
+            _reliableUdpClient.Update();
+        }
+
+        public void TryDispose()
+        {
+            if (_disposed)
+                return;
+
+            _reliableUdpClient.Disconnect();
+            ConnectionUid = ClientUid.Invalid;
+            _disposed = true;
+
+            Disposed();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureValid()
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
+        }
+
         private void OnHeartbeatSent()
         {
         }
 
         public void SendData(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod)
         {
+            EnsureValid();
+
             if (!IsConnected)
             {
                 Debug.LogError("Unable to send data over the disconnected client.");
@@ -82,8 +115,7 @@ namespace LROTech.Network.Sessions
             _dataWriter.SeekZero();
             _dataWriter.WriteByte((byte)ClientMessageType.OnPacket);
             _dataWriter.WritePackedUInt32(userDataOpCode);
-            _dataWriter.WritePackedUInt32(
-                0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that message will be sent to everyone except sender.
+            _dataWriter.WritePackedUInt32(0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that message will be sent to everyone except sender.
             _dataWriter.WriteBytesAndSize(data);
 
             _reliableUdpClient.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
@@ -91,18 +123,11 @@ namespace LROTech.Network.Sessions
 
         public void SendRaw(byte[] data, DeliveryMethod deliveryMethod)
         {
+            EnsureValid();
+
             _dataWriter.SeekZero();
             _dataWriter.WriteBytesAndSize(data);
             _reliableUdpClient.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
-        }
-
-        public void TryDispose()
-        {
-            if (_disposed)
-                return;
-
-            _disposed = true;
-            Destroy(gameObject);
         }
 
         private void OnDataReceived(byte[] rawData, UdpFullProtocol.DgramDeliveryMethod deliveryMethod)
@@ -122,7 +147,6 @@ namespace LROTech.Network.Sessions
                         {
                             var connectionId = _dataReader.ReadClientUid();
                             _connectedClients.Add(connectionId);
-                            RecalculateMasterConnectionUid();
                         }
 
                         // Handle local connection.
@@ -153,8 +177,6 @@ namespace LROTech.Network.Sessions
 
                         // Remove disconnected connection.
                         _connectedClients.Remove(disconnectedConnectionId);
-                        RecalculateMasterConnectionUid();
-
                         RemoteUserDisconnected(disconnectedConnectionId);
                         break;
                     }
@@ -167,18 +189,6 @@ namespace LROTech.Network.Sessions
             catch (Exception e)
             {
                 Debug.LogException(e);
-            }
-
-            return;
-
-            void RecalculateMasterConnectionUid()
-            {
-                MasterConnectionUid = ClientUid.Invalid;
-                foreach (var clientUid in _connectedClients)
-                {
-                    if (clientUid < MasterConnectionUid || !MasterConnectionUid.IsValid)
-                        MasterConnectionUid = clientUid;
-                }
             }
         }
 
@@ -215,24 +225,6 @@ namespace LROTech.Network.Sessions
         {
             Debug.LogError(nameof(OnConnectionFailed));
             TryDispose();
-        }
-
-        private void Update()
-        {
-            // Aiming for 20 times per second.
-            if (Time.unscaledTime - _lastUpdateTime < 0.05f)
-                return;
-
-            _lastUpdateTime = Time.unscaledTime;
-            _reliableUdpClient.Update();
-        }
-
-        private void OnDestroy()
-        {
-            _reliableUdpClient.Disconnect();
-            ConnectionUid = ClientUid.Invalid;
-            MasterConnectionUid = ClientUid.Invalid;
-            LocalUserDisconnected();
         }
     }
 }
