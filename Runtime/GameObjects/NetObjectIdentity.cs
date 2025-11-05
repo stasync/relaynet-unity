@@ -65,6 +65,7 @@ namespace LROTech.Network.GameObjects
 
             State.OwnerChanged += OwnerChanged;
             State.LocalUpdateRequest += OnLocalUpdateRequest;
+            State.Invalidated += OnStateInvalidated;
 
             var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
             if (!IsLocal)
@@ -107,6 +108,12 @@ namespace LROTech.Network.GameObjects
             // Only for remote objects.
             if (!IsLocal)
                 State.RpcBuffer.ExecuteRemotely(executePersistent: true, ReceiveRpcRemotely);
+        }
+
+        private void OnStateInvalidated()
+        {
+            State.Invalidated -= OnStateInvalidated;
+            State = null;
         }
 
         /// <summary>
