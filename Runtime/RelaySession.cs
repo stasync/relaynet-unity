@@ -36,7 +36,6 @@ namespace LROTech.Network
         
         public event DataReceivedDelegate DataReceived = delegate { };
 
-        public bool IsConnected => ConnectionUid.IsValid;
         public ClientUid ConnectionUid { get; private set; }
 
         private readonly NetReader _dataReader = new();
@@ -106,7 +105,7 @@ namespace LROTech.Network
         {
             EnsureValid();
 
-            if (!IsConnected)
+            if (!ConnectionUid.IsValid)
             {
                 Debug.LogError("Unable to send data over the disconnected client.");
                 return;

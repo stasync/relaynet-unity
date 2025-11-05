@@ -27,9 +27,9 @@ namespace LROTech.Network.StateManagement
         public T GetOrCreateData<T>() where T : NetObjectStateData, new()
         {
             var typIndex = NetObjectStateData.GetTypeIndex<T>();
-            if (_internalCollection.TryGetValue(typIndex, out var data)) 
+            if (_internalCollection.TryGetValue(typIndex, out var data))
                 return data as T;
-            
+
             data = NetObjectStateData.Provide<T>(_dataWritePermission);
             if (data == null)
                 throw new InvalidOperationException();
@@ -38,6 +38,7 @@ namespace LROTech.Network.StateManagement
             return (T)data;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasData<T>() where T : NetObjectStateData, new() =>
             _internalCollection.ContainsKey(NetObjectStateData.GetTypeIndex<T>());
 
@@ -57,7 +58,8 @@ namespace LROTech.Network.StateManagement
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
             return _internalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetObjectDataCollectionSnapshot ToSnapshot() =>
             new(_internalCollection.Values);
 
@@ -81,7 +83,8 @@ namespace LROTech.Network.StateManagement
                 data.DeserializeInternal(_reader);
             }
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Clear() =>
             _internalCollection.Clear();
 
@@ -103,11 +106,11 @@ namespace LROTech.Network.StateManagement
 
         IEnumerator IEnumerable.GetEnumerator() =>
             _internalCollection.Values.GetEnumerator();
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
             _validator != null && _validator();
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureValid()
         {

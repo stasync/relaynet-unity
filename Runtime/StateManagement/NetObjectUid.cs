@@ -12,9 +12,8 @@ namespace LROTech.Network.StateManagement
         /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
         /// </summary>
         public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
-
-        public const uint CLIENT_RESERVED_UID_SPACE = 10000;
         public const uint FIRST_VALID_UID = 1;
+        private const uint RESERVED_UID_SPACE_PER_CLIENT = 10000;
 
         #region STATIC
 
@@ -33,7 +32,7 @@ namespace LROTech.Network.StateManagement
             s_idCounter++;
 
             // Apply id offset.
-            var value = FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)clientUid * CLIENT_RESERVED_UID_SPACE + s_idCounter;
+            var value = FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)clientUid * RESERVED_UID_SPACE_PER_CLIENT + s_idCounter;
             return new NetObjectUid(value);
         }
 

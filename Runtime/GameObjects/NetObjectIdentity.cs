@@ -44,8 +44,7 @@ namespace LROTech.Network.GameObjects
         private NetWriter _objectWriter;
         private NetReader _objectReader;
 
-        public NetObjectState State => _netObjectStateReference.State;
-        private readonly NetObjectStateReference _netObjectStateReference = new();
+        public NetObjectState State { get; private set; }
 
         private readonly Dictionary<Type, NetObjectBehaviourBase> _cachedBehaviours = new();
         private readonly Dictionary<int, Action<byte[]>> _rpcHandlers = new();
@@ -62,9 +61,7 @@ namespace LROTech.Network.GameObjects
             _behaviours = gameObject.GetComponents<NetObjectBehaviourBase>();
 
             World = world;
-
-            _netObjectStateReference.SetTargetUid(stateUid);
-            _netObjectStateReference.SetTargetWorld(world);
+            State = world.FindObject(stateUid);
 
             State.OwnerChanged += OwnerChanged;
             State.LocalUpdateRequest += OnLocalUpdateRequest;
@@ -110,7 +107,7 @@ namespace LROTech.Network.GameObjects
             // Only for remote objects.
             if (!IsLocal)
                 State.RpcBuffer.ExecuteRemotely(executePersistent: true, ReceiveRpcRemotely);
-        } 
+        }
 
         /// <summary>
         /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
@@ -404,9 +401,7 @@ namespace LROTech.Network.GameObjects
 
             State.OwnerChanged -= OwnerChanged;
             State.LocalUpdateRequest -= OnLocalUpdateRequest;
-
-            _netObjectStateReference.SetTargetUid(NetObjectUid.Invalid);
-            _netObjectStateReference.SetTargetWorld(null);
+            State = null;
         }
 
 #if UNITY_EDITOR
@@ -417,7 +412,7 @@ namespace LROTech.Network.GameObjects
 
             UnityEditor.Handles.Label(
                 transform.position,
-                $"Object: {InstanceId}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
+                text: $"Object: {InstanceId}, Owner: {(Owner == null ? "NONE" : Owner.Name)}, Local: {IsLocal}");
         }
 #endif
     }

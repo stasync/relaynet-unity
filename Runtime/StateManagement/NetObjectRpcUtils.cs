@@ -101,10 +101,10 @@ namespace LROTech.Network.StateManagement
 
         internal static class UidAllocator
         {
-            private static uint _counter;
+            private static uint s_counter;
 
             internal static uint NextUid() =>
-                ++_counter;
+                ++s_counter;
         }
     }
 }

@@ -16,13 +16,15 @@ namespace LROTech.Network.StateManagement
         public float DrawDistance { get; private set; } = 50f;
 
         private NetWorld _world;
-        private NetObjectFactory _objectFactory;
         private bool _initialized;
 
+        private readonly NetObjectFactory _objectFactory = new();
+
         public IReadOnlyDictionary<NetObjectUid, NetObjectIdentity> CurrentObjectViews => _currentObjectViews;
-        private Dictionary<NetObjectUid, NetObjectIdentity> _currentObjectViews;
+        private readonly Dictionary<NetObjectUid, NetObjectIdentity> _currentObjectViews = new();
+
         public IReadOnlyDictionary<NetObjectUid, NetObjectIdentity> TemporaryUnregisteredViews => _temporaryUnregisteredViews;
-        private Dictionary<NetObjectUid, NetObjectIdentity> _temporaryUnregisteredViews;
+        private readonly Dictionary<NetObjectUid, NetObjectIdentity> _temporaryUnregisteredViews;
 
         private Scene _worldScene;
         private readonly List<NetObjectUid> _objectUidCollectionCache = new();
@@ -35,9 +37,6 @@ namespace LROTech.Network.StateManagement
             _initialized = true;
 
             _world = world;
-            _objectFactory = new NetObjectFactory();
-            _currentObjectViews = new Dictionary<NetObjectUid, NetObjectIdentity>();
-            _temporaryUnregisteredViews = new Dictionary<NetObjectUid, NetObjectIdentity>();
 
             var sceneName = $"[{_world.Uid}] {_world.Name}";
             switch (initMode)
@@ -233,7 +232,6 @@ namespace LROTech.Network.StateManagement
             NewObjectInitialized = null;
 
             _currentObjectViews.Clear();
-            _currentObjectViews = null;
 
             foreach (var pendingView in _temporaryUnregisteredViews.Values)
             {
@@ -242,13 +240,10 @@ namespace LROTech.Network.StateManagement
             }
 
             _temporaryUnregisteredViews.Clear();
-            _temporaryUnregisteredViews = null;
 
-            _objectFactory = null;
             _world = null;
 
             Destroy(gameObject);
-
             if (_worldScene.IsValid())
                 SceneManager.UnloadSceneAsync(_worldScene);
         }

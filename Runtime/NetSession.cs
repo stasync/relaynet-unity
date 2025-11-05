@@ -63,6 +63,11 @@ namespace LROTech.Network
         public void Dispose() =>
             MainWorld?.Dispose();
 
+        public void SendCustomMessage(byte[] data, DeliveryMethod deliveryMethod)
+        {
+            _clientSession.SendData(MessageCodes.CUSTOM_MESSAGE, data, deliveryMethod);
+        }
+
         private void OnLocalUserDisconnected() => 
             MainWorld?.Dispose();
 
