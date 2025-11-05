@@ -24,7 +24,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUid, NetObjectIdentity> _currentObjectViews = new();
 
         public IReadOnlyDictionary<NetObjectUid, NetObjectIdentity> TemporaryUnregisteredViews => _temporaryUnregisteredViews;
-        private readonly Dictionary<NetObjectUid, NetObjectIdentity> _temporaryUnregisteredViews;
+        private readonly Dictionary<NetObjectUid, NetObjectIdentity> _temporaryUnregisteredViews = new();
 
         private Scene _worldScene;
         private readonly List<NetObjectUid> _objectUidCollectionCache = new();
