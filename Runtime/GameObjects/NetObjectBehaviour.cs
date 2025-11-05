@@ -22,15 +22,13 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
         /// </summary>
-        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable,
-            bool invokeLocally = true) =>
+        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
             Identity.OwnerToOthersRpc(rpcHandlerMethod, data, deliveryMethod, invokeLocally);
 
         /// <summary>
         /// Same as OwnerToOthersRPC, but buffered.
         /// </summary>
-        public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data,
-            RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace) =>
+        public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace) =>
             Identity.OwnerToOthersRpcBuffered(rpcHandlerMethod, data, bufferChangeMethod);
 
         /// <summary>

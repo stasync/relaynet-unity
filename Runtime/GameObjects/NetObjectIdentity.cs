@@ -234,20 +234,17 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
         /// </summary>
-        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable,
-            bool invokeLocally = true) =>
+        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
             OwnerToOthersRpc(rpcHandlerMethod, data, persistent: false, RpcBufferChangeMethod.Add, deliveryMethod, invokeLocally);
 
         /// <summary>
         /// Same as AuthRPC, but buffered.
         /// Only works via RELIABLE delivery.
         /// </summary>
-        public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data,
-            RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace, bool invokeLocally = true) =>
+        public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace, bool invokeLocally = true) =>
             OwnerToOthersRpc(rpcHandlerMethod, data, persistent: true, bufferChangeMethod, DeliveryMethod.Reliable, invokeLocally);
 
-        private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod,
-            DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
+        private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
         {
             if (!IsLocal)
                 throw new Exception(
