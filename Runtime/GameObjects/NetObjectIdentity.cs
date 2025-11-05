@@ -110,12 +110,6 @@ namespace LROTech.Network.GameObjects
                 State.RpcBuffer.ExecuteRemotely(executePersistent: true, ReceiveRpcRemotely);
         }
 
-        private void OnStateInvalidated()
-        {
-            State.Invalidated -= OnStateInvalidated;
-            State = null;
-        }
-
         /// <summary>
         /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
         /// </summary>
@@ -405,6 +399,13 @@ namespace LROTech.Network.GameObjects
 
             State.OwnerChanged -= OwnerChanged;
             State.LocalUpdateRequest -= OnLocalUpdateRequest;
+            State.Invalidated -= OnStateInvalidated;
+            State = null;
+        }
+
+        private void OnStateInvalidated()
+        {
+            State.Invalidated -= OnStateInvalidated;
             State = null;
         }
 

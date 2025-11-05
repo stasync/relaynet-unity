@@ -93,14 +93,19 @@ namespace LROTech.Network.StateManagement
                         // Other client wants to tell us about its player state.
                         case NetWorldRuntimeChangeOp.PlayerStateUpdate:
                         {
-                            // Add player, if not exists.
-                            // Deserialize other player.
-                            // Adding player id duplicated logic.
                             var snapshot = new NetWorldPlayerSnapshot(_reader);
+                            if (!snapshot.Uid.IsValid)
+                            {
+                                Debug.LogError($"Unable to schedule update for remote player '{snapshot.Uid}', invalid Uid.");
+                                break;
+                            }
 
-                            // TODO: As we may process multiple packets per update, we should be a bit more smart about it, and use the latest one.
                             if (!remotePlayersUpdateRequests.TryAdd(snapshot.Uid, snapshot))
-                                Debug.LogWarning($"Unable to schedule update for remote player '{snapshot.Uid}': already scheduled.");
+                            {
+                                var currentsSnapshot = remotePlayersUpdateRequests[snapshot.Uid];
+                                if (currentsSnapshot.WorldTime < snapshot.WorldTime)
+                                    remotePlayersUpdateRequests[snapshot.Uid] = snapshot;
+                            }
 
                             break;
                         }
@@ -118,18 +123,18 @@ namespace LROTech.Network.StateManagement
 
                             // If snapshot is already registered, we should check if it's older that the one we're trying to register.
                             var currentSnapshot = remoteObjectUpdateRequests[snapshot.ObjectUid];
-                            
+
                             // Packets could arrive in a wrong order.
                             // NOTE: 'StateChangeType' is a priority here - we can't replace the data with lower 'StateChangeType', event if the new data is newer.
                             // So, the data will be replaced if the following rule applies.
                             // 1. 'StateChangeType' of the new data is bigger that 'StateChangeType' of the current one.
                             // OR
                             // 2. 'StateChangeType' is the same, and incoming data is newer.
-                            var shouldBeUpdated = 
-                                currentSnapshot.StateChangeType < snapshot.StateChangeType || 
-                                currentSnapshot.StateChangeType == snapshot.StateChangeType && 
+                            var shouldBeUpdated =
+                                currentSnapshot.StateChangeType < snapshot.StateChangeType ||
+                                currentSnapshot.StateChangeType == snapshot.StateChangeType &&
                                 currentSnapshot.WorldTime < snapshot.WorldTime;
-                            
+
                             // Overwrite snapshot with the new one.
                             if (shouldBeUpdated)
                                 remoteObjectUpdateRequests[snapshot.ObjectUid] = snapshot;
@@ -220,17 +225,20 @@ namespace LROTech.Network.StateManagement
                 if (Players.LocalPlayerIsMaster)
                     return;
 
+                // We need to peek latest data here - the 'maxTime' value to filter out irrelevant data.
+                var maxTime = float.MinValue;
                 while (remoteWorldDataUpdateRequests.Count > 0)
                 {
                     _reader.Replace(buffer: remoteWorldDataUpdateRequests.Dequeue());
                     _reader.ReadByte(); // Offset - see ProcessInternalData var worldChangeOpCode = (NetWorldRuntimeChangeOp)_reader.ReadByte();
 
                     var newTime = _reader.ReadSingle();
-                    if (newTime >= Time)
-                    {
-                        Time = newTime + 0.1f; // TODO: we have to take in account round trip time the relay here, to estimate more accurate.
-                        Properties.Deserialize(_reader);
-                    }
+                    if (newTime < maxTime)
+                        continue;
+
+                    maxTime = newTime;
+                    Time = newTime + 0.1f; // TODO: we have to take in account round trip time the relay here, to estimate more accurate.
+                    Properties.Deserialize(_reader);
                 }
             }
 
@@ -307,6 +315,7 @@ namespace LROTech.Network.StateManagement
                     {
                         _writer.SeekZero();
                         _writer.WriteByte((byte)NetWorldRuntimeChangeOp.PlayerStateUpdate);
+                        localPlayer.PrepareForSerialization(Time);
                         localPlayer.ToSnapshot().Serialize(_writer);
                         DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Reliable);
                     }
@@ -328,7 +337,7 @@ namespace LROTech.Network.StateManagement
                             // Change owner, if object is scene object.
                             if (state.IsSceneObject)
                             {
-                                //Is local client becomes master client, set object's owner and sync it.
+                                // Is local client becomes master client, set object's owner and sync it.
                                 if (Players.LocalPlayerIsMaster)
                                     state.ChangedOwner(Players.LocalPlayer.Uid);
                                 else

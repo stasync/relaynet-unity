@@ -71,6 +71,8 @@ namespace LROTech.Network.StateManagement
 
         public NetObjectUid MainTagObjectUid { get; private set; } = NetObjectUid.Invalid;
 
+        public float WorldTime { get; private set; }
+
         #endregion
 
         public bool IsLocal => IsValid() && Uid.Equals(other: _localPlayerUidProvider());
@@ -94,7 +96,7 @@ namespace LROTech.Network.StateManagement
         internal void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
         {
             EnsureValid();
-            
+
             Uid = snapshot.Uid;
             _name = snapshot.Name;
             _isReady = snapshot.IsInGameScene;
@@ -106,10 +108,11 @@ namespace LROTech.Network.StateManagement
                 _tagObjectUidCollection.Add(tagObject);
 
             Properties.RestoreFromSnapshot(snapshot.Properties);
+            MainTagObjectUid = snapshot.MainTagObject;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsValid() => 
+        private bool IsValid() =>
             Uid.IsValid && _validator != null && _validator(Uid);
 
         public bool HasTagObject(NetObjectUid uid)
@@ -117,7 +120,7 @@ namespace LROTech.Network.StateManagement
             EnsureValid();
             return uid.IsValid && _tagObjectUidCollection.Contains(uid);
         }
-           
+
         public bool HasTagObject(NetObjectState state)
         {
             EnsureValid();
@@ -139,20 +142,22 @@ namespace LROTech.Network.StateManagement
         internal int GetVersionHash()
         {
             EnsureValid();
-            
+
             var hash = 13;
             hash = hash * 7 + Uid.GetHashCode();
             hash = hash * 7 + Name.GetHashCode();
             hash = hash * 7 + IsReady.GetHashCode();
             hash = hash * 7 + Platform.GetHashCode();
             hash = hash * 7 + Properties.GetVersionHash();
+            hash = hash * 7 + MainTagObjectUid.GetHashCode();
+            hash = hash * 7 + WorldTime.GetHashCode();
             return hash;
         }
 
         public void RegisterTagObject(NetObjectUid uid, bool main = false)
         {
             EnsureValid();
-            
+
             if (!IsLocal)
                 throw new InvalidOperationException($"Trying to register tag object without authority, this is not allowed. Player id: {uid}.");
 
@@ -167,7 +172,7 @@ namespace LROTech.Network.StateManagement
         public void UnregisterTagObject(NetObjectUid uid)
         {
             EnsureValid();
-            
+
             if (!IsLocal)
                 throw new InvalidOperationException($"Trying to unregister tag object without authority, this is not allowed. Player id: {uid}.");
 
@@ -177,6 +182,14 @@ namespace LROTech.Network.StateManagement
             _tagObjectUidCollection.Remove(uid);
             if (MainTagObjectUid == uid)
                 MainTagObjectUid = NetObjectUid.Invalid;
+        }
+
+        internal void PrepareForSerialization(float worldTime)
+        {
+            if (!IsLocal)
+                throw new InvalidOperationException($"No authority to change '{Uid}' player.");
+
+            WorldTime = worldTime;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

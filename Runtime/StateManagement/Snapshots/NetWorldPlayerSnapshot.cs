@@ -14,6 +14,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         public readonly IReadOnlyCollection<NetObjectUid> TagObjects;
         public readonly NetObjectUid MainTagObject;
         public readonly NetworkPropertiesSnapshot Properties;
+        public readonly float WorldTime;
 
         internal NetWorldPlayerSnapshot(NetWorldPlayer player)
         {
@@ -25,6 +26,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             TagObjects = new List<NetObjectUid>(player.TagObjectUidCollection);
             MainTagObject = player.MainTagObjectUid;
             Properties = player.Properties.ToSnapshot();
+            WorldTime = player.WorldTime;
         }
 
         internal NetWorldPlayerSnapshot(NetReader reader)
@@ -43,6 +45,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             TagObjects = newTagObjects;
             MainTagObject = reader.ReadNetObjectUid();
             Properties = new NetworkPropertiesSnapshot(reader.ReadBytesAndSize());
+            WorldTime = reader.ReadSingle();
         }
 
         internal void Serialize(NetWriter writer)
@@ -59,6 +62,7 @@ namespace LROTech.Network.StateManagement.Snapshots
 
             writer.WriteNetObjectUid(MainTagObject);
             writer.WriteBytesAndSize(Properties.Data);
+            writer.WriteSingle(WorldTime);
         }
 
         public int GetSize()
@@ -74,6 +78,7 @@ namespace LROTech.Network.StateManagement.Snapshots
 
             result += NetObjectUid.SIZE; // Main tag object
             result += Properties.GetSize();
+            result += sizeof(float); // World Time.
 
             return result;
         }
