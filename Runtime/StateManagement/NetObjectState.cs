@@ -19,6 +19,8 @@ namespace LROTech.Network.StateManagement
         public ClientUid OwnerUid { get; private set; }
 
         public NetObjectStateChangeRequestType StateChangeType { get; private set; }
+        
+        public float WorldTime { get; private set; }
 
         public readonly NetObjectRpcBuffer RpcBuffer;
 
@@ -120,16 +122,13 @@ namespace LROTech.Network.StateManagement
             viewData.SetData(data, initialization);
         }
 
-        internal bool PrepareForSerialization()
+        internal void PrepareForSerialization(float worldTime)
         {
             if (!IsOwnedByLocalPlayer)
                 throw new InvalidOperationException($"No authority to change '{Uid}' object with owner '{OwnerUid}'.");
 
-            var lastHashCode = GetVersionHash();
+            WorldTime = worldTime;
             LocalUpdateRequest(StateChangeType);
-            var newHashCode = GetVersionHash();
-            var changed = newHashCode != lastHashCode;
-            return changed;
         }
 
         internal void ChangeObjectRemotely(NetObjectStateSnapshot snapshot)

@@ -62,6 +62,7 @@ namespace LROTech.Network.StateManagement
         {
             base.OnUpdateWorldState(worldDelta);
 
+            // TODO: Avoid allocations.
             var remotePlayersUpdateRequests = new Dictionary<ClientUid, NetWorldPlayerSnapshot>();
             var remoteObjectUpdateRequests = new Dictionary<NetObjectUid, NetObjectStateSnapshot>();
             var remoteWorldDataUpdateRequests = new Queue<byte[]>();
@@ -115,17 +116,22 @@ namespace LROTech.Network.StateManagement
                             if (remoteObjectUpdateRequests.TryAdd(snapshot.ObjectUid, snapshot))
                                 break;
 
+                            // If snapshot is already registered, we should check if it's older that the one we're trying to register.
                             var currentSnapshot = remoteObjectUpdateRequests[snapshot.ObjectUid];
-
-                            var isSnapshotReliable = currentSnapshot.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate;
-                            var isRequestReliable = snapshot.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate;
-
-                            if (isSnapshotReliable && isRequestReliable)
-                                Debug.LogError($"Snapshot for object '{snapshot.PrefabId}' must be merged in order to not loose reliable data.");
-
+                            
+                            // Packets could arrive in a wrong order.
+                            // NOTE: 'StateChangeType' is a priority here - we can't replace the data with lower 'StateChangeType', event if the new data is newer.
+                            // So, the data will be replaced if the following rule applies.
+                            // 1. 'StateChangeType' of the new data is bigger that 'StateChangeType' of the current one.
+                            // OR
+                            // 2. 'StateChangeType' is the same, and incoming data is newer.
+                            var shouldBeUpdated = 
+                                currentSnapshot.StateChangeType < snapshot.StateChangeType || 
+                                currentSnapshot.StateChangeType == snapshot.StateChangeType && 
+                                currentSnapshot.WorldTime < snapshot.WorldTime;
+                            
                             // Overwrite snapshot with the new one.
-                            // TODO: BOTH STATES COULD BE RELIABLE! We could skip reliable data here!!
-                            if (currentSnapshot.StateChangeType < snapshot.StateChangeType)
+                            if (shouldBeUpdated)
                                 remoteObjectUpdateRequests[snapshot.ObjectUid] = snapshot;
 
                             break;
@@ -356,6 +362,7 @@ namespace LROTech.Network.StateManagement
                         throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUid}'  Prefab: '{snapshot.PrefabId}'");
 
                     // Check if owner exists.
+                    // NOTE: it's equally "unsafe" to either drop and apply this packet. However, i think it's better to drop it.
                     if (!Players.Contains(snapshot.OwnerUid))
                     {
                         remoteObjectUpdateRequests.Remove(uid);
@@ -465,7 +472,7 @@ namespace LROTech.Network.StateManagement
                     if (state.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate)
                         deliveryMethod = DeliveryMethod.Reliable;
 
-                    state.PrepareForSerialization();
+                    state.PrepareForSerialization(Time);
 
                     _writer.SeekZero();
                     _writer.WriteByte((byte)NetWorldRuntimeChangeOp.ObjectStateUpdate);
