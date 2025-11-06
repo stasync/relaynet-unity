@@ -213,7 +213,7 @@ namespace LROTech.Network.StateManagement
             void TrySendWorldData()
             {
                 // Only master can send this data.
-                if (!Players.LocalPlayerIsMaster)
+                if (Players.LocalPlayer == null || Players.LocalPlayer.IsMaster())
                     return;
 
                 _writer.SeekZero();
@@ -226,7 +226,7 @@ namespace LROTech.Network.StateManagement
             void UpdateRemoteMasterWorldData()
             {
                 // Only non-master clients could read this data.
-                if (Players.LocalPlayerIsMaster)
+                if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
                     return;
 
                 // We need to peek latest data here - the 'maxTime' value to filter out irrelevant data.
@@ -343,7 +343,7 @@ namespace LROTech.Network.StateManagement
                             if (state.IsSceneObject)
                             {
                                 // Is local client becomes master client, set object's owner and sync it.
-                                if (Players.LocalPlayerIsMaster)
+                                if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
                                     state.ChangedOwner(Players.LocalPlayer.Uid);
                                 else
                                     state.InvalidateOwner();
@@ -447,11 +447,11 @@ namespace LROTech.Network.StateManagement
                 foreach (var uid in new List<NetObjectUid>(_temporaryUnregisteredObjects.Keys))
                 {
                     var state = _temporaryUnregisteredObjects[uid];
-                    
+
                     // Skip remote objects.
                     if (!state.IsOwnedByLocalPlayer)
                         continue;
-                    
+
                     if (ObjectExists(state.Uid))
                     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -591,7 +591,7 @@ namespace LROTech.Network.StateManagement
         {
             if (sceneIdentity.Identity.Initialized)
                 throw new InvalidOperationException($"'{sceneIdentity.gameObject.name}' already initialized.");
-            
+
             if (ObjectExists(sceneIdentity.SceneObjectId))
             {
 #if NETWORK_DEBUG
@@ -617,7 +617,7 @@ namespace LROTech.Network.StateManagement
             if (TryGetExistedOrPendingState(newState.Uid, out var state))
             {
                 // Initialize immateriality on master client.
-                if (Players.LocalPlayerIsMaster)
+                if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
                     View.InitializeObjectView(sceneIdentity.Identity, state.Uid);
 
                 // Add view to be used in the future.

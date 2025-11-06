@@ -10,28 +10,21 @@ namespace LROTech.Network.StateManagement
     {
         #region State
 
-        private ClientUid _localPlayerUid;
-        private ClientUid _masterPlayerUid;
-
         public IReadOnlyCollection<NetWorldPlayer> All => _playersCollection.Values;
         private Dictionary<ClientUid, NetWorldPlayer> _playersCollection = new();
 
         #endregion
 
-        internal bool LocalPlayerIsMaster => _masterPlayerUid.IsValid && _masterPlayerUid.Equals(_localPlayerUid);
-        public NetWorldPlayer LocalPlayer => Get(_localPlayerUid);
-        public NetWorldPlayer MasterPlayer => Get(_masterPlayerUid);
+        public NetWorldPlayer LocalPlayer { get; private set; }
+        public NetWorldPlayer MasterPlayer { get; private set; }
 
         private Func<bool> _validator;
-        private readonly Func<ClientUid> _masterClientIdProvider;
+        private readonly Func<ClientUid> _masterClientUidProvider;
 
-        internal NetWorldPlayersCollection(Func<bool> validator, Func<ClientUid> masterClientIdProvider)
+        internal NetWorldPlayersCollection(Func<bool> validator, Func<ClientUid> masterClientUidProvider)
         {
-            _validator = validator;
-            _masterClientIdProvider = masterClientIdProvider;
-
-            _localPlayerUid = ClientUid.Invalid;
-            _masterPlayerUid = ClientUid.Invalid;
+            _validator = validator ?? throw new ArgumentNullException(nameof(validator));;
+            _masterClientUidProvider = masterClientUidProvider ?? throw new ArgumentNullException(nameof(masterClientUidProvider));;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -47,29 +40,29 @@ namespace LROTech.Network.StateManagement
             if (_playersCollection.ContainsKey(uid))
                 throw new InvalidOperationException();
 
-            var player = new NetWorldPlayer(
+            var newPlayer = new NetWorldPlayer(
                 uid,
                 name: "Unknown",
+                isLocal,
                 validator: _playersCollection.ContainsKey,
-                localPlayerUidProvider: () => _localPlayerUid,
-                masterPlayerUidProvider: () => _masterPlayerUid);
+                masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid);
 
-            _playersCollection.Add(uid, player);
+            _playersCollection.Add(uid, newPlayer);
             if (isLocal)
-                _localPlayerUid = uid;
+                LocalPlayer = newPlayer;
 
-            _masterPlayerUid = _masterClientIdProvider();
-            return player;
+            MasterPlayer = Get(uid: _masterClientUidProvider());
+            return newPlayer;
         }
 
         internal bool UnregisterImmediate(ClientUid uid)
         {
-            if (_localPlayerUid == uid)
-                _localPlayerUid = ClientUid.Invalid;
+            if (LocalPlayer != null && LocalPlayer.Uid == uid)
+                LocalPlayer = null;
 
             var playerRemoved = _playersCollection.Remove(uid);
             if (playerRemoved)
-                _masterPlayerUid = _masterClientIdProvider();
+                MasterPlayer = Get(uid: _masterClientUidProvider());
 
             return playerRemoved;
         }
@@ -92,8 +85,8 @@ namespace LROTech.Network.StateManagement
         {
             _validator = null;
 
-            _localPlayerUid = ClientUid.Invalid;
-            _masterPlayerUid = ClientUid.Invalid;
+            LocalPlayer = null;
+            MasterPlayer = null;
 
             _playersCollection.Clear();
             _playersCollection = null;
@@ -108,12 +101,8 @@ namespace LROTech.Network.StateManagement
 
         internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
         {
-            // Use invalid id for local and master player while snapshots if only used for world replication.
-            // LocalPlayerUID = snapshot.LocalPlayerUID;
-            // MasterPlayerUID = snapshot.MasterClientUID;
-
-            _localPlayerUid = ClientUid.Invalid;
-            _masterPlayerUid = ClientUid.Invalid;
+            LocalPlayer = null;
+            MasterPlayer = null;
 
             // Remove.
             foreach (var clientUid in new List<ClientUid>(_playersCollection.Keys))
@@ -132,17 +121,24 @@ namespace LROTech.Network.StateManagement
                         new NetWorldPlayer(
                             playerSnapshot.Uid,
                             playerSnapshot.Name,
+                            isLocal: false,
                             validator: _playersCollection.ContainsKey,
-                            localPlayerUidProvider: () => _localPlayerUid,
-                            masterPlayerUidProvider: () => _masterPlayerUid));
+                            masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid));
             }
+            
+            // Use invalid references for local and master - player collection snapshot only used for the world history buffer.
+            //LocalPlayer = Get(snapshot.LocalPlayerUid);
+            //MasterPlayer = Get(snapshot.MasterClientUid);
         }
 
         internal int GetVersionHash()
         {
+            var localPlayerUid = LocalPlayer?.Uid ?? ClientUid.Invalid;
+            var masterPlayerUid = MasterPlayer?.Uid ?? ClientUid.Invalid;
+
             var hash = 13;
-            hash = hash * 7 + _localPlayerUid.GetHashCode();
-            hash = hash * 7 + _masterPlayerUid.GetHashCode();
+            hash = hash * 7 + localPlayerUid.GetHashCode();
+            hash = hash * 7 + masterPlayerUid.GetHashCode();
             foreach (var kvp in _playersCollection)
             {
                 hash += kvp.Key.GetHashCode();

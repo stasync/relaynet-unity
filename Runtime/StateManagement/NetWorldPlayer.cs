@@ -17,7 +17,7 @@ namespace LROTech.Network.StateManagement
             get => _name;
             set
             {
-                if (!IsLocal)
+                if (!IsLocal())
                     throw new Exception($"Trying to change remote player name, this is not allowed. Player id: {Uid}.");
                 _name = value;
             }
@@ -30,7 +30,7 @@ namespace LROTech.Network.StateManagement
             get => _isReady;
             set
             {
-                if (!IsLocal)
+                if (!IsLocal())
                     throw new Exception($"Trying to change is ready on remote player, this is not allowed. Player id: {Uid}.");
                 _isReady = value;
             }
@@ -43,7 +43,7 @@ namespace LROTech.Network.StateManagement
             get => _platform;
             set
             {
-                if (!IsLocal)
+                if (!IsLocal())
                     throw new Exception($"Trying to change platform without authority, this is not allowed. Player id: {Uid}.");
                 _platform = value;
             }
@@ -56,7 +56,7 @@ namespace LROTech.Network.StateManagement
             get => _rttMs;
             set
             {
-                if (!IsLocal)
+                if (!IsLocal())
                     throw new Exception($"Trying to change RTT value without authority, this is not allowed. Player id: {Uid}.");
                 _rttMs = value;
             }
@@ -75,23 +75,20 @@ namespace LROTech.Network.StateManagement
 
         #endregion
 
-        public bool IsLocal => IsValid() && Uid.Equals(other: _localPlayerUidProvider());
-        public bool IsMaster => IsValid() && Uid.Equals(other: _masterPlayerUidProvider());
-
-        private readonly Func<ClientUid> _localPlayerUidProvider;
         private readonly Func<ClientUid> _masterPlayerUidProvider;
         private readonly Func<ClientUid, bool> _validator;
+        private readonly bool _isLocal;
 
-        internal NetWorldPlayer(ClientUid uid, string name, Func<ClientUid, bool> validator, Func<ClientUid> localPlayerUidProvider, Func<ClientUid> masterPlayerUidProvider)
+        internal NetWorldPlayer(ClientUid uid, string name, bool isLocal, Func<ClientUid, bool> validator, Func<ClientUid> masterPlayerUidProvider)
         {
             Uid = uid;
 
             _name = name;
+            _isLocal = isLocal;
             _validator = validator;
-            _localPlayerUidProvider = localPlayerUidProvider;
             _masterPlayerUidProvider = masterPlayerUidProvider;
 
-            Properties = new NetworkProperties(writePermission: () => IsLocal);
+            Properties = new NetworkProperties(validator: IsValid, writePermission: IsLocal);
         }
 
         internal void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)
@@ -111,6 +108,14 @@ namespace LROTech.Network.StateManagement
             Properties.RestoreFromSnapshot(snapshot.Properties);
             MainTagObjectUid = snapshot.MainTagObject;
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsLocal() => 
+            IsValid() && _isLocal;
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsMaster() => 
+            IsValid() && Uid.Equals(other: _masterPlayerUidProvider());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsValid() =>
@@ -137,7 +142,7 @@ namespace LROTech.Network.StateManagement
         public override string ToString()
         {
             EnsureValid();
-            return $"{Uid}:{Name} l:{IsLocal} m:{IsMaster}";
+            return $"{Uid}:{Name} l:{IsLocal()} m:{IsMaster()}";
         }
 
         internal int GetVersionHash()
@@ -159,7 +164,7 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
 
-            if (!IsLocal)
+            if (!IsLocal())
                 throw new InvalidOperationException($"Trying to register tag object without authority, this is not allowed. Player id: {uid}.");
 
             if (!uid.IsValid)
@@ -174,7 +179,7 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
 
-            if (!IsLocal)
+            if (!IsLocal())
                 throw new InvalidOperationException($"Trying to unregister tag object without authority, this is not allowed. Player id: {uid}.");
 
             if (!uid.IsValid)
@@ -187,7 +192,7 @@ namespace LROTech.Network.StateManagement
 
         internal void PrepareForSerialization(float worldTime)
         {
-            if (!IsLocal)
+            if (!IsLocal())
                 throw new InvalidOperationException($"No authority to change '{Uid}' player.");
 
             WorldTime = worldTime;

@@ -49,7 +49,7 @@ namespace LROTech.Network.StateManagement
             Name = $"{Id}:{worldName}";
 
             Players = new NetWorldPlayersCollection(validator: () => IsValid, GetSessionOwnerUid);
-            Properties = new NetworkProperties(writePermission: () => Players.LocalPlayerIsMaster);
+            Properties = new NetworkProperties(validator: () => IsValid, writePermission: () => Players.LocalPlayer != null && Players.LocalPlayer.IsMaster());
 
             s_all.Add(Uid, this);
 

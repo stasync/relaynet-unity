@@ -1,6 +1,7 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using LROTech.Network.StateManagement.Snapshots;
 using LROTech.Network.StateManagement.Values.Serialization;
 
@@ -16,12 +17,27 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<uint, string> _stringData = new();
         private readonly Dictionary<uint, UnityEngine.Vector3> _vector3Data = new();
 
+        private Func<bool> _validator;
         private readonly Func<bool> _writePermission;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
 
-        internal NetworkProperties(Func<bool> writePermission) =>
+        internal NetworkProperties(Func<bool> validator, Func<bool> writePermission)
+        {
+            _validator = validator ?? throw new ArgumentNullException(nameof(validator));
             _writePermission = writePermission ?? throw new ArgumentNullException(nameof(writePermission));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool IsValid() =>
+            _validator != null && _validator();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void EnsureValid()
+        {
+            if (!IsValid())
+                throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
+        }
 
         internal void Clean()
         {
@@ -33,8 +49,8 @@ namespace LROTech.Network.StateManagement
             _vector3Data.Clear();
             _stringData.Clear();
         }
-        
-        public NetworkPropertiesSnapshot ToSnapshot()
+
+        internal NetworkPropertiesSnapshot ToSnapshot()
         {
             _writer.SeekZero();
             Serialize(_writer);
@@ -46,7 +62,7 @@ namespace LROTech.Network.StateManagement
             _reader.Replace(snapshot.Data);
             Deserialize(_reader);
         }
-        
+
         internal void Serialize(NetWriter writer)
         {
             WriteUnmanagedDictionary(writer, _byteData);
@@ -80,7 +96,7 @@ namespace LROTech.Network.StateManagement
             {
                 _stringData.Clear();
                 var count = reader.ReadPackedUInt32();
-                for(var i = 0; i < count; i++)
+                for (var i = 0; i < count; i++)
                 {
                     var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
                     var value = reader.ReadString();
@@ -102,7 +118,7 @@ namespace LROTech.Network.StateManagement
 
             return hash;
         }
-        
+
         private static void WriteUnmanagedDictionary<TValue>(NetWriter writer, Dictionary<uint, TValue> dictionary) where TValue : unmanaged
         {
             writer.WritePackedUInt32((uint)dictionary.Count);
@@ -112,12 +128,12 @@ namespace LROTech.Network.StateManagement
                 NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, kvp.Value);
             }
         }
-        
+
         private static void ReadUnmanagedDictionary<TValue>(NetReader reader, Dictionary<uint, TValue> dictionary) where TValue : unmanaged
         {
             dictionary.Clear();
             var count = reader.ReadPackedUInt32();
-            for(var i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 var key = NetworkValueSerializationAPI<uint>.Serializer.Deserialize(reader);
                 var value = NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader);
@@ -141,80 +157,108 @@ namespace LROTech.Network.StateManagement
 
         public void SetByte(uint id, byte value)
         {
+            EnsureValid();
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
             _byteData[id] = value;
         }
 
-        public byte GetByte(uint id) =>
-            _byteData.GetValueOrDefault(id);
+        public byte GetByte(uint id)
+        {
+            EnsureValid();
+            return _byteData.GetValueOrDefault(id);
+        }
 
         public void SetUInt(uint id, uint value)
         {
+            EnsureValid();
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
             _uintData[id] = value;
         }
 
-        public uint GetUInt(uint id) =>
-            _uintData.GetValueOrDefault(id);
+        public uint GetUInt(uint id)
+        {
+            EnsureValid();
+            return _uintData.GetValueOrDefault(id);
+        }
 
         public void SetInt(uint id, int value)
         {
+            EnsureValid();
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
             _intData[id] = value;
         }
 
-        public int GetInt(uint id) =>
-            _intData.GetValueOrDefault(id);
+        public int GetInt(uint id)
+        {
+            EnsureValid();
+            return _intData.GetValueOrDefault(id);
+        }
 
         public void SetFloat(uint id, float value)
         {
+            EnsureValid();
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
             _floatData[id] = value;
         }
 
-        public float GetFloat(uint id) =>
-            _floatData.GetValueOrDefault(id);
+        public float GetFloat(uint id)
+        {
+            EnsureValid();
+            return _floatData.GetValueOrDefault(id);
+        }
 
         public void SetBool(uint id, bool value)
         {
+            EnsureValid();
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
             _boolData[id] = value;
         }
 
-        public bool GetBool(uint id) =>
-            _boolData.GetValueOrDefault(id);
+        public bool GetBool(uint id)
+        {
+            EnsureValid();
+            return _boolData.GetValueOrDefault(id);
+        }
 
         public void SetVector(uint id, UnityEngine.Vector3 value)
         {
+            EnsureValid();
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
             _vector3Data[id] = value;
         }
 
-        public UnityEngine.Vector3 GetVector(uint id) =>
-            _vector3Data.GetValueOrDefault(id);
-        
+        public UnityEngine.Vector3 GetVector(uint id)
+        {
+            EnsureValid();
+            return _vector3Data.GetValueOrDefault(id);
+        }
+
         public void SetString(uint id, string value)
         {
+            EnsureValid();
             if (!_writePermission())
                 throw new InvalidOperationException("No authority");
 
             _stringData[id] = value;
         }
 
-        public string GetString(uint id) =>
-            _stringData.GetValueOrDefault(id);
+        public string GetString(uint id)
+        {
+            EnsureValid();
+            return _stringData.GetValueOrDefault(id);
+        }
 
         #endregion
     }

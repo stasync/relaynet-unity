@@ -36,9 +36,9 @@ namespace LROTech.Network.StateManagement
         private readonly Queue<NetObjectStateChangeRequestType> _stateChangeTypeQueue = new();
         private readonly Func<NetObjectUid, bool> _validator;
 
-        public bool IsOwnedByLocalPlayer => Owner is { IsLocal: true };
+        public bool IsOwnedByLocalPlayer => Owner != null && Owner.IsLocal();
 
-        public bool IsOwnedByMasterClient => Owner is { IsMaster: true };
+        public bool IsOwnedByMasterClient => Owner != null && Owner.IsMaster();
 
         public NetWorldPlayer Owner => _playerProvider(OwnerUid);
 
