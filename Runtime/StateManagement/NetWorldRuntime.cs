@@ -390,7 +390,8 @@ namespace LROTech.Network.StateManagement
                         continue;
                     }
 
-                    // Object doesn't exists.
+                    // Object doesn't exists:
+                    // Object was removed remotely - no need to proceed, just clear all the queues.
                     if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard or NetObjectStateChangeRequestType.RemoveUpdateSoft)
                     {
                         Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabId}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
@@ -400,13 +401,11 @@ namespace LROTech.Network.StateManagement
                         continue;
                     }
 
-                    // Add new or get pending.
+                    // Object doesn't exist - we need to wait for appropriate reliable update to proceed here.
                     if (snapshot.StateChangeType != NetObjectStateChangeRequestType.InitializationUpdate)
-                    {
-                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                         continue;
-                    }
 
+                    // Trying to fetch the object from temporary registry.
                     if (_temporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUid, out var newState))
                     {
                         if (newState.IsOwnedBy(snapshot.OwnerUid))

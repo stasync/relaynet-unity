@@ -185,7 +185,7 @@ namespace LROTech.Network.GameObjects
             {
                 // TODO: Need to deserialize this data somehow, or change ownership changing pipeline.
                 Debug.LogError(
-                    $"Trying to deserialize local player object '{gameObject.name}', this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was changed before.",
+                    $"Trying to deserialize local player object '{gameObject.name}' of '{State}', this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was changed before.",
                     gameObject);
                 return;
             }
