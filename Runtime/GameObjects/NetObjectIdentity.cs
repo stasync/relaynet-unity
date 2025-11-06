@@ -157,7 +157,13 @@ namespace LROTech.Network.GameObjects
             if (!IsSceneObject)
                 throw new Exception("You can manage owners only for scene objects");
 
-            State.ChangedOwner(World.Players.LocalPlayerUid);
+            if (World.Players.LocalPlayer == null)
+            {
+                Debug.LogError("Unable to own object - local player is not registered yet.");
+                return;
+            }
+            
+            State.ChangedOwner(World.Players.LocalPlayer.Uid);
         }
 
         private byte[] Serialize()

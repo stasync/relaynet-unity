@@ -10,8 +10,8 @@ namespace LROTech.Network.StateManagement.Snapshots
 
         internal NetWorldPlayersCollectionsSnapshot(NetWorldPlayersCollection collection)
         {
-            LocalPlayerUid = collection.LocalPlayer.Uid;
-            MasterClientUid = collection.MasterPlayer.Uid;
+            LocalPlayerUid = collection.LocalPlayer?.Uid ?? ClientUid.Invalid;
+            MasterClientUid = collection.MasterPlayer?.Uid ?? ClientUid.Invalid;
 
             var playersCollection = new Dictionary<ClientUid, NetWorldPlayerSnapshot>(collection.All.Count);
             foreach (var worldPlayer in collection.All)

@@ -32,17 +32,21 @@ namespace LROTech.Network.StateManagement
         private readonly HashSet<ClientUid> _localPlayerRegisterQueue = new();
         private readonly HashSet<ClientUid> _playerUnregisterQueue = new();
 
-        private float _lastUpdateTime;
-        private float _localUpdateTime;
-
+        private readonly Func<ClientUid> _sessionOwnerProvider;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
 
-        public NetWorldRuntime(string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
+        private float _lastUpdateTime;
+        private float _localUpdateTime;
+
+        public NetWorldRuntime(Func<ClientUid> sessionOwnerProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
+            _sessionOwnerProvider = sessionOwnerProvider ?? throw new ArgumentNullException(nameof(sessionOwnerProvider));
             NetObjectUid.Reset();
-            _lastUpdateTime = 0;
         }
+
+        protected override ClientUid GetSessionOwnerUid() =>
+            _sessionOwnerProvider();
 
         protected override void UpdateImplementation(float deltaTime)
         {
@@ -288,11 +292,12 @@ namespace LROTech.Network.StateManagement
                             // Notify player registered.
                             PlayerAdded(player.ToSnapshot());
 
+                            // When remote player 'connects', we want to forcefully send all objects that we are currently simulating.
                             foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
                             {
                                 var state = ObjectStates[objectUid];
                                 if (state.IsOwnedByLocalPlayer)
-                                    state.ScheduleUpdate(NetObjectStateChangeRequestType.InitializationUpdate);
+                                    state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableInitializationUpdate);
                             }
                         }
 
@@ -384,15 +389,15 @@ namespace LROTech.Network.StateManagement
                         objState.ChangeObjectRemotely(snapshot);
                         remoteObjectUpdateRequests.Remove(uid);
 
-                        if (objState.StateChangeType == NetObjectStateChangeRequestType.RemoveUpdateHard)
+                        if (objState.StateChangeType == NetObjectStateChangeRequestType.ReliableRemoveUpdateHard)
                             RemoveObject(snapshot.ObjectUid);
 
                         continue;
                     }
 
-                    // Object doesn't exists:
+                    // Object doesn't exist:
                     // Object was removed remotely - no need to proceed, just clear all the queues.
-                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveUpdateHard or NetObjectStateChangeRequestType.RemoveUpdateSoft)
+                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.ReliableRemoveUpdateHard or NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft)
                     {
                         Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabId}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
 
@@ -402,19 +407,14 @@ namespace LROTech.Network.StateManagement
                     }
 
                     // Object doesn't exist - we need to wait for appropriate reliable update to proceed here.
-                    if (snapshot.StateChangeType != NetObjectStateChangeRequestType.InitializationUpdate)
+                    if (snapshot.StateChangeType != NetObjectStateChangeRequestType.ReliableInitializationUpdate)
                         continue;
 
                     // Trying to fetch the object from temporary registry.
                     if (_temporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUid, out var newState))
                     {
-                        if (newState.IsOwnedBy(snapshot.OwnerUid))
-                        {
-                            newState.ChangeObjectRemotely(snapshot);
-                            _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
-                        }
-                        else
-                            Debug.LogError($"Unable to restore object '{newState}' form '{snapshot}'.");
+                        newState.ChangeObjectRemotely(snapshot);
+                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                     }
                     else
                         newState = new NetObjectState(IsObjectValid, Players.Find, snapshot);
@@ -447,11 +447,11 @@ namespace LROTech.Network.StateManagement
                 foreach (var uid in new List<NetObjectUid>(_temporaryUnregisteredObjects.Keys))
                 {
                     var state = _temporaryUnregisteredObjects[uid];
-
+                    
                     // Skip remote objects.
                     if (!state.IsOwnedByLocalPlayer)
                         continue;
-
+                    
                     if (ObjectExists(state.Uid))
                     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -460,7 +460,7 @@ namespace LROTech.Network.StateManagement
                     }
                     else
                     {
-                        state.ScheduleUpdate(NetObjectStateChangeRequestType.InitializationUpdate);
+                        state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableInitializationUpdate);
                         TryAddObject(state);
                     }
 
@@ -489,12 +489,12 @@ namespace LROTech.Network.StateManagement
 
                     switch (state.StateChangeType)
                     {
-                        case NetObjectStateChangeRequestType.RemoveUpdateHard:
+                        case NetObjectStateChangeRequestType.ReliableRemoveUpdateHard:
                             RemoveObject(uid);
                             break;
 
-                        case NetObjectStateChangeRequestType.RemoveUpdateSoft:
-                            state.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveUpdateHard);
+                        case NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft:
+                            state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateHard);
                             break;
                     }
                 }
@@ -523,6 +523,8 @@ namespace LROTech.Network.StateManagement
 
             _localPlayerRegisterQueue.Clear();
             _playerUnregisterQueue.Clear();
+            _temporaryUnregisteredObjects.Clear();
+            _incomingStateChangeRequests.Clear();
             HistoryBuffer.Clear();
 
             PlayerAdded = null;
@@ -587,6 +589,9 @@ namespace LROTech.Network.StateManagement
         /// </summary>
         private void TryRegisterOrInitializeSceneObjectIdentity(NetObjectSceneIdentity sceneIdentity)
         {
+            if (sceneIdentity.Identity.Initialized)
+                throw new InvalidOperationException($"'{sceneIdentity.gameObject.name}' already initialized.");
+            
             if (ObjectExists(sceneIdentity.SceneObjectId))
             {
 #if NETWORK_DEBUG
@@ -596,12 +601,16 @@ namespace LROTech.Network.StateManagement
                 return;
             }
 
-            if (sceneIdentity.Identity.Initialized)
-                throw new InvalidOperationException($"'{sceneIdentity.gameObject.name}' already initialized.");
+            if (Players.LocalPlayer.Uid != GetSessionOwnerUid())
+            {
+                UnityEngine.Object.Destroy(sceneIdentity.gameObject);
+                return;
+            }
 
             // Create state from scene object identity.
             // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-            var newState = new NetObjectState(IsObjectValid, Players.Find, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, Players.MasterPlayerUid);
+            // At this point we don't know who's going to be the owner, client it will be invalid just for now.
+            var newState = new NetObjectState(IsObjectValid, Players.Find, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, owner: GetSessionOwnerUid());
             _temporaryUnregisteredObjects.Add(newState.Uid, newState);
 
             // Wait for view initialization.

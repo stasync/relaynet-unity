@@ -8,6 +8,7 @@ namespace LROTech.Network
     {
         public event Action Disposed = delegate { };
 
+        public ClientUid SessionOwner { get; private set; }
         public NetWorldRuntime MainWorld { get; private set; }
 
         private RelaySession _clientSession;
@@ -18,7 +19,7 @@ namespace LROTech.Network
             if (_clientSession != null)
                 throw new InvalidOperationException("Session is already initialized.");
 
-            MainWorld = new NetWorldRuntime();
+            MainWorld = new NetWorldRuntime(sessionOwnerProvider: () => SessionOwner);
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
 
@@ -27,6 +28,7 @@ namespace LROTech.Network
             _clientSession.DataReceived += OnDataReceived;
             _clientSession.LocalUserConnected += OnLocalUserConnected;
             _clientSession.RemoteUserDisconnected += OnRemoteUserDisconnected;
+            _clientSession.RemoteUserConnected += OnRemoteUserConnected;
             _clientSession.DataReceived += OnDataReceived;
         }
 
@@ -37,20 +39,22 @@ namespace LROTech.Network
                 MainWorld.DataSendRequested -= OnWorldDataSendRequest;
                 MainWorld.Disposed -= OnWorldDisposed;
             }
+
             MainWorld = null;
-            
+
             if (_clientSession != null)
             {
                 _clientSession.TryDispose();
-                
+
                 _clientSession.LocalUserDisconnected -= OnLocalUserDisconnected;
                 _clientSession.DataReceived -= OnDataReceived;
                 _clientSession.LocalUserConnected -= OnLocalUserConnected;
                 _clientSession.RemoteUserDisconnected -= OnRemoteUserDisconnected;
+                _clientSession.RemoteUserConnected -= OnRemoteUserConnected;
                 _clientSession.DataReceived -= OnDataReceived;
             }
+
             _clientSession = null;
-            
             Disposed();
         }
 
@@ -68,7 +72,7 @@ namespace LROTech.Network
             _clientSession.SendData(MessageCodes.CUSTOM_MESSAGE, data, deliveryMethod);
         }
 
-        private void OnLocalUserDisconnected() => 
+        private void OnLocalUserDisconnected() =>
             MainWorld?.Dispose();
 
         private void OnDataReceived(ClientUid senderConnectionId, uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod)
@@ -93,12 +97,31 @@ namespace LROTech.Network
                 }
             }
         }
+        
+        private void RecalculateMasterPlayerUid()
+        {
+            SessionOwner = ClientUid.Invalid;
+            foreach (var clientUid in _clientSession.ConnectedClients)
+            {
+                if (clientUid < SessionOwner || !SessionOwner.IsValid)
+                    SessionOwner = clientUid;
+            }
+        }
 
-        private void OnLocalUserConnected() =>
+        private void OnLocalUserConnected()
+        {
+            RecalculateMasterPlayerUid();
             MainWorld.RegisterLocalPlayer(_clientSession.ConnectionUid);
+        }
 
-        private void OnRemoteUserDisconnected(ClientUid clientUid) =>
+        private void OnRemoteUserDisconnected(ClientUid clientUid)
+        {
+            RecalculateMasterPlayerUid();
             MainWorld.OnDisconnect(clientUid);
+        }
+
+        private void OnRemoteUserConnected(ClientUid clientUid) =>
+            RecalculateMasterPlayerUid();
 
         private void OnWorldDataSendRequest(byte[] data, DeliveryMethod deliveryMethod) =>
             _clientSession.SendData(MessageCodes.NET_WORLD_UPDATE, data, deliveryMethod);

@@ -48,7 +48,7 @@ namespace LROTech.Network.StateManagement
             LocalTime = 0f;
             Name = $"{Id}:{worldName}";
 
-            Players = new NetWorldPlayersCollection(validator: () => IsValid);
+            Players = new NetWorldPlayersCollection(validator: () => IsValid, GetSessionOwnerUid);
             Properties = new NetworkProperties(writePermission: () => Players.LocalPlayerIsMaster);
 
             s_all.Add(Uid, this);
@@ -58,6 +58,9 @@ namespace LROTech.Network.StateManagement
             UnityEditor.EditorApplication.playModeStateChanged += OnPlaymodeChange_Editor;
 #endif
         }
+
+        protected virtual ClientUid GetSessionOwnerUid() => 
+            ClientUid.Invalid;
 
         internal void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
         {
