@@ -75,18 +75,6 @@ namespace LROTech.Network.StateManagement
         public bool IsValid() =>
             Uid.IsValid && _validator != null && _validator(Uid);
 
-        public bool IsOwnedBy(ClientUid uid)
-        {
-            EnsureValid();
-            return OwnerUid == uid;
-        }
-
-        internal void InvalidateOwner()
-        {
-            EnsureValid();
-            OwnerUid = ClientUid.Invalid;
-        }
-
         internal void Invalidate()
         {
             EnsureValid();
@@ -207,6 +195,12 @@ namespace LROTech.Network.StateManagement
             else
                 _stateChangeTypeQueue.Enqueue(requestType);
         }
+        
+        public bool IsOwnedBy(ClientUid uid)
+        {
+            EnsureValid();
+            return OwnerUid == uid;
+        }
 
         internal void ChangedOwner(ClientUid newOwner)
         {
@@ -220,6 +214,12 @@ namespace LROTech.Network.StateManagement
             }
             else
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");
+        }
+        
+        internal void InvalidateOwner()
+        {
+            EnsureValid();
+            OwnerUid = ClientUid.Invalid;
         }
 
         internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
