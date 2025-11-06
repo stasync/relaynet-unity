@@ -29,7 +29,6 @@ namespace LROTech.Network
             _clientSession.LocalUserConnected += OnLocalUserConnected;
             _clientSession.RemoteUserDisconnected += OnRemoteUserDisconnected;
             _clientSession.RemoteUserConnected += OnRemoteUserConnected;
-            _clientSession.DataReceived += OnDataReceived;
         }
 
         private void OnWorldDisposed()
@@ -51,7 +50,6 @@ namespace LROTech.Network
                 _clientSession.LocalUserConnected -= OnLocalUserConnected;
                 _clientSession.RemoteUserDisconnected -= OnRemoteUserDisconnected;
                 _clientSession.RemoteUserConnected -= OnRemoteUserConnected;
-                _clientSession.DataReceived -= OnDataReceived;
             }
 
             _clientSession = null;
