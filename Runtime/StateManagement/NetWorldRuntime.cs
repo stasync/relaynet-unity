@@ -264,7 +264,7 @@ namespace LROTech.Network.StateManagement
                 {
                     foreach (var clientUid in _playerUnregisterQueue)
                     {
-                        var player = Players.Find(clientUid);
+                        var player = Players.Get(clientUid);
                         var playerSnapshot = player?.ToSnapshot() ?? default;
                         if (Players.UnregisterImmediate(clientUid))
                             removedPlayers.Enqueue(clientUid);
@@ -281,7 +281,7 @@ namespace LROTech.Network.StateManagement
                     foreach (var clientUid in new List<ClientUid>(remotePlayersUpdateRequests.Keys))
                     {
                         var snapshot = remotePlayersUpdateRequests[clientUid];
-                        var player = Players.Find(clientUid);
+                        var player = Players.Get(clientUid);
 
                         // Player not exists.
                         if (player == null)
@@ -417,7 +417,7 @@ namespace LROTech.Network.StateManagement
                         _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                     }
                     else
-                        newState = new NetObjectState(IsObjectValid, Players.Find, snapshot);
+                        newState = new NetObjectState(IsObjectValid, Players.Get, snapshot);
 
                     TryAddObject(newState);
                     remoteObjectUpdateRequests.Remove(uid);
@@ -577,7 +577,7 @@ namespace LROTech.Network.StateManagement
             if (owner == null)
                 throw new InvalidOperationException();
 
-            var state = new NetObjectState(IsObjectValid, Players.Find, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
+            var state = new NetObjectState(IsObjectValid, Players.Get, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
             _temporaryUnregisteredObjects.Add(state.Uid, state);
             return View.CreateImmediate(state, position, rotation);
         }
@@ -610,7 +610,7 @@ namespace LROTech.Network.StateManagement
             // Create state from scene object identity.
             // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
             // At this point we don't know who's going to be the owner, client it will be invalid just for now.
-            var newState = new NetObjectState(IsObjectValid, Players.Find, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, owner: GetSessionOwnerUid());
+            var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, owner: GetSessionOwnerUid());
             _temporaryUnregisteredObjects.Add(newState.Uid, newState);
 
             // Wait for view initialization.
@@ -658,7 +658,7 @@ namespace LROTech.Network.StateManagement
             if (identity != null)
                 return identity;
 
-            var state = new NetObjectState(IsObjectValid, Players.Find, instanceId, prefabId, isSceneObject, owner.Uid);
+            var state = new NetObjectState(IsObjectValid, Players.Get, instanceId, prefabId, isSceneObject, owner.Uid);
             _temporaryUnregisteredObjects.Add(instanceId, state);
             return View.CreateImmediate(state, position, rotation);
         }

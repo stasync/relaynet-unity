@@ -13,7 +13,7 @@ namespace LROTech.Network.StateManagement
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NetWorldPlayer ReadPlayer(this NetReader reader, NetWorld targetWorld) =>
-            targetWorld.Players.Find(reader.ReadClientUid());
+            targetWorld.Players.Get(reader.ReadClientUid());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NetObjectState ReadObjectState(this NetReader reader, NetWorld targetWorld) =>

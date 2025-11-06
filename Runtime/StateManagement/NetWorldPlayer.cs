@@ -82,11 +82,12 @@ namespace LROTech.Network.StateManagement
         private readonly Func<ClientUid> _masterPlayerUidProvider;
         private readonly Func<ClientUid, bool> _validator;
 
-        internal NetWorldPlayer(Func<ClientUid, bool> validator, ClientUid uid, string name, Func<ClientUid> localPlayerUidProvider, Func<ClientUid> masterPlayerUidProvider)
+        internal NetWorldPlayer(ClientUid uid, string name, Func<ClientUid, bool> validator, Func<ClientUid> localPlayerUidProvider, Func<ClientUid> masterPlayerUidProvider)
         {
-            _validator = validator;
             Uid = uid;
+
             _name = name;
+            _validator = validator;
             _localPlayerUidProvider = localPlayerUidProvider;
             _masterPlayerUidProvider = masterPlayerUidProvider;
 

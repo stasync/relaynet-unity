@@ -259,7 +259,7 @@ namespace LROTech.Network.StateManagement
                 if (_currentObjectStates.TryGetValue(uid, out var state))
                     state.ChangeObjectRemotely(objectStateSnapshot);
                 else
-                    TryAddObject(new NetObjectState(IsObjectValid, Players.Find, objectStateSnapshot));
+                    TryAddObject(new NetObjectState(IsObjectValid, Players.Get, objectStateSnapshot));
             }
 
             // Remove absent objects.

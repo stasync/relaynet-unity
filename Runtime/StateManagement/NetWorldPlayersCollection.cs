@@ -19,23 +19,23 @@ namespace LROTech.Network.StateManagement
         #endregion
 
         internal bool LocalPlayerIsMaster => _masterPlayerUid.IsValid && _masterPlayerUid.Equals(_localPlayerUid);
-        public NetWorldPlayer LocalPlayer => Find(_localPlayerUid);
-        public NetWorldPlayer MasterPlayer => Find(_masterPlayerUid);
+        public NetWorldPlayer LocalPlayer => Get(_localPlayerUid);
+        public NetWorldPlayer MasterPlayer => Get(_masterPlayerUid);
 
         private Func<bool> _validator;
-        private readonly Func<ClientUid> _masterClientProvider;
+        private readonly Func<ClientUid> _masterClientIdProvider;
 
-        internal NetWorldPlayersCollection(Func<bool> validator, Func<ClientUid> masterClientProvider)
+        internal NetWorldPlayersCollection(Func<bool> validator, Func<ClientUid> masterClientIdProvider)
         {
             _validator = validator;
-            _masterClientProvider = masterClientProvider;
+            _masterClientIdProvider = masterClientIdProvider;
 
             _localPlayerUid = ClientUid.Invalid;
             _masterPlayerUid = ClientUid.Invalid;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsValid() => 
+        private bool IsValid() =>
             _validator != null && _validator();
 
         internal void OnBeforeUpdateWorldState(float worldDelta)
@@ -48,9 +48,9 @@ namespace LROTech.Network.StateManagement
                 throw new InvalidOperationException();
 
             var player = new NetWorldPlayer(
-                validator: _playersCollection.ContainsKey, 
                 uid,
                 name: "Unknown",
+                validator: _playersCollection.ContainsKey,
                 localPlayerUidProvider: () => _localPlayerUid,
                 masterPlayerUidProvider: () => _masterPlayerUid);
 
@@ -58,7 +58,7 @@ namespace LROTech.Network.StateManagement
             if (isLocal)
                 _localPlayerUid = uid;
 
-            _masterPlayerUid = _masterClientProvider();
+            _masterPlayerUid = _masterClientIdProvider();
             return player;
         }
 
@@ -69,23 +69,25 @@ namespace LROTech.Network.StateManagement
 
             var playerRemoved = _playersCollection.Remove(uid);
             if (playerRemoved)
-                _masterPlayerUid = _masterClientProvider();
+                _masterPlayerUid = _masterClientIdProvider();
 
             return playerRemoved;
         }
 
-        public NetWorldPlayer Find(ClientUid uid)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NetWorldPlayer Get(ClientUid uid)
         {
             EnsureValid();
             return _playersCollection.GetValueOrDefault(uid);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains(ClientUid uid)
         {
             EnsureValid();
             return _playersCollection.ContainsKey(uid);
         }
-        
+
         internal void Clear()
         {
             _validator = null;
@@ -97,6 +99,7 @@ namespace LROTech.Network.StateManagement
             _playersCollection = null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NetWorldPlayersCollectionsSnapshot ToSnapshot()
         {
             EnsureValid();
@@ -125,11 +128,11 @@ namespace LROTech.Network.StateManagement
                 if (_playersCollection.TryGetValue(clientUid, out var player))
                     player.RestoreFromSnapshot(playerSnapshot);
                 else
-                    _playersCollection.Add(clientUid, 
+                    _playersCollection.Add(clientUid,
                         new NetWorldPlayer(
-                            validator: _playersCollection.ContainsKey,
                             playerSnapshot.Uid,
                             playerSnapshot.Name,
+                            validator: _playersCollection.ContainsKey,
                             localPlayerUidProvider: () => _localPlayerUid,
                             masterPlayerUidProvider: () => _masterPlayerUid));
             }
@@ -160,7 +163,7 @@ namespace LROTech.Network.StateManagement
             EnsureValid();
             return All.GetEnumerator();
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureValid()
         {
