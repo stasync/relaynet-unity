@@ -29,8 +29,13 @@ namespace LROTech.Network.StateManagement
 
         public bool Equals(NetWorldId other) => _value.Equals(other._value);
 
-        public override string ToString() => _value.ToString();
-        public override bool Equals(object obj) => _value.Equals(obj);
-        public override int GetHashCode() => _value.GetHashCode();
+        public override string ToString() =>
+            IsValid ? _value.ToString() : "INVALID";
+
+        public override bool Equals(object obj) =>
+            _value.Equals(obj);
+
+        public override int GetHashCode() =>
+            _value.GetHashCode();
     }
 }

@@ -17,10 +17,10 @@ namespace LROTech.Network
 
         public static bool operator <(ClientUid value0, ClientUid value1) => value0._value < value1._value;
         public static bool operator >(ClientUid value0, ClientUid value1) => value0._value > value1._value;
-        
+
         public static bool operator <=(ClientUid value0, ClientUid value1) => value0._value <= value1._value;
         public static bool operator >=(ClientUid value0, ClientUid value1) => value0._value >= value1._value;
-        
+
         public static explicit operator uint(ClientUid value) => value._value;
 
         public int CompareTo(ClientUid other) =>
@@ -33,7 +33,7 @@ namespace LROTech.Network
             obj is ClientUid other && Equals(other);
 
         public override string ToString() =>
-            _value.ToString();
+            IsValid ? _value.ToString() : "INVALID";
 
         public override int GetHashCode() =>
             _value.GetHashCode();

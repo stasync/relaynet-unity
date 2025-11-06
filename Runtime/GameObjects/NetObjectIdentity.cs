@@ -67,7 +67,10 @@ namespace LROTech.Network.GameObjects
             State.LocalUpdateRequest += OnLocalUpdateRequest;
             State.Invalidated += OnStateInvalidated;
 
-            var viewStateData = State.DataCollection.GetOrCreateData<NetObjectViewStateData>();
+            var viewStateData = IsLocal ? 
+                State.DataCollection.GetOrCreateData<NetObjectViewStateData>() : 
+                State.DataCollection.GetData<NetObjectViewStateData>();
+
             if (!IsLocal)
                 Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
 
@@ -130,7 +133,7 @@ namespace LROTech.Network.GameObjects
             foreach (var behaviour in _behaviours)
                 behaviour.OnAuthorityUpdateInternal();
 
-            State.ChangeObjectViewDataLocally(Serialize(), initialization: stateChangeType == NetObjectStateChangeRequestType.InitializationUpdate);
+            State.ChangeObjectViewDataLocally(Serialize(), initialization: stateChangeType == NetObjectStateChangeRequestType.ReliableInitializationUpdate);
         }
 
         /// <summary>
@@ -184,17 +187,13 @@ namespace LROTech.Network.GameObjects
             if (IsLocal)
             {
                 // TODO: Need to deserialize this data somehow, or change ownership changing pipeline.
-                Debug.LogError(
-                    $"Trying to deserialize local player object '{gameObject.name}' of '{State}', this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was changed before.",
-                    gameObject);
+                Debug.LogError($"Trying to deserialize local player object '{gameObject.name}' of '{State}', this is not allowed. Maybe owner was changed before. NOTE: This is normal, if owner was changed before.", gameObject);
                 return;
             }
 
             if (!Initialized && !force)
             {
-                Debug.LogWarning(
-                    $"Trying to deserialize object '{gameObject.name}' that is not initialized, this is not allowed. Use 'force' option to do this.",
-                    gameObject);
+                Debug.LogWarning($"Trying to deserialize object '{gameObject.name}' that is not initialized, this is not allowed. Use 'force' option to do this.", gameObject);
                 return;
             }
 
@@ -373,7 +372,7 @@ namespace LROTech.Network.GameObjects
             foreach (var behaviour in _behaviours)
                 behaviour.OnSoftDestroyRequestedLocallyInternal();
 
-            State.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveUpdateSoft);
+            State.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
         }
 
         /// <summary>

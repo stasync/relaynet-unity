@@ -6,8 +6,8 @@ namespace LROTech.Network.StateManagement
         UnreliableUpdate,
         ReliableUpdate,
         ReliableUpdateOwnerChange,
-        InitializationUpdate,
-        RemoveUpdateSoft,
-        RemoveUpdateHard,
+        ReliableInitializationUpdate,
+        ReliableRemoveUpdateSoft,
+        ReliableRemoveUpdateHard
     }
 }

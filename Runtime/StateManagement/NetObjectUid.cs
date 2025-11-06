@@ -12,6 +12,7 @@ namespace LROTech.Network.StateManagement
         /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
         /// </summary>
         public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
+
         public const uint FIRST_VALID_UID = 1;
         private const uint RESERVED_UID_SPACE_PER_CLIENT = 10000;
 
@@ -61,7 +62,7 @@ namespace LROTech.Network.StateManagement
             _value.Equals(other._value);
 
         public override string ToString() =>
-            _value.ToString();
+            IsValid ? _value.ToString() : "INVALID";
 
         public override bool Equals(object obj) =>
             _value.Equals(obj);

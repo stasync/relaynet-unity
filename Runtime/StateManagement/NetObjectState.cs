@@ -33,8 +33,8 @@ namespace LROTech.Network.StateManagement
         private readonly Queue<NetObjectRpcBuffer.NewRpcData> _rpcBufferUpdateQueue = new();
         private readonly Queue<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityQueue = new();
         private readonly List<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityRequests = new();
-        private readonly Queue<NetObjectStateChangeRequestType> _mStateChangeTypeQueue = new();
-        private readonly Func<NetObjectUid, bool> _mValidator;
+        private readonly Queue<NetObjectStateChangeRequestType> _stateChangeTypeQueue = new();
+        private readonly Func<NetObjectUid, bool> _validator;
 
         public bool IsOwnedByLocalPlayer => Owner is { IsLocal: true };
 
@@ -51,7 +51,7 @@ namespace LROTech.Network.StateManagement
 
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId, bool isSceneObject, ClientUid owner)
         {
-            _mValidator = validator;
+            _validator = validator;
             _playerProvider = playerProvider;
 
             Uid = uid;
@@ -73,7 +73,7 @@ namespace LROTech.Network.StateManagement
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
-            Uid.IsValid && _mValidator != null && _mValidator(Uid);
+            Uid.IsValid && _validator != null && _validator(Uid);
 
         public bool IsOwnedBy(ClientUid uid)
         {
@@ -102,7 +102,7 @@ namespace LROTech.Network.StateManagement
             DataCollection.Clear();
             _rpcWithoutAuthorityRequests.Clear();
 
-            _mStateChangeTypeQueue.Clear();
+            _stateChangeTypeQueue.Clear();
             _rpcBufferUpdateQueue.Clear();
             _rpcWithoutAuthorityQueue.Clear();
             _persistentRpcToRemoveQueue.Clear();
@@ -190,7 +190,7 @@ namespace LROTech.Network.StateManagement
                 _rpcWithoutAuthorityRequests.Add(rpcWithoutAuthorityRequest);
 
             // State change type requests.
-            while (_mStateChangeTypeQueue.TryDequeue(out var newRequestType))
+            while (_stateChangeTypeQueue.TryDequeue(out var newRequestType))
             {
                 if (StateChangeType < newRequestType)
                     StateChangeType = newRequestType;
@@ -205,7 +205,7 @@ namespace LROTech.Network.StateManagement
             if (StateChangeType > requestType)
                 Debug.LogError($"Unable to set request '{requestType}' because it has less priority than current request '{StateChangeType}'.");
             else
-                _mStateChangeTypeQueue.Enqueue(requestType);
+                _stateChangeTypeQueue.Enqueue(requestType);
         }
 
         internal void ChangedOwner(ClientUid newOwner)
@@ -216,7 +216,7 @@ namespace LROTech.Network.StateManagement
             if (newOwner.IsValid)
             {
                 UpdateOwnerInternal(newOwner);
-                _mStateChangeTypeQueue.Enqueue(NetObjectStateChangeRequestType.ReliableUpdateOwnerChange);
+                _stateChangeTypeQueue.Enqueue(NetObjectStateChangeRequestType.ReliableUpdateOwnerChange);
             }
             else
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");

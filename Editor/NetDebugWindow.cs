@@ -276,7 +276,7 @@ namespace LROTech.Network.Editor
 
                             EditorGUI.indentLevel++;
                             foreach (var objectState in temporaryUnregisteredObjects.Values)
-                                EditorGUILayout.LabelField($"[{objectState.Uid}] [{objectState.PrefabId}] Owner: {objectState.Owner} Scene: {objectState.IsSceneObject}");
+                                EditorGUILayout.LabelField($"[{objectState.Uid}] [{objectState.PrefabId}] Owner: {(objectState.Owner == null ? "null" : objectState.Owner.ToString())} Scene: {objectState.IsSceneObject}");
                             EditorGUI.indentLevel--;
                         }
                     }
