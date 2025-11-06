@@ -11,13 +11,13 @@ namespace LROTech.Network.StateManagement
     [RequireDerived]
     public abstract class NetObjectStateData
     {
-        public bool HasWritePermission
+        internal bool HasWritePermission
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _writePermission != null && _writePermission();
         }
 
-        public int TypeHashCode
+        internal int TypeHashCode
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get;

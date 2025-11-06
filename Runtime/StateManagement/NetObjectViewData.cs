@@ -27,7 +27,7 @@ namespace LROTech.Network.StateManagement
         internal void SetData(byte[] data, bool initialization = false)
         {
             if (!HasWritePermission)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("No authority to modify the state.");
 
             UnstructuredData = data;
 

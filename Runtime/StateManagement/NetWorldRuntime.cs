@@ -253,7 +253,7 @@ namespace LROTech.Network.StateManagement
                     foreach (var clientUid in _localPlayerRegisterQueue)
                     {
                         // Add player and notify.
-                        var player = Players.RegisterImmediate(clientUid, isLocal: true);
+                        var player = Players.Register(clientUid, isLocal: true);
                         PlayerAdded(player.ToSnapshot());
                     }
 
@@ -266,7 +266,7 @@ namespace LROTech.Network.StateManagement
                     {
                         var player = Players.Get(clientUid);
                         var playerSnapshot = player?.ToSnapshot() ?? default;
-                        if (Players.UnregisterImmediate(clientUid))
+                        if (Players.Unregister(clientUid))
                             removedPlayers.Enqueue(clientUid);
 
                         if (playerSnapshot.Uid.IsValid)
@@ -287,7 +287,7 @@ namespace LROTech.Network.StateManagement
                         if (player == null)
                         {
                             // Create new.
-                            player = Players.RegisterImmediate(snapshot.Uid, isLocal: false);
+                            player = Players.Register(snapshot.Uid, isLocal: false);
 
                             // Notify player registered.
                             PlayerAdded(player.ToSnapshot());
@@ -412,15 +412,13 @@ namespace LROTech.Network.StateManagement
 
                     // Trying to fetch the object from temporary registry.
                     if (_temporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUid, out var newState))
-                    {
                         newState.ChangeObjectRemotely(snapshot);
-                        _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
-                    }
                     else
                         newState = new NetObjectState(IsObjectValid, Players.Get, snapshot);
 
                     TryAddObject(newState);
                     remoteObjectUpdateRequests.Remove(uid);
+                    _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
                 }
             }
 

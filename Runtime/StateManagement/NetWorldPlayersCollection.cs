@@ -35,7 +35,7 @@ namespace LROTech.Network.StateManagement
         {
         }
 
-        internal NetWorldPlayer RegisterImmediate(ClientUid uid, bool isLocal)
+        internal NetWorldPlayer Register(ClientUid uid, bool isLocal)
         {
             if (_playersCollection.ContainsKey(uid))
                 throw new InvalidOperationException();
@@ -55,7 +55,7 @@ namespace LROTech.Network.StateManagement
             return newPlayer;
         }
 
-        internal bool UnregisterImmediate(ClientUid uid)
+        internal bool Unregister(ClientUid uid)
         {
             if (LocalPlayer != null && LocalPlayer.Uid == uid)
                 LocalPlayer = null;

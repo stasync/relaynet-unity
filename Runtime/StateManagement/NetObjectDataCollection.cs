@@ -9,26 +9,24 @@ namespace LROTech.Network.StateManagement
 {
     public sealed class NetObjectDataCollection : IReadOnlyCollection<NetObjectStateData>
     {
-        private readonly NetReader _reader;
-        private readonly Dictionary<int, NetObjectStateData> _internalCollection;
+        public int Count => _internalCollection.Count;
+
+        private readonly NetReader _reader = new();
+        private readonly Dictionary<int, NetObjectStateData> _internalCollection = new();
         private readonly Func<bool> _validator;
         private readonly Func<bool> _dataWritePermission;
 
-        public int Count => _internalCollection.Count;
-
         internal NetObjectDataCollection(Func<bool> validator, Func<bool> dataWritePermission)
         {
-            _reader = new NetReader();
-            _internalCollection = new Dictionary<int, NetObjectStateData>();
             _validator = validator;
             _dataWritePermission = dataWritePermission;
         }
 
         public T GetOrCreateData<T>() where T : NetObjectStateData, new()
         {
-            //if (!_dataWritePermission())
-            //    throw new InvalidOperationException("No authority to modify date collection.");
-            
+            if (!_dataWritePermission())
+                throw new InvalidOperationException("No authority to modify date collection.");
+
             var typIndex = NetObjectStateData.GetTypeIndex<T>();
             if (_internalCollection.TryGetValue(typIndex, out var data))
                 return data as T;

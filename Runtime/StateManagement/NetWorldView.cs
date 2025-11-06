@@ -223,7 +223,7 @@ namespace LROTech.Network.StateManagement
 
         private void UpdateSoundFor(Transform targetTransform)
         {
-            foreach (var audioSource in targetTransform.GetComponentsInChildren<AudioSource>(true))
+            foreach (var audioSource in targetTransform.GetComponentsInChildren<AudioSource>(includeInactive: true))
                 audioSource.mute = ForceMute;
         }
 

@@ -7,6 +7,6 @@
     {
         ToOwner = 0,
         ToMaster = 1,
-        ToAll = 2,
+        ToAll = 2
     }
 }

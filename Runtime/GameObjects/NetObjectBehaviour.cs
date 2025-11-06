@@ -58,10 +58,8 @@ namespace LROTech.Network.GameObjects
         {
             base.OnPreInitialize();
 
-            Data = Identity
-                .State
-                .DataCollection
-                .GetOrCreateData<TObjectData>();
+            var dataCollection = Identity.State.DataCollection;
+            Data = IsLocal ? dataCollection.GetOrCreateData<TObjectData>() : dataCollection.GetData<TObjectData>();
         }
     }
 }
