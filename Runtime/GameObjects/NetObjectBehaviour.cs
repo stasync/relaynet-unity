@@ -7,8 +7,6 @@ namespace LROTech.Network.GameObjects
     {
         protected TObjectData Data { get; private set; }
 
-        public virtual bool DataWritePermission => IsLocal;
-
         public NetWorldPlayer Owner => Identity.Owner;
 
         public bool IsLocal => Identity.IsLocal;

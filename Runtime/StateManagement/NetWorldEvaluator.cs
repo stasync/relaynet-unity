@@ -17,8 +17,7 @@ namespace LROTech.Network.StateManagement
         private float _nextSnapshotTime;
         private readonly bool _autoDestroy;
 
-        public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(id: runtime.Id, worldName: $"World {runtime.Id} evaluator",
-            runtime.Id)
+        public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(id: runtime.Id, worldName: $"World {runtime.Id} evaluator", runtime.Id)
         {
             InitializeView(NetWorldViewInitMode.SeparatePhysicsSimulation);
 

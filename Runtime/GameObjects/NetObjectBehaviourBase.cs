@@ -1,6 +1,4 @@
-﻿using Core.DependencyInjection.Services;
-using Core.DependencyInjection.Services.Events;
-using Core.Networking;
+﻿using Core.Networking;
 using UnityEngine;
 
 namespace LROTech.Network.GameObjects
@@ -8,9 +6,6 @@ namespace LROTech.Network.GameObjects
     [RequireComponent(typeof(NetObjectIdentity))]
     public abstract class NetObjectBehaviourBase : MonoBehaviour
     {
-        protected IBroadcasterService Broadcaster => _broadcaster.Instance;
-        private readonly ServiceProvider<IBroadcasterService> _broadcaster = new ();
-
         public NetObjectIdentity Identity =>
             _identity != null ?
                 _identity :

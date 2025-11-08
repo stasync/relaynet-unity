@@ -24,9 +24,6 @@ namespace LROTech.Network.GameObjects
 
         public string PrefabID => _prefabId;
 
-        public static implicit operator NetObjectIdentity(NetObjectSceneIdentity value) =>
-            value.Identity;
-
 #if UNITY_EDITOR
         [UnityEditor.MenuItem("System/Network/Validate scene objects")]
         private static void ValidateSceneObjects()
