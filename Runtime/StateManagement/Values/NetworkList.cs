@@ -61,6 +61,14 @@ namespace LROTech.Network.StateManagement.Values
 
             InternalValue.Add(item);
         }
+        
+        public void AddRange(IEnumerable<TValue> collection)
+        {
+            if (!HasPermission)
+                throw new InvalidOperationException($"No authority to change list of type {typeof(TValue).Name}");
+
+            InternalValue.AddRange(collection);
+        }
 
         public void Clear()
         {

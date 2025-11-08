@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Core.Networking;
+using UnityEngine;
 
 namespace LROTech.Network.StateManagement.Values
 {
@@ -25,8 +26,16 @@ namespace LROTech.Network.StateManagement.Values
 
             foreach (var filedInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
-                if (typeof(NetworkValueBase).IsAssignableFrom(filedInfo.FieldType))
-                    newFiledList.Add(filedInfo);
+                if (!typeof(NetworkValueBase).IsAssignableFrom(filedInfo.FieldType)) 
+                    continue;
+                
+                if (!filedInfo.IsInitOnly)
+                {
+                    Debug.LogError($"Network field '{type.FullName}.{filedInfo.Name}' will be ignored as it has to be read-only. Please set 'readOnly' to keyword'");
+                    continue;
+                }
+                    
+                newFiledList.Add(filedInfo);
             }
 
             return newFiledList;
