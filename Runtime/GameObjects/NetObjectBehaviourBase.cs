@@ -1,4 +1,5 @@
-﻿using Core.Networking;
+﻿using System.Runtime.CompilerServices;
+using Core.Networking;
 using UnityEngine;
 
 namespace LROTech.Network.GameObjects
@@ -7,30 +8,34 @@ namespace LROTech.Network.GameObjects
     public abstract class NetObjectBehaviourBase : MonoBehaviour
     {
         public NetObjectIdentity Identity =>
-            _identity != null ?
-                _identity :
-                _identity = GetComponent<NetObjectIdentity>();
+            _identity != null ? _identity : _identity = GetComponent<NetObjectIdentity>();
 
         private NetObjectIdentity _identity;
-    
-        internal void OnPreInitializeInternal() => 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnPreInitializeInternal() =>
             OnPreInitialize();
-    
-        internal void OnPostInitializeInternal() => 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnPostInitializeInternal() =>
             OnPostInitialize();
-    
-        internal void OnInitializeViewDataInternal() => 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnInitializeViewDataInternal() =>
             OnInitializeViewData();
-    
-        internal void OnOwnerChangedInternal() => 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnOwnerChangedInternal() =>
             OnOwnerChanged();
-    
-        internal void OnAuthorityUpdateInternal() => 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnAuthorityUpdateInternal() =>
             OnAuthorityUpdate();
-    
-        internal void OnDisconnectedInternal(ClientUid clientUid) => 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnDisconnectedInternal(ClientUid clientUid) =>
             OnDisconnected(clientUid);
-    
+
         internal void OnSerializeInternal(NetWriter writer)
         {
             OnSerialize(writer);
@@ -43,7 +48,7 @@ namespace LROTech.Network.GameObjects
         internal void OnDeserializeInternal(NetReader reader)
         {
             OnDeserialize(reader);
-        
+
 #if NETWORK_DEBUG
             var typeName = GetType().FullName;
             var hash = typeName!.GetHashCode();
@@ -52,13 +57,14 @@ namespace LROTech.Network.GameObjects
             if (!hash.Equals(serializedHash))
                 Debug.LogError($"Potential serialization problem in '{typeName}' on '{gameObject.name}'.");
 #endif
-        
+
             OnDataDeserialized();
         }
-    
-        internal void OnSoftDestroyRequestedLocallyInternal() => 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnSoftDestroyRequestedLocallyInternal() =>
             OnSoftDestroyRequestedLocally();
-    
+
         /// <summary>
         /// Use this instead of start, called after objet was deserialized first time.
         /// </summary>
@@ -97,7 +103,7 @@ namespace LROTech.Network.GameObjects
         protected virtual void OnDisconnected(ClientUid clientUid)
         {
         }
-    
+
         /// <summary>
         /// Destroy method called locally.
         /// </summary>
@@ -108,11 +114,11 @@ namespace LROTech.Network.GameObjects
         protected virtual void OnSerialize(NetWriter writer)
         {
         }
-    
+
         protected virtual void OnDeserialize(NetReader reader)
         {
         }
-    
+
         /// <summary>
         /// Called, when network data was deserialized.
         /// </summary>

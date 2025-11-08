@@ -40,7 +40,6 @@ namespace LROTech.Network.StateManagement
         #endregion
 
         public bool IsValid => _value > Invalid._value;
-        public bool IsInvalid => !IsValid;
         public bool IsSceneObjectSpaceId => IsValid && _value <= SCENE_OBJECT_RESERVED_UID_SPACE;
 
         private readonly uint _value;

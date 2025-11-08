@@ -22,10 +22,6 @@ namespace LROTech.NetworkBehaviours
     public abstract class NetObjectTransactionBehaviour<TData> : NetObjectBehaviour<TData>
         where TData : NetObjectTransactionBehaviour.TransactionNetworkData, new()
     {
-        public NetObjectUid CurrentInteraction => Data.CurrentInteraction.Value;
-        public NetObjectUid LastInteraction => Data.LastInteraction.Value;
-        public bool InteractionsEnabled => Data.InteractionsEnabled.Value;
-
         private readonly Dictionary<NetObjectUid, Action<bool>> _interactionChangeRequestCallbacks = new();
 
         private readonly NetWriter _writer = new();
@@ -58,20 +54,19 @@ namespace LROTech.NetworkBehaviours
                 return;
             }
             
-            if (!InteractionsEnabled)
+            if (!Data.InteractionsEnabled.Value)
             {
-                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Enabled: '{InteractionsEnabled}'.");
+                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Enabled: '{Data.InteractionsEnabled.Value}'.");
                 callback(false);
                 return;
             }
 
-            if (CurrentInteraction.IsValid && interactionState)
+            if (Data.CurrentInteraction.Value.IsValid && interactionState)
             {
                 // Validate current interaction sate.
-                if (!Identity.World.ObjectExists(CurrentInteraction))
+                if (Identity.World.ObjectExists(Data.CurrentInteraction.Value))
                 {
-                    Data.CurrentInteraction.Value = NetObjectUid.Invalid;
-                    Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: '{CurrentInteraction}' Enabled: '{InteractionsEnabled}'.");
+                    Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: '{Data.CurrentInteraction.Value}' Enabled: '{Data.InteractionsEnabled.Value}'.");
                     callback(false);
                     return;
                 }
@@ -107,10 +102,14 @@ namespace LROTech.NetworkBehaviours
             var state = _reader.ReadBoolean();
 
             var currentInteractionObject = Data.CurrentInteraction.Value;
+            
+            var currentInteractionExist = 
+                currentInteractionObject.IsValid && 
+                Identity.World.ObjectExists(currentInteractionObject);
 
             var canChangeInteractionState =
                 state ? 
-                    currentInteractionObject.IsInvalid && Data.InteractionsEnabled.Value : 
+                    !currentInteractionExist && Data.InteractionsEnabled.Value : 
                     currentInteractionObject.Equals(sender);
 
             _writer.SeekZero();

@@ -27,7 +27,7 @@ namespace LROTech.Network.StateManagement
 
         private Func<bool> _writePermission;
 
-        public IReadOnlyCollection<NetworkValueBase> SerializableValues => _internalValueCollection.Values;
+        internal IReadOnlyCollection<NetworkValueBase> SerializableValues => _internalValueCollection.Values;
         private readonly Dictionary<string, NetworkValueBase> _internalValueCollection = new();
 
         private void Init(Func<bool> writePermission)

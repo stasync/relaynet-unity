@@ -5,7 +5,7 @@ namespace LROTech.Network.GameObjects
 {
     public abstract class NetObjectBehaviour<TObjectData> : NetObjectBehaviourBase where TObjectData : NetObjectStateData, new()
     {
-        protected TObjectData Data { get; private set; }
+        public TObjectData Data { get; private set; }
 
         public NetWorldPlayer Owner => Identity.Owner;
 
