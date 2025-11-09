@@ -31,7 +31,7 @@ namespace LROTech.Network.StateManagement
         internal IReadOnlyCollection<NetworkValueBase> SerializableValues => _internalValueCollection.Values;
         private readonly Dictionary<string, NetworkValueBase> _internalValueCollection = new();
 
-        private void Init(Func<bool> writePermission, Func<bool> validator)
+        private void Init(Func<bool> validator, Func<bool> writePermission)
         {
             _writePermission = writePermission;
             _validator = validator;
@@ -96,20 +96,20 @@ namespace LROTech.Network.StateManagement
             return result;
         }
 
-        internal static NetObjectStateData Provide(Type type, Func<bool> writePermission, Func<bool> validator)
+        internal static NetObjectStateData Provide(Type type, Func<bool> validator, Func<bool> writePermission)
         {
             var dataType = typeof(NetObjectStateData);
             if (!dataType.IsAssignableFrom(type) || type == dataType)
                 throw new InvalidOperationException($"'{type.FullName} must derive from '{dataType.FullName}'.");
 
             var dataInstance = (NetObjectStateData)Activator.CreateInstance(type);
-            dataInstance.Init(writePermission, validator);
+            dataInstance.Init(validator, writePermission);
             return dataInstance;
         }
 
-        internal static T Provide<T>(Func<bool> writePermission, Func<bool> validator) where T : NetObjectStateData, new()
+        internal static T Provide<T>(Func<bool> validator, Func<bool> writePermission) where T : NetObjectStateData, new()
         {
-            if (Provide(typeof(T), writePermission, validator) is not T instance)
+            if (Provide(typeof(T), validator, writePermission) is not T instance)
                 throw new InvalidOperationException($"Unable to produce instance of data of type '{typeof(T).FullName}'.");
 
             return instance;

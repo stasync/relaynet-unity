@@ -32,7 +32,7 @@ namespace LROTech.Network.StateManagement
             if (_internalCollection.TryGetValue(typIndex, out var data))
                 return data as T;
 
-            data = NetObjectStateData.Provide<T>(_dataWritePermission, _validator);
+            data = NetObjectStateData.Provide<T>(_validator, _dataWritePermission);
             if (data == null)
                 throw new InvalidOperationException();
 
