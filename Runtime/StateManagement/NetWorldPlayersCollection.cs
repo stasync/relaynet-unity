@@ -61,8 +61,7 @@ namespace LROTech.Network.StateManagement
                 LocalPlayer = null;
 
             var playerRemoved = _playersCollection.Remove(uid);
-            if (playerRemoved)
-                MasterPlayer = Get(uid: _masterClientUidProvider());
+            MasterPlayer = Get(uid: _masterClientUidProvider());
 
             return playerRemoved;
         }
