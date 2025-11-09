@@ -24,6 +24,7 @@ namespace LROTech.Network.StateManagement
 
         public T GetOrCreateData<T>() where T : NetObjectStateData, new()
         {
+            EnsureValid();
             if (!_dataWritePermission())
                 throw new InvalidOperationException("No authority to modify date collection.");
 
@@ -31,7 +32,7 @@ namespace LROTech.Network.StateManagement
             if (_internalCollection.TryGetValue(typIndex, out var data))
                 return data as T;
 
-            data = NetObjectStateData.Provide<T>(_dataWritePermission);
+            data = NetObjectStateData.Provide<T>(_dataWritePermission, _validator);
             if (data == null)
                 throw new InvalidOperationException();
 
@@ -40,11 +41,16 @@ namespace LROTech.Network.StateManagement
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool HasData<T>() where T : NetObjectStateData, new() =>
-            _internalCollection.ContainsKey(NetObjectStateData.GetTypeIndex<T>());
+        public bool HasData<T>() where T : NetObjectStateData, new()
+        {
+            EnsureValid();
+            return _internalCollection.ContainsKey(NetObjectStateData.GetTypeIndex<T>());
+        }
 
         public bool TryGetData<T>(out T data) where T : NetObjectStateData, new()
         {
+            EnsureValid();
+
             data = null;
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
             var dataExists = _internalCollection.TryGetValue(typeHashCode, out var internalData);
@@ -56,12 +62,14 @@ namespace LROTech.Network.StateManagement
 
         public T GetData<T>() where T : NetObjectStateData, new()
         {
+            EnsureValid();
+
             var typeHashCode = NetObjectStateData.GetTypeIndex<T>();
             return _internalCollection.TryGetValue(typeHashCode, out var internalData) ? internalData as T : null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NetObjectDataCollectionSnapshot ToSnapshot() =>
+        internal NetObjectDataCollectionSnapshot ToSnapshot() =>
             new(_internalCollection.Values);
 
         internal void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
@@ -77,7 +85,7 @@ namespace LROTech.Network.StateManagement
 
                 if (!_internalCollection.TryGetValue(typeHashCode, out var data))
                 {
-                    data = NetObjectStateData.Provide(type, _dataWritePermission);
+                    data = NetObjectStateData.Provide(type, _dataWritePermission, _validator);
                     _internalCollection.Add(typeHashCode, data);
                 }
 

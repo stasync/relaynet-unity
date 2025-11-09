@@ -9,7 +9,10 @@ namespace LROTech.Network.StateManagement.Values
     public abstract class NetworkValueBase
     {
         internal Func<bool> InternalWritePermission = null;
+        internal Func<bool> InternalValidator = null;
+
         protected bool HasPermission => InternalWritePermission();
+        protected bool IsValid => InternalValidator();
 
         internal abstract void InternalDeserialize(NetReader reader);
         internal abstract void InternalSerialize(NetWriter writer);
@@ -26,15 +29,15 @@ namespace LROTech.Network.StateManagement.Values
 
             foreach (var filedInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
-                if (!typeof(NetworkValueBase).IsAssignableFrom(filedInfo.FieldType)) 
+                if (!typeof(NetworkValueBase).IsAssignableFrom(filedInfo.FieldType))
                     continue;
-                
+
                 if (!filedInfo.IsInitOnly)
                 {
                     Debug.LogError($"Network field '{type.FullName}.{filedInfo.Name}' will be ignored as it has to be read-only. Please set 'readOnly' to keyword'");
                     continue;
                 }
-                    
+
                 newFiledList.Add(filedInfo);
             }
 

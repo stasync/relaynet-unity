@@ -26,13 +26,15 @@ namespace LROTech.Network.StateManagement
         }
 
         private Func<bool> _writePermission;
+        private Func<bool> _validator;
 
         internal IReadOnlyCollection<NetworkValueBase> SerializableValues => _internalValueCollection.Values;
         private readonly Dictionary<string, NetworkValueBase> _internalValueCollection = new();
 
-        private void Init(Func<bool> writePermission)
+        private void Init(Func<bool> writePermission, Func<bool> validator)
         {
             _writePermission = writePermission;
+            _validator = validator;
             TypeHashCode = GetTypeIndex(GetType());
 
             // Collect serializable values.
@@ -44,6 +46,7 @@ namespace LROTech.Network.StateManagement
                         throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{filedInfo.Name}'.");
 
                     value.InternalWritePermission = _writePermission;
+                    value.InternalValidator = _validator;
                     _internalValueCollection.Add(filedInfo.Name, value);
                 }
                 else
@@ -93,20 +96,20 @@ namespace LROTech.Network.StateManagement
             return result;
         }
 
-        internal static NetObjectStateData Provide(Type type, Func<bool> writePermission)
+        internal static NetObjectStateData Provide(Type type, Func<bool> writePermission, Func<bool> validator)
         {
             var dataType = typeof(NetObjectStateData);
             if (!dataType.IsAssignableFrom(type) || type == dataType)
                 throw new InvalidOperationException($"'{type.FullName} must derive from '{dataType.FullName}'.");
 
             var dataInstance = (NetObjectStateData)Activator.CreateInstance(type);
-            dataInstance.Init(writePermission);
+            dataInstance.Init(writePermission, validator);
             return dataInstance;
         }
 
-        internal static T Provide<T>(Func<bool> writePermission) where T : NetObjectStateData, new()
+        internal static T Provide<T>(Func<bool> writePermission, Func<bool> validator) where T : NetObjectStateData, new()
         {
-            if (Provide(typeof(T), writePermission) is not T instance)
+            if (Provide(typeof(T), writePermission, validator) is not T instance)
                 throw new InvalidOperationException($"Unable to produce instance of data of type '{typeof(T).FullName}'.");
 
             return instance;

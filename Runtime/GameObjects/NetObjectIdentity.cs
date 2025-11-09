@@ -78,13 +78,7 @@ namespace LROTech.Network.GameObjects
             // First initial deserialization.
             if (!IsLocal)
                 Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
-
-            // Mark object as initialized.
-            Initialized = true;
-
-            // Owner changed.
-            OwnerChanged();
-
+            
             // Register RPC handlers.
             foreach (var behaviour in _behaviours)
             {
@@ -97,6 +91,12 @@ namespace LROTech.Network.GameObjects
                         Debug.LogError($"Unable to create delegate for RPC handler '{methodInfo.Name}' on '{behaviourType.FullName}'.", gameObject);
                 }
             }
+
+            // Mark object as initialized.
+            Initialized = true;
+
+            // Owner changed.
+            OwnerChanged();
 
             // Tell components about object was initialized.
             foreach (var behaviour in _behaviours)

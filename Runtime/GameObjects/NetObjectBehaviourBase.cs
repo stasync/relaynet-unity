@@ -12,9 +12,9 @@ namespace LROTech.Network.GameObjects
 
         private NetObjectIdentity _identity;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void OnPreInitializeInternal() =>
-            OnPreInitialize();
+        internal virtual void OnPreInitializeInternal()
+        {
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnPostInitializeInternal() =>
@@ -64,13 +64,6 @@ namespace LROTech.Network.GameObjects
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnSoftDestroyRequestedLocallyInternal() =>
             OnSoftDestroyRequestedLocally();
-
-        /// <summary>
-        /// Use this instead of start, called after objet was deserialized first time.
-        /// </summary>
-        protected virtual void OnPreInitialize()
-        {
-        }
 
         /// <summary>
         /// Use this instead of start, called after objet was deserialized first time.

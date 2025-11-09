@@ -49,13 +49,10 @@ namespace LROTech.Network.GameObjects
         public void DestroyObjectViaNetwork() =>
             Identity.DestroyViaNetwork();
 
-        /// <summary>
-        /// Consider to use <see cref="NetObjectBehaviourBase.OnPostInitialize"/> instead.
-        /// </summary>
-        protected override void OnPreInitialize()
+        internal sealed override void OnPreInitializeInternal()
         {
-            base.OnPreInitialize();
-
+            base.OnPreInitializeInternal();
+            
             var dataCollection = Identity.State.DataCollection;
             Data = IsLocal ? dataCollection.GetOrCreateData<TObjectData>() : dataCollection.GetData<TObjectData>();
         }
