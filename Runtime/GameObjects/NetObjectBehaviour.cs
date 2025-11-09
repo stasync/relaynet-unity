@@ -24,12 +24,6 @@ namespace LROTech.Network.GameObjects
             Identity.OwnerToOthersRpc(rpcHandlerMethod, data, deliveryMethod, invokeLocally);
 
         /// <summary>
-        /// Same as OwnerToOthersRPC, but buffered.
-        /// </summary>
-        public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace) =>
-            Identity.OwnerToOthersRpcBuffered(rpcHandlerMethod, data, bufferChangeMethod);
-
-        /// <summary>
         /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
         /// IF we have authority, just invokes locally without sending data.
         /// </summary>

@@ -241,6 +241,7 @@ namespace LROTech.Network.GameObjects
         /// Same as AuthRPC, but buffered.
         /// Only works via RELIABLE delivery.
         /// </summary>
+        [Obsolete(message: "Will be removed soon. Buffered RPCs are unsafe.")]
         public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace, bool invokeLocally = true) =>
             OwnerToOthersRpc(rpcHandlerMethod, data, persistent: true, bufferChangeMethod, DeliveryMethod.Reliable, invokeLocally);
 
