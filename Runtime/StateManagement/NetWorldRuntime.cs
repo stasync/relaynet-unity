@@ -291,14 +291,6 @@ namespace LROTech.Network.StateManagement
 
                             // Notify player registered.
                             PlayerAdded(player.ToSnapshot());
-
-                            // When remote player 'connects', we want to forcefully send all objects that we are currently simulating.
-                            foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
-                            {
-                                var state = ObjectStates[objectUid];
-                                if (state.IsOwnedByLocalPlayer)
-                                    state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableInitializationUpdate);
-                            }
                         }
 
                         var wasInGameScene = player.IsReady;
@@ -406,8 +398,8 @@ namespace LROTech.Network.StateManagement
                         continue;
                     }
 
-                    // Object doesn't exist - we need to wait for appropriate reliable update to proceed here.
-                    if (snapshot.StateChangeType != NetObjectStateChangeRequestType.ReliableInitializationUpdate)
+                    // Object doesn't exist - we need to wait for next update to proceed.
+                    if (snapshot.StateChangeType < NetObjectStateChangeRequestType.UnreliableUpdate)
                         continue;
 
                     // Trying to fetch the object from temporary registry.
@@ -458,7 +450,7 @@ namespace LROTech.Network.StateManagement
                     }
                     else
                     {
-                        state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableInitializationUpdate);
+                        state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
                         TryAddObject(state);
                     }
 

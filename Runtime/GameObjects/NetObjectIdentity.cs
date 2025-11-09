@@ -134,7 +134,7 @@ namespace LROTech.Network.GameObjects
             foreach (var behaviour in _behaviours)
                 behaviour.OnAuthorityUpdateInternal();
 
-            State.ChangeObjectViewDataLocally(Serialize(), initialization: stateChangeType == NetObjectStateChangeRequestType.ReliableInitializationUpdate);
+            State.ChangeObjectViewDataLocally(Serialize());
         }
 
         /// <summary>

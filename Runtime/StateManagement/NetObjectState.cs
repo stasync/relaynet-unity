@@ -101,13 +101,13 @@ namespace LROTech.Network.StateManagement
             Invalidated = null;
         }
 
-        internal void ChangeObjectViewDataLocally(byte[] data, bool initialization = false)
+        internal void ChangeObjectViewDataLocally(byte[] data)
         {
             if (!IsOwnedByLocalPlayer)
                 throw new InvalidOperationException($"No authority to change '{Uid}' object with owner '{OwnerUid}'.");
 
             var viewData = DataCollection.GetOrCreateData<NetObjectViewStateData>();
-            viewData.SetData(data, initialization);
+            viewData.SetData(data);
         }
 
         internal void PrepareForSerialization(float worldTime)

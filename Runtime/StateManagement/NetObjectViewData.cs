@@ -24,15 +24,13 @@ namespace LROTech.Network.StateManagement
             UnstructuredData = reader.ReadBytesAndSize();
         }
 
-        internal void SetData(byte[] data, bool initialization = false)
+        internal void SetData(byte[] data)
         {
             if (!HasWritePermission)
                 throw new InvalidOperationException("No authority to modify the state.");
 
             UnstructuredData = data;
-
-            if (initialization)
-                ViewInitialized = true;
+            ViewInitialized = true;
         }
 
         internal override int GetVersionHash()
