@@ -70,13 +70,14 @@ namespace LROTech.Network.GameObjects
             var viewStateData = IsLocal ? 
                 State.DataCollection.GetOrCreateData<NetObjectViewStateData>() : 
                 State.DataCollection.GetData<NetObjectViewStateData>();
-
-            if (!IsLocal)
-                Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
-
+            
             // Pre initialization.
             foreach (var behaviour in _behaviours)
                 behaviour.OnPreInitializeInternal();
+
+            // First initial deserialization.
+            if (!IsLocal)
+                Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
 
             // Mark object as initialized.
             Initialized = true;

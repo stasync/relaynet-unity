@@ -42,10 +42,10 @@ namespace LROTech.NetworkBehaviours
             Data.InteractionsEnabled.Value = value;
         }
 
-        public void ChangeTransactionRequest(NetObjectUid sender, bool interactionState) =>
-            ChangeTransactionRequest(sender, interactionState, _ => { });
+        public void ChangeTransactionRequest(NetObjectUid sender, bool value) =>
+            ChangeTransactionRequest(sender, value, _ => { });
 
-        public void ChangeTransactionRequest(NetObjectUid sender, bool interactionState, Action<bool> callback)
+        public void ChangeTransactionRequest(NetObjectUid sender, bool value, Action<bool> callback)
         {
             if (_interactionChangeRequestCallbacks.TryGetValue(sender, out _))
             {
@@ -61,7 +61,7 @@ namespace LROTech.NetworkBehaviours
                 return;
             }
 
-            if (Data.CurrentInteraction.Value.IsValid && interactionState)
+            if (Data.CurrentInteraction.Value.IsValid && value)
             {
                 // Validate current interaction sate.
                 if (Identity.World.ObjectExists(Data.CurrentInteraction.Value))
@@ -90,7 +90,7 @@ namespace LROTech.NetworkBehaviours
 
             _writer.SeekZero();
             _writer.WriteNetObjectUid(sender);
-            _writer.WriteBoolean(interactionState);
+            _writer.WriteBoolean(value);
             ToOwnerRpc(ChangeTransactionStateRequestRPC, data: _writer.ToArray());
         }
 
