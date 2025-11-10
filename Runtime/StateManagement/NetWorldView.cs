@@ -29,7 +29,7 @@ namespace LROTech.Network.StateManagement
         private Scene _worldScene;
         private readonly List<NetObjectUid> _objectUidCollectionCache = new();
 
-        public void Init(NetWorld world, NetWorldViewInitMode initMode)
+        internal void Init(NetWorld world, NetWorldViewInitMode initMode)
         {
             if (_initialized)
                 throw new InvalidOperationException($"View for world {world.Name} already initialized");
@@ -148,7 +148,7 @@ namespace LROTech.Network.StateManagement
             return netObjectView;
         }
 
-        public void InitializeObjectView(NetObjectUid uid, NetObjectIdentity identity)
+        internal void InitializeObjectView(NetObjectUid uid, NetObjectIdentity identity)
         {
             if (identity.Initialized)
                 throw new InvalidOperationException($"Identity {identity.gameObject.name}:{uid} already initialized.");
@@ -162,6 +162,9 @@ namespace LROTech.Network.StateManagement
             // Push event.
             NewObjectInitialized(identity);
         }
+        
+        internal void RegisterAsPending(NetObjectUid uid, NetObjectIdentity identity) =>
+            _temporaryUnregisteredViews.Add(uid, identity);
 
         public GameObject InstantiateGameObjectInView(GameObject original, Vector3 position, Quaternion rotation, Transform parent = null)
         {
@@ -179,9 +182,6 @@ namespace LROTech.Network.StateManagement
             UpdateVisibilityFor(targetTransform);
             UpdateSoundFor(targetTransform);
         }
-
-        public void RegisterAsPending(NetObjectUid uid, NetObjectIdentity identity) =>
-            _temporaryUnregisteredViews.Add(uid, identity);
 
         private void RemoveView(NetObjectUid uid)
         {
@@ -227,7 +227,7 @@ namespace LROTech.Network.StateManagement
                 audioSource.mute = ForceMute;
         }
 
-        public void Destroy()
+        internal void Destroy()
         {
             NewObjectInitialized = null;
 
