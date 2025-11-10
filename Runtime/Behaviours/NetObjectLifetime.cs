@@ -56,7 +56,7 @@ namespace LROTech.NetworkBehaviours
 
                 if (Data.CurrentLifetime.Value <= 0f)
                 {
-                    Data.CurrentLifetime.Value = 0;
+                    Data.CurrentLifetime.Value = 0f;
                     TimePassed();
 
                     if (_autoDestroy)

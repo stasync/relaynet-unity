@@ -625,29 +625,6 @@ namespace LROTech.Network.StateManagement
         protected override bool IsObjectValid(NetObjectUid instanceId) =>
             base.IsObjectValid(instanceId) || _temporaryUnregisteredObjects.ContainsKey(instanceId);
 
-        /// <summary>
-        /// Get object before in was actually created by the world replication.
-        /// Note that this object will not be in valid state, until update happens.
-        /// Use in only if it's highly necessary.
-        /// </summary>
-        public NetObjectIdentity FindObjectViewOrCreateMock(NetWorldPlayer owner, NetObjectUid instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
-        {
-            var identity = FindObjectView(instanceId);
-            if (identity != null)
-                return identity;
-
-            var state = new NetObjectState(IsObjectValid, Players.Get, instanceId, prefabId, isSceneObject, owner.Uid);
-            _temporaryUnregisteredObjects.Add(instanceId, state);
-            return View.CreateImmediate(state, position, rotation);
-        }
-
-        /// <inheritdoc cref="FindObjectViewOrCreateMock"/>
-        public T FindObjectViewOrCreateMock<T>(NetWorldPlayer owner, NetObjectUid instanceId, string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation) where T : NetObjectBehaviourBase
-        {
-            var networkObject = FindObjectViewOrCreateMock(owner, instanceId, prefabId, isSceneObject, position, rotation);
-            return networkObject == null ? null : networkObject.GetComponent<T>();
-        }
-
         public int GetHistoryBufferSize()
         {
             EnsureValid();
