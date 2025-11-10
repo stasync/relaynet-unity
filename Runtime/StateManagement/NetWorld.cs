@@ -174,7 +174,7 @@ namespace LROTech.Network.StateManagement
         }
 #endif
 
-        public virtual bool ObjectExists(NetObjectUid uid)
+        public bool ObjectExists(NetObjectUid uid)
         {
             EnsureValid();
             return _currentObjectStates.ContainsKey(uid);

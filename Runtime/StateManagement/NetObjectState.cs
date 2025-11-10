@@ -121,12 +121,12 @@ namespace LROTech.Network.StateManagement
 
         internal void ChangeObjectRemotely(NetObjectStateSnapshot snapshot)
         {
-            var checkOwner = snapshot.StateChangeType < NetObjectStateChangeRequestType.ReliableUpdateOwnerChange;
+            var validateOwner = snapshot.StateChangeType < NetObjectStateChangeRequestType.ReliableUpdateOwnerChange;
 
             if (snapshot.StateChangeType == NetObjectStateChangeRequestType.ReliableUpdateOwnerChange)
-                Debug.LogError($"_______ {snapshot.StateChangeType} {Uid} : {PrefabId}");
+                Debug.LogError($"_______OWNER CHANGED {snapshot.StateChangeType} {Uid} : {PrefabId}");
 
-            if (checkOwner && IsOwnedByLocalPlayer)
+            if (validateOwner && IsOwnedByLocalPlayer)
             {
                 Debug.LogError($"Unable to restore local object with '{Uid}' : '{PrefabId}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
                 return;

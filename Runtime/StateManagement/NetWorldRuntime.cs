@@ -27,6 +27,8 @@ namespace LROTech.Network.StateManagement
         public IReadOnlyDictionary<NetObjectUid, NetObjectState> TemporaryUnregisteredObjects => _temporaryUnregisteredObjects;
         private readonly Dictionary<NetObjectUid, NetObjectState> _temporaryUnregisteredObjects = new();
 
+        private readonly Dictionary<NetObjectUid, NetObjectSceneIdentity> _unregisteredSceneObjects = new();
+
         public readonly NetWorldHistoryBuffer HistoryBuffer = new();
 
         private readonly HashSet<ClientUid> _localPlayerRegisterQueue = new();
@@ -390,13 +392,15 @@ namespace LROTech.Network.StateManagement
                     // Object doesn't exist - we need to wait for next update to proceed.
                     if (snapshot.StateChangeType < NetObjectStateChangeRequestType.UnreliableUpdate)
                         continue;
-                    
+
                     // Object was removed remotely - no need to proceed, just clear all the queues.
                     if (snapshot.StateChangeType is NetObjectStateChangeRequestType.ReliableRemoveUpdateHard or NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft)
                     {
                         Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabId}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
 
                         _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
+                        _unregisteredSceneObjects.Remove(snapshot.ObjectUid);
+
                         remoteObjectUpdateRequests.Remove(uid);
                         continue;
                     }
@@ -409,7 +413,16 @@ namespace LROTech.Network.StateManagement
 
                     TryAddObject(newState);
                     remoteObjectUpdateRequests.Remove(uid);
+
                     _temporaryUnregisteredObjects.Remove(snapshot.ObjectUid);
+
+                    if (_unregisteredSceneObjects.TryGetValue(snapshot.ObjectUid, out var unregisteredSceneObject))
+                    {
+                        View.InitializeObjectView(newState.Uid, unregisteredSceneObject.Identity);
+                        View.RegisterAsPending(newState.Uid, unregisteredSceneObject.Identity);
+                    }
+
+                    _unregisteredSceneObjects.Remove(snapshot.ObjectUid);
                 }
             }
 
@@ -432,6 +445,22 @@ namespace LROTech.Network.StateManagement
             // Update state based on local object changes.
             void UpdateLocalObjectState()
             {
+                // Process unregistered scene objects.
+                if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster() && _unregisteredSceneObjects.Count > 0)
+                {
+                    foreach (var uid in new List<NetObjectUid>(_unregisteredSceneObjects.Keys))
+                    {
+                        var sceneIdentity = _unregisteredSceneObjects[uid];
+                        var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, owner: Players.LocalPlayer.Uid);
+                        _temporaryUnregisteredObjects.Add(newState.Uid, newState);
+
+                        View.InitializeObjectView(newState.Uid, sceneIdentity.Identity);
+                        View.RegisterAsPending(newState.Uid, sceneIdentity.Identity);
+                    }
+
+                    _unregisteredSceneObjects.Clear();
+                }
+
                 // Register new local object, that was just created.
                 foreach (var uid in new List<NetObjectUid>(_temporaryUnregisteredObjects.Keys))
                 {
@@ -514,6 +543,8 @@ namespace LROTech.Network.StateManagement
             _playerUnregisterQueue.Clear();
             _temporaryUnregisteredObjects.Clear();
             _incomingStateChangeRequests.Clear();
+            _unregisteredSceneObjects.Clear();
+
             HistoryBuffer.Clear();
 
             PlayerAdded = null;
@@ -536,6 +567,7 @@ namespace LROTech.Network.StateManagement
         {
             base.RemoveObject(stateUid);
             _temporaryUnregisteredObjects.Remove(stateUid);
+            _unregisteredSceneObjects.Remove(stateUid);
         }
 
         internal void RegisterLocalPlayer(ClientUid clientUid) =>
@@ -590,36 +622,22 @@ namespace LROTech.Network.StateManagement
                 return;
             }
 
-            // TODO: THIS IS A PROBLEM - upon connection we may have a ghost mater which is not valid already.
-            // REPRO: CONNECT, DISCONNECT, AND CONNECT BACK FAST - NOTICE THAT OBJECTS AREN'T EXIST.
-            if (Players.LocalPlayer.Uid != GetSessionOwnerUid())
+            // Object or its temporary version already exist.
+            if (TryGetExistedOrPendingState(sceneIdentity.SceneObjectId, out var state))
             {
-                UnityEngine.Object.Destroy(sceneIdentity.gameObject);
-                return;
-            }
-
-            // Create state from scene object identity.
-            // We don't need to know scene object prefab id, because it's already in scene, but prefab id can't be null.
-            // At this point we don't know who's going to be the owner, client it will be invalid just for now.
-            var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, owner: GetSessionOwnerUid());
-            _temporaryUnregisteredObjects.Add(newState.Uid, newState);
-
-            // Wait for view initialization.
-            if (TryGetExistedOrPendingState(newState.Uid, out var state))
-            {
+                // TODO: CHECK IF WE REALLY NEED THIS BLOCK.
                 // Initialize immateriality on master client.
                 if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
-                    View.InitializeObjectView(sceneIdentity.Identity, state.Uid);
+                    View.InitializeObjectView(state.Uid, sceneIdentity.Identity);
 
                 // Add view to be used in the future.
-                View.RegisterAsPending(newState.Uid, sceneIdentity.Identity);
+                View.RegisterAsPending(sceneIdentity.SceneObjectId, sceneIdentity.Identity);
             }
+            // Object doesnt exist,
             else
             {
-                UnityEngine.Object.Destroy(sceneIdentity.gameObject);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.LogError($"Unable to initialize '{sceneIdentity.gameObject.name}'. Object or pending state with Uid '{newState.Uid}' not exist.");
-#endif
+                // At this point we don't know who's going to be the owner, client it will be invalid just for now.
+                _unregisteredSceneObjects.Add(sceneIdentity.SceneObjectId, sceneIdentity);
             }
         }
 

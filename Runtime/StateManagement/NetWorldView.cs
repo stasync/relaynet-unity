@@ -104,7 +104,7 @@ namespace LROTech.Network.StateManagement
                         netObjectView.Deserialize(viewData.UnstructuredData, force: false);
                 }
                 else
-                    InitializeObjectView(netObjectView, state.Uid);
+                    InitializeObjectView(state.Uid, netObjectView);
             }
 
             Profiler.EndSample();
@@ -143,12 +143,12 @@ namespace LROTech.Network.StateManagement
         public NetObjectIdentity CreateImmediate(NetObjectState state, Vector3 position, Quaternion rotation)
         {
             var netObjectView = _objectFactory.Create(state.PrefabId, position, rotation);
-            InitializeObjectView(netObjectView, state.Uid);
+            InitializeObjectView(state.Uid, netObjectView);
             _temporaryUnregisteredViews.Add(state.Uid, netObjectView);
             return netObjectView;
         }
 
-        public void InitializeObjectView(NetObjectIdentity identity, NetObjectUid uid)
+        public void InitializeObjectView(NetObjectUid uid, NetObjectIdentity identity)
         {
             if (identity.Initialized)
                 throw new InvalidOperationException($"Identity {identity.gameObject.name}:{uid} already initialized.");
