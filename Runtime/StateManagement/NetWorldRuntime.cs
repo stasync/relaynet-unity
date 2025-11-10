@@ -387,7 +387,10 @@ namespace LROTech.Network.StateManagement
                         continue;
                     }
 
-                    // Object doesn't exist:
+                    // Object doesn't exist - we need to wait for next update to proceed.
+                    if (snapshot.StateChangeType < NetObjectStateChangeRequestType.UnreliableUpdate)
+                        continue;
+                    
                     // Object was removed remotely - no need to proceed, just clear all the queues.
                     if (snapshot.StateChangeType is NetObjectStateChangeRequestType.ReliableRemoveUpdateHard or NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft)
                     {
@@ -397,10 +400,6 @@ namespace LROTech.Network.StateManagement
                         remoteObjectUpdateRequests.Remove(uid);
                         continue;
                     }
-
-                    // Object doesn't exist - we need to wait for next update to proceed.
-                    if (snapshot.StateChangeType < NetObjectStateChangeRequestType.UnreliableUpdate)
-                        continue;
 
                     // Trying to fetch the object from temporary registry.
                     if (_temporaryUnregisteredObjects.TryGetValue(snapshot.ObjectUid, out var newState))
@@ -591,6 +590,8 @@ namespace LROTech.Network.StateManagement
                 return;
             }
 
+            // TODO: THIS IS A PROBLEM - upon connection we may have a ghost mater which is not valid already.
+            // REPRO: CONNECT, DISCONNECT, AND CONNECT BACK FAST - NOTICE THAT OBJECTS AREN'T EXIST.
             if (Players.LocalPlayer.Uid != GetSessionOwnerUid())
             {
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
