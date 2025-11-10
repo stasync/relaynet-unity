@@ -27,13 +27,10 @@ namespace LROTech.Network.StateManagement
         public IReadOnlyDictionary<NetObjectUid, NetObjectState> TemporaryUnregisteredObjects => _temporaryUnregisteredObjects;
         private readonly Dictionary<NetObjectUid, NetObjectState> _temporaryUnregisteredObjects = new();
 
+        public IReadOnlyDictionary<NetObjectUid, NetObjectSceneIdentity> UnregisteredSceneObjects => _unregisteredSceneObjects;
         private readonly Dictionary<NetObjectUid, NetObjectSceneIdentity> _unregisteredSceneObjects = new();
 
         public readonly NetWorldHistoryBuffer HistoryBuffer = new();
-
-        private readonly HashSet<ClientUid> _localPlayerRegisterQueue = new();
-        private readonly HashSet<ClientUid> _playerUnregisterQueue = new();
-
         private readonly Func<ClientUid> _sessionOwnerProvider;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
@@ -72,16 +69,14 @@ namespace LROTech.Network.StateManagement
             var remotePlayersUpdateRequests = new Dictionary<ClientUid, NetWorldPlayerSnapshot>();
             var remoteObjectUpdateRequests = new Dictionary<NetObjectUid, NetObjectStateSnapshot>();
             var remoteWorldDataUpdateRequests = new Queue<byte[]>();
-            var removedPlayers = new Queue<ClientUid>();
 
             TrySendWorldData();
 
             ProcessIncomingData();
 
             UpdateRemoteMasterWorldData();
-            UpdatePlayerStates();
-            UpdateObjectStateBasedOnRemovedPlayers();
-            UpdateObjectStateBasedOnRemoteData();
+            UpdateRemotePlayerStates();
+            UpdateRemoteObjectsStates();
             UpdateRpcRequestsWithoutAuthority();
             UpdateLocalObjectState();
 
@@ -248,42 +243,19 @@ namespace LROTech.Network.StateManagement
                 }
             }
 
-            void UpdatePlayerStates()
+            void UpdateRemotePlayerStates()
             {
-                // Add local.
-                {
-                    foreach (var clientUid in _localPlayerRegisterQueue)
-                    {
-                        // Add player and notify.
-                        var player = Players.Register(clientUid, isLocal: true);
-                        PlayerAdded(player.ToSnapshot());
-                    }
-
-                    _localPlayerRegisterQueue.Clear();
-                }
-
-                // Remove all.
-                {
-                    foreach (var clientUid in _playerUnregisterQueue)
-                    {
-                        var player = Players.Get(clientUid);
-                        var playerSnapshot = player?.ToSnapshot() ?? default;
-                        if (Players.Unregister(clientUid))
-                            removedPlayers.Enqueue(clientUid);
-
-                        if (playerSnapshot.Uid.IsValid)
-                            PlayerRemoved(playerSnapshot);
-                    }
-
-                    _playerUnregisterQueue.Clear();
-                }
-
                 // Update remotes.
                 {
                     foreach (var clientUid in new List<ClientUid>(remotePlayersUpdateRequests.Keys))
                     {
                         var snapshot = remotePlayersUpdateRequests[clientUid];
                         var player = Players.Get(clientUid);
+                        
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        if (player != null && player.IsLocal())
+                            throw new InvalidOperationException();
+#endif
 
                         // Player not exists.
                         if (player == null)
@@ -321,46 +293,8 @@ namespace LROTech.Network.StateManagement
                 }
             }
 
-            // Update states based on removed player, if player leave, remove object.
-            void UpdateObjectStateBasedOnRemovedPlayers()
-            {
-                while (removedPlayers.TryDequeue(out var removePlayerUid))
-                {
-                    foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
-                    {
-                        var state = ObjectStates[objectUid];
-
-                        // Object owned by disconnected player.
-                        if (state.IsOwnedBy(removePlayerUid))
-                        {
-                            // Change owner, if object is scene object.
-                            if (state.IsSceneObject)
-                            {
-                                // Is local client becomes master client, set object's owner and sync it.
-                                if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
-                                    state.ChangedOwner(Players.LocalPlayer.Uid);
-                                else
-                                    state.InvalidateOwner();
-
-                                if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
-                                    view.OnDisconnected(removePlayerUid);
-                            }
-                            // Destroy object.
-                            else
-                                RemoveObject(objectUid);
-                        }
-                        // Notify view.
-                        else
-                        {
-                            if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
-                                view.OnDisconnected(removePlayerUid);
-                        }
-                    }
-                }
-            }
-
             // Update state based on remote incoming data.
-            void UpdateObjectStateBasedOnRemoteData()
+            void UpdateRemoteObjectsStates()
             {
                 foreach (var uid in new List<NetObjectUid>(remoteObjectUpdateRequests.Keys))
                 {
@@ -539,8 +473,6 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
 
-            _localPlayerRegisterQueue.Clear();
-            _playerUnregisterQueue.Clear();
             _temporaryUnregisteredObjects.Clear();
             _incomingStateChangeRequests.Clear();
             _unregisteredSceneObjects.Clear();
@@ -570,13 +502,50 @@ namespace LROTech.Network.StateManagement
             _unregisteredSceneObjects.Remove(stateUid);
         }
 
-        internal void RegisterLocalPlayer(ClientUid clientUid) =>
-            _localPlayerRegisterQueue.Add(clientUid);
+        internal void RegisterLocalPlayer(ClientUid clientUid)
+        {
+            // Add player and notify.
+            var player = Players.Register(clientUid, isLocal: true);
+            PlayerAdded(player.ToSnapshot());
+        }
 
         internal void OnDisconnect(ClientUid clientUid)
         {
-            _localPlayerRegisterQueue.Remove(clientUid);
-            _playerUnregisterQueue.Add(clientUid);
+            if (!Players.Unregister(clientUid, out var removePlayerSnapshot)) 
+                return;
+            
+            PlayerRemoved(removePlayerSnapshot);
+
+            foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
+            {
+                var state = ObjectStates[objectUid];
+
+                // Object owned by disconnected player.
+                if (state.IsOwnedBy(clientUid))
+                {
+                    // Change owner, if object is scene object.
+                    if (state.IsSceneObject)
+                    {
+                        // Is local client becomes master client, set object's owner and sync it.
+                        if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
+                            state.ChangedOwner(Players.LocalPlayer.Uid);
+                        else
+                            state.InvalidateOwner();
+
+                        if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
+                            view.OnDisconnected(clientUid);
+                    }
+                    // Destroy object.
+                    else
+                        RemoveObject(objectUid);
+                }
+                // Notify view.
+                else
+                {
+                    if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
+                        view.OnDisconnected(clientUid);
+                }
+            }
         }
 
         internal void ScheduleRemoteUpdate(byte[] data) =>
@@ -616,7 +585,7 @@ namespace LROTech.Network.StateManagement
             if (ObjectExists(sceneIdentity.SceneObjectId))
             {
 #if NETWORK_DEBUG
-                Debug.LogError($"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabID}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
+                Debug.LogWarning($"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabID}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
 #endif
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
                 return;

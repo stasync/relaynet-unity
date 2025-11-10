@@ -279,6 +279,18 @@ namespace LROTech.Network.Editor
                                 EditorGUILayout.LabelField($"[{objectState.Uid}] [{objectState.PrefabId}] Owner: {(objectState.Owner == null ? "null" : objectState.Owner.ToString())} Scene: {objectState.IsSceneObject}");
                             EditorGUI.indentLevel--;
                         }
+                        
+                        // Temporary Unregistered Scene Objects.
+                        {
+                            EditorGUILayout.Space();
+                            var unregisteredSceneObjects = World.UnregisteredSceneObjects;
+                            EditorGUILayout.LabelField($"Unregistered Scene Objects: {unregisteredSceneObjects.Count}", EditorStyles.boldLabel);
+
+                            EditorGUI.indentLevel++;
+                            foreach (var objectState in unregisteredSceneObjects.Values)
+                                EditorGUILayout.LabelField($"[{objectState.SceneObjectId}] [{objectState.name}]");
+                            EditorGUI.indentLevel--;
+                        }
                     }
                     EditorGUI.indentLevel--;
                 }
