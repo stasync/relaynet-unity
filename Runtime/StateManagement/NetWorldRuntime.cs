@@ -14,6 +14,7 @@ namespace LROTech.Network.StateManagement
 
         private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
         private const float MIN_UPDATE_INTERVAL_S = 0.1f; // 10 times per second.
+        private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 3f; // Remove remote objects, if now data was received for 'N' seconds.
 
         public event Action<NetWorldPlayerSnapshot> PlayerAdded = delegate { };
         public event Action<NetWorldPlayerSnapshot> PlayerRemoved = delegate { };
@@ -207,7 +208,7 @@ namespace LROTech.Network.StateManagement
             void TrySendWorldData()
             {
                 // Only master can send this data.
-                if (Players.LocalPlayer == null || Players.LocalPlayer.IsMaster())
+                if (Players.LocalPlayer == null || !Players.LocalPlayer.IsMaster())
                     return;
 
                 _writer.SeekZero();
@@ -225,9 +226,9 @@ namespace LROTech.Network.StateManagement
 
                 // We need to peek latest data here - the 'maxTime' value to filter out irrelevant data.
                 var maxTime = float.MinValue;
-                while (remoteWorldDataUpdateRequests.Count > 0)
+                while (remoteWorldDataUpdateRequests.TryDequeue(out var data))
                 {
-                    _reader.Replace(buffer: remoteWorldDataUpdateRequests.Dequeue());
+                    _reader.Replace(buffer: data);
                     _reader.ReadByte(); // Offset - see ProcessInternalData var worldChangeOpCode = (NetWorldRuntimeChangeOp)_reader.ReadByte();
 
                     var newTime = _reader.ReadSingle();
@@ -293,6 +294,7 @@ namespace LROTech.Network.StateManagement
             // Update state based on remote incoming data.
             void UpdateRemoteObjectsStates()
             {
+                // Process incoming update requests.
                 foreach (var uid in new List<NetObjectUid>(remoteObjectUpdateRequests.Keys))
                 {
                     var snapshot = remoteObjectUpdateRequests[uid];
@@ -346,6 +348,23 @@ namespace LROTech.Network.StateManagement
                     }
 
                     remoteObjectUpdateRequests.Remove(uid);
+                }
+                
+                // Validate objects lifetime.
+                foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
+                {
+                    var state = ObjectStates[uid];
+                    
+                    // Skip local objects.
+                    if (state.IsOwnedByLocalPlayer)
+                        continue;
+                    
+                    var timeDelta = Time - state.WorldTime;
+                    if (timeDelta < AUTO_REMOVE_REMOTE_OBJECT_TIME_S)
+                        continue;
+                    
+                    remoteObjectUpdateRequests.Remove(uid);
+                    RemoveObject(uid);
                 }
             }
 

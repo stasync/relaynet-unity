@@ -135,6 +135,7 @@ namespace LROTech.Network.StateManagement
             UpdateOwnerInternal(snapshot.OwnerUid);
 
             StateChangeType = snapshot.StateChangeType;
+            WorldTime = snapshot.WorldTime;
             RpcBuffer.RestoreFormSnapshot(snapshot.RpcState);
             DataCollection.RestoreFromSnapShot(snapshot.DataState);
         }
@@ -245,6 +246,7 @@ namespace LROTech.Network.StateManagement
             hash = hash * 7 + IsSceneObject.GetHashCode();
             hash = hash * 7 + OwnerUid.GetHashCode();
             hash = hash * 7 + StateChangeType.GetHashCode();
+            hash = hash * 7 + WorldTime.GetHashCode();
             hash = hash * 7 + RpcBuffer.GetVersionHash();
             hash = hash * 7 + DataCollection.GetVersionHash();
             return hash;

@@ -63,6 +63,7 @@ namespace LROTech.Network.Editor
                     EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {_state.PrefabId}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Owner: {_state.Owner} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})");
+                    EditorGUILayout.LabelField($"World Time: {_state.WorldTime:f2}", EditorStyles.boldLabel);
 
                     var stateSnapshot = _state.ToSnapshot();
                     EditorGUILayout.LabelField($"Total Size: {stateSnapshot.GetSize()}");
