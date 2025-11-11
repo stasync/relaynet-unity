@@ -39,6 +39,25 @@ namespace LROTech.Network.Editor
                 if (!_draw)
                     return;
 
+                // Debug.
+                {
+                    EditorGUILayout.BeginHorizontal();
+
+                    if (GUILayout.Button("Remove From World"))
+                        _world.RemoveObject(_state.Uid);
+
+                    if (_state.IsOwnedByLocalPlayer)
+                    {
+                        if (GUILayout.Button("Destroy Soft"))
+                            _state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
+                    }
+
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                if (!_state.IsValid())
+                    return;
+
                 EditorGUI.indentLevel++;
                 {
                     EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {_state.PrefabId}", EditorStyles.boldLabel);
@@ -127,8 +146,9 @@ namespace LROTech.Network.Editor
 
             public bool IsValid => World is { IsValid: true };
 
-            bool _draw;
-            Dictionary<NetObjectUid, ObjectDrawer> _objectViews;
+            private bool _draw;
+            private readonly Dictionary<NetObjectUid, ObjectDrawer> _objectViews = new();
+            private readonly List<NetObjectUid> _worldObjectsIterator = new();
 
             protected WorldDrawer(T world)
             {
@@ -147,9 +167,7 @@ namespace LROTech.Network.Editor
                 _draw = EditorGUILayout.Foldout(_draw, World.Name);
                 if (!_draw)
                     return;
-
-                _objectViews ??= new Dictionary<NetObjectUid, ObjectDrawer>();
-
+                
                 EditorGUI.indentLevel++;
                 OnDrawWorld();
                 EditorGUI.indentLevel--;
@@ -199,14 +217,17 @@ namespace LROTech.Network.Editor
                     }
 
                     EditorGUILayout.Space();
-                    var objStates = World.ObjectStates;
-                    EditorGUILayout.LabelField($"Objects: {objStates.Count}", EditorStyles.boldLabel);
-                    foreach (var (uid, netObject) in objStates)
+                    EditorGUILayout.LabelField($"Objects: {World.ObjectStates.Count}", EditorStyles.boldLabel);
+                    
+                    _worldObjectsIterator.Clear();
+                    _worldObjectsIterator.AddRange(World.ObjectStates.Keys);
+                    foreach (var objectUid in _worldObjectsIterator)
                     {
-                        if (!_objectViews.TryGetValue(uid, out var drawer))
+                        var state = World.ObjectStates[objectUid];
+                        if (!_objectViews.TryGetValue(objectUid, out var drawer))
                         {
-                            drawer = new ObjectDrawer(netObject, World);
-                            _objectViews.Add(uid, drawer);
+                            drawer = new ObjectDrawer(state, World);
+                            _objectViews.Add(objectUid, drawer);
                         }
 
                         drawer.Draw();
@@ -267,7 +288,7 @@ namespace LROTech.Network.Editor
                             var registerRequests = World.IncomingStateChangeRequests;
                             EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
                         }
-                        
+
                         // Temporary Unregistered Scene Objects.
                         {
                             EditorGUILayout.Space();

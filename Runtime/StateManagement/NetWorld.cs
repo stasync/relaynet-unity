@@ -216,7 +216,7 @@ namespace LROTech.Network.StateManagement
         protected bool IsObjectValid(NetObjectUid instanceId) =>
             _currentObjectStates.ContainsKey(instanceId);
 
-        protected virtual void RemoveObject(NetObjectUid stateUid)
+        internal virtual void RemoveObject(NetObjectUid stateUid)
         {
             EnsureValid();
 

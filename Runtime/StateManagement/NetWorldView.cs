@@ -27,7 +27,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUid, NetObjectIdentity> _temporaryUnregisteredViews = new();
 
         private Scene _worldScene;
-        private readonly List<NetObjectUid> _objectUidCollectionCache = new();
+        private readonly List<NetObjectUid> _currentObjectViewsIterator = new();
 
         internal void Init(NetWorld world, NetWorldViewInitMode initMode)
         {
@@ -58,11 +58,12 @@ namespace LROTech.Network.StateManagement
             Profiler.BeginSample($"[{_world.Uid}] {_world.Name} View.{nameof(RebuildAccordingState)}");
 
             // Remove invalid views.
-            _objectUidCollectionCache.Clear();
-            _objectUidCollectionCache.AddRange(_currentObjectViews.Keys);
-            foreach (var uid in _objectUidCollectionCache)
+            _currentObjectViewsIterator.Clear();
+            _currentObjectViewsIterator.AddRange(_currentObjectViews.Keys);
+            foreach (var uid in _currentObjectViewsIterator)
             {
-                if (!ShouldUpdateViewForState(uid))
+                // No need to update state, or the state reference was invalidated.
+                if (!ShouldUpdateViewForState(uid) || !_currentObjectViews[uid].InstanceId.IsValid)
                     RemoveView(uid);
             }
 

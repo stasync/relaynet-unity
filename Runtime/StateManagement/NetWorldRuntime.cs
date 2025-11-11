@@ -460,7 +460,7 @@ namespace LROTech.Network.StateManagement
             return new NetWorldEvaluator(runtime: this);
         }
 
-        protected override void RemoveObject(NetObjectUid stateUid)
+        internal override void RemoveObject(NetObjectUid stateUid)
         {
             base.RemoveObject(stateUid);
             _unregisteredSceneObjects.Remove(stateUid);
