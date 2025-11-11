@@ -72,7 +72,8 @@ namespace LROTech.NetworkBehaviours
                 }
             }
 
-            if (!Identity.World.TryGetObject(sender, out var senderState))
+            var senderState = Identity.World.GetObject(sender);
+            if (senderState == null)
             {
                 Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' not exists.");
                 callback(false);

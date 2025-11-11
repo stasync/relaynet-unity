@@ -152,7 +152,7 @@ namespace LROTech.Network.StateManagement
                             if (!state.IsValid)
                                 throw new ArgumentException();
 
-                            var objectIdentity = FindObjectView(state.ObjectUid);
+                            var objectIdentity = GetObjectView(state.ObjectUid);
 
                             // We need to handle rpc receive for objects, which are doesn't exist.
                             // It is probably already destroyed.

@@ -19,7 +19,7 @@ namespace LROTech.Network.GameObjects
 
         public void GetOrWaitFor(NetObjectUid uid, Action<NetObjectIdentity> a)
         {
-            var existedView = _world.FindObjectView(uid);
+            var existedView = _world.GetObjectView(uid);
             if (existedView != null)
             {
                 a(existedView);

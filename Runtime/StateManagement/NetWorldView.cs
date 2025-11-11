@@ -112,7 +112,9 @@ namespace LROTech.Network.StateManagement
 
         private bool ShouldUpdateViewForState(NetObjectUid uid)
         {
-            if (!_world.TryGetObject(uid, out var netObjectState))
+            var netObjectState = _world.GetObject(uid);
+            
+            if (netObjectState == null)
                 return false;
 
             if (netObjectState.IsOwnedByLocalPlayer)
@@ -259,12 +261,12 @@ namespace LROTech.Network.StateManagement
                 SceneManager.UnloadSceneAsync(_worldScene);
         }
 
-        public NetObjectIdentity FindObjectView(NetObjectUid instanceId) =>
+        public NetObjectIdentity GetObjectView(NetObjectUid instanceId) =>
             _currentObjectViews.GetValueOrDefault(instanceId);
 
-        public T FindObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase
+        public T GetObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase
         {
-            var networkObject = FindObjectView(instanceId);
+            var networkObject = GetObjectView(instanceId);
             return networkObject == null ? null : networkObject.GetComponent<T>();
         }
     }

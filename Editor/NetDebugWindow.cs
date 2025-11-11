@@ -103,7 +103,7 @@ namespace LROTech.Network.Editor
                     if (_world.View != null)
                     {
                         EditorGUI.BeginDisabledGroup(true);
-                        EditorGUILayout.ObjectField(label: "View", _world.FindObjectView(_state.Uid), typeof(GameObject), allowSceneObjects: true);
+                        EditorGUILayout.ObjectField(label: "View", _world.GetObjectView(_state.Uid), typeof(GameObject), allowSceneObjects: true);
                         EditorGUI.EndDisabledGroup();
                     }
                 }

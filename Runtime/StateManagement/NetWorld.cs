@@ -178,16 +178,16 @@ namespace LROTech.Network.StateManagement
             return _currentObjectStates.ContainsKey(uid);
         }
 
-        public NetObjectIdentity FindObjectView(NetObjectUid instanceId)
+        public NetObjectIdentity GetObjectView(NetObjectUid instanceId)
         {
             EnsureValid();
-            return View == null ? null : View.FindObjectView(instanceId);
+            return View == null ? null : View.GetObjectView(instanceId);
         }
 
-        public T FindObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase
+        public T GetObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase
         {
             EnsureValid();
-            return View == null ? null : View.FindObjectView<T>(instanceId);
+            return View == null ? null : View.GetObjectView<T>(instanceId);
         }
 
         public T FindObjectViewOfType<T>() where T : NetObjectBehaviourBase
@@ -212,13 +212,7 @@ namespace LROTech.Network.StateManagement
             EnsureValid();
             return _currentObjectStates.GetValueOrDefault(instanceId);
         }
-
-        public bool TryGetObject(NetObjectUid instanceId, out NetObjectState state)
-        {
-            EnsureValid();
-            return _currentObjectStates.TryGetValue(instanceId, out state);
-        }
-
+        
         protected bool IsObjectValid(NetObjectUid instanceId) =>
             _currentObjectStates.ContainsKey(instanceId);
 
