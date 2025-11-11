@@ -175,19 +175,39 @@ namespace LROTech.Network.StateManagement
         public bool ObjectExists(NetObjectUid uid)
         {
             EnsureValid();
-            return _currentObjectStates.ContainsKey(uid);
+            return uid.IsValid && _currentObjectStates.ContainsKey(uid);
         }
 
-        public NetObjectIdentity GetObjectView(NetObjectUid instanceId)
+        public NetObjectState GetObject(NetObjectUid uid)
         {
             EnsureValid();
-            return View == null ? null : View.GetObjectView(instanceId);
+            return uid.IsValid ? _currentObjectStates.GetValueOrDefault(uid) : null;
+        }
+        
+        protected bool IsObjectValid(NetObjectUid uid) =>
+            uid.IsValid && _currentObjectStates.ContainsKey(uid);
+
+        internal virtual void RemoveObject(NetObjectUid uid)
+        {
+            EnsureValid();
+
+            if (!uid.IsValid || !_currentObjectStates.TryGetValue(uid, out var state))
+                return;
+
+            state.Invalidate();
+            _currentObjectStates.Remove(uid);
+        }
+        
+        public NetObjectIdentity GetObjectView(NetObjectUid uid)
+        {
+            EnsureValid();
+            return View == null ? null : View.GetObjectView(uid);
         }
 
-        public T GetObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase
+        public T GetObjectView<T>(NetObjectUid uid) where T : NetObjectBehaviourBase
         {
             EnsureValid();
-            return View == null ? null : View.GetObjectView<T>(instanceId);
+            return View == null ? null : View.GetObjectView<T>(uid);
         }
 
         public T FindObjectViewOfType<T>() where T : NetObjectBehaviourBase
@@ -205,26 +225,6 @@ namespace LROTech.Network.StateManagement
             }
 
             return null;
-        }
-
-        public NetObjectState GetObject(NetObjectUid instanceId)
-        {
-            EnsureValid();
-            return _currentObjectStates.GetValueOrDefault(instanceId);
-        }
-        
-        protected bool IsObjectValid(NetObjectUid instanceId) =>
-            _currentObjectStates.ContainsKey(instanceId);
-
-        internal virtual void RemoveObject(NetObjectUid stateUid)
-        {
-            EnsureValid();
-
-            if (!_currentObjectStates.TryGetValue(stateUid, out var state))
-                return;
-
-            state.Invalidate();
-            _currentObjectStates.Remove(stateUid);
         }
 
         public NetWorldSnapshot ToSnapshot(float deltaTime = 0f)

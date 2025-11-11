@@ -17,11 +17,11 @@ namespace LROTech.Network.StateManagement
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NetObjectState ReadObjectState(this NetReader reader, NetWorld targetWorld) =>
-            targetWorld.GetObject(instanceId: new NetObjectUid(reader.ReadPackedUInt32()));
+            targetWorld.GetObject(uid: new NetObjectUid(reader.ReadPackedUInt32()));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReadObjectViewOfType<T>(this NetReader reader, NetWorld targetWorld) where T : NetObjectBehaviourBase =>
-            targetWorld.GetObjectView<T>(instanceId: new NetObjectUid(reader.ReadPackedUInt32()));
+            targetWorld.GetObjectView<T>(uid: new NetObjectUid(reader.ReadPackedUInt32()));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 ReadVector2(this NetReader reader) =>

@@ -460,22 +460,22 @@ namespace LROTech.Network.StateManagement
             return new NetWorldEvaluator(runtime: this);
         }
 
-        internal override void RemoveObject(NetObjectUid stateUid)
+        internal override void RemoveObject(NetObjectUid uid)
         {
-            base.RemoveObject(stateUid);
-            _unregisteredSceneObjects.Remove(stateUid);
+            base.RemoveObject(uid);
+            _unregisteredSceneObjects.Remove(uid);
         }
 
-        internal void RegisterLocalPlayer(ClientUid clientUid)
+        internal void RegisterLocalPlayer(ClientUid uid)
         {
             // Add player and notify.
-            var player = Players.Register(clientUid, isLocal: true);
+            var player = Players.Register(uid, isLocal: true);
             PlayerAdded(player.ToSnapshot());
         }
 
-        internal void OnDisconnect(ClientUid clientUid)
+        internal void OnDisconnect(ClientUid uid)
         {
-            if (!Players.Unregister(clientUid, out var removePlayerSnapshot))
+            if (!Players.Unregister(uid, out var removePlayerSnapshot))
                 return;
 
             PlayerRemoved(removePlayerSnapshot);
@@ -485,7 +485,7 @@ namespace LROTech.Network.StateManagement
                 var state = ObjectStates[objectUid];
 
                 // Object owned by disconnected player.
-                if (state.IsOwnedBy(clientUid))
+                if (state.IsOwnedBy(uid))
                 {
                     // Change owner, if object is scene object.
                     if (state.IsSceneObject)
@@ -497,7 +497,7 @@ namespace LROTech.Network.StateManagement
                             state.InvalidateOwner();
 
                         if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
-                            view.OnDisconnected(clientUid);
+                            view.OnDisconnected(uid);
                     }
                     // Destroy object.
                     else
@@ -507,7 +507,7 @@ namespace LROTech.Network.StateManagement
                 else
                 {
                     if (View != null && View.CurrentObjectViews.TryGetValue(objectUid, out var view))
-                        view.OnDisconnected(clientUid);
+                        view.OnDisconnected(uid);
                 }
             }
         }

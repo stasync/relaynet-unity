@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Core;
 using Core.Networking;
@@ -25,15 +24,16 @@ namespace LROTech.Network.Editor
 
             private bool _draw;
 
-            public void SetDrawingEnabled(bool value) => _draw = value;
+            internal bool IsValid() => _state != null && _state.IsValid();
+            internal void SetDrawingEnabled(bool value) => _draw = value;
 
-            public ObjectDrawer(NetObjectState objectState, NetWorld world)
+            internal ObjectDrawer(NetObjectState objectState, NetWorld world)
             {
                 _state = objectState;
                 _world = world;
             }
 
-            public void Draw()
+            internal void Draw()
             {
                 _draw = EditorGUILayout.Foldout(_draw, content: $"Uid: {_state.Uid} Prefab: {_state.PrefabId}");
                 if (!_draw)
@@ -147,7 +147,7 @@ namespace LROTech.Network.Editor
             public bool IsValid => World is { IsValid: true };
 
             private bool _draw;
-            private readonly Dictionary<NetObjectUid, ObjectDrawer> _objectViews = new();
+            private readonly Dictionary<NetObjectUid, ObjectDrawer> _objectDrawers = new();
             private readonly List<NetObjectUid> _worldObjectsIterator = new();
 
             protected WorldDrawer(T world)
@@ -195,10 +195,11 @@ namespace LROTech.Network.Editor
 
                 // Objects.
                 {
-                    foreach (var uid in _objectViews.Keys.ToList())
+                    foreach (var uid in new List<NetObjectUid>(_objectDrawers.Keys))
                     {
-                        if (!World.ObjectExists(uid))
-                            _objectViews.Remove(uid);
+                        var drawer = _objectDrawers[uid];
+                        if (!World.ObjectExists(uid) || !drawer.IsValid())
+                            _objectDrawers.Remove(uid);
                     }
 
                     // Expand/Collapse all objects;
@@ -206,11 +207,11 @@ namespace LROTech.Network.Editor
                         EditorGUILayout.BeginHorizontal();
 
                         if (GUILayout.Button("Collapse all"))
-                            foreach (var drawer in _objectViews.Values)
+                            foreach (var drawer in _objectDrawers.Values)
                                 drawer.SetDrawingEnabled(false);
 
                         if (GUILayout.Button("Expand all"))
-                            foreach (var drawer in _objectViews.Values)
+                            foreach (var drawer in _objectDrawers.Values)
                                 drawer.SetDrawingEnabled(true);
 
                         EditorGUILayout.EndHorizontal();
@@ -224,10 +225,10 @@ namespace LROTech.Network.Editor
                     foreach (var objectUid in _worldObjectsIterator)
                     {
                         var state = World.ObjectStates[objectUid];
-                        if (!_objectViews.TryGetValue(objectUid, out var drawer))
+                        if (!_objectDrawers.TryGetValue(objectUid, out var drawer))
                         {
                             drawer = new ObjectDrawer(state, World);
-                            _objectViews.Add(objectUid, drawer);
+                            _objectDrawers.Add(objectUid, drawer);
                         }
 
                         drawer.Draw();

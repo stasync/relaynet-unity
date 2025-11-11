@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using LROTech.Network.StateManagement.Snapshots;
-using UnityEngine;
 
 namespace LROTech.Network.StateManagement
 {
@@ -25,9 +24,7 @@ namespace LROTech.Network.StateManagement
         internal NetWorldPlayersCollection(Func<bool> validator, Func<ClientUid> masterClientUidProvider)
         {
             _validator = validator ?? throw new ArgumentNullException(nameof(validator));
-            ;
             _masterClientUidProvider = masterClientUidProvider ?? throw new ArgumentNullException(nameof(masterClientUidProvider));
-            ;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -64,11 +61,11 @@ namespace LROTech.Network.StateManagement
                 LocalPlayer = null;
 
             snapshot = default;
-            
+
             // NOTE: we can't use 'Remove' to take a player for snapshot, as player will become invalid once it removed from the dictionary.
             if (_playersCollection.TryGetValue(uid, out var player))
                 snapshot = player.ToSnapshot();
-            
+
             var playerRemoved = _playersCollection.Remove(uid);
             MasterPlayer = Get(uid: _masterClientUidProvider());
             return playerRemoved;
