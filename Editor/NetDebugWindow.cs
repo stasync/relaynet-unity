@@ -267,18 +267,6 @@ namespace LROTech.Network.Editor
                             var registerRequests = World.IncomingStateChangeRequests;
                             EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
                         }
-
-                        // Temporary Unregistered Objects.
-                        {
-                            EditorGUILayout.Space();
-                            var temporaryUnregisteredObjects = World.TemporaryUnregisteredObjects;
-                            EditorGUILayout.LabelField($"Unregistered Objects: {temporaryUnregisteredObjects.Count}", EditorStyles.boldLabel);
-
-                            EditorGUI.indentLevel++;
-                            foreach (var objectState in temporaryUnregisteredObjects.Values)
-                                EditorGUILayout.LabelField($"[{objectState.Uid}] [{objectState.PrefabId}] Owner: {(objectState.Owner == null ? "null" : objectState.Owner.ToString())} Scene: {objectState.IsSceneObject}");
-                            EditorGUI.indentLevel--;
-                        }
                         
                         // Temporary Unregistered Scene Objects.
                         {

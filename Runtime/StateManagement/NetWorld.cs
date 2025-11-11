@@ -59,7 +59,7 @@ namespace LROTech.Network.StateManagement
 #endif
         }
 
-        protected virtual ClientUid GetSessionOwnerUid() => 
+        protected virtual ClientUid GetSessionOwnerUid() =>
             ClientUid.Invalid;
 
         internal void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)
@@ -79,19 +79,17 @@ namespace LROTech.Network.StateManagement
 
         protected abstract void UpdateImplementation(float deltaTime);
 
-        protected bool TryAddObject(NetObjectState state)
+        protected void AddObject(NetObjectState state)
         {
             if (!state.Uid.IsValid)
                 throw new InvalidOperationException();
 
             var canAddObject = !ObjectExists(state.Uid);
-            if (canAddObject)
-            {
-                _currentObjectStates.Add(state.Uid, state);
-                ObjectCreated(state.Uid);
-            }
+            if (!canAddObject)
+                throw new InvalidOperationException();
 
-            return canAddObject;
+            _currentObjectStates.Add(state.Uid, state);
+            ObjectCreated(state.Uid);
         }
 
         protected void UpdateWorldState(float worldDelta)
@@ -209,7 +207,7 @@ namespace LROTech.Network.StateManagement
             return null;
         }
 
-        public virtual NetObjectState FindObject(NetObjectUid instanceId)
+        public NetObjectState GetObject(NetObjectUid instanceId)
         {
             EnsureValid();
             return _currentObjectStates.GetValueOrDefault(instanceId);
@@ -221,7 +219,7 @@ namespace LROTech.Network.StateManagement
             return _currentObjectStates.TryGetValue(instanceId, out state);
         }
 
-        protected virtual bool IsObjectValid(NetObjectUid instanceId) =>
+        protected bool IsObjectValid(NetObjectUid instanceId) =>
             _currentObjectStates.ContainsKey(instanceId);
 
         protected virtual void RemoveObject(NetObjectUid stateUid)
@@ -259,7 +257,7 @@ namespace LROTech.Network.StateManagement
                 if (_currentObjectStates.TryGetValue(uid, out var state))
                     state.ChangeObjectRemotely(objectStateSnapshot);
                 else
-                    TryAddObject(new NetObjectState(IsObjectValid, Players.Get, objectStateSnapshot));
+                    AddObject(new NetObjectState(IsObjectValid, Players.Get, objectStateSnapshot));
             }
 
             // Remove absent objects.

@@ -61,7 +61,7 @@ namespace LROTech.Network.GameObjects
             _behaviours = gameObject.GetComponents<NetObjectBehaviourBase>();
 
             World = world;
-            State = world.FindObject(stateUid);
+            State = world.GetObject(stateUid);
 
             State.OwnerChanged += OwnerChanged;
             State.LocalUpdateRequest += OnLocalUpdateRequest;

@@ -17,7 +17,7 @@ namespace LROTech.Network.StateManagement
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NetObjectState ReadObjectState(this NetReader reader, NetWorld targetWorld) =>
-            targetWorld.FindObject(instanceId: new NetObjectUid(reader.ReadPackedUInt32()));
+            targetWorld.GetObject(instanceId: new NetObjectUid(reader.ReadPackedUInt32()));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T ReadObjectViewOfType<T>(this NetReader reader, NetWorld targetWorld) where T : NetObjectBehaviourBase =>

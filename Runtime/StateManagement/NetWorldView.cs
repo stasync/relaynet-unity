@@ -140,18 +140,32 @@ namespace LROTech.Network.StateManagement
             return netObjectView;
         }
 
-        public NetObjectIdentity CreateImmediate(NetObjectState state, Vector3 position, Quaternion rotation)
+        internal NetObjectIdentity CreateObjectViewImmediate(NetObjectState state, Vector3 position, Quaternion rotation)
         {
+            var currentView = GetView(state.Uid);
+            if (currentView != null)
+                throw new InvalidOperationException($"View '{currentView.gameObject.name}' is already registered for object with uid '{state.Uid}'.");
+
             var netObjectView = _objectFactory.Create(state.PrefabId, position, rotation);
             InitializeObjectView(state.Uid, netObjectView);
             _temporaryUnregisteredViews.Add(state.Uid, netObjectView);
             return netObjectView;
         }
 
-        internal void InitializeObjectView(NetObjectUid uid, NetObjectIdentity identity)
+        internal void RegisterExistedObjectView(NetObjectState state, NetObjectIdentity identity)
+        {
+            var currentView = GetView(state.Uid);
+            if (currentView != null)
+                throw new InvalidOperationException($"View '{currentView.gameObject.name}' is already registered for object with uid '{state.Uid}'.");
+
+            InitializeObjectView(state.Uid, identity);
+            _temporaryUnregisteredViews.Add(state.Uid, identity);
+        }
+
+        private void InitializeObjectView(NetObjectUid uid, NetObjectIdentity identity)
         {
             if (identity.Initialized)
-                throw new InvalidOperationException($"Identity {identity.gameObject.name}:{uid} already initialized.");
+                throw new InvalidOperationException($"Identity '{identity.gameObject.name}' with id '{uid}' is already initialized.");
 
             // Set world as view parent.
             UpdateTransformInView(identity.transform);
@@ -162,9 +176,6 @@ namespace LROTech.Network.StateManagement
             // Push event.
             NewObjectInitialized(identity);
         }
-        
-        internal void RegisterAsPending(NetObjectUid uid, NetObjectIdentity identity) =>
-            _temporaryUnregisteredViews.Add(uid, identity);
 
         public GameObject InstantiateGameObjectInView(GameObject original, Vector3 position, Quaternion rotation, Transform parent = null)
         {

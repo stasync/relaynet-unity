@@ -19,7 +19,7 @@ namespace LROTech.Network.StateManagement
         public ClientUid OwnerUid { get; private set; }
 
         public NetObjectStateChangeRequestType StateChangeType { get; private set; }
-        
+
         public float WorldTime { get; private set; }
 
         public readonly NetObjectRpcBuffer RpcBuffer;
@@ -190,12 +190,10 @@ namespace LROTech.Network.StateManagement
             if (!IsOwnedByLocalPlayer)
                 throw new InvalidOperationException($"No authority to change '{Uid}' object with owner '{OwnerUid}'.");
 
-            if (StateChangeType > requestType)
-                Debug.LogError($"Unable to set request '{requestType}' because it has less priority than current request '{StateChangeType}'.");
-            else
+            if (StateChangeType < requestType)
                 _stateChangeTypeQueue.Enqueue(requestType);
         }
-        
+
         public bool IsOwnedBy(ClientUid uid)
         {
             EnsureValid();
@@ -215,12 +213,9 @@ namespace LROTech.Network.StateManagement
             else
                 Debug.LogError($"Unable to change owner, invalid id {newOwner}");
         }
-        
-        internal void InvalidateOwner()
-        {
-            EnsureValid();
+
+        internal void InvalidateOwner() =>
             OwnerUid = ClientUid.Invalid;
-        }
 
         internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
             _rpcWithoutAuthorityQueue.Enqueue(new RpcWithoutAuthorityRequest(Uid, type, hashCode, data, deliveryMethod));
@@ -244,8 +239,6 @@ namespace LROTech.Network.StateManagement
 
         internal int GetVersionHash()
         {
-            EnsureValid();
-
             var hash = 13;
             hash = hash * 7 + Uid.GetHashCode();
             hash = hash * 7 + PrefabId.GetHashCode();
