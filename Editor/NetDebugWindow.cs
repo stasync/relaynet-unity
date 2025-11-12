@@ -65,6 +65,14 @@ namespace LROTech.Network.Editor
                     EditorGUILayout.LabelField($"Owner: {_state.Owner} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})");
                     EditorGUILayout.LabelField($"World Time: {_state.WorldTime:f2}", EditorStyles.boldLabel);
 
+                    if (_state.IsOwnedByLocalPlayer && _world is NetWorldRuntime runtimeWorld)
+                    {
+                        var lastReplicationState = runtimeWorld.IsStateReplicationEnabled(_state.Uid);
+                        var newReplicationState = EditorGUILayout.Toggle("Replicate:", lastReplicationState);
+                        if (newReplicationState != lastReplicationState)
+                            runtimeWorld.SetStateReplicationEnabled(_state.Uid, newReplicationState);
+                    }
+
                     var stateSnapshot = _state.ToSnapshot();
                     EditorGUILayout.LabelField($"Total Size: {stateSnapshot.GetSize()}");
 
@@ -168,7 +176,7 @@ namespace LROTech.Network.Editor
                 _draw = EditorGUILayout.Foldout(_draw, World.Name);
                 if (!_draw)
                     return;
-                
+
                 EditorGUI.indentLevel++;
                 OnDrawWorld();
                 EditorGUI.indentLevel--;
@@ -220,7 +228,7 @@ namespace LROTech.Network.Editor
 
                     EditorGUILayout.Space();
                     EditorGUILayout.LabelField($"Objects: {World.ObjectStates.Count}", EditorStyles.boldLabel);
-                    
+
                     _worldObjectsIterator.Clear();
                     _worldObjectsIterator.AddRange(World.ObjectStates.Keys);
                     foreach (var objectUid in _worldObjectsIterator)

@@ -32,6 +32,7 @@ namespace LROTech.Network.StateManagement
         private readonly Func<ClientUid> _sessionOwnerProvider;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
+        private readonly HashSet<NetObjectUid> _objectSendBlacklist = new();
 
         private float _lastUpdateTime;
         private float _localUpdateTime;
@@ -349,20 +350,20 @@ namespace LROTech.Network.StateManagement
 
                     remoteObjectUpdateRequests.Remove(uid);
                 }
-                
+
                 // Validate objects lifetime.
                 foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
                 {
                     var state = ObjectStates[uid];
-                    
+
                     // Skip local objects.
                     if (state.IsOwnedByLocalPlayer)
                         continue;
-                    
+
                     var timeDelta = Time - state.WorldTime;
                     if (timeDelta < AUTO_REMOVE_REMOTE_OBJECT_TIME_S)
                         continue;
-                    
+
                     remoteObjectUpdateRequests.Remove(uid);
                     RemoveObject(uid);
                 }
@@ -393,7 +394,7 @@ namespace LROTech.Network.StateManagement
                     foreach (var uid in new List<NetObjectUid>(_unregisteredSceneObjects.Keys))
                     {
                         var sceneIdentity = _unregisteredSceneObjects[uid];
-                        
+
                         var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, owner: Players.LocalPlayer.Uid);
                         AddObject(newState);
                         newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
@@ -411,6 +412,10 @@ namespace LROTech.Network.StateManagement
 
                     // Skip remote objects.
                     if (!state.IsOwnedByLocalPlayer)
+                        continue;
+
+                    // Check if state replication is not allowed for the state.
+                    if (_objectSendBlacklist.Contains(uid))
                         continue;
 
                     var deliveryMethod = DeliveryMethod.Unreliable;
@@ -550,7 +555,7 @@ namespace LROTech.Network.StateManagement
             var newState = new NetObjectState(IsObjectValid, Players.Get, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
-            
+
             return View.CreateObjectViewImmediate(newState, position, rotation);
         }
 
@@ -615,6 +620,21 @@ namespace LROTech.Network.StateManagement
                     }
                 }
             }
+        }
+        
+        internal bool IsStateReplicationEnabled(NetObjectUid uid) => 
+            !_objectSendBlacklist.Contains(uid);
+
+        internal void SetStateReplicationEnabled(NetObjectUid netObjectUid, bool value)
+        {
+            var state = GetObject(netObjectUid);
+            if (state == null)
+                return;
+
+            if (value)
+                _objectSendBlacklist.Remove(netObjectUid);
+            else
+                _objectSendBlacklist.Add(netObjectUid);
         }
     }
 }
