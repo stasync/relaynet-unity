@@ -65,6 +65,8 @@ namespace LROTech.Network.StateManagement
                 // No need to update state, or the state reference was invalidated.
                 if (!ShouldUpdateViewForState(uid) || !_currentObjectViews[uid].InstanceId.IsValid)
                     RemoveView(uid);
+                
+                // TODO: Remove also if object too outdated? Wold time much greater than the update time.
             }
 
             // Create, update, destroy objects.

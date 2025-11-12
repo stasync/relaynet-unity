@@ -14,7 +14,7 @@ namespace LROTech.Network.StateManagement
 
         private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
         private const float MIN_UPDATE_INTERVAL_S = 0.1f; // 10 times per second.
-        private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 3f; // Remove remote objects, if now data was received for 'N' seconds.
+        private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 6f; // Remove remote objects, if now data was received for 'N' seconds.
 
         public event Action<NetWorldPlayerSnapshot> PlayerAdded = delegate { };
         public event Action<NetWorldPlayerSnapshot> PlayerRemoved = delegate { };
