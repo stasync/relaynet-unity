@@ -621,8 +621,8 @@ namespace LROTech.Network.StateManagement
                 }
             }
         }
-        
-        internal bool IsStateReplicationEnabled(NetObjectUid uid) => 
+
+        internal bool IsStateReplicationEnabled(NetObjectUid uid) =>
             !_objectSendBlacklist.Contains(uid);
 
         internal void SetStateReplicationEnabled(NetObjectUid netObjectUid, bool value)
