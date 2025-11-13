@@ -64,7 +64,7 @@ namespace LROTech.Network.StateManagement
 
         private int _rttMs;
 
-        public readonly NetworkProperties Properties;
+        public readonly NetProperties Properties;
 
         public IReadOnlyCollection<NetObjectUid> TagObjectUidCollection => _tagObjectUidCollection;
         private readonly HashSet<NetObjectUid> _tagObjectUidCollection = new();
@@ -88,7 +88,7 @@ namespace LROTech.Network.StateManagement
             _validator = validator;
             _masterPlayerUidProvider = masterPlayerUidProvider;
 
-            Properties = new NetworkProperties(validator: IsValid, writePermission: IsLocal);
+            Properties = new NetProperties(validator: IsValid, writePermission: IsLocal);
         }
 
         internal void RestoreFromSnapshot(NetWorldPlayerSnapshot snapshot)

@@ -7,7 +7,7 @@ using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement
 {
-    public sealed class NetworkProperties
+    public sealed class NetProperties
     {
         private readonly Dictionary<uint, byte> _byteData = new();
         private readonly Dictionary<uint, uint> _uintData = new();
@@ -17,12 +17,12 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<uint, string> _stringData = new();
         private readonly Dictionary<uint, UnityEngine.Vector3> _vector3Data = new();
 
-        private Func<bool> _validator;
+        private readonly Func<bool> _validator;
         private readonly Func<bool> _writePermission;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
 
-        internal NetworkProperties(Func<bool> validator, Func<bool> writePermission)
+        internal NetProperties(Func<bool> validator, Func<bool> writePermission)
         {
             _validator = validator ?? throw new ArgumentNullException(nameof(validator));
             _writePermission = writePermission ?? throw new ArgumentNullException(nameof(writePermission));

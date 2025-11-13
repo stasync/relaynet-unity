@@ -32,7 +32,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUid, NetObjectState> _currentObjectStates = new();
 
         public readonly NetWorldPlayersCollection Players;
-        public readonly NetworkProperties Properties;
+        public readonly NetProperties Properties;
 
         protected NetWorld(NetWorldId id, string worldName) : this(id, worldName, NetWorldId.Invalid)
         {
@@ -49,7 +49,7 @@ namespace LROTech.Network.StateManagement
             Name = $"{Id}:{worldName}";
 
             Players = new NetWorldPlayersCollection(validator: () => IsValid, GetSessionOwnerUid);
-            Properties = new NetworkProperties(validator: () => IsValid, writePermission: () => Players.LocalPlayer != null && Players.LocalPlayer.IsMaster());
+            Properties = new NetProperties(validator: () => IsValid, writePermission: () => Players.LocalPlayer != null && Players.LocalPlayer.IsMaster());
 
             s_all.Add(Uid, this);
 

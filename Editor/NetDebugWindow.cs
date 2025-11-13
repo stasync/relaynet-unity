@@ -39,12 +39,17 @@ namespace LROTech.Network.Editor
                 if (!_draw)
                     return;
 
-                // Debug.
+                if (!_state.IsValid())
+                    return;
+
+                var removeObjectFromWorld = false;
+                EditorGUI.indentLevel++;
                 {
                     EditorGUILayout.BeginHorizontal();
 
+                    GUILayout.Space(pixels: EditorGUI.indentLevel * 15); // indent for buttons.
                     if (GUILayout.Button("Remove From World"))
-                        _world.RemoveObject(_state.Uid);
+                        removeObjectFromWorld = true;
 
                     if (_state.IsOwnedByLocalPlayer)
                     {
@@ -53,16 +58,10 @@ namespace LROTech.Network.Editor
                     }
 
                     EditorGUILayout.EndHorizontal();
-                }
 
-                if (!_state.IsValid())
-                    return;
-
-                EditorGUI.indentLevel++;
-                {
                     EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {_state.PrefabId}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField($"Owner: {_state.Owner} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})");
+                    EditorGUILayout.LabelField($"Owner: {_state.Owner} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"World Time: {_state.WorldTime:f2}", EditorStyles.boldLabel);
 
                     if (_state.IsOwnedByLocalPlayer && _world is NetWorldRuntime runtimeWorld)
@@ -136,6 +135,9 @@ namespace LROTech.Network.Editor
                     }
                 }
                 EditorGUI.indentLevel--;
+
+                if (removeObjectFromWorld)
+                    _world.RemoveObject(_state.Uid);
             }
 
             private void DrawRPC(NetObjectRpcState rpc)
@@ -158,6 +160,10 @@ namespace LROTech.Network.Editor
             private bool _draw;
             private readonly Dictionary<NetObjectUid, ObjectDrawer> _objectDrawers = new();
             private readonly List<NetObjectUid> _worldObjectsIterator = new();
+
+            private bool _propertiesFoldoutState;
+            private readonly Dictionary<ClientUid, bool> _playerFoloutStates = new();
+            private readonly Dictionary<ClientUid, bool> _propertiesFoldoutStatesPerPlayer = new();
 
             protected WorldDrawer(T world)
             {
@@ -188,18 +194,38 @@ namespace LROTech.Network.Editor
                 EditorGUILayout.LabelField($"Time: {World.Time:f1}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Local Time: {World.LocalTime:f1}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Hash: {World.GetVersionHash()}", EditorStyles.boldLabel);
-                EditorGUILayout.Space();
+
+                _propertiesFoldoutState = EditorGUILayout.Foldout(_propertiesFoldoutState, content: "World Properties");
+                if (_propertiesFoldoutState)
+                {
+                    EditorGUI.indentLevel++;
+                    DrawProperties(World.Properties);
+                    EditorGUI.indentLevel--;
+                    EditorGUILayout.Space();
+                }
 
                 // Players.
                 {
-                    EditorGUILayout.LabelField("Players: ", EditorStyles.boldLabel);
-                    var players = World.Players;
-                    DrawPlayer(prefix: "Local: ", players.LocalPlayer);
-                    DrawPlayer(prefix: "Master: ", players.MasterPlayer);
+                    EditorGUILayout.LabelField($"Players: {World.Players.All.Count}", EditorStyles.boldLabel);
+                    foreach (var worldPlayer in World.Players.All)
+                    {
+                        var prefix = $"[{worldPlayer.Uid}] ";
+                        if (worldPlayer.IsLocal())
+                            prefix += "[Local] ";
+                        if (worldPlayer.IsMaster())
+                            prefix += "[Master] ";
 
-                    EditorGUILayout.Space();
-                    foreach (var worldPlayer in players.All)
-                        DrawPlayer(prefix: string.Empty, worldPlayer);
+                        var label = $"{prefix}{worldPlayer.Name}";
+                        _playerFoloutStates.TryAdd(worldPlayer.Uid, false);
+                        _playerFoloutStates[worldPlayer.Uid] = EditorGUILayout.Foldout(_playerFoloutStates[worldPlayer.Uid], content: label);
+
+                        if (!_playerFoloutStates[worldPlayer.Uid])
+                            continue;
+
+                        EditorGUI.indentLevel++;
+                        DrawPlayer(worldPlayer);
+                        EditorGUI.indentLevel--;
+                    }
                 }
 
                 // Objects.
@@ -214,14 +240,19 @@ namespace LROTech.Network.Editor
                     // Expand/Collapse all objects;
                     {
                         EditorGUILayout.BeginHorizontal();
+                        GUILayout.Space(pixels: EditorGUI.indentLevel * 15); // indent for buttons.
 
                         if (GUILayout.Button("Collapse all"))
+                        {
                             foreach (var drawer in _objectDrawers.Values)
                                 drawer.SetDrawingEnabled(false);
+                        }
 
                         if (GUILayout.Button("Expand all"))
+                        {
                             foreach (var drawer in _objectDrawers.Values)
                                 drawer.SetDrawingEnabled(true);
+                        }
 
                         EditorGUILayout.EndHorizontal();
                     }
@@ -245,29 +276,38 @@ namespace LROTech.Network.Editor
                 }
             }
 
-            private void DrawPlayer(string prefix, NetWorldPlayer player, bool drawProperties = false)
+            private void DrawPlayer(NetWorldPlayer player)
             {
-                EditorGUILayout.LabelField($"{prefix}{(player == null ? "null" : player.ToString())}");
-                if (player == null)
-                    return;
+                EditorGUILayout.LabelField($"Uid: {player.Uid}");
+                EditorGUILayout.LabelField($"Name: {player.Name}");
+                EditorGUILayout.LabelField($"WorldTime: {player.WorldTime}");
+                EditorGUILayout.LabelField($"IsReady: {player.IsReady}");
+                EditorGUILayout.LabelField($"Platform: {player.Platform}");
+                EditorGUILayout.LabelField($"MainTagObjectUid: {player.MainTagObjectUid}");
 
-                if (drawProperties)
+                _propertiesFoldoutStatesPerPlayer.TryAdd(player.Uid, false);
+                _propertiesFoldoutStatesPerPlayer[player.Uid] = EditorGUILayout.Foldout(_propertiesFoldoutStatesPerPlayer[player.Uid], content: "Properties");
+                if (_propertiesFoldoutStatesPerPlayer[player.Uid])
                 {
                     EditorGUI.indentLevel++;
-                    foreach (var fieldInfo in player.Properties.GetType().GetFields(bindingAttr: BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-                    {
-                        if (!typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType))
-                            continue;
+                    DrawProperties(player.Properties);
+                    EditorGUI.indentLevel--;
+                }
+            }
 
-                        var dictionary = (IDictionary)fieldInfo.GetValue(player!.Properties);
+            private void DrawProperties(NetProperties properties)
+            {
+                foreach (var fieldInfo in properties.GetType().GetFields(bindingAttr: BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+                {
+                    if (!typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType))
+                        continue;
 
-                        EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldInfo.Name)}: {dictionary.Keys.Count}");
-                        EditorGUI.indentLevel++;
-                        foreach (var key in dictionary.Keys)
-                            EditorGUILayout.LabelField($"{key}: {dictionary[key]}");
-                        EditorGUI.indentLevel--;
-                    }
+                    var dictionary = (IDictionary)fieldInfo.GetValue(properties);
 
+                    EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldInfo.Name)}: {dictionary.Keys.Count}");
+                    EditorGUI.indentLevel++;
+                    foreach (var key in dictionary.Keys)
+                        EditorGUILayout.LabelField($"{key}: {dictionary[key]}");
                     EditorGUI.indentLevel--;
                 }
             }
@@ -294,14 +334,12 @@ namespace LROTech.Network.Editor
                     {
                         // Register requests.
                         {
-                            EditorGUILayout.Space();
                             var registerRequests = World.IncomingStateChangeRequests;
                             EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
                         }
 
                         // Temporary Unregistered Scene Objects.
                         {
-                            EditorGUILayout.Space();
                             var unregisteredSceneObjects = World.UnregisteredSceneObjects;
                             EditorGUILayout.LabelField($"Unregistered Scene Objects: {unregisteredSceneObjects.Count}", EditorStyles.boldLabel);
 
