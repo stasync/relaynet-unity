@@ -84,7 +84,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Called, when object needs to be updated, according to <see cref="NetObjectIdentity.m_UpdateRate"/>.
+        /// Called, when object needs to be updated.
         /// </summary>
         protected virtual void OnAuthorityUpdate()
         {
