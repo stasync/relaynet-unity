@@ -1,0 +1,17 @@
+{
+    "name": "LROTech.NetworkDebug",
+    "rootNamespace": "",
+    "references": [
+        "GUID:afb40243426854883806aee4459d32e9",
+        "GUID:7cfb2a709a3d24877b616cb4e3aa502d"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

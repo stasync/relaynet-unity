@@ -12,9 +12,9 @@ namespace LROTech.Network.StateManagement
         public static IReadOnlyDictionary<NetWorldId, NetWorld> All => s_all;
         private static readonly Dictionary<NetWorldId, NetWorld> s_all = new();
 
-        public event Action Disposed = delegate { };
         public event Action<float> Updated = delegate { };
         public event Action<NetObjectUid> ObjectCreated = delegate { };
+        public event Action Disposed = delegate { };
 
         public bool IsValid => Id.IsValid;
 
@@ -183,7 +183,7 @@ namespace LROTech.Network.StateManagement
             EnsureValid();
             return uid.IsValid ? _currentObjectStates.GetValueOrDefault(uid) : null;
         }
-        
+
         protected bool IsObjectValid(NetObjectUid uid) =>
             uid.IsValid && _currentObjectStates.ContainsKey(uid);
 
@@ -197,7 +197,7 @@ namespace LROTech.Network.StateManagement
             state.Invalidate();
             _currentObjectStates.Remove(uid);
         }
-        
+
         public NetObjectIdentity GetObjectView(NetObjectUid uid)
         {
             EnsureValid();
