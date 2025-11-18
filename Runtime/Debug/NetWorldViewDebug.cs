@@ -29,11 +29,11 @@ namespace LROTech.NetworkDebug
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.LeftShift))
-            {
-                if (Input.GetKeyDown(KeyCode.V))
-                    s_enabled = !s_enabled;
-            }
+            if (!Input.GetKeyDown(KeyCode.LeftShift))
+                return;
+
+            if (Input.GetKeyDown(KeyCode.V))
+                s_enabled = !s_enabled;
         }
 
         private void LateUpdate()
@@ -49,15 +49,26 @@ namespace LROTech.NetworkDebug
 
                     if (objectState.DataCollection.TryGetData<NetObjectTransformData>(out var data))
                     {
-                        Draw.Quad(data.Position.Value, color, size: 0.25f, depthTest: false);
+                        // Ownership indication.
+                        {
+                            var directionToCamera = Camera.main!.transform.position - data.Position.Value;
+                            var sizeDistanceFactor = directionToCamera.magnitude;
+                            if (sizeDistanceFactor < 1)
+                                sizeDistanceFactor = 1f;
+                        
+                            Draw.Quad(data.Position.Value, color, size : 0.02f * sizeDistanceFactor, depthTest: false);
+                        }
 
-                        var forward = data.Rotation.Value * Vector3.forward;
-                        var right = data.Rotation.Value * Vector3.right;
-                        var up = data.Rotation.Value * Vector3.up;
+                        // Transformation.
+                        {
+                            var forward = data.Rotation.Value * Vector3.forward;
+                            var right = data.Rotation.Value * Vector3.right;
+                            var up = data.Rotation.Value * Vector3.up;
 
-                        Draw.DrawRay(data.Position.Value, direction: forward, color: Color.blue);
-                        Draw.DrawRay(data.Position.Value, direction: right, color: Color.red);
-                        Draw.DrawRay(data.Position.Value, direction: up, color: Color.green);
+                            Draw.DrawRay(data.Position.Value, direction: forward, color: Color.blue);
+                            Draw.DrawRay(data.Position.Value, direction: right, color: Color.red);
+                            Draw.DrawRay(data.Position.Value, direction: up, color: Color.green);
+                        }
                     }
                 }
             }
