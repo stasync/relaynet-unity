@@ -1,3 +1,4 @@
+using LROTech.Network;
 using LROTech.Network.StateManagement;
 using LROTech.RuntimeDebug;
 using UnityEngine;
@@ -17,6 +18,16 @@ namespace LROTech.NetworkDebug
 
         private static bool s_enabled;
 
+        private static readonly Color[] s_perClientColors =
+        {
+            Color.red,
+            Color.blue,
+            Color.magenta,
+            Color.green,
+            Color.cyan,
+            Color.yellow,
+        };
+
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.LeftShift))
@@ -35,9 +46,11 @@ namespace LROTech.NetworkDebug
             {
                 foreach (var objectState in world.ObjectStates.Values)
                 {
+                    var color = GetColorForPlayer(objectState.Owner);
+
                     if (objectState.DataCollection.TryGetData<NetObjectTransformData>(out var data))
                     {
-                        Draw.Quad(data.Position.Value, Color.red, size: 0.25f, depthTest: false);
+                        Draw.Quad(data.Position.Value, color, size: 0.25f, depthTest: false);
 
                         var forward = data.Rotation.Value * Vector3.forward;
                         var right = data.Rotation.Value * Vector3.right;
@@ -50,5 +63,8 @@ namespace LROTech.NetworkDebug
                 }
             }
         }
+
+        private Color GetColorForPlayer(NetWorldPlayer player) =>
+            player == null ? Color.gray : s_perClientColors[player.Uid.GetHashCode() % s_perClientColors.Length];
     }
 }
