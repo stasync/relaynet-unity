@@ -8,20 +8,16 @@ using UnityEngine;
 
 namespace LROTech.NetworkBehaviours
 {
-    public sealed class NetObjectTransactionBehaviour : NetObjectTransactionBehaviour<NetObjectTransactionBehaviour.TransactionNetworkData>
+    [DisallowMultipleComponent]
+    public sealed class NetObjectTransactionBehaviour : NetObjectBehaviour<NetObjectTransactionBehaviour.StateData>
     {
-        public class TransactionNetworkData : NetObjectStateData
+        public sealed class StateData : NetObjectStateData
         {
             public readonly NetworkValue<NetObjectUid> CurrentInteraction = new();
             public readonly NetworkValue<NetObjectUid> LastInteraction = new();
             public readonly NetworkValue<bool> InteractionsEnabled = new();
         }
-    }
-
-    [DisallowMultipleComponent]
-    public abstract class NetObjectTransactionBehaviour<TData> : NetObjectBehaviour<TData>
-        where TData : NetObjectTransactionBehaviour.TransactionNetworkData, new()
-    {
+        
         private readonly Dictionary<NetObjectUid, Action<bool>> _interactionChangeRequestCallbacks = new();
 
         private readonly NetWriter _writer = new();
@@ -96,7 +92,7 @@ namespace LROTech.NetworkBehaviours
         }
 
         [AutoRegisterRpcHandler]
-        protected void ChangeTransactionStateRequestRPC(byte[] data)
+        private void ChangeTransactionStateRequestRPC(byte[] data)
         {
             _reader.Replace(data);
             var sender = _reader.ReadNetObjectUid();
@@ -126,7 +122,7 @@ namespace LROTech.NetworkBehaviours
         }
 
         [AutoRegisterRpcHandler]
-        protected void ChangeTransactionResponseRPC(byte[] data)
+        private void ChangeTransactionResponseRPC(byte[] data)
         {
             _reader.Replace(data);
             var sender = _reader.ReadNetObjectUid();
