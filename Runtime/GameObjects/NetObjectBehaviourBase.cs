@@ -36,6 +36,7 @@ namespace LROTech.Network.GameObjects
         internal void OnDisconnectedInternal(ClientUid clientUid) =>
             OnDisconnected(clientUid);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnSerializeInternal(NetWriter writer)
         {
             OnSerialize(writer);
@@ -45,6 +46,7 @@ namespace LROTech.Network.GameObjects
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnDeserializeInternal(NetReader reader)
         {
             OnDeserialize(reader);

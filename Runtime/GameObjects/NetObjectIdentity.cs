@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 using LROTech.Network.StateManagement;
 using UnityEngine;
@@ -9,9 +10,29 @@ namespace LROTech.Network.GameObjects
     [DisallowMultipleComponent]
     public sealed class NetObjectIdentity : MonoBehaviour
     {
-        public NetObjectUid InstanceId => State?.Uid ?? NetObjectUid.Invalid;
-        public bool IsOwnedByMasterClient => State is { IsOwnedByMasterClient: true };
-        public bool IsLocal => State is { IsOwnedByLocalPlayer: true };
+        public NetObjectUid InstanceId
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => State?.Uid ?? NetObjectUid.Invalid;
+        }
+
+        public bool IsOwnedByMasterClient
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => State is { IsOwnedByMasterClient: true };
+        }
+
+        public bool IsLocal
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => State is { IsOwnedByLocalPlayer: true };
+        }
+        
+        public bool IsSceneObject
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => State is { IsSceneObject: true };
+        }
 
         public bool IsLocalPlayerMainTagObject
         {
@@ -25,18 +46,17 @@ namespace LROTech.Network.GameObjects
             }
         }
 
-        public NetWorldPlayer Owner => State?.Owner;
+        public NetWorldPlayer Owner
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => State?.Owner;
+        }
 
         /// <summary>
         /// World, that contains this object;
         /// </summary>
         public NetWorld World { get; private set; }
-
-        /// <summary>
-        /// Object prefab id
-        /// </summary>
-        public bool IsSceneObject => State is { IsSceneObject: true };
-
+        
         public bool Initialized { get; private set; }
 
         private NetObjectBehaviourBase[] _behaviours;
@@ -62,15 +82,15 @@ namespace LROTech.Network.GameObjects
 
             World = world;
             State = world.GetObject(stateUid);
+            if (State == null)
+                throw new InvalidOperationException();
 
             State.OwnerChanged += OwnerChanged;
             State.LocalUpdateRequest += OnLocalUpdateRequest;
             State.Invalidated += OnStateInvalidated;
 
-            var viewStateData = IsLocal ? 
-                State.DataCollection.GetOrCreateData<NetObjectViewStateData>() : 
-                State.DataCollection.GetData<NetObjectViewStateData>();
-            
+            var viewStateData = IsLocal ? State.DataCollection.GetOrCreateData<NetObjectViewStateData>() : State.DataCollection.GetData<NetObjectViewStateData>();
+
             // Pre initialization.
             foreach (var behaviour in _behaviours)
                 behaviour.OnPreInitializeInternal();
@@ -78,7 +98,7 @@ namespace LROTech.Network.GameObjects
             // First initial deserialization.
             if (!IsLocal)
                 Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
-            
+
             // Register RPC handlers.
             foreach (var behaviour in _behaviours)
             {
@@ -163,7 +183,7 @@ namespace LROTech.Network.GameObjects
                 Debug.LogError("Unable to own object - local player is not registered yet.");
                 return;
             }
-            
+
             State.ChangedOwner(World.Players.LocalPlayer.Uid);
         }
 

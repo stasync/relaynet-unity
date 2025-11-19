@@ -53,7 +53,7 @@ namespace LROTech.NetworkBehaviours
                 callback(false);
                 return;
             }
-            
+
             if (!Data.InteractionsEnabled.Value)
             {
                 Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Enabled: '{Data.InteractionsEnabled.Value}'.");
@@ -103,15 +103,13 @@ namespace LROTech.NetworkBehaviours
             var state = _reader.ReadBoolean();
 
             var currentInteractionObject = Data.CurrentInteraction.Value;
-            
-            var currentInteractionExist = 
-                currentInteractionObject.IsValid && 
+
+            var currentInteractionExist =
+                currentInteractionObject.IsValid &&
                 Identity.World.ObjectExists(currentInteractionObject);
 
             var canChangeInteractionState =
-                state ? 
-                    !currentInteractionExist && Data.InteractionsEnabled.Value : 
-                    currentInteractionObject.Equals(sender);
+                state ? !currentInteractionExist && Data.InteractionsEnabled.Value : currentInteractionObject.Equals(sender);
 
             _writer.SeekZero();
             _writer.WriteNetObjectUid(sender);
@@ -138,6 +136,18 @@ namespace LROTech.NetworkBehaviours
                 callback(success);
 
             _interactionChangeRequestCallbacks.Remove(sender);
+        }
+
+        private void Update()
+        {
+            if (IsLocal)
+            {
+                // Validating the current interaction object.
+                // Update is a simple way to do so, yet not the smartest one.
+                // Although, dictionary lookup only will only be the thing for local object.
+                if (Data.CurrentInteraction.Value.IsValid && !Identity.World.ObjectExists(Data.CurrentInteraction.Value))
+                    Data.CurrentInteraction.Value = NetObjectUid.Invalid;
+            }
         }
     }
 }

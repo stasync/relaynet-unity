@@ -201,11 +201,11 @@ namespace LROTech.Network.StateManagement
 
         private void RemoveView(NetObjectUid uid)
         {
-            if (_currentObjectViews.Remove(uid, out var cView))
-                Destroy(cView.gameObject);
+            if (_currentObjectViews.Remove(uid, out var view))
+                Destroy(view.gameObject);
 
-            if (_temporaryUnregisteredViews.Remove(uid, out var pView))
-                Destroy(pView.gameObject);
+            if (_temporaryUnregisteredViews.Remove(uid, out var unregisteredView))
+                Destroy(unregisteredView.gameObject);
         }
 
         public void SetEnabledImmediate(bool value)

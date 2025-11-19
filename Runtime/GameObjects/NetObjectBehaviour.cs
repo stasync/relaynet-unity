@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using LROTech.Network.StateManagement;
 
 namespace LROTech.Network.GameObjects
@@ -9,14 +10,12 @@ namespace LROTech.Network.GameObjects
 
         public NetWorldPlayer Owner => Identity.Owner;
 
-        public bool IsLocal => Identity.IsLocal;
-
-        public bool IsLocalPlayerTagObject => Identity.IsLocalPlayerMainTagObject;
-
-        public bool IsSceneObject => Identity.IsSceneObject;
-
-        public bool IsOwnedByMasterClient => Identity.IsOwnedByMasterClient;
-
+        public bool IsLocal
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Identity.IsLocal;
+        }
+        
         /// <summary>
         /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
         /// </summary>
@@ -46,7 +45,7 @@ namespace LROTech.Network.GameObjects
         internal sealed override void OnPreInitializeInternal()
         {
             base.OnPreInitializeInternal();
-            
+
             var dataCollection = Identity.State.DataCollection;
             Data = IsLocal ? dataCollection.GetOrCreateData<TObjectData>() : dataCollection.GetData<TObjectData>();
         }
