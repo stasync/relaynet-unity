@@ -10,21 +10,20 @@ namespace LROTech.NetworkBehaviours
     [DisallowMultipleComponent]
     public sealed class NetObjectTransformSync : NetObjectBehaviour<NetObjectTransformData>
     {
-        [SerializeField, Range(0f, 1f)]
-        private float m_InterpolateMovement = 1f;
+        [FormerlySerializedAs("m_InterpolateMovement")] [SerializeField, Range(0f, 1f)]
+        private float _interpolateMovement = 1f;
 
-        [SerializeField, Range(0f, 1f)]
-        private float m_InterpolateRotation = 1f;
+        [FormerlySerializedAs("m_InterpolateRotation")] [SerializeField, Range(0f, 1f)]
+        private float _interpolateRotation = 1f;
 
-        [SerializeField]
-        private bool m_Prediction = true;
+        [FormerlySerializedAs("m_Prediction")] [SerializeField]
+        private bool _prediction = true;
 
-        [FormerlySerializedAs("m_PredictionMultipler")] 
-        [SerializeField, Range(0.1f, 2f)]
-        private float m_PredictionMultiplier = 1f;
+        [FormerlySerializedAs("m_PredictionMultiplier")] [FormerlySerializedAs("m_PredictionMultipler")] [SerializeField, Range(0.1f, 2f)]
+        private float _predictionMultiplier = 1f;
 
-        [SerializeField]
-        private List<Transform> m_NestedTransforms = new ();
+        [FormerlySerializedAs("m_NestedTransforms")] [SerializeField]
+        private List<Transform> _nestedTransforms = new();
 
         private Vector3 _lastFramePosition;
         private Vector3 _velocity;
@@ -32,13 +31,13 @@ namespace LROTech.NetworkBehaviours
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            for (var i = m_NestedTransforms.Count - 1; i >= 0; i--)
+            for (var i = _nestedTransforms.Count - 1; i >= 0; i--)
             {
-                if (m_NestedTransforms[i].IsChildOf(transform))
+                if (_nestedTransforms[i].IsChildOf(transform))
                     continue;
 
-                m_NestedTransforms.RemoveAt(i);
-                Debug.LogError($"'{m_NestedTransforms[i].gameObject.name}' is not a child of '{gameObject.name}'");
+                _nestedTransforms.RemoveAt(i);
+                Debug.LogError($"'{_nestedTransforms[i].gameObject.name}' is not a child of '{gameObject.name}'");
             }
         }
 #endif
@@ -59,9 +58,9 @@ namespace LROTech.NetworkBehaviours
             _lastFramePosition = transform.position;
             _velocity = Vector3.zero;
 
-            if (IsLocal) 
+            if (IsLocal)
                 return;
-        
+
             transform.position = Data.Position.Value;
             transform.rotation = Data.Rotation.Value;
         }
@@ -90,27 +89,27 @@ namespace LROTech.NetworkBehaviours
                 if (!hasParentLocally && !Data.HasParent.Value)
                 {
                     // Position interpolation.
-                    if (m_InterpolateMovement > Mathf.Epsilon)
+                    if (_interpolateMovement > Mathf.Epsilon)
                     {
                         var targetPosition = Data.Position.Value;
-                        if (m_Prediction)
-                            targetPosition += Data.Velocity.Value.normalized * ((Identity.World.Time - Data.WorldTime.Value) * m_PredictionMultiplier);
+                        if (_prediction)
+                            targetPosition += Data.Velocity.Value.normalized * ((Identity.World.Time - Data.WorldTime.Value) * _predictionMultiplier);
 
                         transform.position = Vector3.Lerp(
                             transform.position,
                             targetPosition,
-                            Time.deltaTime * m_InterpolateMovement * 10);
+                            Time.deltaTime * _interpolateMovement * 10f);
                     }
                     else
                         transform.position = Data.Position.Value;
 
                     // Rotation interpolation.
-                    if (m_InterpolateRotation > Mathf.Epsilon)
+                    if (_interpolateRotation > Mathf.Epsilon)
                     {
                         transform.rotation = Quaternion.Slerp(
                             transform.rotation,
                             Data.Rotation.Value,
-                            Time.deltaTime * m_InterpolateRotation * 10);
+                            Time.deltaTime * _interpolateRotation * 10f);
                     }
                     else
                         transform.rotation = Data.Rotation.Value;
@@ -122,7 +121,7 @@ namespace LROTech.NetworkBehaviours
         {
             base.OnSerialize(writer);
 
-            foreach (var nestedTransform in m_NestedTransforms)
+            foreach (var nestedTransform in _nestedTransforms)
             {
                 writer.WriteVector3(nestedTransform.localPosition);
                 writer.WriteQuaternion(nestedTransform.localRotation);
@@ -133,7 +132,7 @@ namespace LROTech.NetworkBehaviours
         {
             base.OnDeserialize(reader);
 
-            foreach (var nestedTransform in m_NestedTransforms)
+            foreach (var nestedTransform in _nestedTransforms)
             {
                 nestedTransform.localPosition = reader.ReadVector3();
                 nestedTransform.localRotation = reader.ReadQuaternion();
