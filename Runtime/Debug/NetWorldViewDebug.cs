@@ -57,6 +57,7 @@ namespace LROTech.NetworkDebug
                                 sizeDistanceFactor = 1f;
                         
                             Draw.Quad(data.Position.Value, color, size : 0.02f * sizeDistanceFactor, depthTest: false);
+                            Draw.DrawCircle(data.Position.Value, radius: 0.5f, normal: Vector3.up, color, depthTest: false);
                         }
 
                         // Transformation.
