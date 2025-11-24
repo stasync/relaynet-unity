@@ -57,7 +57,7 @@ namespace LROTech.NetworkDebug
                                 sizeDistanceFactor = 1f;
                         
                             Draw.Quad(data.Position.Value, color, size : 0.02f * sizeDistanceFactor, depthTest: false);
-                            Draw.DrawCircle(data.Position.Value, radius: 0.5f, normal: Vector3.up, color, depthTest: false);
+                            Draw.Circle(data.Position.Value, radius: 0.5f, normal: Vector3.up, color, depthTest: false);
                         }
 
                         // Transformation.
@@ -66,9 +66,9 @@ namespace LROTech.NetworkDebug
                             var right = data.Rotation.Value * Vector3.right;
                             var up = data.Rotation.Value * Vector3.up;
 
-                            Draw.DrawRay(data.Position.Value, direction: forward, color: Color.blue);
-                            Draw.DrawRay(data.Position.Value, direction: right, color: Color.red);
-                            Draw.DrawRay(data.Position.Value, direction: up, color: Color.green);
+                            Draw.Ray(data.Position.Value, direction: forward, color: Color.blue);
+                            Draw.Ray(data.Position.Value, direction: right, color: Color.red);
+                            Draw.Ray(data.Position.Value, direction: up, color: Color.green);
                         }
                     }
                 }
