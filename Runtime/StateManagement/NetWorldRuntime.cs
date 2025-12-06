@@ -436,6 +436,10 @@ namespace LROTech.Network.StateManagement
                             break;
 
                         case NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft:
+                            var view = View.GetObjectView(uid);
+                            if (view != null)
+                                view.OnSoftDestroyRequestedLocallyInternal();
+
                             state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateHard);
                             break;
                     }

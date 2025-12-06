@@ -76,7 +76,7 @@ namespace LROTech.Network.GameObjects
         internal void Initialize(NetWorld world, NetObjectUid stateUid)
         {
             if (Initialized)
-                throw new Exception("Object already initialized");
+                throw new InvalidOperationException("Object already initialized");
 
             _behaviours = gameObject.GetComponents<NetObjectBehaviourBase>();
 
@@ -173,10 +173,10 @@ namespace LROTech.Network.GameObjects
         public void OwnObject()
         {
             if (!Initialized)
-                throw new Exception("You can manage owners only for initialized objects");
+                throw new InvalidOperationException("You can manage owners only for initialized objects");
 
             if (!IsSceneObject)
-                throw new Exception("You can manage owners only for scene objects");
+                throw new InvalidOperationException("You can manage owners only for scene objects");
 
             if (World.Players.LocalPlayer == null)
             {
@@ -268,7 +268,7 @@ namespace LROTech.Network.GameObjects
         private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
         {
             if (!IsLocal)
-                throw new Exception(
+                throw new InvalidOperationException(
                     "Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
 
             var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
@@ -336,7 +336,7 @@ namespace LROTech.Network.GameObjects
         private void ReceiveRpcRemotely(int hashCode, byte[] data)
         {
             if (IsLocal)
-                throw new Exception("Trying to receive NO-AUTHORITY RPC on local object behaviour, this is not allowed.");
+                throw new InvalidOperationException("Trying to receive NO-AUTHORITY RPC on local object behaviour, this is not allowed.");
 
             InvokeRpcHandler(hashCode, data);
         }
@@ -347,7 +347,7 @@ namespace LROTech.Network.GameObjects
         internal void ReceiveRpcLocally(RpcWithoutAuthorityState state)
         {
             if (!IsLocal)
-                throw new Exception("Trying to receive AUTHORITY RPC on remote object behaviour, this is not allowed");
+                throw new InvalidOperationException("Trying to receive AUTHORITY RPC on remote object behaviour, this is not allowed");
 
             InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
         }
@@ -358,7 +358,7 @@ namespace LROTech.Network.GameObjects
         internal void ReceiveRpcOnMasterClient(RpcWithoutAuthorityState state)
         {
             if (!IsOwnedByMasterClient)
-                throw new Exception("Trying to receive MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
+                throw new InvalidOperationException("Trying to receive MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
 
             InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
         }
@@ -395,12 +395,18 @@ namespace LROTech.Network.GameObjects
         public void DestroyViaNetwork()
         {
             if (!IsLocal)
-                throw new Exception("Trying to destroy remote object, this is not allowed");
+                throw new InvalidOperationException("Trying to destroy remote object, this is not allowed");
+            
+            State.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
+        }
+
+        internal void OnSoftDestroyRequestedLocallyInternal()
+        {
+            if (!IsLocal)
+                throw new InvalidOperationException("No authority");
 
             foreach (var behaviour in _behaviours)
                 behaviour.OnSoftDestroyRequestedLocallyInternal();
-
-            State.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
         }
 
         /// <summary>

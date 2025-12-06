@@ -42,7 +42,7 @@ namespace LROTech.Network.StateManagement
 
         public NetWorldPlayer Owner => _playerProvider(OwnerUid);
 
-        public bool IsOwnersTagObject => Owner != null && Owner.HasTagObject(Uid);
+        public bool IsTagObjectForCurrentOwner => Owner != null && Owner.HasTagObject(Uid);
 
         internal IReadOnlyCollection<RpcWithoutAuthorityRequest> RpcWithoutAuthorityRequests => _rpcWithoutAuthorityRequests;
         public event Action OwnerChanged = delegate { };
@@ -204,7 +204,7 @@ namespace LROTech.Network.StateManagement
         internal void ChangedOwner(ClientUid newOwner)
         {
             if (!IsSceneObject)
-                throw new Exception("You can manage owners only for scene objects");
+                throw new InvalidOperationException("You can manage owners only for scene objects");
 
             if (newOwner.IsValid)
             {

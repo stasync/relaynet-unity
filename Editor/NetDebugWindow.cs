@@ -62,7 +62,8 @@ namespace LROTech.Network.Editor
                     EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {_state.PrefabId}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Owner: [{_state.Owner.Uid}] {_state.Owner.Name} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})", EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField($"World Time: {_state.WorldTime:f2}", EditorStyles.boldLabel);
+                    if (_state.IsTagObjectForCurrentOwner)
+                        EditorGUILayout.LabelField("Owner's tag object", EditorStyles.boldLabel);
 
                     if (_state.IsOwnedByLocalPlayer && _world is NetWorldRuntime runtimeWorld)
                     {
@@ -86,7 +87,7 @@ namespace LROTech.Network.Editor
                     {
                         EditorGUI.indentLevel++;
                         foreach (var rpc in temporalBuffer)
-                            DrawRPC(rpc);
+                            DrawRpc(rpc);
                         EditorGUI.indentLevel--;
                     }
 
@@ -94,7 +95,7 @@ namespace LROTech.Network.Editor
                     {
                         EditorGUI.indentLevel++;
                         foreach (var rpc in persistentBuffer)
-                            DrawRPC(rpc);
+                            DrawRpc(rpc);
                         EditorGUI.indentLevel--;
                     }
 
@@ -140,7 +141,7 @@ namespace LROTech.Network.Editor
                     _world.RemoveObject(_state.Uid);
             }
 
-            private void DrawRPC(NetObjectRpcState rpc)
+            private void DrawRpc(NetObjectRpcState rpc)
             {
                 var handlerMethod = NetObjectRpcUtils.TryFindMethodInfoByHashSlow(rpc.Hash);
                 var handlerInfo = handlerMethod == null
@@ -162,8 +163,9 @@ namespace LROTech.Network.Editor
             private readonly List<NetObjectUid> _worldObjectsIterator = new();
 
             private bool _propertiesFoldoutState;
-            private readonly Dictionary<ClientUid, bool> _playerFoloutStates = new();
+            private readonly Dictionary<ClientUid, bool> _playerFoldoutStates = new();
             private readonly Dictionary<ClientUid, bool> _propertiesFoldoutStatesPerPlayer = new();
+            private readonly Dictionary<ClientUid, bool> _tagObjectsFoldoutStatesPerPlayer = new();
 
             protected WorldDrawer(T world)
             {
@@ -216,10 +218,10 @@ namespace LROTech.Network.Editor
                             prefix += "[Master] ";
 
                         var label = $"{prefix}{worldPlayer.Name}";
-                        _playerFoloutStates.TryAdd(worldPlayer.Uid, false);
-                        _playerFoloutStates[worldPlayer.Uid] = EditorGUILayout.Foldout(_playerFoloutStates[worldPlayer.Uid], content: label);
+                        _playerFoldoutStates.TryAdd(worldPlayer.Uid, false);
+                        _playerFoldoutStates[worldPlayer.Uid] = EditorGUILayout.Foldout(_playerFoldoutStates[worldPlayer.Uid], content: label);
 
-                        if (!_playerFoloutStates[worldPlayer.Uid])
+                        if (!_playerFoldoutStates[worldPlayer.Uid])
                             continue;
 
                         EditorGUI.indentLevel++;
@@ -283,8 +285,26 @@ namespace LROTech.Network.Editor
                 EditorGUILayout.LabelField($"WorldTime: {player.WorldTime}");
                 EditorGUILayout.LabelField($"IsReady: {player.IsReady}");
                 EditorGUILayout.LabelField($"Platform: {player.Platform}");
-                EditorGUILayout.LabelField($"MainTagObjectUid: {player.MainTagObjectUid}");
+                
+                _tagObjectsFoldoutStatesPerPlayer.TryAdd(player.Uid, false);
+                _tagObjectsFoldoutStatesPerPlayer[player.Uid] = EditorGUILayout.Foldout(_tagObjectsFoldoutStatesPerPlayer[player.Uid], content: $"Tag Objects: {player.TagObjectUidCollection.Count}");
+                if (_tagObjectsFoldoutStatesPerPlayer[player.Uid])
+                {
+                    EditorGUI.indentLevel++;
+                    foreach (var tagObjectUid in player.TagObjectUidCollection)
+                    {
+                        var label = tagObjectUid.ToString();
+                        if (tagObjectUid == player.MainTagObjectUid)
+                            label = $"[MAIN] {label}";
 
+                        var tagObjectState = World.GetObject(tagObjectUid);
+                        label = tagObjectState != null ? $"{label} {tagObjectState.PrefabId}" : $"[INVALID] {label}";
+                    
+                        EditorGUILayout.LabelField(label);
+                    }
+                    EditorGUI.indentLevel--;
+                }
+                
                 _propertiesFoldoutStatesPerPlayer.TryAdd(player.Uid, false);
                 _propertiesFoldoutStatesPerPlayer[player.Uid] = EditorGUILayout.Foldout(_propertiesFoldoutStatesPerPlayer[player.Uid], content: "Properties");
                 if (_propertiesFoldoutStatesPerPlayer[player.Uid])
@@ -407,10 +427,7 @@ namespace LROTech.Network.Editor
 
         private bool _showNetworkStatistics;
         private bool _showMainWorldHistoryInfo;
-
         private bool _showMainWorldBuffer;
-
-        //private ServiceProvider<GSNetwork> _networkProvider;
         private Vector2 _globalScrollPosition;
 
         private MainWorldDrawer _mainWorldDrawer;

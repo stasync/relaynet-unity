@@ -18,7 +18,7 @@ namespace LROTech.Network.StateManagement
             set
             {
                 if (!IsLocal())
-                    throw new Exception($"Trying to change remote player name, this is not allowed. Player id: {Uid}.");
+                    throw new InvalidOperationException($"Trying to change remote player name, this is not allowed. Player id: {Uid}.");
                 _name = value;
             }
         }
@@ -31,7 +31,7 @@ namespace LROTech.Network.StateManagement
             set
             {
                 if (!IsLocal())
-                    throw new Exception($"Trying to change is ready on remote player, this is not allowed. Player id: {Uid}.");
+                    throw new InvalidOperationException($"Trying to change is ready on remote player, this is not allowed. Player id: {Uid}.");
                 _isReady = value;
             }
         }
@@ -44,7 +44,7 @@ namespace LROTech.Network.StateManagement
             set
             {
                 if (!IsLocal())
-                    throw new Exception($"Trying to change platform without authority, this is not allowed. Player id: {Uid}.");
+                    throw new InvalidOperationException($"Trying to change platform without authority, this is not allowed. Player id: {Uid}.");
                 _platform = value;
             }
         }
@@ -57,7 +57,7 @@ namespace LROTech.Network.StateManagement
             set
             {
                 if (!IsLocal())
-                    throw new Exception($"Trying to change RTT value without authority, this is not allowed. Player id: {Uid}.");
+                    throw new InvalidOperationException($"Trying to change RTT value without authority, this is not allowed. Player id: {Uid}.");
                 _rttMs = value;
             }
         }
@@ -121,12 +121,14 @@ namespace LROTech.Network.StateManagement
         private bool IsValid() =>
             Uid.IsValid && _validator != null && _validator(Uid);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasTagObject(NetObjectUid uid)
         {
             EnsureValid();
             return uid.IsValid && _tagObjectUidCollection.Contains(uid);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasTagObject(NetObjectState state)
         {
             EnsureValid();
