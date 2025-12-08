@@ -26,7 +26,7 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
             if (!_dataWritePermission())
-                throw new InvalidOperationException("No authority to modify date collection.");
+                throw new InvalidOperationException("No authority to modify the data collection.");
 
             var typIndex = NetObjectStateData.GetTypeIndex<T>();
             if (_internalCollection.TryGetValue(typIndex, out var data))

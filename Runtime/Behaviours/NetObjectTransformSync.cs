@@ -42,9 +42,10 @@ namespace LROTech.NetworkBehaviours
         }
 #endif
 
-        protected override void OnInitializeViewData()
+        protected override void OnPostInitialize()
         {
-            base.OnInitializeViewData();
+            base.OnPostInitialize();
+
             ResetTemporaryData();
             if (IsLocal)
             {
