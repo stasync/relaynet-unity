@@ -74,6 +74,7 @@ namespace LROTech.Network.GameObjects
         {
         }
 
+        [System.Obsolete("Reconsider if its still required. Use OnPostInitialize instead.")]
         protected virtual void OnInitializeViewData()
         {
         }
