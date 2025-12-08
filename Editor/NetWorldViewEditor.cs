@@ -1,7 +1,7 @@
 ﻿using LROTech.Network.StateManagement;
 using UnityEditor;
 
-namespace LROTech.Network.Editor
+namespace LROTech.Network.Debug.Editor
 {
     [CustomEditor(typeof(NetWorldView))]
     internal class NetWorldViewEditor : UnityEditor.Editor
@@ -36,9 +36,9 @@ namespace LROTech.Network.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "API used:\n" +
-                "Renderer.forceRenderingOff\n" +
-                "AudioSource.mute", MessageType.Warning);
+                message: "API used:\n" +
+                         "Renderer.forceRenderingOff\n" +
+                         "AudioSource.mute", MessageType.Warning);
         }
     }
 }

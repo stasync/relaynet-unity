@@ -1,5 +1,5 @@
 {
-    "name": "LROTech.NetworkDebug",
+    "name": "LROTech.Network.Debug.Runtime",
     "rootNamespace": "",
     "references": [
         "GUID:afb40243426854883806aee4459d32e9",

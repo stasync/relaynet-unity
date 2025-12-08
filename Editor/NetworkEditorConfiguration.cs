@@ -1,4 +1,4 @@
-namespace LROTech.Network.Editor
+namespace LROTech.Network.Debug.Editor
 {
     public static class NetworkEditorConfiguration
     {

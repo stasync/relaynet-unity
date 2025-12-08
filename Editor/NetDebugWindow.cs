@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Reflection;
 using Core;
 using Core.Networking;
+using LROTech.Network.Debug.Runtime;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
-using LROTech.NetworkDebug;
 using UnityEditor;
 using UnityEngine;
 
-namespace LROTech.Network.Editor
+namespace LROTech.Network.Debug.Editor
 {
     internal sealed class NetDebugWindow : EditorWindow
     {
