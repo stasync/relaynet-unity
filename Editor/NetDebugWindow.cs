@@ -247,7 +247,7 @@ namespace LROTech.Network.Editor
                         var boxRect = GUILayoutUtility.GetRect(width: 20, EditorGUIUtility.singleLineHeight, GUILayout.Width(20));
                         EditorGUI.DrawRect(boxRect, NetWorldViewDebug.GetColorForPlayer(worldPlayer));
                         EditorGUILayout.EndHorizontal();
-                        
+
                         if (!_playerFoldoutStates[worldPlayer.Uid])
                             continue;
 
