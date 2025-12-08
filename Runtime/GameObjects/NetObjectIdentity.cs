@@ -27,7 +27,7 @@ namespace LROTech.Network.GameObjects
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => State is { IsOwnedByLocalPlayer: true };
         }
-        
+
         public bool IsSceneObject
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,7 +56,7 @@ namespace LROTech.Network.GameObjects
         /// World, that contains this object;
         /// </summary>
         public NetWorld World { get; private set; }
-        
+
         public bool Initialized { get; private set; }
 
         private NetObjectBehaviourBase[] _behaviours;
@@ -177,12 +177,6 @@ namespace LROTech.Network.GameObjects
 
             if (!IsSceneObject)
                 throw new InvalidOperationException("You can manage owners only for scene objects");
-
-            if (World.Players.LocalPlayer == null)
-            {
-                Debug.LogError("Unable to own object - local player is not registered yet.");
-                return;
-            }
 
             State.ChangedOwner(World.Players.LocalPlayer.Uid);
         }
@@ -396,7 +390,7 @@ namespace LROTech.Network.GameObjects
         {
             if (!IsLocal)
                 throw new InvalidOperationException("Trying to destroy remote object, this is not allowed");
-            
+
             State.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
         }
 

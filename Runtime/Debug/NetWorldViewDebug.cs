@@ -15,8 +15,6 @@ namespace LROTech.NetworkDebug
             DontDestroyOnLoad(container);
         }
 
-        private static bool s_enabled;
-
         private static readonly Color[] s_perClientColors =
         {
             Color.red,
@@ -26,6 +24,8 @@ namespace LROTech.NetworkDebug
             Color.cyan,
             Color.yellow,
         };
+
+        private static bool s_enabled;
 
         private void Update()
         {
@@ -55,8 +55,8 @@ namespace LROTech.NetworkDebug
                             var sizeDistanceFactor = directionToCamera.magnitude;
                             if (sizeDistanceFactor < 1)
                                 sizeDistanceFactor = 1f;
-                        
-                            Draw.Quad(data.Position.Value, color, size : 0.02f * sizeDistanceFactor, depthTest: false);
+
+                            Draw.Quad(data.Position.Value, color, size: 0.02f * sizeDistanceFactor, depthTest: false);
                             Draw.Circle(data.Position.Value, radius: 0.5f, normal: Vector3.up, color, depthTest: false);
                         }
 
@@ -75,7 +75,7 @@ namespace LROTech.NetworkDebug
             }
         }
 
-        private Color GetColorForPlayer(NetWorldPlayer player) =>
+        internal static Color GetColorForPlayer(NetWorldPlayer player) =>
             player == null ? Color.gray : s_perClientColors[player.Uid.GetHashCode() % s_perClientColors.Length];
     }
 }

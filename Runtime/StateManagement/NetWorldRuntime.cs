@@ -78,6 +78,7 @@ namespace LROTech.Network.StateManagement
             UpdateRemoteObjectsStates();
             UpdateRpcRequestsWithoutAuthority();
             UpdateLocalObjectState();
+            TryOwnObjects();
 
             #region Internal
 
@@ -256,7 +257,7 @@ namespace LROTech.Network.StateManagement
                             throw new InvalidOperationException();
 #endif
 
-                        // Player not exists.
+                        // Player doesnt exist.
                         if (player == null)
                         {
                             // Create new.
@@ -446,6 +447,30 @@ namespace LROTech.Network.StateManagement
                 }
             }
 
+            void TryOwnObjects()
+            {
+                if (Players.LocalPlayer == null)
+                    return;
+
+                foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
+                {
+                    var state = ObjectStates[uid];
+
+                    // Skip local objects.
+                    if (state.IsOwnedByLocalPlayer)
+                        continue;
+
+                    var potentialOwner = GetPotentialOwner(state.Uid);
+                    if (potentialOwner != Players.LocalPlayer.Uid)
+                        continue;
+
+                    if (state.IsTagObjectForCurrentOwner)
+                        continue;
+
+                    state.ChangedOwner(potentialOwner);
+                }
+            }
+
             #endregion
         }
 
@@ -459,6 +484,45 @@ namespace LROTech.Network.StateManagement
         }
 
         #endregion
+
+        private ClientUid GetPotentialOwner(NetObjectUid objectNetId)
+        {
+            if (!objectNetId.IsValid)
+                return ClientUid.Invalid;
+
+            var bestClient = ClientUid.Invalid;
+            var highestHash = int.MinValue;
+
+            foreach (var player in Players.All)
+            {
+                // Combine object ID and client ID, then hash
+                var hash = HashCombine(objectNetId, player.Uid);
+                if (hash <= highestHash)
+                    continue;
+
+                highestHash = hash;
+                bestClient = player.Uid;
+            }
+
+            return bestClient;
+
+            static int HashCombine(NetObjectUid a, ClientUid b)
+            {
+                unchecked
+                {
+                    var h1 = (uint)a;
+                    var h2 = (uint)b;
+
+                    h1 ^= h2;
+                    h1 *= 0x5bd1e995;
+                    h1 ^= h1 >> 15;
+                    h1 *= 0x5bd1e995;
+                    h1 ^= h1 >> 15;
+
+                    return (int)h1;
+                }
+            }
+        }
 
         /// <summary>
         /// Destroy all network objects and cleanup scene.

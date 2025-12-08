@@ -5,6 +5,7 @@ using Core;
 using Core.Networking;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
+using LROTech.NetworkDebug;
 using UnityEditor;
 using UnityEngine;
 
@@ -35,7 +36,14 @@ namespace LROTech.Network.Editor
 
             internal void Draw()
             {
+                EditorGUILayout.BeginHorizontal();
                 _draw = EditorGUILayout.Foldout(_draw, content: $"Uid: {_state.Uid} Prefab: {_state.PrefabId}");
+
+                // Draw a colored box.
+                var boxRect = GUILayoutUtility.GetRect(width: 20, EditorGUIUtility.singleLineHeight, GUILayout.Width(20));
+                EditorGUI.DrawRect(boxRect, NetWorldViewDebug.GetColorForPlayer(_state.Owner));
+                EditorGUILayout.EndHorizontal();
+
                 if (!_draw)
                     return;
 
@@ -208,19 +216,38 @@ namespace LROTech.Network.Editor
 
                 // Players.
                 {
+                    var ownedObjectsCountPerPlayer = new Dictionary<ClientUid, int>();
+                    foreach (var state in World.ObjectStates.Values)
+                    {
+                        if (state.Owner == null)
+                            continue;
+
+                        ownedObjectsCountPerPlayer.TryAdd(state.Owner.Uid, 0);
+                        ownedObjectsCountPerPlayer[state.Owner.Uid]++;
+                    }
+
                     EditorGUILayout.LabelField($"Players: {World.Players.All.Count}", EditorStyles.boldLabel);
                     foreach (var worldPlayer in World.Players.All)
                     {
+                        // Default value just in case.
+                        ownedObjectsCountPerPlayer.TryAdd(worldPlayer.Uid, 0);
+
                         var prefix = $"[{worldPlayer.Uid}] ";
                         if (worldPlayer.IsLocal())
                             prefix += "[Local] ";
                         if (worldPlayer.IsMaster())
                             prefix += "[Master] ";
 
-                        var label = $"{prefix}{worldPlayer.Name}";
+                        var label = $"{prefix}{worldPlayer.Name} (Owns:{ownedObjectsCountPerPlayer[worldPlayer.Uid]})";
                         _playerFoldoutStates.TryAdd(worldPlayer.Uid, false);
-                        _playerFoldoutStates[worldPlayer.Uid] = EditorGUILayout.Foldout(_playerFoldoutStates[worldPlayer.Uid], content: label);
 
+                        EditorGUILayout.BeginHorizontal();
+                        _playerFoldoutStates[worldPlayer.Uid] = EditorGUILayout.Foldout(_playerFoldoutStates[worldPlayer.Uid], content: label);
+                        // Draw a colored box.
+                        var boxRect = GUILayoutUtility.GetRect(width: 20, EditorGUIUtility.singleLineHeight, GUILayout.Width(20));
+                        EditorGUI.DrawRect(boxRect, NetWorldViewDebug.GetColorForPlayer(worldPlayer));
+                        EditorGUILayout.EndHorizontal();
+                        
                         if (!_playerFoldoutStates[worldPlayer.Uid])
                             continue;
 
@@ -285,7 +312,7 @@ namespace LROTech.Network.Editor
                 EditorGUILayout.LabelField($"WorldTime: {player.WorldTime}");
                 EditorGUILayout.LabelField($"IsReady: {player.IsReady}");
                 EditorGUILayout.LabelField($"Platform: {player.Platform}");
-                
+
                 _tagObjectsFoldoutStatesPerPlayer.TryAdd(player.Uid, false);
                 _tagObjectsFoldoutStatesPerPlayer[player.Uid] = EditorGUILayout.Foldout(_tagObjectsFoldoutStatesPerPlayer[player.Uid], content: $"Tag Objects: {player.TagObjectUidCollection.Count}");
                 if (_tagObjectsFoldoutStatesPerPlayer[player.Uid])
@@ -299,12 +326,13 @@ namespace LROTech.Network.Editor
 
                         var tagObjectState = World.GetObject(tagObjectUid);
                         label = tagObjectState != null ? $"{label} {tagObjectState.PrefabId}" : $"[INVALID] {label}";
-                    
+
                         EditorGUILayout.LabelField(label);
                     }
+
                     EditorGUI.indentLevel--;
                 }
-                
+
                 _propertiesFoldoutStatesPerPlayer.TryAdd(player.Uid, false);
                 _propertiesFoldoutStatesPerPlayer[player.Uid] = EditorGUILayout.Foldout(_propertiesFoldoutStatesPerPlayer[player.Uid], content: "Properties");
                 if (_propertiesFoldoutStatesPerPlayer[player.Uid])
