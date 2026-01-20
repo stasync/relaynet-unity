@@ -4,7 +4,7 @@ using UnityEditor;
 namespace LROTech.Network.Debug.Editor
 {
     [CustomEditor(typeof(NetWorldView))]
-    internal class NetWorldViewEditor : UnityEditor.Editor
+    internal sealed class NetWorldViewEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

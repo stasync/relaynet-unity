@@ -46,7 +46,7 @@ namespace LROTech.Network
         private float _lastUpdateTime;
         private float _currentTime;
 
-        public RelaySession(IPEndPoint endPoint, long connectionKey = 0)
+        public RelaySession(IPEndPoint endPoint, string connectionData = null)
         {
             if (_reliableUdpClient.IsConnected)
             {
@@ -62,7 +62,7 @@ namespace LROTech.Network
             _reliableUdpClient.DataReceived += OnDataReceived;
             _reliableUdpClient.HeartbeatSent += OnHeartbeatSent;
 
-            _reliableUdpClient.Connect(endPoint, connectionKey);
+            _reliableUdpClient.Connect(endPoint, connectionData);
         }
 
         public void Update(float deltaTime)

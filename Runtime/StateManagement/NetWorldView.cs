@@ -18,8 +18,6 @@ namespace LROTech.Network.StateManagement
         private NetWorld _world;
         private bool _initialized;
 
-        private readonly NetObjectFactory _objectFactory = new();
-
         public IReadOnlyDictionary<NetObjectUid, NetObjectIdentity> CurrentObjectViews => _currentObjectViews;
         private readonly Dictionary<NetObjectUid, NetObjectIdentity> _currentObjectViews = new();
 
@@ -93,7 +91,7 @@ namespace LROTech.Network.StateManagement
                             rotation = transformData.Rotation.Value;
                         }
 
-                        netObjectView = _objectFactory.Create(state.PrefabId, position, rotation);
+                        netObjectView = CreateObjectView(state.PrefabId, position, rotation);
                         _currentObjectViews.Add(objectUid, netObjectView);
                     }
                 }
@@ -131,6 +129,19 @@ namespace LROTech.Network.StateManagement
             return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
         }
 
+        private NetObjectIdentity CreateObjectView(string prefabId, Vector3 position, Quaternion rotation)
+        {
+            var gameObject = Resources.Load<GameObject>(prefabId);
+            if (gameObject == null)
+                throw new NullReferenceException($"Object with prefab id '{prefabId}' not founded in resources.");
+
+            if (!gameObject.TryGetComponent<NetObjectIdentity>(out _))
+                throw new InvalidOperationException($"Unable to create object without '{typeof(NetObjectIdentity).FullName}' component.");
+
+            var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
+            return newGameObject.GetComponent<NetObjectIdentity>();
+        }
+
         public NetObjectIdentity GetView(NetObjectUid uid)
         {
             if (_currentObjectViews.TryGetValue(uid, out var netObjectView))
@@ -149,7 +160,7 @@ namespace LROTech.Network.StateManagement
             if (currentView != null)
                 throw new InvalidOperationException($"View '{currentView.gameObject.name}' is already registered for object with uid '{state.Uid}'.");
 
-            var netObjectView = _objectFactory.Create(state.PrefabId, position, rotation);
+            var netObjectView = CreateObjectView(state.PrefabId, position, rotation);
             InitializeObjectView(state.Uid, netObjectView);
             _temporaryUnregisteredViews.Add(state.Uid, netObjectView);
             return netObjectView;

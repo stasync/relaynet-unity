@@ -20,7 +20,7 @@ namespace LROTech.Network.GameObjects
         internal void OnPostInitializeInternal() =>
             OnPostInitialize();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Obsolete("Reconsider if its still required. Use OnPostInitialize instead.")]
         internal void OnInitializeViewDataInternal() =>
             OnInitializeViewData();
 

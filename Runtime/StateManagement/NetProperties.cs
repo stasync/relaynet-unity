@@ -72,7 +72,7 @@ namespace LROTech.Network.StateManagement
             WriteUnmanagedDictionary(writer, _boolData);
             WriteUnmanagedDictionary(writer, _vector3Data);
 
-            // String is a special case here, as its unmanaged.
+            // String is a special case here, as its managed.
             {
                 writer.WritePackedUInt32((uint)_stringData.Count);
                 foreach (var kvp in _stringData)
@@ -92,7 +92,7 @@ namespace LROTech.Network.StateManagement
             ReadUnmanagedDictionary(reader, _boolData);
             ReadUnmanagedDictionary(reader, _vector3Data);
 
-            // String is a special case here, as its unmanaged.
+            // String is a special case here, as its managed.
             {
                 _stringData.Clear();
                 var count = reader.ReadPackedUInt32();

@@ -122,7 +122,9 @@ namespace LROTech.Network.GameObjects
             foreach (var behaviour in _behaviours)
             {
                 if (!viewStateData.ViewInitialized)
+#pragma warning disable CS0618 // Type or member is obsolete
                     behaviour.OnInitializeViewDataInternal();
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             foreach (var behaviour in _behaviours)

@@ -14,7 +14,7 @@ namespace LROTech.Network
         private RelaySession _clientSession;
         //private readonly NetReader _reader = new();
 
-        public NetSession(IPAddress address, ushort port)
+        public NetSession(IPAddress address, ushort port, string connectionData = null)
         {
             if (_clientSession != null)
                 throw new InvalidOperationException("Session is already initialized.");
@@ -23,7 +23,7 @@ namespace LROTech.Network
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
 
-            _clientSession = new RelaySession(new IPEndPoint(address, port), connectionKey: 0);
+            _clientSession = new RelaySession(new IPEndPoint(address, port), connectionData);
             _clientSession.LocalUserDisconnected += OnLocalUserDisconnected;
             _clientSession.DataReceived += OnDataReceived;
             _clientSession.LocalUserConnected += OnLocalUserConnected;
