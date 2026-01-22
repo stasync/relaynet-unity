@@ -92,7 +92,7 @@ namespace LROTech.Network.StateManagement.Values
 
         public bool ContainsKey(TKey key) =>
             InternalValue.ContainsKey(key);
-        
+
         public bool Remove(TKey key)
         {
             if (!HasPermission)
@@ -120,7 +120,7 @@ namespace LROTech.Network.StateManagement.Values
             throw new NotImplementedException();
 
         #endregion
-        
+
         public override string ToString()
         {
             var result = string.Empty;

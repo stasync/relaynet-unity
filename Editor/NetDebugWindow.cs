@@ -70,6 +70,7 @@ namespace LROTech.Network.Debug.Editor
                     EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {_state.PrefabId}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
                     EditorGUILayout.LabelField($"Owner: [{_state.Owner.Uid}] {_state.Owner.Name} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField($"Update Time: {_state.WorldTime:f2}", EditorStyles.boldLabel);
                     if (_state.IsTagObjectForCurrentOwner)
                         EditorGUILayout.LabelField("Owner's tag object", EditorStyles.boldLabel);
 
