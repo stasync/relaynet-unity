@@ -5,6 +5,7 @@ namespace LROTech.Network.StateManagement
         PlayerStateUpdate,
         ObjectStateUpdate,
         Rpc,
-        WorldCommunication
+        WorldCommunication,
+        WorldObjectOwnerValidationRequest
     }
 }

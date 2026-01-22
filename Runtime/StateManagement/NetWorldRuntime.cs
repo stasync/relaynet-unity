@@ -15,6 +15,8 @@ namespace LROTech.Network.StateManagement
         private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
         private const float MIN_UPDATE_INTERVAL_S = 0.1f; // 10 times per second.
         private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 6f; // Remove remote objects, if now data was received for 'N' seconds.
+        private const float OWNERSHIP_DISTRIBUTION_UPDATE_RATE = 5f;
+        private const float OWNERSHIP_DISTRIBUTION_REQUEST_TIMOUT = 2f;
 
         public event Action<NetWorldPlayerSnapshot> PlayerAdded = delegate { };
         public event Action<NetWorldPlayerSnapshot> PlayerRemoved = delegate { };
@@ -28,6 +30,8 @@ namespace LROTech.Network.StateManagement
         public IReadOnlyDictionary<NetObjectUid, NetObjectSceneIdentity> UnregisteredSceneObjects => _unregisteredSceneObjects;
         private readonly Dictionary<NetObjectUid, NetObjectSceneIdentity> _unregisteredSceneObjects = new();
 
+        private readonly Dictionary<NetObjectUid, float> _lastObjectValidationTimeLookup = new();
+
         public readonly NetWorldHistoryBuffer HistoryBuffer = new();
         private readonly Func<ClientUid> _sessionOwnerProvider;
         private readonly NetWriter _writer = new();
@@ -36,6 +40,7 @@ namespace LROTech.Network.StateManagement
 
         private float _lastUpdateTime;
         private float _localUpdateTime;
+        private float _nextOwnershipDistributionUpdateTime;
 
         public NetWorldRuntime(Func<ClientUid> sessionOwnerProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
@@ -68,6 +73,7 @@ namespace LROTech.Network.StateManagement
             var remotePlayersUpdateRequests = new Dictionary<ClientUid, NetWorldPlayerSnapshot>();
             var remoteObjectUpdateRequests = new Dictionary<NetObjectUid, NetObjectStateSnapshot>();
             var remoteWorldDataUpdateRequests = new Queue<byte[]>();
+            var remoteObjectOwnershipValidationsUpdateRequests = new Queue<byte[]>();
 
             TrySendWorldData();
 
@@ -78,7 +84,7 @@ namespace LROTech.Network.StateManagement
             UpdateRemoteObjectsStates();
             UpdateRpcRequestsWithoutAuthority();
             UpdateLocalObjectState();
-            TryOwnObjects();
+            UpdateObjectOwnershipDistribution();
 
             #region Internal
 
@@ -146,6 +152,12 @@ namespace LROTech.Network.StateManagement
                         case NetWorldRuntimeChangeOp.WorldCommunication:
                         {
                             remoteWorldDataUpdateRequests.Enqueue(stateChangeData);
+                            break;
+                        }
+
+                        case NetWorldRuntimeChangeOp.WorldObjectOwnerValidationRequest:
+                        {
+                            remoteObjectOwnershipValidationsUpdateRequests.Enqueue(stateChangeData);
                             break;
                         }
 
@@ -447,11 +459,77 @@ namespace LROTech.Network.StateManagement
                 }
             }
 
-            void TryOwnObjects()
+            // Logic that handles automatic ownership distribution.
+            void UpdateObjectOwnershipDistribution()
             {
+                // Cleanup validation lookup times.
+                if (_lastObjectValidationTimeLookup.Count > 0)
+                {
+                    foreach (var uid in new List<NetObjectUid>(_lastObjectValidationTimeLookup.Keys))
+                    {
+                        if (Time >= _lastObjectValidationTimeLookup[uid])
+                            _lastObjectValidationTimeLookup.Remove(uid);
+                    }
+                }
+
                 if (Players.LocalPlayer == null)
                     return;
 
+                if (Time < _nextOwnershipDistributionUpdateTime)
+                    return;
+
+                _nextOwnershipDistributionUpdateTime = Time + OWNERSHIP_DISTRIBUTION_UPDATE_RATE;
+
+                // Remote requests.
+                while (remoteObjectOwnershipValidationsUpdateRequests.TryDequeue(out var data))
+                {
+                    _reader.Replace(buffer: data);
+                    _reader.ReadByte(); // Offset - see ProcessInternalData var worldChangeOpCode = (NetWorldRuntimeChangeOp)_reader.ReadByte();
+
+                    var isResponse = _reader.ReadBoolean();
+                    if (isResponse)
+                    {
+                        var newOwnerId = _reader.ReadClientUid();
+                        var objectUid = _reader.ReadNetObjectUid();
+
+                        var player = Players.Get(newOwnerId);
+                        if (player != null && player.IsLocal())
+                        {
+                            var targetObject = GetObject(objectUid);
+                            targetObject?.ChangedOwner(newOwnerId);
+                        }
+                    }
+                    else
+                    {
+                        var currentOwner = _reader.ReadClientUid();
+                        var newPotentialOwner = _reader.ReadClientUid();
+                        var objectUid = _reader.ReadNetObjectUid();
+
+                        if (currentOwner == newPotentialOwner)
+                            continue;
+
+                        var targetObject = GetObject(objectUid);
+                        if (targetObject == null || !targetObject.IsOwnedBy(currentOwner) || !Players.Contains(newPotentialOwner))
+                            continue;
+
+                        if (targetObject.IsTagObjectForCurrentOwner)
+                            continue;
+
+                        // Object could be in dictionary only if it was recently requested to validate ownership.
+                        // We not allow multiple sequential requests - 2 seconds timeout.
+                        if (!_lastObjectValidationTimeLookup.TryAdd(objectUid, Time + OWNERSHIP_DISTRIBUTION_REQUEST_TIMOUT))
+                            continue;
+
+                        _writer.SeekZero();
+                        _writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldObjectOwnerValidationRequest);
+                        _writer.WriteBoolean(true); // is response.
+                        _writer.WriteClientUid(newPotentialOwner);
+                        _writer.WriteNetObjectUid(objectUid);
+                        DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Unreliable);
+                    }
+                }
+
+                // Local objects.
                 foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
                 {
                     var state = ObjectStates[uid];
@@ -467,7 +545,13 @@ namespace LROTech.Network.StateManagement
                     if (state.IsTagObjectForCurrentOwner)
                         continue;
 
-                    state.ChangedOwner(potentialOwner);
+                    _writer.SeekZero();
+                    _writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldObjectOwnerValidationRequest);
+                    _writer.WriteBoolean(false); // is response.
+                    _writer.WriteClientUid(state.OwnerUid);
+                    _writer.WriteClientUid(potentialOwner);
+                    _writer.WriteNetObjectUid(uid);
+                    DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Unreliable);
                 }
             }
 
