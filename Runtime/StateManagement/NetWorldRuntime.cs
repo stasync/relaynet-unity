@@ -30,7 +30,7 @@ namespace LROTech.Network.StateManagement
         public IReadOnlyDictionary<NetObjectUid, NetObjectSceneIdentity> UnregisteredSceneObjects => _unregisteredSceneObjects;
         private readonly Dictionary<NetObjectUid, NetObjectSceneIdentity> _unregisteredSceneObjects = new();
 
-        private readonly Dictionary<NetObjectUid, float> _lastObjectValidationTimeLookup = new();
+        private readonly Dictionary<NetObjectUid, float> _lastObjectOwnershipValidationTimeLookup = new();
 
         public readonly NetWorldHistoryBuffer HistoryBuffer = new();
         private readonly Func<ClientUid> _sessionOwnerProvider;
@@ -463,22 +463,17 @@ namespace LROTech.Network.StateManagement
             void UpdateObjectOwnershipDistribution()
             {
                 // Cleanup validation lookup times.
-                if (_lastObjectValidationTimeLookup.Count > 0)
+                if (_lastObjectOwnershipValidationTimeLookup.Count > 0)
                 {
-                    foreach (var uid in new List<NetObjectUid>(_lastObjectValidationTimeLookup.Keys))
+                    foreach (var uid in new List<NetObjectUid>(_lastObjectOwnershipValidationTimeLookup.Keys))
                     {
-                        if (Time >= _lastObjectValidationTimeLookup[uid])
-                            _lastObjectValidationTimeLookup.Remove(uid);
+                        if (Time >= _lastObjectOwnershipValidationTimeLookup[uid])
+                            _lastObjectOwnershipValidationTimeLookup.Remove(uid);
                     }
                 }
 
                 if (Players.LocalPlayer == null)
                     return;
-
-                if (Time < _nextOwnershipDistributionUpdateTime)
-                    return;
-
-                _nextOwnershipDistributionUpdateTime = Time + OWNERSHIP_DISTRIBUTION_UPDATE_RATE;
 
                 // Remote requests.
                 while (remoteObjectOwnershipValidationsUpdateRequests.TryDequeue(out var data))
@@ -517,7 +512,7 @@ namespace LROTech.Network.StateManagement
 
                         // Object could be in dictionary only if it was recently requested to validate ownership.
                         // We not allow multiple sequential requests - 2 seconds timeout.
-                        if (!_lastObjectValidationTimeLookup.TryAdd(objectUid, Time + OWNERSHIP_DISTRIBUTION_REQUEST_TIMOUT))
+                        if (!_lastObjectOwnershipValidationTimeLookup.TryAdd(objectUid, Time + OWNERSHIP_DISTRIBUTION_REQUEST_TIMOUT))
                             continue;
 
                         _writer.SeekZero();
@@ -530,28 +525,34 @@ namespace LROTech.Network.StateManagement
                 }
 
                 // Local objects.
-                foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
+                if (Time >= _nextOwnershipDistributionUpdateTime)
                 {
-                    var state = ObjectStates[uid];
+                    _nextOwnershipDistributionUpdateTime = Time + OWNERSHIP_DISTRIBUTION_UPDATE_RATE;
 
-                    // Skip local objects.
-                    if (state.IsOwnedByLocalPlayer)
-                        continue;
+                    // Iterate over the objects to request ownership.
+                    foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
+                    {
+                        var state = ObjectStates[uid];
 
-                    var potentialOwner = GetPotentialOwner(state.Uid);
-                    if (potentialOwner != Players.LocalPlayer.Uid)
-                        continue;
+                        // Skip local objects.
+                        if (state.IsOwnedByLocalPlayer)
+                            continue;
 
-                    if (state.IsTagObjectForCurrentOwner)
-                        continue;
+                        var potentialOwner = GetPotentialOwner(state.Uid);
+                        if (potentialOwner != Players.LocalPlayer.Uid)
+                            continue;
 
-                    _writer.SeekZero();
-                    _writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldObjectOwnerValidationRequest);
-                    _writer.WriteBoolean(false); // is response.
-                    _writer.WriteClientUid(state.OwnerUid);
-                    _writer.WriteClientUid(potentialOwner);
-                    _writer.WriteNetObjectUid(uid);
-                    DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Unreliable);
+                        if (state.IsTagObjectForCurrentOwner)
+                            continue;
+
+                        _writer.SeekZero();
+                        _writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldObjectOwnerValidationRequest);
+                        _writer.WriteBoolean(false); // is response.
+                        _writer.WriteClientUid(state.OwnerUid);
+                        _writer.WriteClientUid(potentialOwner);
+                        _writer.WriteNetObjectUid(uid);
+                        DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Unreliable);
+                    }
                 }
             }
 
