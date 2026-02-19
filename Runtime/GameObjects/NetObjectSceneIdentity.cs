@@ -71,6 +71,8 @@ namespace LROTech.Network.GameObjects
                 while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
                     sceneObjectIdentity._sceneObjectId =
                         RandomExtended.Default.Int(NetObjectUid.FIRST_VALID_UID, NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE);
+                
+                UnityEditor.EditorUtility.SetDirty(sceneObjectIdentity);
             }
 
             ValidateSceneObjects();

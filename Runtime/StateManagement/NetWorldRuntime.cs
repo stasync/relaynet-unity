@@ -732,7 +732,8 @@ namespace LROTech.Network.StateManagement
             }
 
             // At this point we don't know who's going to be the owner, client it will be invalid just for now.
-            _unregisteredSceneObjects.Add(sceneIdentity.SceneObjectId, sceneIdentity);
+            if (!_unregisteredSceneObjects.TryAdd(sceneIdentity.SceneObjectId, sceneIdentity))
+                throw new InvalidOperationException($"Unable to register object '{sceneIdentity.gameObject.name}'. Object with the same uid '{sceneIdentity.SceneObjectId}' was already registered.");
         }
 
         public int GetHistoryBufferSize()
