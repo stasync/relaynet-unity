@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
@@ -9,7 +10,9 @@ namespace LROTech.Network.StateManagement.Values
         private TValue _value;
         public TValue Value
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _value;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (!HasPermission)
