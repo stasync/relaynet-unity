@@ -1,4 +1,5 @@
-﻿using Core.Networking;
+﻿using System.Runtime.CompilerServices;
+using Core.Networking;
 
 namespace LROTech.Network.StateManagement.Values
 {
@@ -6,18 +7,20 @@ namespace LROTech.Network.StateManagement.Values
     {
         public new string Value
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => InternalValue;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set => Set(value);
         }
-        
+
         public NetworkString(string defaultValue = "") : base(defaultValue)
         {
         }
 
-        protected override string OnDeserialize(NetReader reader) => 
+        protected override string OnDeserialize(NetReader reader) =>
             reader.ReadString();
 
-        protected override void OnSerialize(NetWriter writer) => 
+        protected override void OnSerialize(NetWriter writer) =>
             writer.WriteString(InternalValue);
     }
 }

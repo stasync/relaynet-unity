@@ -1,23 +1,34 @@
 using System;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 
 namespace LROTech.Network.StateManagement.Values
 {
     public abstract class NetworkValueManaged<TValue, TExposed> : NetworkValueBase where TValue : TExposed
     {
-        public TExposed Value => InternalValue;
-        protected TValue InternalValue => _internalValue;
-        
+        public TExposed Value
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalValue;
+        }
+
+        protected TValue InternalValue
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _internalValue;
+        }
+
         private TValue _internalValue;
 
         protected NetworkValueManaged(TValue defaultValue) =>
             _internalValue = defaultValue;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(TValue value)
         {
             if (!HasPermission)
                 throw new InvalidOperationException($"No authority to change value '{typeof(TValue).FullName}'.");
-            
+
             _internalValue = value;
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
@@ -10,7 +11,7 @@ namespace LROTech.Network.StateManagement.Values
         where TValue : unmanaged
     {
         private readonly List<TValue> _cachedValue = new();
-        
+
         public NetworkList(List<TValue> defaultValue = null) : base(defaultValue ?? new List<TValue>())
         {
         }
@@ -21,7 +22,7 @@ namespace LROTech.Network.StateManagement.Values
             var length = reader.ReadPackedUInt32();
             for (var i = 0; i < length; i++)
                 _cachedValue.Add(NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader));
-            
+
             return _cachedValue;
         }
 
@@ -36,7 +37,9 @@ namespace LROTech.Network.StateManagement.Values
 
         public TValue this[int index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Value[index];
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (!HasPermission)
@@ -50,10 +53,19 @@ namespace LROTech.Network.StateManagement.Values
             }
         }
 
-        public int Count => Value.Count;
+        public int Count
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalValue.Count;
+        }
 
-        public bool IsReadOnly => HasPermission;
+        public bool IsReadOnly
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => !HasPermission;
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(TValue item)
         {
             if (!HasPermission)
@@ -61,7 +73,8 @@ namespace LROTech.Network.StateManagement.Values
 
             InternalValue.Add(item);
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddRange(IEnumerable<TValue> collection)
         {
             if (!HasPermission)
@@ -70,6 +83,7 @@ namespace LROTech.Network.StateManagement.Values
             InternalValue.AddRange(collection);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
             if (!HasPermission)
@@ -81,15 +95,19 @@ namespace LROTech.Network.StateManagement.Values
             InternalValue.Clear();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Contains(TValue item) =>
             InternalValue.Contains(item);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(TValue[] array, int arrayIndex) =>
             InternalValue.CopyTo(array, arrayIndex);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(TValue item) =>
             InternalValue.IndexOf(item);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Insert(int index, TValue item)
         {
             if (!HasPermission)
@@ -98,6 +116,7 @@ namespace LROTech.Network.StateManagement.Values
             InternalValue.Insert(index, item);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(TValue item)
         {
             if (!HasPermission)
@@ -106,6 +125,7 @@ namespace LROTech.Network.StateManagement.Values
             return InternalValue.Remove(item);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveAt(int index)
         {
             if (!HasPermission)

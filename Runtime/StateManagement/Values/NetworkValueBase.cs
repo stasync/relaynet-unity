@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 using UnityEngine;
 
@@ -11,8 +12,17 @@ namespace LROTech.Network.StateManagement.Values
         internal Func<bool> InternalWritePermission = null;
         internal Func<bool> InternalValidator = null;
 
-        protected bool HasPermission => InternalWritePermission();
-        protected bool IsValid => InternalValidator();
+        protected bool HasPermission
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalWritePermission();
+        }
+
+        protected bool IsValid
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalValidator();
+        }
 
         internal abstract void InternalDeserialize(NetReader reader);
         internal abstract void InternalSerialize(NetWriter writer);

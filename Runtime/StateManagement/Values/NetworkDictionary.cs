@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
@@ -45,7 +46,9 @@ namespace LROTech.Network.StateManagement.Values
 
         public TValue this[TKey key]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Value[key];
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (!HasPermission)
@@ -55,14 +58,31 @@ namespace LROTech.Network.StateManagement.Values
             }
         }
 
-        public ICollection<TKey> Keys => InternalValue.Keys;
+        public ICollection<TKey> Keys
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalValue.Keys;
+        }
 
-        public ICollection<TValue> Values => InternalValue.Values;
+        public ICollection<TValue> Values
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalValue.Values;
+        }
 
-        public int Count => Value.Count;
+        public int Count
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Value.Count;
+        }
 
-        public bool IsReadOnly => HasPermission;
+        public bool IsReadOnly
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => !HasPermission;
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(TKey key, TValue value)
         {
             if (!HasPermission)
@@ -71,6 +91,7 @@ namespace LROTech.Network.StateManagement.Values
             InternalValue.Add(key, value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(KeyValuePair<TKey, TValue> item)
         {
             if (!HasPermission)
@@ -79,6 +100,7 @@ namespace LROTech.Network.StateManagement.Values
             InternalValue.Add(item.Key, item.Value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
             if (!HasPermission)
@@ -90,9 +112,11 @@ namespace LROTech.Network.StateManagement.Values
             InternalValue.Clear();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(TKey key) =>
             InternalValue.ContainsKey(key);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(TKey key)
         {
             if (!HasPermission)
@@ -101,6 +125,7 @@ namespace LROTech.Network.StateManagement.Values
             return InternalValue.Remove(key);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetValue(TKey key, out TValue value) =>
             InternalValue.TryGetValue(key, out value);
 

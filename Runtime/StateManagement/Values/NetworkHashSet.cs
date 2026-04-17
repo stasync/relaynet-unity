@@ -1,22 +1,28 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Core.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement.Values
 {
-    public class NetworkHashSet<TValue> : NetworkValueManaged<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue> 
+    public class NetworkHashSet<TValue> : NetworkValueManaged<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>
         where TValue : unmanaged
     {
         private readonly HashSet<TValue> _cachedValue = new();
-        
+
         public NetworkHashSet(HashSet<TValue> defaultValue = null) : base(defaultValue ?? new HashSet<TValue>())
         {
         }
 
-        public int Count => InternalValue.Count;
+        public int Count
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => InternalValue.Count;
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Add(TValue value)
         {
             if (!HasPermission)
@@ -25,6 +31,7 @@ namespace LROTech.Network.StateManagement.Values
             return InternalValue.Add(value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(TValue value)
         {
             if (!HasPermission)
@@ -33,9 +40,11 @@ namespace LROTech.Network.StateManagement.Values
             return InternalValue.Remove(value);
         }
 
-        public bool Contains(TValue value) => 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Contains(TValue value) =>
             InternalValue.Contains(value);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
             if (!HasPermission)
@@ -53,7 +62,7 @@ namespace LROTech.Network.StateManagement.Values
             var length = reader.ReadPackedUInt32();
             for (var i = 0; i < length; i++)
                 _cachedValue.Add(NetworkValueSerializationAPI<TValue>.Serializer.Deserialize(reader));
-            
+
             return _cachedValue;
         }
 
@@ -63,13 +72,13 @@ namespace LROTech.Network.StateManagement.Values
             foreach (var value in InternalValue)
                 NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, value);
         }
-        
-        public IEnumerator<TValue> GetEnumerator() => 
+
+        public IEnumerator<TValue> GetEnumerator() =>
             InternalValue.GetEnumerator();
-        
-        IEnumerator IEnumerable.GetEnumerator() => 
+
+        IEnumerator IEnumerable.GetEnumerator() =>
             InternalValue.GetEnumerator();
-        
+
         public override string ToString() =>
             $"{InternalValue.Count} [{string.Join("; ", InternalValue)}]";
     }
