@@ -641,6 +641,7 @@ namespace LROTech.Network.StateManagement
         {
             base.RemoveObject(uid);
             _unregisteredSceneObjects.Remove(uid);
+            _objectSendBlacklist.Remove(uid);
         }
 
         internal void RegisterLocalPlayer(ClientUid uid)
