@@ -23,6 +23,20 @@ namespace LROTech.Network.Debug.Runtime
             Color.green,
             Color.cyan,
             Color.yellow,
+
+            // Custom colors:
+            new(1.0f, 0.5f, 0.0f), // Orange
+            new(0.5f, 0.0f, 1.0f), // Violet
+            new(1.0f, 0.0f, 0.5f), // Rose/Hot pink
+            new(0.0f, 0.5f, 1.0f), // Azure/Sky blue
+            new(1.0f, 1.0f, 0.5f), // Light yellow
+            new(0.5f, 0.0f, 0.0f), // Dark red / Maroon
+            new(0.0f, 0.5f, 0.0f), // Dark green
+            new(0.5f, 0.5f, 0.0f), // Olive
+            new(0.5f, 0.0f, 0.5f), // Purple
+            new(0.0f, 0.5f, 0.5f), // Teal
+            new(1.0f, 0.75f, 0.8f), // Pink
+            new(0.6f, 0.4f, 0.2f) // Brown
         };
 
         private static bool s_enabled;
