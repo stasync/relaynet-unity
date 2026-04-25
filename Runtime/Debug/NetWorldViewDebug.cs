@@ -39,7 +39,7 @@ namespace LROTech.Network.Debug.Runtime
             new(0.6f, 0.4f, 0.2f) // Brown
         };
 
-        private static bool s_enabled;
+        private static bool s_enabled = true;
 
         private void Update()
         {
@@ -52,8 +52,8 @@ namespace LROTech.Network.Debug.Runtime
 
         private void LateUpdate()
         {
-            //if (!s_enabled)
-            //   return;
+            if (!s_enabled)
+                return;
 
             foreach (var world in NetWorld.All.Values)
             {
