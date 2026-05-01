@@ -131,14 +131,14 @@ namespace LROTech.Network.StateManagement
 
         private NetObjectIdentity CreateObjectView(string prefabId, Vector3 position, Quaternion rotation)
         {
-            var gameObject = Resources.Load<GameObject>(prefabId);
-            if (gameObject == null)
+            var resourceObject = Resources.Load<GameObject>(prefabId);
+            if (resourceObject == null)
                 throw new NullReferenceException($"Object with prefab id '{prefabId}' not founded in resources.");
 
-            if (!gameObject.TryGetComponent<NetObjectIdentity>(out _))
+            if (!resourceObject.TryGetComponent<NetObjectIdentity>(out _))
                 throw new InvalidOperationException($"Unable to create object without '{typeof(NetObjectIdentity).FullName}' component.");
 
-            var newGameObject = UnityEngine.Object.Instantiate(gameObject, position, rotation);
+            var newGameObject = Instantiate(resourceObject, position, rotation);
             return newGameObject.GetComponent<NetObjectIdentity>();
         }
 
