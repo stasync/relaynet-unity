@@ -70,7 +70,7 @@ namespace LROTech.Network.GameObjects
                 UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
                 while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
                     sceneObjectIdentity._sceneObjectId =
-                        RandomExtended.Default.Int(NetObjectUid.FIRST_VALID_UID, NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE);
+                        RandomExtended.Default.Int((int)NetObjectUid.FIRST_VALID_UID, (int)NetObjectUid.SCENE_OBJECT_RESERVED_UID_SPACE);
                 
                 UnityEditor.EditorUtility.SetDirty(sceneObjectIdentity);
             }
