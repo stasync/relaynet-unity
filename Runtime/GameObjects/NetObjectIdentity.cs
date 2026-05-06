@@ -119,12 +119,10 @@ namespace LROTech.Network.GameObjects
             OwnerChanged();
 
             // Tell components about object was initialized.
-            foreach (var behaviour in _behaviours)
+            if (!viewStateData.ViewInitialized)
             {
-                if (!viewStateData.ViewInitialized)
-#pragma warning disable CS0618 // Type or member is obsolete
-                    behaviour.OnInitializeViewDataInternal();
-#pragma warning restore CS0618 // Type or member is obsolete
+                foreach (var behaviour in _behaviours)
+                    behaviour.OnPostInitializeOnceInternal();
             }
 
             foreach (var behaviour in _behaviours)

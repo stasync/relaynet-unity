@@ -36,9 +36,9 @@ namespace LROTech.NetworkBehaviours
             Data.CurrentLifetime.Value = lifetime;
         }
 
-        protected override void OnInitializeViewData()
+        protected override void OnPostInitializeOnce()
         {
-            base.OnInitializeViewData();
+            base.OnPostInitializeOnce();
 
             if (IsLocal)
                 SetLifetimeWithAuthority(_lifetime);

@@ -23,9 +23,9 @@ namespace LROTech.NetworkBehaviours
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
 
-        protected override void OnInitializeViewData()
+        protected override void OnPostInitializeOnce()
         {
-            base.OnInitializeViewData();
+            base.OnPostInitializeOnce();
             if (IsLocal)
                 SetInteractionsEnabledWithAuthority(true);
         }

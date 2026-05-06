@@ -15,14 +15,14 @@ namespace LROTech.Network.GameObjects
         internal virtual void OnPreInitializeInternal()
         {
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void OnPostInitializeOnceInternal() =>
+            OnPostInitializeOnce();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnPostInitializeInternal() =>
             OnPostInitialize();
-
-        [System.Obsolete("Reconsider if its still required. Use OnPostInitialize instead.")]
-        internal void OnInitializeViewDataInternal() =>
-            OnInitializeViewData();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnOwnerChangedInternal() =>
@@ -68,14 +68,17 @@ namespace LROTech.Network.GameObjects
             OnSoftDestroyRequestedLocally();
 
         /// <summary>
+        /// Used instead of start, but will be only called when the object was created for first time.
+        /// See <see cref="LROTech.Network.StateManagement.NetObjectViewStateData.ViewInitialized"/> flag.
+        /// </summary>
+        protected virtual void OnPostInitializeOnce()
+        {
+        }
+        
+        /// <summary>
         /// Use this instead of start, called after objet was deserialized first time.
         /// </summary>
         protected virtual void OnPostInitialize()
-        {
-        }
-
-        [System.Obsolete("Reconsider if its still required. Use OnPostInitialize instead.")]
-        protected virtual void OnInitializeViewData()
         {
         }
 
