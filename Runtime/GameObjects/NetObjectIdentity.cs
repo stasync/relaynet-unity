@@ -162,7 +162,6 @@ namespace LROTech.Network.GameObjects
         /// </summary>
         private void OwnerChanged()
         {
-            Debug.LogWarningFormat($"{gameObject.name} object with ID: {InstanceId} owner changed, now owner is {Owner}");
             foreach (var behavior in _behaviours)
                 behavior.OnOwnerChangedInternal();
         }
@@ -250,14 +249,7 @@ namespace LROTech.Network.GameObjects
         /// </summary>
         public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
             OwnerToOthersRpc(rpcHandlerMethod, data, persistent: false, RpcBufferChangeMethod.Add, deliveryMethod, invokeLocally);
-
-        /// <summary>
-        /// Same as AuthRPC, but buffered.
-        /// Only works via RELIABLE delivery.
-        /// </summary>
-        [Obsolete(message: "Will be removed soon. Buffered RPCs are unsafe.")]
-        public void OwnerToOthersRpcBuffered(Action<byte[]> rpcHandlerMethod, byte[] data, RpcBufferChangeMethod bufferChangeMethod = RpcBufferChangeMethod.Replace, bool invokeLocally = true) =>
-            OwnerToOthersRpc(rpcHandlerMethod, data, persistent: true, bufferChangeMethod, DeliveryMethod.Reliable, invokeLocally);
+        
 
         private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
         {
