@@ -5,39 +5,11 @@ namespace LROTech.Network.StateManagement
     public readonly struct NetObjectUid : IComparable<NetObjectUid>, IEquatable<NetObjectUid>
     {
         public const int SIZE = sizeof(uint);
-
-        /// <summary>
-        /// This id's for network objects that located in a scene by default.
-        /// If you create a scene object in runtime, they use the default peer-based ID space.
-        /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
-        /// </summary>
-        public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
-
         public const uint FIRST_VALID_UID = 1;
-        private const uint RESERVED_UID_SPACE_PER_CLIENT = 10000;
-
-        #region STATIC
-
+        
         public static readonly NetObjectUid Invalid = new(0u);
-
-        /// <summary>
-        /// Create a new object id for a client using a custom counter.
-        /// </summary>
-        internal static NetObjectUid FromClientUid(ClientUid clientUid, ref uint idCounter)
-        {
-            // Increment internal id.
-            idCounter++;
-
-            // Apply id offset.
-            var value = FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)clientUid * RESERVED_UID_SPACE_PER_CLIENT + idCounter;
-            return new NetObjectUid(value);
-        }
-
-        #endregion
-
+        
         public bool IsValid => _value > Invalid._value;
-        public bool IsSceneObjectSpaceId => IsValid && _value <= SCENE_OBJECT_RESERVED_UID_SPACE;
-
         private readonly uint _value;
 
         /// <summary>

@@ -44,6 +44,15 @@ namespace LROTech.Network.StateManagement
 
         private uint _netObjectUidCounter;
 
+        /// <summary>
+        /// This id's for network objects that located in a scene by default.
+        /// If you create a scene object in runtime, they use the default peer-based ID space.
+        /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
+        /// </summary>
+        internal const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
+
+        internal const uint RESERVED_UID_SPACE_PER_CLIENT = 10000;
+
         public NetWorldRuntime(Func<ClientUid> masterClientUidProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName) =>
             _masterClientUidProvider = masterClientUidProvider ?? throw new ArgumentNullException(nameof(masterClientUidProvider));
 
@@ -705,7 +714,14 @@ namespace LROTech.Network.StateManagement
             if (owner == null)
                 throw new InvalidOperationException();
 
-            var newState = new NetObjectState(IsObjectValid, Players.Get, NetObjectUid.FromClientUid(owner.Uid, ref _netObjectUidCounter), prefabId, isSceneObject, owner.Uid);
+            // Increment internal id.
+            _netObjectUidCounter++;
+
+            // Calculate the source id value, applying client offsets.
+            var newObjectUid = NetObjectUid.FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)owner.Uid * RESERVED_UID_SPACE_PER_CLIENT + _netObjectUidCounter;
+
+            // Create and register a new state.
+            var newState = new NetObjectState(IsObjectValid, Players.Get, uid: new NetObjectUid(newObjectUid), prefabId, isSceneObject, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
 
@@ -713,9 +729,9 @@ namespace LROTech.Network.StateManagement
         }
 
         /// <summary>
-        /// Register object, which is not created via main object creation pipeline.
-        /// See 'CreateObject' method.
-        /// This is not an initialized object, so object will be invalid, until the very first update happens.
+        /// Register an object which is not created via a main object creation pipeline.
+        /// See the 'CreateObject' method.
+        /// This is not an initialized object, so an object will be invalid until the very first update happens.
         /// </summary>
         private void TryRegisterOrInitializeSceneObjectIdentity(NetObjectSceneIdentity sceneIdentity)
         {
