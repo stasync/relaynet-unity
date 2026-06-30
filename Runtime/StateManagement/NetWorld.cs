@@ -48,7 +48,7 @@ namespace LROTech.Network.StateManagement
             LocalTime = 0f;
             Name = $"{Id}:{worldName}";
 
-            Players = new NetWorldPlayersCollection(validator: () => IsValid, GetWorldOwner);
+            Players = new NetWorldPlayersCollection(validator: () => IsValid, GetMasterClientUid);
             Properties = new NetProperties(validator: () => IsValid, writePermission: () => Players.LocalPlayer != null && Players.LocalPlayer.IsMaster());
 
             s_all.Add(Uid, this);
@@ -59,7 +59,7 @@ namespace LROTech.Network.StateManagement
 #endif
         }
 
-        protected virtual ClientUid GetWorldOwner() =>
+        protected virtual ClientUid GetMasterClientUid() =>
             ClientUid.Invalid;
 
         internal void InitializeView(NetWorldViewInitMode viewInitMode = NetWorldViewInitMode.Default)

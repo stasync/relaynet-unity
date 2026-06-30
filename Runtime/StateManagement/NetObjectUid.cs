@@ -7,8 +7,8 @@ namespace LROTech.Network.StateManagement
         public const int SIZE = sizeof(uint);
 
         /// <summary>
-        /// This id's for network objects that located in scene by default.
-        /// If you create scene object in runtime, they use default peer-based id space.
+        /// This id's for network objects that located in a scene by default.
+        /// If you create a scene object in runtime, they use the default peer-based ID space.
         /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
         /// </summary>
         public const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;

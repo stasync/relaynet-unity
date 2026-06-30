@@ -18,7 +18,7 @@ namespace LROTech.Network
             if (_clientSession != null)
                 throw new InvalidOperationException("Session is already initialized.");
 
-            MainWorld = new NetWorldRuntime(worldOwnerProvider: () => SessionOwner);
+            MainWorld = new NetWorldRuntime(masterClientUidProvider: () => SessionOwner);
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
 
@@ -95,7 +95,7 @@ namespace LROTech.Network
             }
         }
         
-        private void RecalculateMasterPlayerUid()
+        private void RecalculateSessionOwner()
         {
             SessionOwner = ClientUid.Invalid;
             foreach (var clientUid in _clientSession.ConnectedClients)
@@ -107,18 +107,18 @@ namespace LROTech.Network
 
         private void OnLocalUserConnected()
         {
-            RecalculateMasterPlayerUid();
+            RecalculateSessionOwner();
             MainWorld.RegisterLocalPlayer(_clientSession.ConnectionUid);
         }
 
         private void OnRemoteUserDisconnected(ClientUid clientUid)
         {
-            RecalculateMasterPlayerUid();
+            RecalculateSessionOwner();
             MainWorld.OnDisconnect(clientUid);
         }
 
         private void OnRemoteUserConnected(ClientUid clientUid) =>
-            RecalculateMasterPlayerUid();
+            RecalculateSessionOwner();
 
         private void OnWorldDataSendRequest(byte[] data, DeliveryMethod deliveryMethod) =>
             _clientSession.SendData(MessageCodes.NET_WORLD_UPDATE, data, deliveryMethod);

@@ -33,7 +33,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUid, float> _lastObjectOwnershipValidationTimeLookup = new();
 
         public readonly NetWorldHistoryBuffer HistoryBuffer = new();
-        private readonly Func<ClientUid> _worldOwnerProvider;
+        private readonly Func<ClientUid> _masterClientUidProvider;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
         private readonly HashSet<NetObjectUid> _objectSendBlacklist = new();
@@ -42,14 +42,14 @@ namespace LROTech.Network.StateManagement
         private float _localUpdateTime;
         private float _nextOwnershipDistributionUpdateTime;
 
-        public NetWorldRuntime(Func<ClientUid> worldOwnerProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
+        public NetWorldRuntime(Func<ClientUid> masterClientUidProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
-            _worldOwnerProvider = worldOwnerProvider ?? throw new ArgumentNullException(nameof(worldOwnerProvider));
+            _masterClientUidProvider = masterClientUidProvider ?? throw new ArgumentNullException(nameof(masterClientUidProvider));
             NetObjectUid.Reset();
         }
 
-        protected override ClientUid GetWorldOwner() =>
-            _worldOwnerProvider();
+        protected override ClientUid GetMasterClientUid() =>
+            _masterClientUidProvider();
 
         protected override void UpdateImplementation(float deltaTime)
         {
