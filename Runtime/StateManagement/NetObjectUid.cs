@@ -19,21 +19,17 @@ namespace LROTech.Network.StateManagement
         #region STATIC
 
         public static readonly NetObjectUid Invalid = new(0u);
-        private static uint s_idCounter;
 
         /// <summary>
-        /// Reset when stop session.
+        /// Create a new object id for a client using a custom counter.
         /// </summary>
-        internal static void Reset() =>
-            s_idCounter = 0;
-
-        internal static NetObjectUid FromClientUid(ClientUid clientUid)
+        internal static NetObjectUid FromClientUid(ClientUid clientUid, ref uint idCounter)
         {
             // Increment internal id.
-            s_idCounter++;
+            idCounter++;
 
             // Apply id offset.
-            var value = FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)clientUid * RESERVED_UID_SPACE_PER_CLIENT + s_idCounter;
+            var value = FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)clientUid * RESERVED_UID_SPACE_PER_CLIENT + idCounter;
             return new NetObjectUid(value);
         }
 

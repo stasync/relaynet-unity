@@ -42,11 +42,10 @@ namespace LROTech.Network.StateManagement
         private float _localUpdateTime;
         private float _nextOwnershipDistributionUpdateTime;
 
-        public NetWorldRuntime(Func<ClientUid> masterClientUidProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
-        {
+        private uint _netObjectUidCounter;
+
+        public NetWorldRuntime(Func<ClientUid> masterClientUidProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName) =>
             _masterClientUidProvider = masterClientUidProvider ?? throw new ArgumentNullException(nameof(masterClientUidProvider));
-            NetObjectUid.Reset();
-        }
 
         protected override ClientUid GetMasterClientUid() =>
             _masterClientUidProvider();
@@ -694,8 +693,8 @@ namespace LROTech.Network.StateManagement
             _incomingStateChangeRequests.Enqueue(data);
 
         /// <summary>
-        /// Create object with position and rotation input.
-        /// Should be called on local client to create object across network.
+        /// Create an object with position and rotation input.
+        /// Should be called on a local client to create the object across network.
         /// </summary>
         public NetObjectIdentity CreateObject(string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
         {
@@ -706,7 +705,7 @@ namespace LROTech.Network.StateManagement
             if (owner == null)
                 throw new InvalidOperationException();
 
-            var newState = new NetObjectState(IsObjectValid, Players.Get, NetObjectUid.FromClientUid(owner.Uid), prefabId, isSceneObject, owner.Uid);
+            var newState = new NetObjectState(IsObjectValid, Players.Get, NetObjectUid.FromClientUid(owner.Uid, ref _netObjectUidCounter), prefabId, isSceneObject, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
 
