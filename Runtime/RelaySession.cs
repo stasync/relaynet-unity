@@ -114,7 +114,7 @@ namespace LROTech.Network
             _dataWriter.SeekZero();
             _dataWriter.WriteByte((byte)ClientMessageType.OnPacket);
             _dataWriter.WritePackedUInt32(userDataOpCode);
-            _dataWriter.WritePackedUInt32(0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that message will be sent to everyone except sender.
+            _dataWriter.WritePackedUInt32(0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that the message will be sent to everyone except sender.
             _dataWriter.WriteBytesAndSize(data);
 
             _reliableUdpClient.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);

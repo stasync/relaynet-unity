@@ -12,14 +12,13 @@ namespace LROTech.Network
         public NetWorldRuntime MainWorld { get; private set; }
 
         private RelaySession _clientSession;
-        //private readonly NetReader _reader = new();
 
         public NetSession(IPAddress address, ushort port, string connectionData = null)
         {
             if (_clientSession != null)
                 throw new InvalidOperationException("Session is already initialized.");
 
-            MainWorld = new NetWorldRuntime(sessionOwnerProvider: () => SessionOwner);
+            MainWorld = new NetWorldRuntime(worldOwnerProvider: () => SessionOwner);
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
 

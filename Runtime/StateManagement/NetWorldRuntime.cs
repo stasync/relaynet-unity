@@ -33,7 +33,7 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<NetObjectUid, float> _lastObjectOwnershipValidationTimeLookup = new();
 
         public readonly NetWorldHistoryBuffer HistoryBuffer = new();
-        private readonly Func<ClientUid> _sessionOwnerProvider;
+        private readonly Func<ClientUid> _worldOwnerProvider;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
         private readonly HashSet<NetObjectUid> _objectSendBlacklist = new();
@@ -42,14 +42,14 @@ namespace LROTech.Network.StateManagement
         private float _localUpdateTime;
         private float _nextOwnershipDistributionUpdateTime;
 
-        public NetWorldRuntime(Func<ClientUid> sessionOwnerProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
+        public NetWorldRuntime(Func<ClientUid> worldOwnerProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
-            _sessionOwnerProvider = sessionOwnerProvider ?? throw new ArgumentNullException(nameof(sessionOwnerProvider));
+            _worldOwnerProvider = worldOwnerProvider ?? throw new ArgumentNullException(nameof(worldOwnerProvider));
             NetObjectUid.Reset();
         }
 
-        protected override ClientUid GetSessionOwnerUid() =>
-            _sessionOwnerProvider();
+        protected override ClientUid GetWorldOwner() =>
+            _worldOwnerProvider();
 
         protected override void UpdateImplementation(float deltaTime)
         {
@@ -97,7 +97,7 @@ namespace LROTech.Network.StateManagement
 
                     switch (worldChangeOpCode)
                     {
-                        // Other client wants to tell us about its player state.
+                        // Another client wants to tell us about its player state.
                         case NetWorldRuntimeChangeOp.PlayerStateUpdate:
                         {
                             var snapshot = new NetWorldPlayerSnapshot(_reader);
@@ -316,7 +316,7 @@ namespace LROTech.Network.StateManagement
                     if (!snapshot.ObjectUid.IsValid)
                         throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUid}'  Prefab: '{snapshot.PrefabId}'");
 
-                    // Check if owner exists.
+                    // Check if the owner exists.
                     // NOTE: it's equally "unsafe" to either drop and apply this packet. However, i think it's better to drop it.
                     if (!Players.Contains(snapshot.OwnerUid))
                     {
@@ -351,7 +351,7 @@ namespace LROTech.Network.StateManagement
                         continue;
                     }
 
-                    // Create new state.
+                    // Create a new state.
                     var newState = new NetObjectState(IsObjectValid, Players.Get, snapshot);
                     AddObject(newState);
 
@@ -744,7 +744,7 @@ namespace LROTech.Network.StateManagement
         }
 
         /// <summary>
-        /// World has to be notified, when game world is loaded.
+        /// World has to be notified when the game world is loaded.
         /// </summary>
         public void OnSceneLoaded()
         {
