@@ -4,40 +4,38 @@ using LROTech.Network.StateManagement;
 
 namespace LROTech.Network.GameObjects
 {
-    public sealed class NetWorldObjectViewWaiter : IDisposable
+    public sealed class NetWorldObjectViewPromise : IDisposable
     {
         private NetWorld _world;
-        private Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>> _newObjectWaiters;
+        private Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>> _instances = new();
 
-        public NetWorldObjectViewWaiter(NetWorld world)
+        public NetWorldObjectViewPromise(NetWorld world)
         {
             _world = world;
-            _newObjectWaiters = new Dictionary<NetObjectUid, List<Action<NetObjectIdentity>>>();
-
             _world.View.NewObjectInitialized += OnNewObjectInitialized;
         }
 
-        public void GetOrWaitFor(NetObjectUid uid, Action<NetObjectIdentity> a)
+        public void GetOrWaitFor(NetObjectUid uid, Action<NetObjectIdentity> callback)
         {
             var existedView = _world.GetObjectView(uid);
             if (existedView != null)
             {
-                a(existedView);
+                callback(existedView);
                 return;
             }
 
-            if (!_newObjectWaiters.TryGetValue(uid, out var waiters))
+            if (!_instances.TryGetValue(uid, out var waiters))
             {
                 waiters = new List<Action<NetObjectIdentity>>();
-                _newObjectWaiters.Add(uid, waiters);
+                _instances.Add(uid, waiters);
             }
 
-            waiters.Add(a);
+            waiters.Add(callback);
         }
 
         private void OnNewObjectInitialized(NetObjectIdentity identity)
         {
-            if (!_newObjectWaiters.TryGetValue(identity.InstanceId, out var waiters))
+            if (!_instances.TryGetValue(identity.InstanceId, out var waiters))
                 return;
 
             foreach (var action in waiters)
@@ -52,8 +50,8 @@ namespace LROTech.Network.GameObjects
                 _world.View.NewObjectInitialized -= OnNewObjectInitialized;
 
             _world = null;
-            _newObjectWaiters.Clear();
-            _newObjectWaiters = null;
+            _instances.Clear();
+            _instances = null;
         }
     }
 }

@@ -53,7 +53,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// World, that contains this object;
+        /// World that contains this object;
         /// </summary>
         public NetWorld World { get; private set; }
 
@@ -135,7 +135,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Other client disconnected. This method calls before actual player reference removed, so here we have valid owner.
+        /// Another client disconnected. This method calls before actual player reference removed, so here we have valid owner.
         /// </summary>
         internal void OnDisconnected(ClientUid clientUid)
         {
@@ -167,7 +167,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Ownership management, anyone can change scene object owner.
+        /// Ownership management, anyone can change a scene object owner.
         /// </summary>
         public void OwnObject()
         {
@@ -200,7 +200,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Deserialize whole object.
+        /// Deserialize the whole object.
         /// </summary>
         internal void Deserialize(byte[] data, bool force)
         {
@@ -268,7 +268,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
+        /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
         /// IF we have authority, just invokes locally without sending data.
         /// </summary>
         public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
@@ -284,7 +284,7 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// RPC variation, sends RPC to MASTER client.
         /// It does not matter whether MASTER client is a owner of this object or not.
-        /// IF we are master client, just invokes locally without sending data.
+        /// IF we are a master client, just invokes locally without sending data.
         /// </summary>
         public void ToMasterRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
         {
@@ -297,8 +297,8 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
-        /// IF we have authority, just invokes locally without sending data.
+        /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
+        /// IF we have authority, just invoke it locally without sending data.
         /// </summary>
         public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
         {
@@ -310,14 +310,14 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Remove RPC from buffer
+        /// Remove RPC from the buffer.
         /// </summary>
         /// <param name="rpcHandlerMethod"></param>
         public void RemoveRpcFromBuffer(Action<byte[]> rpcHandlerMethod) =>
             State.ScheduleRemovePersistentRpc(NetObjectRpcUtils.ActionToHash(rpcHandlerMethod));
 
         /// <summary>
-        /// Receive rpc on object WITHOUT authority..
+        /// Receive rpc on object WITHOUT authority.
         /// </summary>
         private void ReceiveRpcRemotely(int hashCode, byte[] data)
         {
@@ -328,7 +328,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Receive rpc on object with authority.
+        /// Receive rpc on the object with authority.
         /// </summary>
         internal void ReceiveRpcLocally(RpcWithoutAuthorityState state)
         {
@@ -339,7 +339,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Receive rpc on master client. (Called from GSTransport).
+        /// Receive rpc on a master client. (Called from GSTransport).
         /// </summary>
         internal void ReceiveRpcOnMasterClient(RpcWithoutAuthorityState state)
         {

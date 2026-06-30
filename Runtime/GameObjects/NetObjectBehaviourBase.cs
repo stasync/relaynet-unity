@@ -83,28 +83,28 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Calls when object's owner was changed locally or remotely.
+        /// Calls when the object's owner was changed locally or remotely.
         /// </summary>
         protected virtual void OnOwnerChanged()
         {
         }
 
         /// <summary>
-        /// Called, when object needs to be updated.
+        /// Called, when the object needs to be updated.
         /// </summary>
         protected virtual void OnAuthorityUpdate()
         {
         }
 
         /// <summary>
-        /// Other client disconnected.
+        /// Another client disconnected.
         /// </summary>
         protected virtual void OnDisconnected(ClientUid clientUid)
         {
         }
 
         /// <summary>
-        /// Destroy method called locally.
+        /// Destroy callback called locally.
         /// </summary>
         protected virtual void OnSoftDestroyRequestedLocally()
         {

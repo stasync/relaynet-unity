@@ -17,14 +17,14 @@ namespace LROTech.Network.GameObjects
         }
         
         /// <summary>
-        /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
+        /// RPC, invokes locally and sends to ALL clients who HAVE NO AUTHORITY on this object.
         /// </summary>
         public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
             Identity.OwnerToOthersRpc(rpcHandlerMethod, data, deliveryMethod, invokeLocally);
 
         /// <summary>
-        /// RPC variation, sends RPC to SINGLE client, who HAS AUTHORITY on this object.
-        /// IF we have authority, just invokes locally without sending data.
+        /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
+        /// IF we have authority, just invoke it locally without sending data.
         /// </summary>
         public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable) =>
             Identity.ToOwnerRpc(rpcHandlerMethod, data, deliveryMethod);
@@ -36,7 +36,7 @@ namespace LROTech.Network.GameObjects
             Identity.ToAllRpc(rpcHandlerMethod, data, invokeLocally, deliveryMethod);
 
         /// <summary>
-        /// Destroy game object and sync it. Use this instead of Destroy(GameObject).
+        /// Destroy the game object and sync it. Use this instead of Destroy(GameObject).
         /// You can't destroy remote objects.
         /// </summary>
         public void DestroyObjectViaNetwork() =>
