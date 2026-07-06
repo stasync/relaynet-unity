@@ -14,7 +14,7 @@ namespace LROTech.Network.StateManagement
 
         private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
         private const float MIN_UPDATE_INTERVAL_S = 0.1f; // 10 times per second.
-        private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 6f; // Remove remote objects, if now data was received for 'N' seconds.
+        private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 6f; // Remove remote objects if now data was received for 'N' seconds.
         private const float OWNERSHIP_DISTRIBUTION_UPDATE_RATE = 5f;
         private const float OWNERSHIP_DISTRIBUTION_REQUEST_TIMEOUT = 2f;
 
@@ -518,8 +518,8 @@ namespace LROTech.Network.StateManagement
                         if (targetObject.IsTagObjectForCurrentOwner)
                             continue;
 
-                        // Object could be in dictionary only if it was recently requested to validate ownership.
-                        // We not allow multiple sequential or concurrent requests - 2 seconds timeout.
+                        // Object could be in the dictionary only if it was recently requested to validate ownership.
+                        // We don't allow multiple sequential or concurrent requests - 2-second timeout.
                         if (!_lastObjectOwnershipValidationTimeLookup.TryAdd(objectUid, Time + OWNERSHIP_DISTRIBUTION_REQUEST_TIMEOUT))
                             continue;
 

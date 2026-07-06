@@ -60,7 +60,7 @@ namespace LROTech.Network.StateManagement
             _currentObjectViewsIterator.AddRange(_currentObjectViews.Keys);
             foreach (var uid in _currentObjectViewsIterator)
             {
-                // No need to update state, or the state reference was invalidated.
+                // No need to update the state, or the state reference was invalidated.
                 if (!ShouldUpdateViewForState(uid) || !_currentObjectViews[uid].InstanceId.IsValid)
                     RemoveView(uid);
             }
@@ -72,7 +72,7 @@ namespace LROTech.Network.StateManagement
                 if (!ShouldUpdateViewForState(objectUid))
                     continue;
 
-                // Try get or create new state view.
+                // Try to get or create a new state view.
                 if (!_currentObjectViews.TryGetValue(objectUid, out var netObjectView))
                 {
                     if (_temporaryUnregisteredViews.Remove(objectUid, out netObjectView))
@@ -96,7 +96,7 @@ namespace LROTech.Network.StateManagement
                     }
                 }
 
-                // Initialize new view.
+                // Initialize a new view.
                 if (netObjectView.Initialized)
                 {
                     if (!state.IsOwnedByLocalPlayer && state.DataCollection.TryGetData<NetObjectViewStateData>(out var viewData))
@@ -142,38 +142,26 @@ namespace LROTech.Network.StateManagement
             return newGameObject.GetComponent<NetObjectIdentity>();
         }
 
-        public NetObjectIdentity GetView(NetObjectUid uid)
-        {
-            if (_currentObjectViews.TryGetValue(uid, out var netObjectView))
-                return netObjectView;
-
-            // Try to add pending view.
-            if (_temporaryUnregisteredViews.Remove(uid, out netObjectView))
-                _currentObjectViews.Add(uid, netObjectView);
-
-            return netObjectView;
-        }
-
         internal NetObjectIdentity CreateObjectViewImmediate(NetObjectState state, Vector3 position, Quaternion rotation)
         {
-            var currentView = GetView(state.Uid);
+            var currentView = GetObjectView(state.Uid);
             if (currentView != null)
                 throw new InvalidOperationException($"View '{currentView.gameObject.name}' is already registered for object with uid '{state.Uid}'.");
 
             var netObjectView = CreateObjectView(state.PrefabId, position, rotation);
-            InitializeObjectView(state.Uid, netObjectView);
             _temporaryUnregisteredViews.Add(state.Uid, netObjectView);
+            InitializeObjectView(state.Uid, netObjectView);
             return netObjectView;
         }
 
         internal void RegisterExistedObjectView(NetObjectState state, NetObjectIdentity identity)
         {
-            var currentView = GetView(state.Uid);
+            var currentView = GetObjectView(state.Uid);
             if (currentView != null)
                 throw new InvalidOperationException($"View '{currentView.gameObject.name}' is already registered for object with uid '{state.Uid}'.");
 
-            InitializeObjectView(state.Uid, identity);
             _temporaryUnregisteredViews.Add(state.Uid, identity);
+            InitializeObjectView(state.Uid, identity);
         }
 
         private void InitializeObjectView(NetObjectUid uid, NetObjectIdentity identity)
@@ -181,7 +169,7 @@ namespace LROTech.Network.StateManagement
             if (identity.Initialized)
                 throw new InvalidOperationException($"Identity '{identity.gameObject.name}' with id '{uid}' is already initialized.");
 
-            // Set world as view parent.
+            // Set the world as view parent.
             UpdateTransformInView(identity.transform);
 
             // Init.
@@ -273,8 +261,17 @@ namespace LROTech.Network.StateManagement
                 SceneManager.UnloadSceneAsync(_worldScene);
         }
 
-        public NetObjectIdentity GetObjectView(NetObjectUid instanceId) =>
-            _currentObjectViews.GetValueOrDefault(instanceId);
+        public NetObjectIdentity GetObjectView(NetObjectUid uid)
+        {
+            if (_currentObjectViews.TryGetValue(uid, out var netObjectView))
+                return netObjectView;
+
+            // Try to add pending view.
+            if (_temporaryUnregisteredViews.Remove(uid, out netObjectView))
+                _currentObjectViews.Add(uid, netObjectView);
+
+            return netObjectView;
+        }
 
         public T GetObjectView<T>(NetObjectUid instanceId) where T : NetObjectBehaviourBase
         {
