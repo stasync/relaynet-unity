@@ -712,7 +712,7 @@ namespace LROTech.Network.StateManagement
             // TODO: isSceneObject should be renamed to something else, like destroy with owner (when owner disconnected).
             var owner = Players.LocalPlayer;
             if (owner == null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Local player is not registered.");
 
             // Increment internal id.
             _netObjectUidCounter++;
