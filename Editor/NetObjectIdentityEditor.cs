@@ -14,10 +14,7 @@ namespace LROTech.Network.Debug.Editor
             EditorGUILayout.Space();
 
             var identity = (NetObjectIdentity)target;
-
-            if (identity.State == null || !EditorApplication.isPlaying)
-                EditorGUILayout.HelpBox(message: "Network Identity is not initialized", MessageType.Warning);
-            else
+            if (identity.State != null)
             {
                 _drawer ??= new NetObjectStateDrawer(identity.State, identity.World);
                 if (_drawer.IsValid())
