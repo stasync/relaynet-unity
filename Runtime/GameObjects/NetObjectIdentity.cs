@@ -97,7 +97,7 @@ namespace LROTech.Network.GameObjects
 
             // First initial deserialization.
             if (!IsLocal)
-                Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before object initialized.
+                Deserialize(viewStateData.UnstructuredData, force: true); // Force true to allow deserialization before the object initialized.
 
             // Register RPC handlers.
             foreach (var behaviour in _behaviours)
@@ -395,7 +395,7 @@ namespace LROTech.Network.GameObjects
                     World.View.UpdateTransformInView(identity.transform);
 
                     // Schedule update to remove an object from the world.
-                    State.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
+                    identity.State.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
                 }
             }
             else
