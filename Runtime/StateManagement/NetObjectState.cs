@@ -174,7 +174,7 @@ namespace LROTech.Network.StateManagement
             while (_persistentRpcToRemoveQueue.TryDequeue(out var rpcHash))
                 RpcBuffer.RemovePersistent(rpcHash);
 
-            // Update no-authority RPC requests. Note that is not a part of the state.
+            // Update no-authority RPC requests. Note that it is not a part of the state.
             while (_rpcWithoutAuthorityQueue.TryDequeue(out var rpcWithoutAuthorityRequest))
                 _rpcWithoutAuthorityRequests.Add(rpcWithoutAuthorityRequest);
 
