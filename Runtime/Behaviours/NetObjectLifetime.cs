@@ -15,7 +15,7 @@ namespace LROTech.NetworkBehaviours
         public float NormalizedLifetime => CurrentLifetime.Value / Lifetime.Value;
     }
 
-    public sealed class NetObjectObjectLifetime : NetObjectBehaviour<NetObjectLifetimeData>
+    public sealed class NetObjectLifetime : NetObjectBehaviour<NetObjectLifetimeData>
     {
         public event Action TimePassed = delegate { };
         public float NormalizedLifetime => Data.NormalizedLifetime;
