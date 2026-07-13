@@ -226,7 +226,7 @@ namespace LROTech.Network.GameObjects
             foreach (var behaviour in _behaviours)
                 behaviour.OnDeserializeInternal(_objectReader);
 
-            // Receive rpc buffer if object initialized.
+            // Receive rpc buffer if the object initialized.
             if (Initialized)
                 State.RpcBuffer.ExecuteRemotely(executePersistent: false, ReceiveRpcRemotely);
         }

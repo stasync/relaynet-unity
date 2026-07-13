@@ -24,7 +24,7 @@ namespace LROTech.Network.StateManagement
             if (s_rpcMethodToHashLookup.TryGetValue(a.Method, out var result))
                 return result;
 
-            result = NameToHash($"{a.Method.DeclaringType!.FullName}.{a.Method.Name}");
+            result = NameToHash(inputString: $"{a.Method.DeclaringType!.FullName}.{a.Method.Name}");
             s_rpcMethodToHashLookup.Add(a.Method, result);
             return result;
         }
