@@ -112,13 +112,13 @@ namespace LROTech.Network.GameObjects
                 }
             }
 
-            // Mark object as initialized.
+            // Mark the object as initialized.
             Initialized = true;
 
             // Owner changed.
             OwnerChanged();
 
-            // Tell components about object was initialized.
+            // Tell components about the object was initialized.
             if (!viewStateData.ViewInitialized)
             {
                 foreach (var behaviour in _behaviours)
@@ -135,7 +135,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// Another client disconnected. This method calls before actual player reference removed, so here we have valid owner.
+        /// Another client disconnected. This method calls before the actual player reference is removed, so here we have a valid owner.
         /// </summary>
         internal void OnDisconnected(ClientUid clientUid)
         {
@@ -245,7 +245,7 @@ namespace LROTech.Network.GameObjects
         }
 
         /// <summary>
-        /// RPC, invokes locally and sends to ALL clients, who HAS NO AUTHORITY on this object.
+        /// RPC, invokes locally and sends to ALL clients who HAVE NO AUTHORITY on this object.
         /// </summary>
         public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
             OwnerToOthersRpc(rpcHandlerMethod, data, persistent: false, RpcBufferChangeMethod.Add, deliveryMethod, invokeLocally);
@@ -269,7 +269,7 @@ namespace LROTech.Network.GameObjects
 
         /// <summary>
         /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
-        /// IF we have authority, just invokes locally without sending data.
+        /// IF we have authority, just invoke it locally without sending data.
         /// </summary>
         public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
         {

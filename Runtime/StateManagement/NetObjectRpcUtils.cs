@@ -9,13 +9,13 @@ namespace LROTech.Network.StateManagement
     {
         private static readonly Dictionary<MethodInfo, bool> s_methodValidityCache = new();
         private static readonly Dictionary<MethodInfo, int> s_rpcMethodToHashLookup = new();
-        private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> s_mAutoRegisterRpcHandlerMethodsCache = new();
+        private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> s_autoRegisterRpcHandlerMethodsCache = new();
 
         /// <summary>
         /// Converts action to RPC code.
         /// </summary>
         /// <param name="a"></param>
-        /// <returns></returns>
+        /// <returns>An RPC function hash</returns>
         internal static int ActionToHash(Action<byte[]> a)
         {
             if (!IsValidMethod(a.Method))
@@ -74,11 +74,11 @@ namespace LROTech.Network.StateManagement
 
         public static IReadOnlyList<MethodInfo> GetAutoRegisterRpcHandlers(Type type)
         {
-            if (s_mAutoRegisterRpcHandlerMethodsCache.TryGetValue(type, out var result))
+            if (s_autoRegisterRpcHandlerMethodsCache.TryGetValue(type, out var result))
                 return result;
 
             var methodCollection = new List<MethodInfo>();
-            s_mAutoRegisterRpcHandlerMethodsCache.Add(type, methodCollection);
+            s_autoRegisterRpcHandlerMethodsCache.Add(type, methodCollection);
 
             foreach (var methodInfo in type.GetMethods(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
