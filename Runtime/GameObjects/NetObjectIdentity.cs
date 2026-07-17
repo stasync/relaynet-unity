@@ -250,7 +250,6 @@ namespace LROTech.Network.GameObjects
         public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
             OwnerToOthersRpc(rpcHandlerMethod, data, persistent: false, RpcBufferChangeMethod.Add, deliveryMethod, invokeLocally);
 
-
         private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
         {
             if (!IsLocal)
@@ -382,7 +381,7 @@ namespace LROTech.Network.GameObjects
         /// Destroy the object (should be used instead of GameObject.Destroy).
         /// </summary>
         /// <param name="considerChildren">If true, all potential child network entities will be unparented and deleted.</param>
-        public void DestroyViaNetwork(bool considerChildren = false)
+        public void DestroyViaNetwork(bool considerChildren = true)
         {
             if (!IsLocal)
                 throw new InvalidOperationException("Trying to destroy remote object, this is not allowed");

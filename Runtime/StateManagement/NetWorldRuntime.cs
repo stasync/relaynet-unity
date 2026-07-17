@@ -673,10 +673,10 @@ namespace LROTech.Network.StateManagement
                 // Object owned by disconnected player.
                 if (state.IsOwnedBy(uid))
                 {
-                    // Change owner, if object is scene object.
+                    // Change owner if an object is a scene object.
                     if (state.IsSceneObject)
                     {
-                        // Is local client becomes master client, set object's owner and sync it.
+                        // Is local client becomes the master client, set the object's owner and sync it.
                         if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
                             state.ChangedOwner(Players.LocalPlayer.Uid);
                         else
