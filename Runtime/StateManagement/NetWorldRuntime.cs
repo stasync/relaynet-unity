@@ -183,10 +183,10 @@ namespace LROTech.Network.StateManagement
                             if (objectIdentity == null)
                             {
 #if NETWORK_DEBUG
-                                var rpcHandlerMethod = NetObjectRpcUtils.TryFindMethodInfoByHashSlow(state.RpcState.Hash);
-                                var rpcHandlerMethodName = rpcHandlerMethod == null
+                                var (delegateTargetType, methodInfo) = NetObjectRpcUtils.FindDelegateInfoByHashSlow(state.RpcState.Hash);
+                                var rpcHandlerMethodName = delegateTargetType == null
                                     ? "UNKNOWN"
-                                    : $"{rpcHandlerMethod.DeclaringType!.FullName}.{rpcHandlerMethod.Name}";
+                                    : $"{delegateTargetType.FullName}.{methodInfo.Name}";
 
                                 Debug.LogError($"Trying to receive rpc with code '{state.RpcState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUid}' that doesnt exists, maybe it is already destroyed.");
 #endif

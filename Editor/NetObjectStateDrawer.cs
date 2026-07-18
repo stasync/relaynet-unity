@@ -131,8 +131,9 @@ namespace LROTech.Network.Debug.Editor
 
                 if (_world.View != null)
                 {
+                    var view = _world.GetObjectView(_state.Uid);
                     EditorGUI.BeginDisabledGroup(true);
-                    EditorGUILayout.ObjectField(label: "View", _world.GetObjectView(_state.Uid), typeof(GameObject), allowSceneObjects: true);
+                    EditorGUILayout.ObjectField(label: "View", view, typeof(GameObject), allowSceneObjects: true);
                     EditorGUI.EndDisabledGroup();
                 }
             }
@@ -142,12 +143,12 @@ namespace LROTech.Network.Debug.Editor
                 _world.RemoveObject(_state.Uid);
         }
 
-        private void DrawRpc(NetObjectRpcState rpc)
+        private static void DrawRpc(NetObjectRpcState rpc)
         {
-            var handlerMethod = NetObjectRpcUtils.TryFindMethodInfoByHashSlow(rpc.Hash);
-            var handlerInfo = handlerMethod == null
+            var (delegateTargetType, methodInfo) = NetObjectRpcUtils.FindDelegateInfoByHashSlow(rpc.Hash);
+            var handlerInfo = delegateTargetType == null
                 ? "UNKNOWN"
-                : $"{handlerMethod.DeclaringType!.FullName}.{handlerMethod.Name}";
+                : $"{delegateTargetType.FullName}.{methodInfo.Name}";
 
             EditorGUILayout.LabelField($"{rpc.Uid} Hash: {rpc.Hash} '{handlerInfo}' Payload Size: {rpc.Payload.Length}");
         }

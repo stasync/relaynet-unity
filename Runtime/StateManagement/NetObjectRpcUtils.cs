@@ -8,8 +8,9 @@ namespace LROTech.Network.StateManagement
     public static class NetObjectRpcUtils
     {
         private static readonly Dictionary<MethodInfo, bool> s_methodValidityCache = new();
-        private static readonly Dictionary<MethodInfo, int> s_rpcMethodToHashLookup = new();
+
         private static readonly Dictionary<Type, IReadOnlyList<MethodInfo>> s_autoRegisterRpcHandlerMethodsCache = new();
+        private static readonly Dictionary<Type, Dictionary<MethodInfo, int>> s_delegateHashLookup = new();
 
         /// <summary>
         /// Converts action to RPC code.
@@ -21,11 +22,18 @@ namespace LROTech.Network.StateManagement
             if (!IsValidMethod(a.Method))
                 throw new InvalidOperationException("Unable to create RPC code with anonymous delegates.");
 
-            if (s_rpcMethodToHashLookup.TryGetValue(a.Method, out var result))
+            if (a.Target == null)
+                throw new InvalidOperationException("Unable to create RPC code - delegate target is null.");
+
+            var targetType = a.Target.GetType();
+            if (!s_delegateHashLookup.TryGetValue(targetType, out var methodHashCache))
+                s_delegateHashLookup.Add(targetType, methodHashCache = new Dictionary<MethodInfo, int>());
+
+            if (methodHashCache.TryGetValue(a.Method, out var result))
                 return result;
 
-            result = NameToHash(inputString: $"{a.Method.DeclaringType!.FullName}.{a.Method.Name}");
-            s_rpcMethodToHashLookup.Add(a.Method, result);
+            result = NameToHash(inputString: $"{targetType.FullName}{a.Method.DeclaringType!.FullName}{a.Method.Name}");
+            methodHashCache.Add(a.Method, result);
             return result;
         }
 
@@ -61,15 +69,18 @@ namespace LROTech.Network.StateManagement
         /// May return the valid <see cref="MethodInfo"/>, if it was registered once.
         /// Should only be used for debug matters.
         /// </summary>
-        public static MethodInfo TryFindMethodInfoByHashSlow(int hash)
+        internal static (Type, MethodInfo) FindDelegateInfoByHashSlow(int hash)
         {
-            foreach (var kvp in s_rpcMethodToHashLookup)
+            foreach (var (delegateTargetType, methodInfoToHashLookup) in s_delegateHashLookup)
             {
-                if (kvp.Value == hash)
-                    return kvp.Key;
+                foreach (var (methodInfo, methodHash) in methodInfoToHashLookup)
+                {
+                    if (methodHash == hash)
+                        return (delegateTargetType, methodInfo);
+                }
             }
 
-            return null;
+            return default;
         }
 
         public static IReadOnlyList<MethodInfo> GetAutoRegisterRpcHandlers(Type type)

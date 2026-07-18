@@ -365,9 +365,9 @@ namespace LROTech.Network.GameObjects
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 var handlerInfoString = $"Hash: '{hashCode}'";
-                var handlerMethodInfo = NetObjectRpcUtils.TryFindMethodInfoByHashSlow(hashCode);
-                handlerInfoString = handlerMethodInfo != null
-                    ? $"{handlerInfoString} Method: '{handlerMethodInfo.DeclaringType!.FullName}.{handlerMethodInfo.Name}'"
+                var (delegateTargetType, methodInfo) = NetObjectRpcUtils.FindDelegateInfoByHashSlow(hashCode);
+                handlerInfoString = delegateTargetType != null
+                    ? $"{handlerInfoString} Method: '{delegateTargetType.FullName}.{methodInfo.Name}'"
                     : $"{handlerInfoString} Method: 'UNKNOWN'";
 
                 errorMessage += $" Handler info: {handlerInfoString}.";
