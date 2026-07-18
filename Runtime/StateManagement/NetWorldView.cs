@@ -199,10 +199,24 @@ namespace LROTech.Network.StateManagement
         private void RemoveView(NetObjectUid uid)
         {
             if (_currentObjectViews.Remove(uid, out var view))
-                Destroy(view.gameObject);
+                DestroyView(view);
 
             if (_temporaryUnregisteredViews.Remove(uid, out var unregisteredView))
-                Destroy(unregisteredView.gameObject);
+                DestroyView(unregisteredView);
+
+            return;
+
+            void DestroyView(NetObjectIdentity viewToDestroy)
+            {
+                foreach (var nestedView in viewToDestroy.GetComponentsInChildren<NetObjectIdentity>(includeInactive: true))
+                {
+                    // This will correctly unparent the object.
+                    if (nestedView != viewToDestroy)
+                        UpdateTransformInView(nestedView.transform);
+                }
+
+                Destroy(viewToDestroy.gameObject);
+            }
         }
 
         public void SetEnabledImmediate(bool value)
