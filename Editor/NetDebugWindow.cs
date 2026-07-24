@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Core;
-using LROTech.Network.Debug.Runtime;
+using LROTech.Network.Debug;
+using LROTech.Network.Debug.Editor;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using UnityEditor;
 using UnityEngine;
 
-namespace LROTech.Network.Debug.Editor
+namespace LROTech.Network.Editor
 {
     internal sealed class NetDebugWindow : EditorWindow
     {

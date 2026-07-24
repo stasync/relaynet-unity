@@ -28,7 +28,7 @@ namespace LROTech.Network.GameObjects
 
         private readonly ResourceRequest _resourceRequest;
 
-        internal NetPrefabDatabaseLoadRequest(ResourceRequest resourceRequest)
+        private NetPrefabDatabaseLoadRequest(ResourceRequest resourceRequest)
         {
             _resourceRequest = resourceRequest;
             _resourceRequest.completed += OnCompleted;
@@ -40,7 +40,7 @@ namespace LROTech.Network.GameObjects
             Completed?.Invoke();
         }
 
-        internal static NetPrefabDatabaseLoadRequest Create()
+        public static NetPrefabDatabaseLoadRequest Create()
         {
             var resourceRequest = NetPrefabDatabase.LoadAsync();
             return resourceRequest == null ? null : new NetPrefabDatabaseLoadRequest(resourceRequest);

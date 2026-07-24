@@ -2,7 +2,7 @@ using LROTech.Network.StateManagement;
 using LROTech.RuntimeDebug;
 using UnityEngine;
 
-namespace LROTech.Network.Debug.Runtime
+namespace LROTech.Network.Debug
 {
     [DisallowMultipleComponent]
     internal sealed class NetWorldViewDebug : MonoBehaviour
