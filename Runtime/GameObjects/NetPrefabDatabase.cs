@@ -30,6 +30,10 @@ namespace LROTech.Network.GameObjects
             if (s_instance != null)
                 return;
 
+#if UNITY_EDITOR
+            if (UnityEditor.EditorApplication.isPlaying)
+                Debug.LogWarning($"{nameof(NetPrefabDatabase)}.asset will be loaded synchronously in play mode. Consider using {nameof(LoadAsync)} instead.");
+#endif
             s_instance = Resources.Load<NetPrefabDatabase>(path: nameof(NetPrefabDatabase));
             if (s_instance == null)
                 throw new InvalidOperationException("Could not find NetworkPrefabDatabase.asset");
