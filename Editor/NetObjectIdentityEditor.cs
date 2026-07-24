@@ -13,7 +13,12 @@ namespace LROTech.Network.Debug.Editor
             DrawDefaultInspector();
             var identity = (NetObjectIdentity)target;
 
-            EditorGUILayout.LabelField("Prefab Uid", label2: NetPrefabDatabase.Editor.GetPrefabUid(identity).ToString());
+            var prefabUid = NetPrefabDatabase.Editor.GetPrefabUid(identity);
+            NetPrefabDatabase.TryGetPrefab(prefabUid, out var prefab);
+
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.ObjectField(label: $"Prefab ({prefabUid})", prefab, typeof(NetObjectIdentity), allowSceneObjects: false);
+            EditorGUI.EndDisabledGroup();
 
             if (identity.State != null)
             {
