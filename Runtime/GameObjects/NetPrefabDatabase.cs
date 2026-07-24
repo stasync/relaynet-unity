@@ -35,6 +35,25 @@ namespace LROTech.Network.GameObjects
                 throw new InvalidOperationException("Could not find NetworkPrefabDatabase.asset");
         }
 
+        internal static ResourceRequest LoadAsync()
+        {
+            if (s_instance != null)
+                return null;
+
+            var resourceRequest = Resources.LoadAsync<NetPrefabDatabase>(path: nameof(NetPrefabDatabase));
+            resourceRequest.completed += OnCompleted;
+            return resourceRequest;
+
+            void OnCompleted(AsyncOperation asyncOp)
+            {
+                asyncOp.completed -= OnCompleted;
+
+                // Just a sanity check in case multiple requests are made at once.
+                if (s_instance == null)
+                    s_instance = resourceRequest.asset as NetPrefabDatabase;
+            }
+        }
+
         internal static bool TryGetPrefab(uint uid, out GameObject result)
         {
             EnsureInstanceLoaded();
@@ -47,7 +66,7 @@ namespace LROTech.Network.GameObjects
 
 #if UNITY_EDITOR
                 if (s_instance._list.Count != s_instance._prefabs.Count)
-                    Debug.LogError("NetworkPrefabDatabase.asset contains duplicate prefabs");
+                    Debug.LogError($"{nameof(NetPrefabDatabase)}.asset contains duplicate prefabs");
 #endif
             }
 

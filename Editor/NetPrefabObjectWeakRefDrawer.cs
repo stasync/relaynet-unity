@@ -14,7 +14,7 @@ namespace LROTech.Network.Editor
     ///  - assigning an object that fails validation (or clearing it) -> the uid stays 0 (Invalid).
     /// </summary>
     [CustomPropertyDrawer(typeof(NetPrefabObjectWeakRef))]
-    internal sealed class NetPrefabUidDrawer : PropertyDrawer
+    internal sealed class NetPrefabObjectWeakRefDrawer : PropertyDrawer
     {
         private const string VALUE_FIELD = "_value";
         private const float UID_LABEL_WIDTH = 80f;
