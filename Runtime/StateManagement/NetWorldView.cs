@@ -79,7 +79,7 @@ namespace LROTech.Network.StateManagement
                         _currentObjectViews.Add(objectUid, netObjectView);
                     else
                     {
-                        if (string.IsNullOrWhiteSpace(state.PrefabId))
+                        if (state.PrefabUid == 0)
                             continue;
 
                         var position = Vector3.zero;
@@ -91,7 +91,7 @@ namespace LROTech.Network.StateManagement
                             rotation = transformData.Rotation.Value;
                         }
 
-                        netObjectView = CreateObjectView(state.PrefabId, position, rotation);
+                        netObjectView = CreateObjectView(state.PrefabUid, position, rotation);
                         _currentObjectViews.Add(objectUid, netObjectView);
                     }
                 }
@@ -129,16 +129,15 @@ namespace LROTech.Network.StateManagement
             return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
         }
 
-        private NetObjectIdentity CreateObjectView(string prefabId, Vector3 position, Quaternion rotation)
+        private NetObjectIdentity CreateObjectView(uint prefabId, Vector3 position, Quaternion rotation)
         {
-            var resourceObject = Resources.Load<GameObject>(prefabId);
-            if (resourceObject == null)
+            if (!NetPrefabDatabase.TryGetPrefab(prefabId, out var prefabObject) || prefabObject == null)
                 throw new NullReferenceException($"Object with prefab id '{prefabId}' not founded in resources.");
 
-            if (!resourceObject.TryGetComponent<NetObjectIdentity>(out _))
+            if (!prefabObject.TryGetComponent<NetObjectIdentity>(out _))
                 throw new InvalidOperationException($"Unable to create object without '{typeof(NetObjectIdentity).FullName}' component.");
 
-            var newGameObject = Instantiate(resourceObject, position, rotation);
+            var newGameObject = Instantiate(prefabObject, position, rotation);
             return newGameObject.GetComponent<NetObjectIdentity>();
         }
 
@@ -148,7 +147,7 @@ namespace LROTech.Network.StateManagement
             if (currentView != null)
                 throw new InvalidOperationException($"View '{currentView.gameObject.name}' is already registered for object with uid '{state.Uid}'.");
 
-            var netObjectView = CreateObjectView(state.PrefabId, position, rotation);
+            var netObjectView = CreateObjectView(state.PrefabUid, position, rotation);
             _temporaryUnregisteredViews.Add(state.Uid, netObjectView);
             InitializeObjectView(state.Uid, netObjectView);
             return netObjectView;

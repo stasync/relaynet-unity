@@ -180,7 +180,7 @@ namespace LROTech.Network.Debug.Editor
                             label = $"[MAIN] {label}";
 
                         var tagObjectState = World.GetObject(tagObjectUid);
-                        label = tagObjectState != null ? $"{label} {tagObjectState.PrefabId}" : $"[INVALID] {label}";
+                        label = tagObjectState != null ? $"{label} {tagObjectState.PrefabUid}" : $"[INVALID] {label}";
 
                         EditorGUILayout.LabelField(label);
                     }

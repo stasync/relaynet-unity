@@ -6,7 +6,7 @@ namespace LROTech.Network.StateManagement.Snapshots
     {
         public readonly ClientUid OwnerUid;
         public readonly NetObjectUid ObjectUid;
-        public readonly string PrefabId;
+        public readonly uint PrefabUid;
         public readonly bool IsSceneObject;
         public readonly float WorldTime;
         public readonly NetObjectStateChangeRequestType StateChangeType;
@@ -17,7 +17,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         {
             OwnerUid = reader.ReadClientUid();
             ObjectUid = reader.ReadNetObjectUid();
-            PrefabId = reader.ReadString();
+            PrefabUid = reader.ReadUInt32();
             IsSceneObject = reader.ReadBoolean();
             WorldTime = reader.ReadSingle();
             StateChangeType = (NetObjectStateChangeRequestType)reader.ReadByte();
@@ -29,7 +29,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         {
             OwnerUid = state.OwnerUid;
             ObjectUid = state.Uid;
-            PrefabId = state.PrefabId;
+            PrefabUid = state.PrefabUid;
             IsSceneObject = state.IsSceneObject;
             WorldTime = state.WorldTime;
             StateChangeType = state.StateChangeType;
@@ -41,7 +41,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         {
             writer.WriteClientUid(OwnerUid);
             writer.WriteNetObjectUid(ObjectUid);
-            writer.WriteString(PrefabId);
+            writer.WriteUInt32(PrefabUid);
             writer.WriteBoolean(IsSceneObject);
             writer.WriteSingle(WorldTime);
             writer.WriteByte((byte)StateChangeType);
@@ -50,14 +50,14 @@ namespace LROTech.Network.StateManagement.Snapshots
         }
 
         public override string ToString() =>
-            $"{ObjectUid}:{PrefabId} owner:{OwnerUid} s:{IsSceneObject} st:{StateChangeType}";
+            $"{ObjectUid}:{PrefabUid} owner:{OwnerUid} s:{IsSceneObject} st:{StateChangeType}";
 
         public int GetSize()
         {
             var result = 0;
             result += ClientUid.SIZE; // OwnerUid
             result += NetObjectUid.SIZE; // ObjectUID
-            result += PrefabId.Length;
+            result += sizeof(uint); // PrefabId
             result += sizeof(bool); // IsSceneObject
             result += sizeof(float); // Time
             result += sizeof(NetObjectStateChangeRequestType); // StateChangeType

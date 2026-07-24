@@ -3,7 +3,6 @@ using System.Linq;
 using Core.Utils.Math;
 using LROTech.Network.StateManagement;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace LROTech.Network.GameObjects
 {
@@ -14,17 +13,34 @@ namespace LROTech.Network.GameObjects
         {
         }
 
-        [FormerlySerializedAs("m_SceneObjectId")] [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetWorldRuntime.SCENE_OBJECT_RESERVED_UID_SPACE)]
+        [field: HideInInspector]
+        [field: SerializeField]
+        internal uint PrefabUid { get; private set; }
+
+        [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetWorldRuntime.SCENE_OBJECT_RESERVED_UID_SPACE)]
         private int _sceneObjectId;
 
         public NetObjectUid SceneObjectId => new((uint)_sceneObjectId);
 
-        [FormerlySerializedAs("m_PrefabId")] [SerializeField]
-        private string _prefabId;
-
-        public string PrefabID => _prefabId;
-
 #if UNITY_EDITOR
+        private void OnValidate()
+        {
+            // Regenerates the baked id whenever the asset is edited/imported in the Editor.
+            // At runtime (player build) this method is not compiled and the serialized value is used.
+
+            var newPrefabUid = 0U;
+            // Only run this code for prefabs.
+            if (!gameObject.scene.IsValid())
+                newPrefabUid = NetPrefabDatabase.Editor.GetPrefabUid(Identity);
+
+            // A 0 result means "do not touch" (play-mode transition, unsaved object, etc.)
+            if (newPrefabUid != 0 && newPrefabUid != PrefabUid)
+            {
+                PrefabUid = newPrefabUid;
+                UnityEditor.EditorUtility.SetDirty(target: this);
+            }
+        }
+
         [UnityEditor.MenuItem("System/Network/Validate scene objects")]
         private static void ValidateSceneObjects()
         {

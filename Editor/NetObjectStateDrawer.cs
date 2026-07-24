@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Core.Networking;
 using LROTech.Network.Debug.Runtime;
+using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using UnityEditor;
 using UnityEngine;
@@ -29,7 +30,11 @@ namespace LROTech.Network.Debug.Editor
         internal void Draw()
         {
             EditorGUILayout.BeginHorizontal();
-            _draw = EditorGUILayout.Foldout(_draw, content: $"Uid: {_state.Uid} Prefab: {_state.PrefabId}");
+            var prefabLabel = $"{_state.PrefabUid}";
+            if (NetPrefabDatabase.TryGetPrefab(_state.PrefabUid, out var prefab))
+                prefabLabel = $"{prefab.name} ({_state.PrefabUid})";
+
+            _draw = EditorGUILayout.Foldout(_draw, content: $"Uid: {_state.Uid} Prefab: {prefabLabel}");
 
             // Draw a colored box.
             var boxRect = GUILayoutUtility.GetRect(width: 20, EditorGUIUtility.singleLineHeight, GUILayout.Width(20));
@@ -59,7 +64,7 @@ namespace LROTech.Network.Debug.Editor
 
                 EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {_state.PrefabId}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {prefabLabel}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Owner: [{_state.Owner.Uid}] {_state.Owner.Name} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Update Time: {_state.WorldTime:f2}", EditorStyles.boldLabel);

@@ -12,7 +12,7 @@ namespace LROTech.Network.StateManagement
 
         public NetObjectUid Uid { get; private set; }
 
-        public string PrefabId { get; private set; }
+        public uint PrefabUid { get; private set; }
 
         public bool IsSceneObject { get; private set; }
 
@@ -49,13 +49,13 @@ namespace LROTech.Network.StateManagement
         public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
         public event Action Invalidated = delegate { };
 
-        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, string prefabId, bool isSceneObject, ClientUid owner)
+        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, uint prefabUid, bool isSceneObject, ClientUid owner)
         {
             _validator = validator;
             _playerProvider = playerProvider;
 
             Uid = uid;
-            PrefabId = prefabId ?? string.Empty;
+            PrefabUid = prefabUid;
             IsSceneObject = isSceneObject;
             OwnerUid = owner;
 
@@ -66,7 +66,7 @@ namespace LROTech.Network.StateManagement
         }
 
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
-            this(validator, playerProvider, snapshot.ObjectUid, snapshot.PrefabId, snapshot.IsSceneObject, snapshot.OwnerUid)
+            this(validator, playerProvider, snapshot.ObjectUid, snapshot.PrefabUid, snapshot.IsSceneObject, snapshot.OwnerUid)
         {
             ChangeObjectRemotely(snapshot);
         }
@@ -82,7 +82,7 @@ namespace LROTech.Network.StateManagement
             Uid = NetObjectUid.Invalid;
             OwnerUid = ClientUid.Invalid;
 
-            PrefabId = string.Empty;
+            PrefabUid = 0;
             IsSceneObject = false;
             StateChangeType = NetObjectStateChangeRequestType.None;
 
@@ -124,11 +124,11 @@ namespace LROTech.Network.StateManagement
             var validateOwner = snapshot.StateChangeType < NetObjectStateChangeRequestType.ReliableUpdateOwnerChange;
 
             if (snapshot.StateChangeType == NetObjectStateChangeRequestType.ReliableUpdateOwnerChange)
-                Debug.LogError($"_______OWNER CHANGED {snapshot.StateChangeType} {Uid} : {PrefabId}");
+                Debug.LogError($"_______OWNER CHANGED {snapshot.StateChangeType} {Uid} : {PrefabUid}");
 
             if (validateOwner && IsOwnedByLocalPlayer)
             {
-                Debug.LogError($"Unable to restore local object with '{Uid}' : '{PrefabId}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
+                Debug.LogError($"Unable to restore local object with '{Uid}' : '{PrefabUid}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
                 return;
             }
 
@@ -242,7 +242,7 @@ namespace LROTech.Network.StateManagement
         {
             var hash = 13;
             hash = hash * 7 + Uid.GetHashCode();
-            hash = hash * 7 + PrefabId.GetHashCode();
+            hash = hash * 7 + PrefabUid.GetHashCode();
             hash = hash * 7 + IsSceneObject.GetHashCode();
             hash = hash * 7 + OwnerUid.GetHashCode();
             hash = hash * 7 + StateChangeType.GetHashCode();
@@ -263,7 +263,7 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
 
-            return $"{Uid}:{PrefabId} " +
+            return $"{Uid}:{PrefabUid} " +
                    $"s:{IsSceneObject} " +
                    $"st:{StateChangeType} " +
                    $"own:{OwnerUid}:{(Owner == null ? "null" : Owner.ToString())} " +

@@ -15,7 +15,7 @@ namespace LROTech.Network.GameObjects
         internal virtual void OnPreInitializeInternal()
         {
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void OnPostInitializeOnceInternal() =>
             OnPostInitializeOnce();
@@ -42,7 +42,9 @@ namespace LROTech.Network.GameObjects
             OnSerialize(writer);
 
 #if NETWORK_DEBUG
-            writer.WriteInt32(GetType().FullName!.GetHashCode());
+            var type = GetType();
+            Core.Utils.Types.TryGetTypeStableHashCode(type, out var hashCode);
+            writer.WriteInt32(hashCode);
 #endif
         }
 
@@ -52,12 +54,12 @@ namespace LROTech.Network.GameObjects
             OnDeserialize(reader);
 
 #if NETWORK_DEBUG
-            var typeName = GetType().FullName;
-            var hash = typeName!.GetHashCode();
+            var type = GetType();
+            Core.Utils.Types.TryGetTypeStableHashCode(type, out var hashCode);
             var serializedHash = reader.ReadInt32();
 
-            if (!hash.Equals(serializedHash))
-                Debug.LogError($"Potential serialization problem in '{typeName}' on '{gameObject.name}'.");
+            if (!hashCode.Equals(serializedHash))
+                Debug.LogError($"Potential serialization problem in '{type.FullName}' on '{gameObject.name}'.");
 #endif
 
             OnDataDeserialized();
@@ -74,7 +76,7 @@ namespace LROTech.Network.GameObjects
         protected virtual void OnPostInitializeOnce()
         {
         }
-        
+
         /// <summary>
         /// Use this instead of start, called after objet was deserialized first time.
         /// </summary>

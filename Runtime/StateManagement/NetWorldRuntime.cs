@@ -129,7 +129,7 @@ namespace LROTech.Network.StateManagement
                             var snapshot = new NetObjectStateSnapshot(_reader);
                             if (!snapshot.ObjectUid.IsValid)
                             {
-                                Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUid}' '{snapshot.PrefabId}', invalid Uid.");
+                                Debug.LogError($"Unable to schedule update for remote object '{snapshot.ObjectUid}' '{snapshot.PrefabUid}', invalid Uid.");
                                 break;
                             }
 
@@ -322,7 +322,7 @@ namespace LROTech.Network.StateManagement
                     var snapshot = remoteObjectUpdateRequests[uid];
 
                     if (!snapshot.ObjectUid.IsValid)
-                        throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUid}'  Prefab: '{snapshot.PrefabId}'");
+                        throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUid}'  Prefab: '{snapshot.PrefabUid}'");
 
                     // Check if the owner exists.
                     // NOTE: it's equally "unsafe" to either drop and apply this packet. However, i think it's better to drop it.
@@ -351,7 +351,7 @@ namespace LROTech.Network.StateManagement
                     // Object was removed remotely - no need to proceed, just clear all the queues.
                     if (snapshot.StateChangeType is NetObjectStateChangeRequestType.ReliableRemoveUpdateHard or NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft)
                     {
-                        Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabId}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
+                        Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabUid}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
 
                         _unregisteredSceneObjects.Remove(snapshot.ObjectUid);
 
@@ -416,7 +416,7 @@ namespace LROTech.Network.StateManagement
                     {
                         var sceneIdentity = _unregisteredSceneObjects[uid];
 
-                        var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabID, isSceneObject: true, owner: Players.LocalPlayer.Uid);
+                        var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabUid, isSceneObject: true, owner: Players.LocalPlayer.Uid);
                         AddObject(newState);
                         newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
 
@@ -705,7 +705,7 @@ namespace LROTech.Network.StateManagement
         /// Create an object with position and rotation input.
         /// Should be called on a local client to create the object across network.
         /// </summary>
-        public NetObjectIdentity CreateObject(string prefabId, bool isSceneObject, Vector3 position, Quaternion rotation)
+        public NetObjectIdentity CreateObject(uint prefabUid, bool isSceneObject, Vector3 position, Quaternion rotation)
         {
             EnsureValid();
 
@@ -721,7 +721,7 @@ namespace LROTech.Network.StateManagement
             var newObjectUid = NetObjectUid.FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)owner.Uid * RESERVED_UID_SPACE_PER_CLIENT + _netObjectUidCounter;
 
             // Create and register a new state.
-            var newState = new NetObjectState(IsObjectValid, Players.Get, uid: new NetObjectUid(newObjectUid), prefabId, isSceneObject, owner.Uid);
+            var newState = new NetObjectState(IsObjectValid, Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
 
@@ -741,7 +741,7 @@ namespace LROTech.Network.StateManagement
             if (ObjectExists(sceneIdentity.SceneObjectId))
             {
 #if NETWORK_DEBUG
-                Debug.LogWarning($"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabID}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
+                Debug.LogWarning($"Trying to register scene identity '{sceneIdentity.gameObject.name}' '{sceneIdentity.PrefabUid}': but object with id '{sceneIdentity.SceneObjectId}' already registered.");
 #endif
                 UnityEngine.Object.Destroy(sceneIdentity.gameObject);
                 return;
