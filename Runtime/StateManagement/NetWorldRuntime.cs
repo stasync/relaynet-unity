@@ -338,7 +338,7 @@ namespace LROTech.Network.StateManagement
                         objState.ChangeObjectRemotely(snapshot);
                         remoteObjectUpdateRequests.Remove(uid);
 
-                        if (objState.StateChangeType == NetObjectStateChangeRequestType.ReliableRemoveUpdateHard)
+                        if (objState.StateChangeType == NetObjectStateChangeRequestType.RemoveHard)
                             RemoveObject(snapshot.ObjectUid);
 
                         continue;
@@ -349,7 +349,7 @@ namespace LROTech.Network.StateManagement
                         continue;
 
                     // Object was removed remotely - no need to proceed, just clear all the queues.
-                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.ReliableRemoveUpdateHard or NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft)
+                    if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveHard or NetObjectStateChangeRequestType.RemoveSoft)
                     {
                         Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabUid}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
 
@@ -440,7 +440,7 @@ namespace LROTech.Network.StateManagement
                         continue;
 
                     var deliveryMethod = DeliveryMethod.Unreliable;
-                    if (state.StateChangeType >= NetObjectStateChangeRequestType.ReliableUpdate)
+                    if (state.StateChangeType is NetObjectStateChangeRequestType.ReliableUpdate or NetObjectStateChangeRequestType.ReliableUpdateOwnerChange)
                         deliveryMethod = DeliveryMethod.Reliable;
 
                     state.PrepareForSerialization(Time);
@@ -452,16 +452,16 @@ namespace LROTech.Network.StateManagement
 
                     switch (state.StateChangeType)
                     {
-                        case NetObjectStateChangeRequestType.ReliableRemoveUpdateHard:
+                        case NetObjectStateChangeRequestType.RemoveHard:
                             RemoveObject(uid);
                             break;
 
-                        case NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft:
+                        case NetObjectStateChangeRequestType.RemoveSoft:
                             var view = View.GetObjectView(uid);
                             if (view != null)
                                 view.OnSoftDestroyRequestedLocallyInternal();
 
-                            state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateHard);
+                            state.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveHard);
                             break;
                     }
                 }

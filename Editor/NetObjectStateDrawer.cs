@@ -58,7 +58,7 @@ namespace LROTech.Network.Debug.Editor
                 if (_state.IsOwnedByLocalPlayer)
                 {
                     if (GUILayout.Button("Destroy Soft"))
-                        _state.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableRemoveUpdateSoft);
+                        _state.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveSoft);
                 }
 
                 EditorGUILayout.EndHorizontal();
