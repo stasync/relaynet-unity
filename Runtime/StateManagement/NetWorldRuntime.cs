@@ -308,7 +308,7 @@ namespace LROTech.Network.StateManagement
                         _writer.WriteByte((byte)NetWorldRuntimeChangeOp.PlayerStateUpdate);
                         localPlayer.PrepareForSerialization(Time);
                         localPlayer.ToSnapshot().Serialize(_writer);
-                        DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Reliable);
+                        DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Unreliable);
                     }
                 }
             }
@@ -418,7 +418,7 @@ namespace LROTech.Network.StateManagement
 
                         var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabUid, isSceneObject: true, owner: Players.LocalPlayer.Uid);
                         AddObject(newState);
-                        newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
+                        newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 
                         View.RegisterExistedObjectView(newState, sceneIdentity.Identity);
                     }
@@ -723,7 +723,7 @@ namespace LROTech.Network.StateManagement
             // Create and register a new state.
             var newState = new NetObjectState(IsObjectValid, Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
             AddObject(newState);
-            newState.ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
+            newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 
             return View.CreateObjectViewImmediate(newState, position, rotation);
         }
