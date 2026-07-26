@@ -19,20 +19,20 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// RPC, invokes locally and sends to ALL clients who HAVE NO AUTHORITY on this object.
         /// </summary>
-        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
+        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod, bool invokeLocally = true) =>
             Identity.OwnerToOthersRpc(rpcHandlerMethod, data, deliveryMethod, invokeLocally);
 
         /// <summary>
         /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
         /// IF we have authority, just invoke it locally without sending data.
         /// </summary>
-        public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable) =>
+        public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod) =>
             Identity.ToOwnerRpc(rpcHandlerMethod, data, deliveryMethod);
 
         /// <summary>
         /// Send RPC to all clients with this object.
         /// </summary>
-        public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable) =>
+        public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod) =>
             Identity.ToAllRpc(rpcHandlerMethod, data, invokeLocally, deliveryMethod);
 
         /// <summary>

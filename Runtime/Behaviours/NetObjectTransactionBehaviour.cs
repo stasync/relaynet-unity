@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Core.Networking;
+using LROTech.Network;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement;
 using LROTech.Network.StateManagement.Values;
@@ -17,7 +18,7 @@ namespace LROTech.NetworkBehaviours
             public readonly NetworkValue<NetObjectUid> LastInteraction = new();
             public readonly NetworkValue<bool> InteractionsEnabled = new();
         }
-        
+
         private readonly Dictionary<NetObjectUid, Action<bool>> _interactionChangeRequestCallbacks = new();
 
         private readonly NetWriter _writer = new();
@@ -88,7 +89,7 @@ namespace LROTech.NetworkBehaviours
             _writer.SeekZero();
             _writer.WriteNetObjectUid(sender);
             _writer.WriteBoolean(value);
-            ToOwnerRpc(ChangeTransactionStateRequestRPC, data: _writer.ToArray());
+            ToOwnerRpc(ChangeTransactionStateRequestRPC, data: _writer.ToArray(), DeliveryMethod.Reliable);
         }
 
         [AutoRegisterRpcHandler]
@@ -118,7 +119,7 @@ namespace LROTech.NetworkBehaviours
                     Data.LastInteraction.Value = sender;
             }
 
-            OwnerToOthersRpc(ChangeTransactionResponseRPC, data: _writer.ToArray());
+            OwnerToOthersRpc(ChangeTransactionResponseRPC, data: _writer.ToArray(), DeliveryMethod.Reliable);
         }
 
         [AutoRegisterRpcHandler]

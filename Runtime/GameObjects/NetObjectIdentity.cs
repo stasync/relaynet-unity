@@ -247,10 +247,10 @@ namespace LROTech.Network.GameObjects
         /// <summary>
         /// RPC, invokes locally and sends to ALL clients who HAVE NO AUTHORITY on this object.
         /// </summary>
-        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true) =>
+        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod, bool invokeLocally = true) =>
             OwnerToOthersRpc(rpcHandlerMethod, data, persistent: false, RpcBufferChangeMethod.Add, deliveryMethod, invokeLocally);
 
-        private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable, bool invokeLocally = true)
+        private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod, bool invokeLocally = true)
         {
             if (!IsLocal)
                 throw new InvalidOperationException(
@@ -270,7 +270,7 @@ namespace LROTech.Network.GameObjects
         /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
         /// IF we have authority, just invoke it locally without sending data.
         /// </summary>
-        public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
+        public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod)
         {
             var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
             // If we have authority on this object, don't need to send this kind of RPC.
@@ -285,7 +285,7 @@ namespace LROTech.Network.GameObjects
         /// It does not matter whether MASTER client is a owner of this object or not.
         /// IF we are a master client, just invokes locally without sending data.
         /// </summary>
-        public void ToMasterRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
+        public void ToMasterRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod)
         {
             var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
             // If we have authority on this object, don't need to send this kind of RPC.
@@ -299,7 +299,7 @@ namespace LROTech.Network.GameObjects
         /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
         /// IF we have authority, just invoke it locally without sending data.
         /// </summary>
-        public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod = DeliveryMethod.Reliable)
+        public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod)
         {
             var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
             if (invokeLocally)
