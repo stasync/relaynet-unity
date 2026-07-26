@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement.Snapshots;
 using UnityEngine;
 
@@ -196,35 +195,6 @@ namespace LROTech.Network.StateManagement
 
             state.Invalidate();
             _currentObjectStates.Remove(uid);
-        }
-
-        public NetObjectIdentity GetObjectView(NetObjectUid uid)
-        {
-            EnsureValid();
-            return View == null ? null : View.GetObjectView(uid);
-        }
-
-        public T GetObjectView<T>(NetObjectUid uid) where T : NetObjectBehaviourBase
-        {
-            EnsureValid();
-            return View == null ? null : View.GetObjectView<T>(uid);
-        }
-
-        public T FindObjectViewOfType<T>() where T : NetObjectBehaviourBase
-        {
-            EnsureValid();
-
-            if (View == null)
-                return null;
-
-            foreach (var view in View.CurrentObjectViews.Values)
-            {
-                var component = view.GetBehaviour<T>();
-                if (component != null)
-                    return component;
-            }
-
-            return null;
         }
 
         public NetWorldSnapshot ToSnapshot(float deltaTime = 0f)
