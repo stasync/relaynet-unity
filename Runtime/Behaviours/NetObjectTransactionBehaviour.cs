@@ -63,7 +63,7 @@ namespace LROTech.NetworkBehaviours
                 // Validate current interaction sate.
                 if (Identity.World.ObjectExists(Data.CurrentInteraction.Value))
                 {
-                    Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: '{Data.CurrentInteraction.Value}' Enabled: '{Data.InteractionsEnabled.Value}'.");
+                    Debug.LogWarning($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: '{Data.CurrentInteraction.Value}' Enabled: '{Data.InteractionsEnabled.Value}'.");
                     callback(false);
                     return;
                 }
