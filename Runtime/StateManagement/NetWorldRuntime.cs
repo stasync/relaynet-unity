@@ -725,7 +725,7 @@ namespace LROTech.Network.StateManagement
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 
-            return View.CreateObjectViewImmediate(newState, position, rotation);
+            return View.CreateObjectViewForState(newState, position, rotation);
         }
 
         /// <summary>

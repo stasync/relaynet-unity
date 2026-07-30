@@ -132,7 +132,7 @@ namespace LROTech.Network.StateManagement
         private NetObjectIdentity CreateObjectView(uint prefabId, Vector3 position, Quaternion rotation)
         {
             if (!NetPrefabDatabase.TryGetPrefab(prefabId, out var prefabObject) || prefabObject == null)
-                throw new NullReferenceException($"Object with prefab id '{prefabId}' not founded in resources.");
+                throw new NullReferenceException($"Object with prefab id '{prefabId}' is not registered in database.");
 
             if (!prefabObject.TryGetComponent<NetObjectIdentity>(out _))
                 throw new InvalidOperationException($"Unable to create object without '{typeof(NetObjectIdentity).FullName}' component.");
@@ -141,7 +141,7 @@ namespace LROTech.Network.StateManagement
             return newGameObject.GetComponent<NetObjectIdentity>();
         }
 
-        internal NetObjectIdentity CreateObjectViewImmediate(NetObjectState state, Vector3 position, Quaternion rotation)
+        internal NetObjectIdentity CreateObjectViewForState(NetObjectState state, Vector3 position, Quaternion rotation)
         {
             var currentView = GetObjectView(state.Uid);
             if (currentView != null)
