@@ -14,6 +14,18 @@ namespace LROTech.Network
         private RelaySession _clientSession;
 
         public NetSession(IPAddress address, ushort port, string connectionData = null)
+            : this(new RelayUdpTransport(), new IPEndPoint(address, port), connectionData)
+        {
+        }
+
+        /// <summary>
+        /// Creates an offline session - the relay server is emulated in-process, so the local client is the only
+        /// (and therefore the master) client of the room. Everything above this point behaves exactly as online.
+        /// </summary>
+        public static NetSession CreateOffline() =>
+            new(new RelayLoopbackTransport(), new IPEndPoint(IPAddress.Loopback, port: 0), connectionData: null);
+
+        private NetSession(IRelayTransport transport, IPEndPoint endPoint, string connectionData)
         {
             if (_clientSession != null)
                 throw new InvalidOperationException("Session is already initialized.");
@@ -22,7 +34,7 @@ namespace LROTech.Network
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
 
-            _clientSession = new RelaySession(new IPEndPoint(address, port), connectionData);
+            _clientSession = new RelaySession(transport, endPoint, connectionData);
             _clientSession.LocalUserDisconnected += OnLocalUserDisconnected;
             _clientSession.DataReceived += OnDataReceived;
             _clientSession.LocalUserConnected += OnLocalUserConnected;

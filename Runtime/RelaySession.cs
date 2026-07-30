@@ -13,19 +13,6 @@ namespace LROTech.Network
     {
         public delegate void DataReceivedDelegate(ClientUid senderConnectionId, uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod);
 
-        private enum ClientMessageType : byte
-        {
-            OnAuth,
-            OnPacket,
-        }
-
-        private enum ServerMessageType : byte
-        {
-            OnJoined,
-            OnPacket,
-            OnDisconnect,
-        }
-
         public IReadOnlyCollection<ClientUid> ConnectedClients => _connectedClients;
         private readonly HashSet<ClientUid> _connectedClients = new();
 
@@ -41,28 +28,29 @@ namespace LROTech.Network
         private readonly NetReader _dataReader = new();
         private readonly NetWriter _dataWriter = new();
 
-        private readonly ReliableUdpClient _reliableUdpClient = new();
+        private readonly IRelayTransport _transport;
         private bool _disposed;
         private float _lastUpdateTime;
         private float _currentTime;
 
-        public RelaySession(IPEndPoint endPoint, string connectionData = null)
+        public RelaySession(IRelayTransport transport, IPEndPoint endPoint, string connectionData = null)
         {
-            if (_reliableUdpClient.IsConnected)
+            _transport = transport;
+
+            if (_transport.IsConnected)
             {
                 Debug.LogError("Already connecting or connected.");
                 return;
             }
 
-            _reliableUdpClient.Connected += OnConnected;
-            _reliableUdpClient.ConnectionRejected += OnConnectionRejected;
-            _reliableUdpClient.ConnectionFailed += OnConnectionFailed;
-            _reliableUdpClient.Disconnected += OnDisconnected;
-            _reliableUdpClient.ReliabilityFailure += OnReliabilityFailure;
-            _reliableUdpClient.DataReceived += OnDataReceived;
-            _reliableUdpClient.HeartbeatSent += OnHeartbeatSent;
+            _transport.Connected += OnConnected;
+            _transport.ConnectionRejected += OnConnectionRejected;
+            _transport.ConnectionFailed += OnConnectionFailed;
+            _transport.Disconnected += OnDisconnected;
+            _transport.ReliabilityFailure += OnReliabilityFailure;
+            _transport.DataReceived += OnDataReceived;
 
-            _reliableUdpClient.Connect(endPoint, connectionData);
+            _transport.Connect(endPoint, connectionData);
         }
 
         public void Update(float deltaTime)
@@ -75,7 +63,7 @@ namespace LROTech.Network
                 return;
 
             _lastUpdateTime = _currentTime;
-            _reliableUdpClient.Update();
+            _transport.Update();
         }
 
         public void TryDispose()
@@ -83,7 +71,7 @@ namespace LROTech.Network
             if (_disposed)
                 return;
 
-            _reliableUdpClient.Disconnect();
+            _transport.Disconnect();
             ConnectionUid = ClientUid.Invalid;
             LocalUserDisconnected();
             
@@ -97,10 +85,6 @@ namespace LROTech.Network
                 throw new ObjectDisposedException(GetType().Name);
         }
 
-        private void OnHeartbeatSent()
-        {
-        }
-
         public void SendData(uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod)
         {
             EnsureValid();
@@ -112,12 +96,12 @@ namespace LROTech.Network
             }
 
             _dataWriter.SeekZero();
-            _dataWriter.WriteByte((byte)ClientMessageType.OnPacket);
+            _dataWriter.WriteByte((byte)RelayClientMessageType.OnPacket);
             _dataWriter.WritePackedUInt32(userDataOpCode);
             _dataWriter.WritePackedUInt32(0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that the message will be sent to everyone except sender.
             _dataWriter.WriteBytesAndSize(data);
 
-            _reliableUdpClient.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
+            _transport.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
         }
 
         public void SendRaw(byte[] data, DeliveryMethod deliveryMethod)
@@ -126,7 +110,7 @@ namespace LROTech.Network
 
             _dataWriter.SeekZero();
             _dataWriter.WriteBytesAndSize(data);
-            _reliableUdpClient.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
+            _transport.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
         }
 
         private void OnDataReceived(byte[] rawData, UdpFullProtocol.DgramDeliveryMethod deliveryMethod)
@@ -134,11 +118,11 @@ namespace LROTech.Network
             try
             {
                 _dataReader.Replace(rawData);
-                var type = (ServerMessageType)_dataReader.ReadByte();
+                var type = (RelayServerMessageType)_dataReader.ReadByte();
 
                 switch (type)
                 {
-                    case ServerMessageType.OnJoined:
+                    case RelayServerMessageType.OnJoined:
                     {
                         var newConnectionId = _dataReader.ReadClientUid();
                         var connectionsCount = _dataReader.ReadPackedUInt32();
@@ -149,7 +133,7 @@ namespace LROTech.Network
                         }
 
                         // Handle local connection.
-                        if (newConnectionId == new ClientUid(_reliableUdpClient.ConnectionUid))
+                        if (newConnectionId == new ClientUid(_transport.ConnectionUid))
                         {
                             ConnectionUid = newConnectionId;
                             LocalUserConnected();
@@ -160,7 +144,7 @@ namespace LROTech.Network
                         break;
                     }
 
-                    case ServerMessageType.OnPacket:
+                    case RelayServerMessageType.OnPacket:
                     {
                         var senderConnectionId = _dataReader.ReadClientUid();
                         var userDataOpCode = _dataReader.ReadPackedUInt32();
@@ -170,7 +154,7 @@ namespace LROTech.Network
                         break;
                     }
 
-                    case ServerMessageType.OnDisconnect:
+                    case RelayServerMessageType.OnDisconnect:
                     {
                         var disconnectedConnectionId = _dataReader.ReadClientUid();
 
@@ -197,9 +181,9 @@ namespace LROTech.Network
 
             // Send auth request.
             _dataWriter.SeekZero();
-            _dataWriter.WriteByte((byte)ClientMessageType.OnAuth);
+            _dataWriter.WriteByte((byte)RelayClientMessageType.OnAuth);
 
-            _reliableUdpClient.Send(_dataWriter.AsArraySegment(), UdpFullProtocol.DgramDeliveryMethod.Reliable);
+            _transport.Send(_dataWriter.AsArraySegment(), UdpFullProtocol.DgramDeliveryMethod.Reliable);
         }
 
         private void OnDisconnected()
