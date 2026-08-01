@@ -394,11 +394,11 @@ namespace LROTech.Network.GameObjects
                     World.View.UpdateTransformInView(identity.transform);
 
                     // Schedule update to remove an object from the world.
-                    identity.State.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveSoft);
+                    identity.State.RequestRemoval();
                 }
             }
             else
-                State.ScheduleUpdate(NetObjectStateChangeRequestType.RemoveSoft);
+                State.RequestRemoval();
         }
 
         internal void OnSoftDestroyRequestedLocallyInternal()

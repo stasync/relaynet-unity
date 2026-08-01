@@ -195,6 +195,16 @@ namespace LROTech.Network.StateManagement
                 _stateChangeTypeQueue.Enqueue(requestType);
         }
 
+        public void RequestRemoval()
+        {
+            EnsureValid();
+            
+            if (!IsOwnedByLocalPlayer)
+                throw new InvalidOperationException($"No authority to change '{Uid}' object with owner '{OwnerUid}'.");
+
+            ScheduleUpdate(NetObjectStateChangeRequestType.RemoveSoft);
+        }
+
         public bool IsOwnedBy(ClientUid uid)
         {
             EnsureValid();

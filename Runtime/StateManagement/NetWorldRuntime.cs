@@ -139,7 +139,7 @@ namespace LROTech.Network.StateManagement
                             // If snapshot is already registered, we should check if it's older that the one we're trying to register.
                             var currentSnapshot = remoteObjectUpdateRequests[snapshot.ObjectUid];
 
-                            // Packets could arrive in a wrong order.
+                            // Packets could arrive in the wrong order.
                             // NOTE: 'StateChangeType' is a priority here - we can't replace the data with lower 'StateChangeType', event if the new data is newer.
                             // So, the data will be replaced if the following rule applies.
                             // 1. 'StateChangeType' of the new data is bigger that 'StateChangeType' of the current one.
@@ -525,7 +525,7 @@ namespace LROTech.Network.StateManagement
 
                         _writer.SeekZero();
                         _writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldObjectOwnerValidationRequest);
-                        _writer.WriteBoolean(true); // is response.
+                        _writer.WriteBoolean(true); // is response?
                         _writer.WriteClientUid(newPotentialOwner);
                         _writer.WriteNetObjectUid(objectUid);
                         DataSendRequested(data: _writer.ToArray(), DeliveryMethod.Unreliable);
@@ -555,7 +555,7 @@ namespace LROTech.Network.StateManagement
 
                         _writer.SeekZero();
                         _writer.WriteByte((byte)NetWorldRuntimeChangeOp.WorldObjectOwnerValidationRequest);
-                        _writer.WriteBoolean(false); // is response.
+                        _writer.WriteBoolean(false); // is response?
                         _writer.WriteClientUid(state.OwnerUid);
                         _writer.WriteClientUid(potentialOwner);
                         _writer.WriteNetObjectUid(uid);
