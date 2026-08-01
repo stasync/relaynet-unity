@@ -6,19 +6,29 @@ namespace LROTech.Network.GameObjects
 {
     public abstract class NetObjectBehaviour<TObjectData> : NetObjectBehaviourBase where TObjectData : NetObjectStateData, new()
     {
-        public TObjectData Data { get; private set; }
+        public TObjectData Data
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get;
+            private set;
+        }
 
-        public NetWorldPlayer Owner => Identity.Owner;
+        public NetWorldPlayer Owner
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Identity.Owner;
+        }
 
         public bool IsLocal
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Identity.IsLocal;
         }
-        
+
         /// <summary>
         /// RPC, invokes locally and sends to ALL clients who HAVE NO AUTHORITY on this object.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod, bool invokeLocally = true) =>
             Identity.OwnerToOthersRpc(rpcHandlerMethod, data, deliveryMethod, invokeLocally);
 
@@ -26,12 +36,14 @@ namespace LROTech.Network.GameObjects
         /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
         /// IF we have authority, just invoke it locally without sending data.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToOwnerRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod) =>
             Identity.ToOwnerRpc(rpcHandlerMethod, data, deliveryMethod);
 
         /// <summary>
         /// Send RPC to all clients with this object.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod) =>
             Identity.ToAllRpc(rpcHandlerMethod, data, invokeLocally, deliveryMethod);
 
@@ -39,6 +51,7 @@ namespace LROTech.Network.GameObjects
         /// Destroy the game object and sync it. Use this instead of Destroy(GameObject).
         /// You can't destroy remote objects.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void DestroyObjectViaNetwork() =>
             Identity.DestroyViaNetwork();
 
