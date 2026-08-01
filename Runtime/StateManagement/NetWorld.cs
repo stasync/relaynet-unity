@@ -13,6 +13,8 @@ namespace LROTech.Network.StateManagement
 
         public event Action<float> Updated = delegate { };
         public event Action<NetObjectUid> ObjectCreated = delegate { };
+        public event Action<NetObjectUid> ObjectRemoved = delegate { };
+
         public event Action Disposed = delegate { };
 
         public bool IsValid => Id.IsValid;
@@ -195,6 +197,7 @@ namespace LROTech.Network.StateManagement
 
             state.Invalidate();
             _currentObjectStates.Remove(uid);
+            ObjectRemoved(uid);
         }
 
         public NetWorldSnapshot ToSnapshot(float deltaTime = 0f)
