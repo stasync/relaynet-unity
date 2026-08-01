@@ -255,7 +255,7 @@ namespace LROTech.Network.StateManagement
                 if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
                     return;
 
-                // We need to peek latest data here - the 'maxTime' value to filter out irrelevant data.
+                // We need to peek the latest data here - the 'maxTime' value to filter out irrelevant data.
                 var maxTime = float.MinValue;
                 while (remoteWorldDataUpdateRequests.TryDequeue(out var data))
                 {
@@ -596,9 +596,9 @@ namespace LROTech.Network.StateManagement
 
         #endregion
 
-        private ClientUid GetPotentialOwner(NetObjectUid objectNetId)
+        private ClientUid GetPotentialOwner(NetObjectUid objectUid)
         {
-            if (!objectNetId.IsValid)
+            if (!objectUid.IsValid)
                 return ClientUid.Invalid;
 
             var bestClient = ClientUid.Invalid;
@@ -607,7 +607,7 @@ namespace LROTech.Network.StateManagement
             foreach (var player in Players.All)
             {
                 // Combine object ID and client ID, then hash
-                var hash = HashCombine(objectNetId, player.Uid);
+                var hash = HashCombine(objectUid, player.Uid);
                 if (hash <= highestHash)
                     continue;
 

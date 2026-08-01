@@ -89,11 +89,11 @@ namespace LROTech.NetworkBehaviours
             _writer.SeekZero();
             _writer.WriteNetObjectUid(sender);
             _writer.WriteBoolean(value);
-            ToOwnerRpc(ChangeTransactionStateRequestRPC, data: _writer.ToArray(), DeliveryMethod.Reliable);
+            ToOwnerRpc(ChangeTransactionStateRequest, data: _writer.ToArray(), DeliveryMethod.Reliable);
         }
 
         [AutoRegisterRpcHandler]
-        private void ChangeTransactionStateRequestRPC(byte[] data)
+        private void ChangeTransactionStateRequest(byte[] data)
         {
             _reader.Replace(data);
             var sender = _reader.ReadNetObjectUid();
@@ -119,11 +119,11 @@ namespace LROTech.NetworkBehaviours
                     Data.LastInteraction.Value = sender;
             }
 
-            OwnerToOthersRpc(ChangeTransactionResponseRPC, data: _writer.ToArray(), DeliveryMethod.Reliable);
+            OwnerToOthersRpc(ChangeTransactionResponse, data: _writer.ToArray(), DeliveryMethod.Reliable);
         }
 
         [AutoRegisterRpcHandler]
-        private void ChangeTransactionResponseRPC(byte[] data)
+        private void ChangeTransactionResponse(byte[] data)
         {
             _reader.Replace(data);
             var sender = _reader.ReadNetObjectUid();
@@ -141,7 +141,7 @@ namespace LROTech.NetworkBehaviours
             {
                 // Validating the current interaction object.
                 // Update is a simple way to do so, yet not the smartest one.
-                // Although, dictionary lookup only will only be the thing for local object.
+                // Although, dictionary lookup will only be the thing for a local object.
                 if (Data.CurrentInteraction.Value.IsValid && !Identity.World.ObjectExists(Data.CurrentInteraction.Value))
                     Data.CurrentInteraction.Value = NetObjectUid.Invalid;
             }
