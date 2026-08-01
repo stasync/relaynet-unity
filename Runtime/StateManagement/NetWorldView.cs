@@ -27,6 +27,8 @@ namespace LROTech.Network.StateManagement
         private Scene _worldScene;
         private readonly List<NetObjectUid> _currentObjectViewsIterator = new();
 
+        private readonly Dictionary<NetObjectUid, AsyncInstantiateOperation<GameObject>> _pendingObjectViews = new();
+
         internal void Init(NetWorld world, NetWorldViewInitMode initMode)
         {
             if (_initialized)
@@ -79,20 +81,13 @@ namespace LROTech.Network.StateManagement
                         _currentObjectViews.Add(objectUid, netObjectView);
                     else
                     {
-                        if (state.PrefabUid == 0)
-                            continue;
+                        // The instance lands some frames later, so there is nothing to initialize this time round.
+                        // Only request the view if the object is owned by the local player, or if it has a view data.
+                        if (state.IsOwnedByLocalPlayer || state.DataCollection.HasData<NetObjectViewStateData>())
+                            RequestObjectView(state);
 
-                        var position = Vector3.zero;
-                        var rotation = Quaternion.identity;
-
-                        if (state.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
-                        {
-                            position = transformData.Position.Value;
-                            rotation = transformData.Rotation.Value;
-                        }
-
-                        netObjectView = CreateObjectView(state.PrefabUid, position, rotation);
-                        _currentObjectViews.Add(objectUid, netObjectView);
+                        // Skip this iteration - we have to wait for the view to be created.
+                        continue;
                     }
                 }
 
@@ -119,6 +114,7 @@ namespace LROTech.Network.StateManagement
             if (netObjectState.IsOwnedByLocalPlayer)
                 return true;
 
+            // This is an intentional condition.
             if (!netObjectState.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
                 return true;
 
@@ -129,7 +125,75 @@ namespace LROTech.Network.StateManagement
             return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
         }
 
+        private void RequestObjectView(NetObjectState state)
+        {
+            if (state.PrefabUid == 0)
+                return;
+
+            // Already on its way. While in flight this is the answer on every world update, hence the early out.
+            if (_pendingObjectViews.ContainsKey(state.Uid))
+                return;
+
+            var position = Vector3.zero;
+            var rotation = Quaternion.identity;
+
+            if (state.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
+            {
+                position = transformData.Position.Value;
+                rotation = transformData.Rotation.Value;
+            }
+
+            // Validated here rather than on delivery, so a bad prefab id still throws at the point that asked for it.
+            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation);
+            _pendingObjectViews.Add(state.Uid, asyncOperation);
+            asyncOperation.completed += _ => OnObjectViewInstantiated(state.Uid, asyncOperation);
+        }
+
+        private void RequestObjectViewOverrideTransform(NetObjectState state, Vector3 position, Quaternion rotation)
+        {
+            if (state.PrefabUid == 0)
+                return;
+
+            // Already on its way. While in flight this is the answer on every world update, hence the early out.
+            if (_pendingObjectViews.ContainsKey(state.Uid))
+                return;
+
+            // Validated here rather than on delivery, so a bad prefab id still throws at the point that asked for it.
+            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation);
+            _pendingObjectViews.Add(state.Uid, asyncOperation);
+            asyncOperation.completed += _ => OnObjectViewInstantiated(state.Uid, asyncOperation);
+        }
+
+        private void OnObjectViewInstantiated(NetObjectUid uid, AsyncInstantiateOperation<GameObject> operation)
+        {
+            if (_world == null)
+                throw new InvalidOperationException($"World was torn down while object view for object with uid '{uid}' was being instantiated.");
+
+            var instance = operation.Result is { Length: > 0 } result ? result[0] : null;
+            _pendingObjectViews.Remove(uid);
+
+            if (instance == null)
+                return;
+
+            if (!ShouldUpdateViewForState(uid) || _currentObjectViews.ContainsKey(uid) || _temporaryUnregisteredViews.ContainsKey(uid))
+            {
+                Destroy(instance);
+                return;
+            }
+
+            var netObjectView = instance.GetComponent<NetObjectIdentity>();
+            _currentObjectViews.Add(uid, netObjectView);
+            InitializeObjectView(uid, netObjectView);
+        }
+
         private NetObjectIdentity CreateObjectView(uint prefabId, Vector3 position, Quaternion rotation)
+        {
+            var prefabObject = GetViewPrefab(prefabId);
+            var newGameObject = Instantiate(prefabObject, position, rotation);
+            return newGameObject.GetComponent<NetObjectIdentity>();
+        }
+
+        private GameObject GetViewPrefab(uint prefabId)
         {
             if (!NetPrefabDatabase.TryGetPrefab(prefabId, out var prefabObject) || prefabObject == null)
                 throw new NullReferenceException($"Object with prefab id '{prefabId}' is not registered in database.");
@@ -137,8 +201,7 @@ namespace LROTech.Network.StateManagement
             if (!prefabObject.TryGetComponent<NetObjectIdentity>(out _))
                 throw new InvalidOperationException($"Unable to create object without '{typeof(NetObjectIdentity).FullName}' component.");
 
-            var newGameObject = Instantiate(prefabObject, position, rotation);
-            return newGameObject.GetComponent<NetObjectIdentity>();
+            return prefabObject;
         }
 
         internal NetObjectIdentity CreateObjectViewForState(NetObjectState state, Vector3 position, Quaternion rotation)
@@ -151,6 +214,25 @@ namespace LROTech.Network.StateManagement
             _temporaryUnregisteredViews.Add(state.Uid, netObjectView);
             InitializeObjectView(state.Uid, netObjectView);
             return netObjectView;
+        }
+
+        internal void CreateObjectViewForStateAsync(NetObjectState state, Vector3 position, Quaternion rotation, Action<NetObjectIdentity> callback)
+        {
+            var currentView = GetObjectView(state.Uid);
+            if (currentView != null)
+                throw new InvalidOperationException($"View '{currentView.gameObject.name}' is already registered for object with uid '{state.Uid}'.");
+
+            RequestObjectViewOverrideTransform(state, position, rotation);
+            if (callback == null)
+                return;
+
+            _pendingObjectViews[state.Uid].completed += _ =>
+            {
+                if (!_currentObjectViews.TryGetValue(state.Uid, out var netObjectView))
+                    throw new InvalidOperationException($"View for object with uid '{state.Uid}' was not created.");
+
+                callback(netObjectView);
+            };
         }
 
         internal void RegisterExistedObjectView(NetObjectState state, NetObjectIdentity identity)
@@ -202,6 +284,9 @@ namespace LROTech.Network.StateManagement
 
             if (_temporaryUnregisteredViews.Remove(uid, out var unregisteredView))
                 DestroyView(unregisteredView);
+
+            if (_pendingObjectViews.Remove(uid, out var asyncInstantiateOperation))
+                asyncInstantiateOperation.Cancel();
 
             return;
 
@@ -272,6 +357,11 @@ namespace LROTech.Network.StateManagement
             Destroy(gameObject);
             if (_worldScene.IsValid())
                 SceneManager.UnloadSceneAsync(_worldScene);
+
+            foreach (var asyncLoadOp in _pendingObjectViews.Values)
+                asyncLoadOp.Cancel();
+
+            _pendingObjectViews.Clear();
         }
 
         public NetObjectIdentity GetObjectView(NetObjectUid uid)

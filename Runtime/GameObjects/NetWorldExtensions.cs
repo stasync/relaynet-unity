@@ -12,6 +12,10 @@ namespace LROTech.Network.GameObjects
             world.CreateObject((uint)netPrefabRef, isSceneObject, position, rotation);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NetObjectState CreateObjectAsync(this NetWorldRuntime world, NetPrefabObjectWeakRef netPrefabRef, bool isSceneObject, Vector3 position, Quaternion rotation, Action<NetObjectIdentity> callback = null) =>
+            world.CreateObjectAsync((uint)netPrefabRef, isSceneObject, position, rotation, callback);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NetObjectIdentity GetObjectView(this NetWorld world, NetObjectUid uid)
         {
             EnsureValid(world);

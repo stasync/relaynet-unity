@@ -728,6 +728,28 @@ namespace LROTech.Network.StateManagement
             return View.CreateObjectViewForState(newState, position, rotation);
         }
 
+        public NetObjectState CreateObjectAsync(uint prefabUid, bool isSceneObject, Vector3 position, Quaternion rotation, Action<NetObjectIdentity> callback)
+        {
+            EnsureValid();
+            var owner = Players.LocalPlayer;
+            if (owner == null)
+                throw new InvalidOperationException("Local player is not registered.");
+
+            // Increment internal id.
+            _netObjectUidCounter++;
+
+            // Calculate the source id value, applying client offsets.
+            var newObjectUid = NetObjectUid.FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)owner.Uid * RESERVED_UID_SPACE_PER_CLIENT + _netObjectUidCounter;
+
+            // Create and register a new state.
+            var newState = new NetObjectState(IsObjectValid, Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
+            AddObject(newState);
+            newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
+
+            View.CreateObjectViewForStateAsync(newState, position, rotation, callback);
+            return newState;
+        }
+
         /// <summary>
         /// Register an object which is not created via a main object creation pipeline.
         /// See the 'CreateObject' method.
