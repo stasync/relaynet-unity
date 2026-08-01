@@ -18,6 +18,15 @@ namespace LROTech.Network.StateManagement
         private const float OWNERSHIP_DISTRIBUTION_UPDATE_RATE = 5f;
         private const float OWNERSHIP_DISTRIBUTION_REQUEST_TIMEOUT = 2f;
 
+        /// <summary>
+        /// This id's for network objects that located in a scene by default.
+        /// If you create a scene object in runtime, they use the default peer-based ID space.
+        /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
+        /// </summary>
+        internal const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
+
+        internal const uint RESERVED_UID_SPACE_PER_CLIENT = 10000;
+
         public event Action<NetWorldPlayerSnapshot> PlayerAdded = delegate { };
         public event Action<NetWorldPlayerSnapshot> PlayerRemoved = delegate { };
 
@@ -44,17 +53,17 @@ namespace LROTech.Network.StateManagement
 
         private uint _netObjectUidCounter;
 
-        /// <summary>
-        /// This id's for network objects that located in a scene by default.
-        /// If you create a scene object in runtime, they use the default peer-based ID space.
-        /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
-        /// </summary>
-        internal const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
+        private readonly List<NetObjectOwnershipDistributionRule> _ownershipDistributionRules = new();
 
-        internal const uint RESERVED_UID_SPACE_PER_CLIENT = 10000;
-
-        public NetWorldRuntime(Func<ClientUid> masterClientUidProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName) =>
+        public NetWorldRuntime(Func<ClientUid> masterClientUidProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
+        {
             _masterClientUidProvider = masterClientUidProvider ?? throw new ArgumentNullException(nameof(masterClientUidProvider));
+            foreach (var ruleType in Core.Utils.Types.Lookup<NetObjectOwnershipDistributionRule>.Value)
+            {
+                if (Activator.CreateInstance(ruleType) is NetObjectOwnershipDistributionRule instance)
+                    _ownershipDistributionRules.Add(instance);
+            }
+        }
 
         protected override ClientUid GetMasterClientUid() =>
             _masterClientUidProvider();
@@ -541,16 +550,25 @@ namespace LROTech.Network.StateManagement
                     foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
                     {
                         var state = ObjectStates[uid];
+                        
+                        // Skip local or tag objects.
+                        if (state.IsOwnedByLocalPlayer || state.IsTagObjectForCurrentOwner)
+                            continue;
 
-                        // Skip local objects.
-                        if (state.IsOwnedByLocalPlayer)
+                        // Apply rules.
+                        var canChangeOwner = true;
+                        foreach (var rule in _ownershipDistributionRules)
+                        {
+                            canChangeOwner &= rule.CanRequestOwnership(state);
+                            if (!canChangeOwner)
+                                break;
+                        }
+
+                        if (!canChangeOwner)
                             continue;
 
                         var potentialOwner = GetPotentialOwner(state.Uid);
                         if (potentialOwner != Players.LocalPlayer.Uid)
-                            continue;
-
-                        if (state.IsTagObjectForCurrentOwner)
                             continue;
 
                         _writer.SeekZero();
