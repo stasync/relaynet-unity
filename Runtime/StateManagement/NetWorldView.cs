@@ -115,6 +115,7 @@ namespace LROTech.Network.StateManagement
                 return true;
 
             // This is an intentional condition.
+            // If the transform data is not available, we can't take into account its distance to the camera.
             if (!netObjectState.DataCollection.TryGetData<NetObjectTransformData>(out var transformData))
                 return true;
 
@@ -166,8 +167,10 @@ namespace LROTech.Network.StateManagement
 
         private void OnObjectViewInstantiated(NetObjectUid uid, AsyncInstantiateOperation<GameObject> operation)
         {
+            // We may cancel all async operations in OnDestroy.
+            // AsyncOperation.Completed event will be called in this case as well, thus we need to check for null to avoid running this code upon destruction.
             if (_world == null)
-                throw new InvalidOperationException($"World was torn down while object view for object with uid '{uid}' was being instantiated.");
+                return;
 
             var instance = operation.Result is { Length: > 0 } result ? result[0] : null;
             _pendingObjectViews.Remove(uid);
@@ -352,12 +355,16 @@ namespace LROTech.Network.StateManagement
 
             _temporaryUnregisteredViews.Clear();
 
-            _world = null;
-
             Destroy(gameObject);
             if (_worldScene.IsValid())
                 SceneManager.UnloadSceneAsync(_worldScene);
+        }
 
+        private void OnDestroy()
+        {
+            _world = null;
+
+            // Cancel all pending object instantiations after the world is destroyed (reference set to null).
             foreach (var asyncLoadOp in _pendingObjectViews.Values)
                 asyncLoadOp.Cancel();
 
