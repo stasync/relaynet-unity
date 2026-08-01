@@ -82,7 +82,7 @@ namespace LROTech.Network.StateManagement
                     else
                     {
                         // The instance lands some frames later, so there is nothing to initialize this time round.
-                        // Only request the view if the object is owned by the local player, or if it has a view data.
+                        // Only request the view if the object is owned by the local player or if it has a view date.
                         if (state.IsOwnedByLocalPlayer || state.DataCollection.HasData<NetObjectViewStateData>())
                             RequestObjectView(state);
 
@@ -143,9 +143,14 @@ namespace LROTech.Network.StateManagement
                 position = transformData.Position.Value;
                 rotation = transformData.Rotation.Value;
             }
+            
+            var parameters = new InstantiateParameters
+            {
+                parent = transform,
+                worldSpace = true
+            };
 
-            // Validated here rather than on delivery, so a bad prefab id still throws at the point that asked for it.
-            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation);
+            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation, parameters);
             _pendingObjectViews.Add(state.Uid, asyncOperation);
             asyncOperation.completed += _ => OnObjectViewInstantiated(state.Uid, asyncOperation);
         }
