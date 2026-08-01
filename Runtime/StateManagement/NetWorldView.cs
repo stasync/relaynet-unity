@@ -143,14 +143,15 @@ namespace LROTech.Network.StateManagement
                 position = transformData.Position.Value;
                 rotation = transformData.Rotation.Value;
             }
-            
-            var parameters = new InstantiateParameters
-            {
-                parent = transform,
-                worldSpace = true
-            };
 
-            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation, parameters);
+            // Stat async operation.
+            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation,
+                new InstantiateParameters
+                {
+                    parent = transform,
+                    worldSpace = true
+                });
+
             _pendingObjectViews.Add(state.Uid, asyncOperation);
             asyncOperation.completed += _ => OnObjectViewInstantiated(state.Uid, asyncOperation);
         }
@@ -164,8 +165,14 @@ namespace LROTech.Network.StateManagement
             if (_pendingObjectViews.ContainsKey(state.Uid))
                 return;
 
-            // Validated here rather than on delivery, so a bad prefab id still throws at the point that asked for it.
-            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation);
+            // Stat async operation.
+            var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation,
+                new InstantiateParameters
+                {
+                    parent = transform,
+                    worldSpace = true
+                });
+
             _pendingObjectViews.Add(state.Uid, asyncOperation);
             asyncOperation.completed += _ => OnObjectViewInstantiated(state.Uid, asyncOperation);
         }
@@ -190,7 +197,7 @@ namespace LROTech.Network.StateManagement
             }
 
             var netObjectView = instance.GetComponent<NetObjectIdentity>();
-            _currentObjectViews.Add(uid, netObjectView);
+            _temporaryUnregisteredViews.Add(uid, netObjectView);
             InitializeObjectView(uid, netObjectView);
         }
 
@@ -236,7 +243,8 @@ namespace LROTech.Network.StateManagement
 
             _pendingObjectViews[state.Uid].completed += _ =>
             {
-                if (!_currentObjectViews.TryGetValue(state.Uid, out var netObjectView))
+                var netObjectView = GetObjectView(state.Uid);
+                if (netObjectView == null)
                     throw new InvalidOperationException($"View for object with uid '{state.Uid}' was not created.");
 
                 callback(netObjectView);
