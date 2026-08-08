@@ -120,7 +120,6 @@ namespace LROTech.Network.StateManagement
                 _internalCollection.Remove(typeHashCode);
         }
 
-        // Note: no 'DataRemoved' here, this is a teardown path and the whole state reports it via 'Invalidated'.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Clear() =>
             _internalCollection.Clear();
