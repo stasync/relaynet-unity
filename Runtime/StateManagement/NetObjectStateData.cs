@@ -33,8 +33,8 @@ namespace LROTech.Network.StateManagement
 
         private void Init(Func<bool> validator, Func<bool> writePermission)
         {
-            _writePermission = writePermission;
             _validator = validator;
+            _writePermission = writePermission;
             TypeHashCode = GetTypeIndex(GetType());
 
             // Collect serializable values.

@@ -16,6 +16,10 @@ namespace LROTech.Network.StateManagement
         private readonly Func<bool> _validator;
         private readonly Func<bool> _dataWritePermission;
 
+        // Helper scratch buffers.
+        private readonly HashSet<int> _restoredTypes = new();
+        private readonly List<int> _typesToRemove = new();
+
         internal NetObjectDataCollection(Func<bool> validator, Func<bool> dataWritePermission)
         {
             _validator = validator;
@@ -38,6 +42,13 @@ namespace LROTech.Network.StateManagement
 
             _internalCollection.Add(typIndex, data);
             return (T)data;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool RemoveData<T>() where T : NetObjectStateData, new()
+        {
+            EnsureValid();
+            return _dataWritePermission() ? _internalCollection.Remove(NetObjectStateData.GetTypeIndex<T>()) : throw new InvalidOperationException("No authority to modify the data collection.");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,6 +86,7 @@ namespace LROTech.Network.StateManagement
         internal void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
         {
             _reader.Replace(snapshot.Data);
+            _restoredTypes.Clear();
 
             var dataCount = _reader.ReadInt32();
             for (var i = 0; i < dataCount; i++)
@@ -85,14 +97,30 @@ namespace LROTech.Network.StateManagement
 
                 if (!_internalCollection.TryGetValue(typeHashCode, out var data))
                 {
-                    data = NetObjectStateData.Provide(type, _dataWritePermission, _validator);
+                    data = NetObjectStateData.Provide(type, _validator, _dataWritePermission);
                     _internalCollection.Add(typeHashCode, data);
                 }
 
+                _restoredTypes.Add(typeHashCode);
                 data.DeserializeInternal(_reader);
             }
+
+            // The snapshot carries the whole collection, so everything missing from it was removed by the owner.
+            if (_internalCollection.Count == _restoredTypes.Count)
+                return;
+
+            _typesToRemove.Clear();
+            foreach (var typeHashCode in _internalCollection.Keys)
+            {
+                if (!_restoredTypes.Contains(typeHashCode))
+                    _typesToRemove.Add(typeHashCode);
+            }
+
+            foreach (var typeHashCode in _typesToRemove)
+                _internalCollection.Remove(typeHashCode);
         }
 
+        // Note: no 'DataRemoved' here, this is a teardown path and the whole state reports it via 'Invalidated'.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Clear() =>
             _internalCollection.Clear();

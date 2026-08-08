@@ -66,10 +66,8 @@ namespace LROTech.Network.StateManagement
         }
 
         internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
-            this(validator, playerProvider, snapshot.ObjectUid, snapshot.PrefabUid, snapshot.IsSceneObject, snapshot.OwnerUid)
-        {
+            this(validator, playerProvider, snapshot.ObjectUid, snapshot.PrefabUid, snapshot.IsSceneObject, snapshot.OwnerUid) =>
             ChangeObjectRemotely(snapshot);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
@@ -198,7 +196,7 @@ namespace LROTech.Network.StateManagement
         public void RequestRemoval()
         {
             EnsureValid();
-            
+
             if (!IsOwnedByLocalPlayer)
                 throw new InvalidOperationException($"No authority to change '{Uid}' object with owner '{OwnerUid}'.");
 
