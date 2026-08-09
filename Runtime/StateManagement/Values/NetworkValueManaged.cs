@@ -15,7 +15,7 @@ namespace LROTech.Network.StateManagement.Values
         protected TValue InternalValue
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => _internalValue;
+            get => IsValid ? _internalValue : throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
         }
 
         private TValue _internalValue;

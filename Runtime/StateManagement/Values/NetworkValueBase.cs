@@ -15,13 +15,13 @@ namespace LROTech.Network.StateManagement.Values
         protected bool HasPermission
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => InternalWritePermission();
+            get => InternalWritePermission != null && InternalWritePermission();
         }
 
         protected bool IsValid
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => InternalValidator();
+            get => InternalValidator != null && InternalValidator();
         }
 
         internal abstract void InternalDeserialize(NetReader reader);

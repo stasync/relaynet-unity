@@ -185,9 +185,6 @@ namespace LROTech.Network.StateManagement
             return uid.IsValid ? _currentObjectStates.GetValueOrDefault(uid) : null;
         }
 
-        protected bool IsObjectValid(NetObjectUid uid) =>
-            uid.IsValid && _currentObjectStates.ContainsKey(uid);
-
         internal virtual void RemoveObject(NetObjectUid uid)
         {
             EnsureValid();
@@ -224,7 +221,7 @@ namespace LROTech.Network.StateManagement
                 if (_currentObjectStates.TryGetValue(uid, out var state))
                     state.ChangeObjectRemotely(objectStateSnapshot);
                 else
-                    AddObject(new NetObjectState(IsObjectValid, Players.Get, objectStateSnapshot));
+                    AddObject(new NetObjectState(Players.Get, objectStateSnapshot));
             }
 
             // Remove absent objects.

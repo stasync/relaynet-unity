@@ -369,7 +369,7 @@ namespace LROTech.Network.StateManagement
                     }
 
                     // Create a new state.
-                    var newState = new NetObjectState(IsObjectValid, Players.Get, snapshot);
+                    var newState = new NetObjectState(Players.Get, snapshot);
                     AddObject(newState);
 
                     if (_unregisteredSceneObjects.TryGetValue(snapshot.ObjectUid, out var unregisteredSceneObject))
@@ -425,7 +425,7 @@ namespace LROTech.Network.StateManagement
                     {
                         var sceneIdentity = _unregisteredSceneObjects[uid];
 
-                        var newState = new NetObjectState(IsObjectValid, Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabUid, isSceneObject: true, owner: Players.LocalPlayer.Uid);
+                        var newState = new NetObjectState(Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabUid, isSceneObject: true, owner: Players.LocalPlayer.Uid);
                         AddObject(newState);
                         newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 
@@ -666,6 +666,7 @@ namespace LROTech.Network.StateManagement
         internal override void RemoveObject(NetObjectUid uid)
         {
             base.RemoveObject(uid);
+            
             _unregisteredSceneObjects.Remove(uid);
             _objectSendBlacklist.Remove(uid);
         }
@@ -739,7 +740,7 @@ namespace LROTech.Network.StateManagement
             var newObjectUid = NetObjectUid.FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)owner.Uid * RESERVED_UID_SPACE_PER_CLIENT + _netObjectUidCounter;
 
             // Create and register a new state.
-            var newState = new NetObjectState(IsObjectValid, Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
+            var newState = new NetObjectState(Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 
@@ -760,7 +761,7 @@ namespace LROTech.Network.StateManagement
             var newObjectUid = NetObjectUid.FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)owner.Uid * RESERVED_UID_SPACE_PER_CLIENT + _netObjectUidCounter;
 
             // Create and register a new state.
-            var newState = new NetObjectState(IsObjectValid, Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
+            var newState = new NetObjectState(Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 

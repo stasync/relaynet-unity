@@ -34,7 +34,6 @@ namespace LROTech.Network.StateManagement
         private readonly Queue<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityQueue = new();
         private readonly List<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityRequests = new();
         private readonly Queue<NetObjectStateChangeRequestType> _stateChangeTypeQueue = new();
-        private readonly Func<NetObjectUid, bool> _validator;
 
         public bool IsOwnedByLocalPlayer => Owner != null && Owner.IsLocal();
 
@@ -49,9 +48,8 @@ namespace LROTech.Network.StateManagement
         public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
         public event Action Invalidated = delegate { };
 
-        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, uint prefabUid, bool isSceneObject, ClientUid owner)
+        internal NetObjectState(Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, uint prefabUid, bool isSceneObject, ClientUid owner)
         {
-            _validator = validator;
             _playerProvider = playerProvider;
 
             Uid = uid;
@@ -65,13 +63,13 @@ namespace LROTech.Network.StateManagement
             DataCollection = new NetObjectDataCollection(validator: IsValid, dataWritePermission: () => IsOwnedByLocalPlayer);
         }
 
-        internal NetObjectState(Func<NetObjectUid, bool> validator, Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
-            this(validator, playerProvider, snapshot.ObjectUid, snapshot.PrefabUid, snapshot.IsSceneObject, snapshot.OwnerUid) =>
+        internal NetObjectState(Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
+            this(playerProvider, snapshot.ObjectUid, snapshot.PrefabUid, snapshot.IsSceneObject, snapshot.OwnerUid) =>
             ChangeObjectRemotely(snapshot);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
-            Uid.IsValid && _validator != null && _validator(Uid);
+            Uid.IsValid;
 
         internal void Invalidate()
         {
@@ -85,7 +83,7 @@ namespace LROTech.Network.StateManagement
             StateChangeType = NetObjectStateChangeRequestType.None;
 
             RpcBuffer.Clear();
-            DataCollection.Clear();
+            DataCollection.Invalidate();
             _rpcWithoutAuthorityRequests.Clear();
 
             _stateChangeTypeQueue.Clear();

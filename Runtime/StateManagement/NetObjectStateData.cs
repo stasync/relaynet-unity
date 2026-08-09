@@ -1,6 +1,7 @@
 ﻿using Core.Networking;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using LROTech.Network.StateManagement.Values;
 using UnityEngine;
@@ -29,7 +30,7 @@ namespace LROTech.Network.StateManagement
         private Func<bool> _validator;
 
         internal IReadOnlyCollection<NetworkValueBase> SerializableValues => _internalValueCollection.Values;
-        private readonly Dictionary<string, NetworkValueBase> _internalValueCollection = new();
+        private readonly Dictionary<FieldInfo, NetworkValueBase> _internalValueCollection = new();
 
         private void Init(Func<bool> validator, Func<bool> writePermission)
         {
@@ -42,16 +43,30 @@ namespace LROTech.Network.StateManagement
             {
                 if (filedInfo.GetValue(this) is NetworkValueBase value)
                 {
-                    if (_internalValueCollection.ContainsKey(filedInfo.Name))
+                    if (_internalValueCollection.ContainsKey(filedInfo))
                         throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{filedInfo.Name}'.");
 
                     value.InternalWritePermission = _writePermission;
                     value.InternalValidator = _validator;
-                    _internalValueCollection.Add(filedInfo.Name, value);
+                    _internalValueCollection.Add(filedInfo, value);
                 }
                 else
                     Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
             }
+        }
+
+        internal void Invalidate()
+        {
+            // Reset write permission and validator.
+            _writePermission = null;
+
+            foreach (var (_, variable) in _internalValueCollection)
+            {
+                variable.InternalWritePermission = null;
+                variable.InternalValidator = null;
+            }
+
+            _internalValueCollection.Clear();
         }
 
         internal virtual int GetVersionHash()
@@ -128,7 +143,7 @@ namespace LROTech.Network.StateManagement
         public virtual IEnumerable<KeyValuePair<string, string>> GetValuesInfo_Editor()
         {
             foreach (var kvp in _internalValueCollection)
-                yield return new KeyValuePair<string, string>(kvp.Key, kvp.Value.ToString());
+                yield return new KeyValuePair<string, string>(kvp.Key.Name, kvp.Value.ToString());
         }
 
         public int GetSerializedSize_Editor()

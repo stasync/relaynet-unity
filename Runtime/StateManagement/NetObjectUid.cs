@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace LROTech.Network.StateManagement
 {
@@ -6,10 +7,15 @@ namespace LROTech.Network.StateManagement
     {
         public const int SIZE = sizeof(uint);
         public const uint FIRST_VALID_UID = 1;
-        
+
         public static readonly NetObjectUid Invalid = new(0u);
-        
-        public bool IsValid => _value > Invalid._value;
+
+        public bool IsValid
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _value > Invalid._value;
+        }
+
         private readonly uint _value;
 
         /// <summary>

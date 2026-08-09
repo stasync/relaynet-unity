@@ -44,11 +44,17 @@ namespace LROTech.Network.StateManagement
             return (T)data;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool RemoveData<T>() where T : NetObjectStateData, new()
         {
             EnsureValid();
-            return _dataWritePermission() ? _internalCollection.Remove(NetObjectStateData.GetTypeIndex<T>()) : throw new InvalidOperationException("No authority to modify the data collection.");
+            if (!_dataWritePermission())
+                throw new InvalidOperationException("No authority to modify the data collection.");
+
+            var removed = _internalCollection.Remove(NetObjectStateData.GetTypeIndex<T>(), out var data);
+            if (removed)
+                data.Invalidate();
+
+            return removed;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -117,12 +123,19 @@ namespace LROTech.Network.StateManagement
             }
 
             foreach (var typeHashCode in _typesToRemove)
-                _internalCollection.Remove(typeHashCode);
+            {
+                if (_internalCollection.Remove(typeHashCode, out var data))
+                    data.Invalidate();
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Clear() =>
+        internal void Invalidate()
+        {
+            foreach (var data in _internalCollection.Values)
+                data.Invalidate();
+
             _internalCollection.Clear();
+        }
 
         internal int GetVersionHash()
         {
@@ -137,11 +150,17 @@ namespace LROTech.Network.StateManagement
             return hash;
         }
 
-        public IEnumerator<NetObjectStateData> GetEnumerator() =>
-            _internalCollection.Values.GetEnumerator();
+        public IEnumerator<NetObjectStateData> GetEnumerator()
+        {
+            EnsureValid();
+            return _internalCollection.Values.GetEnumerator();
+        }
 
-        IEnumerator IEnumerable.GetEnumerator() =>
-            _internalCollection.Values.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            EnsureValid();
+            return _internalCollection.Values.GetEnumerator();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsValid() =>
