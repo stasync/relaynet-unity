@@ -40,12 +40,7 @@ namespace LROTech.Network.StateManagement
             if (_playersCollection.ContainsKey(uid))
                 throw new InvalidOperationException();
 
-            var newPlayer = new NetWorldPlayer(
-                uid,
-                name: "Unknown",
-                isLocal,
-                validator: _playersCollection.ContainsKey,
-                masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid);
+            var newPlayer = new NetWorldPlayer(uid, name: "Unknown", isLocal, masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid);
 
             _playersCollection.Add(uid, newPlayer);
             if (isLocal)
@@ -64,7 +59,10 @@ namespace LROTech.Network.StateManagement
 
             // NOTE: we can't use 'Remove' to take a player for snapshot, as player will become invalid once it removed from the dictionary.
             if (_playersCollection.TryGetValue(uid, out var player))
+            {
                 snapshot = player.ToSnapshot();
+                player.Invalidate();
+            }
 
             var playerRemoved = _playersCollection.Remove(uid);
             MasterPlayer = Get(uid: _masterClientUidProvider());
@@ -85,12 +83,15 @@ namespace LROTech.Network.StateManagement
             return _playersCollection.ContainsKey(uid);
         }
 
-        internal void Clear()
+        internal void Invalidate()
         {
             _validator = null;
 
             LocalPlayer = null;
             MasterPlayer = null;
+
+            foreach (var player in _playersCollection.Values)
+                player.Invalidate();
 
             _playersCollection.Clear();
             _playersCollection = null;
@@ -122,12 +123,7 @@ namespace LROTech.Network.StateManagement
                     player.RestoreFromSnapshot(playerSnapshot);
                 else
                     _playersCollection.Add(clientUid,
-                        new NetWorldPlayer(
-                            playerSnapshot.Uid,
-                            playerSnapshot.Name,
-                            isLocal: false,
-                            validator: _playersCollection.ContainsKey,
-                            masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid));
+                        new NetWorldPlayer(playerSnapshot.Uid, playerSnapshot.Name, isLocal: false, masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid));
             }
 
             // Use invalid references for local and master - player collection snapshot only used for the world history buffer.

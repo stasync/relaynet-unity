@@ -158,8 +158,8 @@ namespace LROTech.Network.StateManagement
                 netObject.Invalidate();
             _currentObjectStates.Clear();
 
-            Players.Clear();
-            Properties.Clean();
+            Players.Invalidate();
+            Properties.Invalidate();
 
             Disposed?.Invoke();
             Disposed = null;

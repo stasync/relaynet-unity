@@ -17,10 +17,11 @@ namespace LROTech.Network.StateManagement
         private readonly Dictionary<uint, string> _stringData = new();
         private readonly Dictionary<uint, UnityEngine.Vector3> _vector3Data = new();
 
-        private readonly Func<bool> _validator;
-        private readonly Func<bool> _writePermission;
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
+
+        private Func<bool> _validator;
+        private Func<bool> _writePermission;
 
         internal NetProperties(Func<bool> validator, Func<bool> writePermission)
         {
@@ -39,15 +40,12 @@ namespace LROTech.Network.StateManagement
                 throw new InvalidOperationException($"Object of type '{GetType().FullName}' is invalid.");
         }
 
-        internal void Clean()
+        internal void Invalidate()
         {
-            _byteData.Clear();
-            _uintData.Clear();
-            _intData.Clear();
-            _floatData.Clear();
-            _boolData.Clear();
-            _vector3Data.Clear();
-            _stringData.Clear();
+            Clear();
+
+            _validator = null;
+            _writePermission = null;
         }
 
         internal NetworkPropertiesSnapshot ToSnapshot()
@@ -72,7 +70,7 @@ namespace LROTech.Network.StateManagement
             WriteUnmanagedDictionary(writer, _boolData);
             WriteUnmanagedDictionary(writer, _vector3Data);
 
-            // String is a special case here, as its managed.
+            // String is a special case here, as it's managed.
             {
                 writer.WritePackedUInt32((uint)_stringData.Count);
                 foreach (var kvp in _stringData)
@@ -92,7 +90,7 @@ namespace LROTech.Network.StateManagement
             ReadUnmanagedDictionary(reader, _boolData);
             ReadUnmanagedDictionary(reader, _vector3Data);
 
-            // String is a special case here, as its managed.
+            // String is a special case here, as it's managed.
             {
                 _stringData.Clear();
                 var count = reader.ReadPackedUInt32();
@@ -153,7 +151,7 @@ namespace LROTech.Network.StateManagement
             return hash;
         }
 
-        #region CUSTOPROPERTIES_API
+        #region PUBLIC_API
 
         public void SetByte(uint id, byte value)
         {
@@ -258,6 +256,17 @@ namespace LROTech.Network.StateManagement
         {
             EnsureValid();
             return _stringData.GetValueOrDefault(id);
+        }
+
+        public void Clear()
+        {
+            _byteData.Clear();
+            _uintData.Clear();
+            _intData.Clear();
+            _floatData.Clear();
+            _boolData.Clear();
+            _vector3Data.Clear();
+            _stringData.Clear();
         }
 
         #endregion

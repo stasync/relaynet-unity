@@ -14,7 +14,9 @@ namespace LROTech.Network.StateManagement
 
         public string Name
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _name;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (!IsLocal())
@@ -27,7 +29,9 @@ namespace LROTech.Network.StateManagement
 
         public bool IsReady
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _isReady;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (!IsLocal())
@@ -40,7 +44,9 @@ namespace LROTech.Network.StateManagement
 
         public UserDevice.Platform Platform
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _platform;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (!IsLocal())
@@ -53,7 +59,9 @@ namespace LROTech.Network.StateManagement
 
         public int RttMs
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _rttMs;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             set
             {
                 if (!IsLocal())
@@ -76,16 +84,14 @@ namespace LROTech.Network.StateManagement
         #endregion
 
         private readonly Func<ClientUid> _masterPlayerUidProvider;
-        private readonly Func<ClientUid, bool> _validator;
         private readonly bool _isLocal;
 
-        internal NetWorldPlayer(ClientUid uid, string name, bool isLocal, Func<ClientUid, bool> validator, Func<ClientUid> masterPlayerUidProvider)
+        internal NetWorldPlayer(ClientUid uid, string name, bool isLocal, Func<ClientUid> masterPlayerUidProvider)
         {
             Uid = uid;
 
             _name = name;
             _isLocal = isLocal;
-            _validator = validator;
             _masterPlayerUidProvider = masterPlayerUidProvider;
 
             Properties = new NetProperties(validator: IsValid, writePermission: IsLocal);
@@ -108,18 +114,33 @@ namespace LROTech.Network.StateManagement
             Properties.RestoreFromSnapshot(snapshot.Properties);
             MainTagObjectUid = snapshot.MainTagObject;
         }
-        
+
+        internal void Invalidate()
+        {
+            Uid = ClientUid.Invalid;
+            _name = null;
+            _isReady = false;
+            _platform = UserDevice.Platform.Unknown;
+            _rttMs = 0;
+
+            _tagObjectUidCollection.Clear();
+            Properties.Invalidate();
+
+            MainTagObjectUid = NetObjectUid.Invalid;
+            WorldTime = 0;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsLocal() => 
+        public bool IsLocal() =>
             IsValid() && _isLocal;
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsMaster() => 
+        public bool IsMaster() =>
             IsValid() && Uid.Equals(other: _masterPlayerUidProvider());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool IsValid() =>
-            Uid.IsValid && _validator != null && _validator(Uid);
+            Uid.IsValid;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasTagObject(NetObjectUid uid)
