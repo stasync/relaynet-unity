@@ -527,6 +527,18 @@ namespace LROTech.Network.StateManagement
                         if (targetObject.IsTagObjectForCurrentOwner)
                             continue;
 
+                        // Apply rules.
+                        var canChangeOwner = true;
+                        foreach (var rule in _ownershipDistributionRules)
+                        {
+                            canChangeOwner &= rule.CanRequestOwnership(targetObject);
+                            if (!canChangeOwner)
+                                break;
+                        }
+
+                        if (!canChangeOwner)
+                            continue;
+
                         // Object could be in the dictionary only if it was recently requested to validate ownership.
                         // We don't allow multiple sequential or concurrent requests - 2-second timeout.
                         if (!_lastObjectOwnershipValidationTimeLookup.TryAdd(objectUid, Time + OWNERSHIP_DISTRIBUTION_REQUEST_TIMEOUT))
@@ -550,7 +562,7 @@ namespace LROTech.Network.StateManagement
                     foreach (var uid in new List<NetObjectUid>(ObjectStates.Keys))
                     {
                         var state = ObjectStates[uid];
-                        
+
                         // Skip local or tag objects.
                         if (state.IsOwnedByLocalPlayer || state.IsTagObjectForCurrentOwner)
                             continue;
@@ -666,7 +678,7 @@ namespace LROTech.Network.StateManagement
         internal override void RemoveObject(NetObjectUid uid)
         {
             base.RemoveObject(uid);
-            
+
             _unregisteredSceneObjects.Remove(uid);
             _objectSendBlacklist.Remove(uid);
         }
