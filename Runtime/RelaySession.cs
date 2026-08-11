@@ -20,10 +20,13 @@ namespace LROTech.Network
         public event Action LocalUserConnected = delegate { };
         public event Action<ClientUid> RemoteUserConnected = delegate { };
         public event Action<ClientUid> RemoteUserDisconnected = delegate { };
-        
+
         public event DataReceivedDelegate DataReceived = delegate { };
 
         public ClientUid ConnectionUid { get; private set; }
+
+        public bool IsConnected => _transport.IsConnected;
+        public NetTransferStatistics Statistics => _transport.Statistics;
 
         private readonly NetReader _dataReader = new();
         private readonly NetWriter _dataWriter = new();
@@ -74,7 +77,7 @@ namespace LROTech.Network
             _transport.Disconnect();
             ConnectionUid = ClientUid.Invalid;
             LocalUserDisconnected();
-            
+
             _disposed = true;
         }
 

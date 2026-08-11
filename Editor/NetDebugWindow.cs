@@ -149,7 +149,11 @@ namespace LROTech.Network.Editor
                     _worldObjectsIterator.AddRange(World.ObjectStates.Keys);
                     foreach (var objectUid in _worldObjectsIterator)
                     {
-                        var state = World.ObjectStates[objectUid];
+                        // Removing an object (the button below, or anything reacting to it) can take others with it,
+                        // and this is iterating over a copy of the keys taken before that happened.
+                        if (!World.ObjectStates.TryGetValue(objectUid, out var state))
+                            continue;
+
                         if (!_objectDrawers.TryGetValue(objectUid, out var drawer))
                         {
                             drawer = new NetObjectStateDrawer(state, World);
@@ -259,7 +263,7 @@ namespace LROTech.Network.Editor
                 if (World.View != null)
                 {
                     EditorGUILayout.Space();
-                    _drawPendingViews = EditorGUILayout.Foldout(_drawPendingViews, $"Pending Views: {World.View.TemporaryUnregisteredViews.Count}") && World.View.TemporaryUnregisteredViews.Count > 0;
+                    _drawPendingViews = EditorGUILayout.Foldout(_drawPendingViews, $"Pending Views: {World.View.TemporaryUnregisteredViews.Count}");
                     if (_drawPendingViews)
                     {
                         EditorGUI.indentLevel++;
@@ -281,11 +285,14 @@ namespace LROTech.Network.Editor
 
             protected override void OnDrawWorld()
             {
+                var lastSnapshotIndex = World.BufferCount - 1;
+
                 EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button(World.Paused ? "Play >" : "Pause ||"))
                     World.SetPaused(!World.Paused);
 
-                EditorGUI.BeginDisabledGroup(!World.Paused);
+                // Every seek below addresses a snapshot by index - there is nothing to address in an empty buffer.
+                EditorGUI.BeginDisabledGroup(!World.Paused || lastSnapshotIndex < 0);
 
                 if (GUILayout.Button("<< Previous"))
                     World.MoveToPreviousSnapshot(true);
@@ -295,8 +302,8 @@ namespace LROTech.Network.Editor
 
                 EditorGUILayout.EndHorizontal();
                 EditorGUI.BeginChangeCheck();
-                var targetSnapshot = EditorGUILayout.IntSlider(World.CurrentSnapshotIndex, 0, World.BufferCount - 1);
-                if (EditorGUI.EndChangeCheck() && targetSnapshot != World.CurrentSnapshotIndex)
+                var targetSnapshot = EditorGUILayout.IntSlider($"Snapshot ({World.CurrentSnapshotIndex + 1}/{World.BufferCount})", World.CurrentSnapshotIndex, leftValue: 0, Mathf.Max(lastSnapshotIndex, 0));
+                if (EditorGUI.EndChangeCheck() && targetSnapshot != World.CurrentSnapshotIndex && lastSnapshotIndex >= 0)
                     World.MoveToSnapshotSafe(targetSnapshot, true);
 
                 EditorGUI.EndDisabledGroup();
@@ -309,13 +316,15 @@ namespace LROTech.Network.Editor
 
         #endregion
 
-        private bool _showNetworkStatistics;
         private bool _showMainWorldHistoryInfo;
         private bool _showMainWorldBuffer;
         private Vector2 _globalScrollPosition;
 
+        private readonly NetTransferStatisticsDrawer _statisticsDrawer = new();
+
         private MainWorldDrawer _mainWorldDrawer;
         private ReplicaWorldDrawer _currentWorldReplicaDrawer;
+        private NetWorldEvaluator _replica;
 
         [MenuItem("System/Network/Debug Window")]
         private static void Init()
@@ -330,27 +339,23 @@ namespace LROTech.Network.Editor
             Repaint();
         }
 
+        private void OnDisable() =>
+            StopPlayback();
+
         private void OnGUI()
         {
             if (!EditorApplication.isPlaying)
             {
+                // Nothing survives the play mode exit - the world the replica was taken from is gone by now.
+                StopPlayback();
+
                 EditorGUILayout.HelpBox("Available only in play mode", MessageType.Error);
                 return;
             }
 
-            // _networkProvider ??= new ServiceProvider<GSNetwork>();
-            //if (_networkProvider.Instance == null)
-            //    return;
-
-            //var realtime = _networkProvider.Instance.Realtime;
-            //EditorGUILayout.LabelField($"RT status: {realtime.IsSessionRunningAndReady}", EditorStyles.boldLabel);
-            //EditorGUILayout.LabelField($"RT conn: {realtime.LocalConnectionUID}", EditorStyles.boldLabel);
-
             EditorGUILayout.Space();
 
-            _showNetworkStatistics = EditorGUILayout.Foldout(_showNetworkStatistics, "Network Statistics");
-            if (_showNetworkStatistics)
-                EditorGUILayout.HelpBox("Statistics is not available", MessageType.Error);
+            _statisticsDrawer.Draw(NetSession.All.Count > 0 ? NetSession.All[0] : null);
 
             EditorGUILayout.Space();
 
@@ -383,25 +388,22 @@ namespace LROTech.Network.Editor
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField($"History size: {mainWorld.HistoryBuffer.Size} ({mainWorld.HistoryBuffer.SizeMb:f2}mb) [{mainWorld.HistoryBuffer.AverageFrameSize}] bytes, cnt: {mainWorld.HistoryBuffer.Count} frames, time: {mainWorld.HistoryBuffer.LengthInSeconds:f2} s", EditorStyles.boldLabel);
 
-                EditorGUI.BeginDisabledGroup(_currentWorldReplicaDrawer != null);
-                if (GUILayout.Button("Playback"))
+                EditorGUILayout.BeginHorizontal();
                 {
-                    var currentReplica = mainWorld.Replicate();
-                    _currentWorldReplicaDrawer = new ReplicaWorldDrawer(currentReplica);
-                    Bootstrap.UnityUpdate += OnUpdate;
+                    // Replicating an empty history produces an evaluator with no snapshot to stand on.
+                    EditorGUI.BeginDisabledGroup(_replica != null || mainWorld.HistoryBuffer.Count == 0);
+                    if (GUILayout.Button("Playback"))
+                        StartPlayback(mainWorld);
 
-                    void OnUpdate()
-                    {
-                        currentReplica.Update(Time.deltaTime);
-                        if (currentReplica.IsValid)
-                            return;
+                    EditorGUI.EndDisabledGroup();
 
-                        _currentWorldReplicaDrawer = null;
-                        Bootstrap.UnityUpdate -= OnUpdate;
-                    }
+                    EditorGUI.BeginDisabledGroup(_replica == null);
+                    if (GUILayout.Button("Stop Playback"))
+                        StopPlayback();
+
+                    EditorGUI.EndDisabledGroup();
                 }
-
-                EditorGUI.EndDisabledGroup();
+                EditorGUILayout.EndHorizontal();
 
                 _showMainWorldBuffer = EditorGUILayout.Foldout(_showMainWorldBuffer, "Show buffer");
                 if (_showMainWorldBuffer)
@@ -425,10 +427,53 @@ namespace LROTech.Network.Editor
                     _currentWorldReplicaDrawer.Draw();
                 }
                 else
-                    _currentWorldReplicaDrawer = null;
+                    StopPlayback();
             }
 
             EditorGUILayout.EndScrollView();
+        }
+
+        private void StartPlayback(NetWorldRuntime mainWorld)
+        {
+            StopPlayback();
+
+            _replica = mainWorld.Replicate();
+            _currentWorldReplicaDrawer = new ReplicaWorldDrawer(_replica);
+
+            Bootstrap.UnityUpdate += OnReplicaUpdate;
+        }
+
+        /// <summary>
+        /// The replica is driven by this window alone - nothing else updates or disposes it, so it has to be released
+        /// here, and on every path out (the window closing included), or it keeps running with its views alive.
+        /// </summary>
+        private void StopPlayback()
+        {
+            if (_replica == null)
+                return;
+
+            Bootstrap.UnityUpdate -= OnReplicaUpdate;
+
+            if (_replica.IsValid)
+                _replica.Dispose();
+
+            _replica = null;
+            _currentWorldReplicaDrawer = null;
+        }
+
+        private void OnReplicaUpdate()
+        {
+            if (_replica == null)
+                return;
+
+            // The replica disposes itself once it reaches the end of the history it was taken from.
+            if (!_replica.IsValid)
+            {
+                StopPlayback();
+                return;
+            }
+
+            _replica.Update(Time.deltaTime);
         }
     }
 }

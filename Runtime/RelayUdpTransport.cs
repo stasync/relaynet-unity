@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using Core.Networking.Udp;
 using Core.Networking.Udp.LowLevel;
+using Core.Networking.Udp.LowLevel.DataTransferLayers;
 
 namespace LROTech.Network
 {
@@ -49,10 +50,25 @@ namespace LROTech.Network
         public bool IsConnected => _client.IsConnected;
         public uint ConnectionUid => _client.ConnectionUid;
 
+        public NetTransferStatistics Statistics =>
+            new(_transferAmountCapture.BytesSent, _transferAmountCapture.BytesReceived,
+                _transferAmountCapture.PacketsSent, _transferAmountCapture.PacketsReceived);
+
         private readonly ReliableUdpClient _client = new();
 
-        public void Connect(IPEndPoint endPoint, string connectionData) =>
+        /// <summary>
+        /// The layer is ours, not the client's - it survives a disconnect (which drops every layer the client holds),
+        /// so the counters keep the totals of the whole session and not of the last connection only.
+        /// </summary>
+        private readonly DataTransferAmountCaptureLayer _transferAmountCapture = new();
+
+        public void Connect(IPEndPoint endPoint, string connectionData)
+        {
             _client.Connect(endPoint, connectionData);
+
+            // The protocol the layers live on is created by 'Connect' itself, so the capture can't be installed any earlier.
+            _client.RegisterDataTransferLayer(_transferAmountCapture);
+        }
 
         public void Send(ArraySegment<byte> data, UdpFullProtocol.DgramDeliveryMethod deliveryMethod) =>
             _client.Send(data, deliveryMethod);

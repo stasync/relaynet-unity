@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using LROTech.Network.StateManagement;
 
@@ -6,10 +7,24 @@ namespace LROTech.Network
 {
     public sealed class NetSession
     {
+        /// <summary>
+        /// Every session alive at the moment, in creation order. Kept for the debug tooling - there is no other way to
+        /// reach a session from the outside, the gameplay code holds its own reference (see 'NetworkService').
+        /// </summary>
+        public static IReadOnlyList<NetSession> All => s_all;
+        private static readonly List<NetSession> s_all = new();
+
         public event Action Disposed = delegate { };
 
         public ClientUid SessionOwner { get; private set; }
         public NetWorldRuntime MainWorld { get; private set; }
+
+        public bool IsConnected => _clientSession is { IsConnected: true };
+
+        /// <summary>
+        /// The traffic of the underlying transport, or an empty one for an already disposed session.
+        /// </summary>
+        public NetTransferStatistics Statistics => _clientSession?.Statistics ?? default;
 
         private RelaySession _clientSession;
 
@@ -40,6 +55,8 @@ namespace LROTech.Network
             _clientSession.LocalUserConnected += OnLocalUserConnected;
             _clientSession.RemoteUserDisconnected += OnRemoteUserDisconnected;
             _clientSession.RemoteUserConnected += OnRemoteUserConnected;
+
+            s_all.Add(this);
         }
 
         private void OnWorldDisposed()
@@ -64,6 +81,8 @@ namespace LROTech.Network
             }
 
             _clientSession = null;
+            s_all.Remove(this);
+
             Disposed();
         }
 

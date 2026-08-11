@@ -22,6 +22,11 @@ namespace LROTech.Network
         bool IsConnected { get; }
         uint ConnectionUid { get; }
 
+        /// <summary>
+        /// The traffic the transport has moved so far. Cumulative - never resets, not even on a reconnect.
+        /// </summary>
+        NetTransferStatistics Statistics { get; }
+
         void Connect(IPEndPoint endPoint, string connectionData);
         void Send(ArraySegment<byte> data, UdpFullProtocol.DgramDeliveryMethod deliveryMethod);
         void Update();

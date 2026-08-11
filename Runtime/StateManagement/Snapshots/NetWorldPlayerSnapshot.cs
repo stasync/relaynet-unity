@@ -54,7 +54,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             writer.WriteString(Name);
             writer.WriteBoolean(IsInGameScene);
             writer.WriteInt32((int)Platform);
-            writer.WriteSingle(RTTMs);
+            writer.WriteInt32(RTTMs);
 
             writer.WritePackedUInt32((uint)TagObjects.Count);
             foreach (var tagObjectUid in TagObjects)

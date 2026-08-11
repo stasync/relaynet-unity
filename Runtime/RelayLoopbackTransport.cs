@@ -31,12 +31,24 @@ namespace LROTech.Network
         public bool IsConnected { get; private set; }
         public uint ConnectionUid { get; private set; }
 
+        /// <summary>
+        /// There is no wire here, so the counters measure the messages as the session handed them over / got them back -
+        /// no protocol overhead is added on top.
+        /// </summary>
+        public NetTransferStatistics Statistics =>
+            new(_bytesSent, _bytesReceived, _packetsSent, _packetsReceived);
+
         private readonly Queue<(byte[] Data, UdpFullProtocol.DgramDeliveryMethod DeliveryMethod)> _incoming = new();
         private readonly HashSet<uint> _connections = new();
         private readonly NetReader _dataReader = new();
         private readonly NetWriter _dataWriter = new();
 
         private bool _connectionRequested;
+
+        private int _bytesSent;
+        private int _bytesReceived;
+        private int _packetsSent;
+        private int _packetsReceived;
 
         // Connections are never confirmed immediately - the confirmation arrives with the next update, same as a real round trip.
         public void Connect(IPEndPoint endPoint, string connectionData) =>
@@ -59,6 +71,10 @@ namespace LROTech.Network
             for (var i = 0; i < messagesToDeliver; i++)
             {
                 var (data, deliveryMethod) = _incoming.Dequeue();
+
+                _bytesReceived += data.Length;
+                _packetsReceived++;
+
                 DataReceived(data, deliveryMethod);
             }
         }
@@ -67,6 +83,9 @@ namespace LROTech.Network
         {
             if (!IsConnected)
                 return;
+
+            _bytesSent += data.Count;
+            _packetsSent++;
 
             _dataReader.Replace(ToArray(data));
             var type = (RelayClientMessageType)_dataReader.ReadByte();

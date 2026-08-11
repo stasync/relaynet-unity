@@ -65,7 +65,12 @@ namespace LROTech.Network.Debug.Editor
 
                 EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {prefabLabel}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField($"Owner: [{_state.Owner.Uid}] {_state.Owner.Name} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})", EditorStyles.boldLabel);
+
+                // An object outlives the player that owned it, and a scene object starts with no owner at all.
+                var owner = _state.Owner;
+                EditorGUILayout.LabelField(owner == null
+                    ? $"Owner: [{_state.OwnerUid}] NONE"
+                    : $"Owner: [{owner.Uid}] {owner.Name} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Update Time: {_state.WorldTime:f2}", EditorStyles.boldLabel);
                 if (_state.IsTagObjectForCurrentOwner)
                     EditorGUILayout.LabelField("Owner's tag object", EditorStyles.boldLabel);

@@ -1,7 +1,8 @@
+using LROTech.Network.Debug.Editor;
 using LROTech.Network.GameObjects;
 using UnityEditor;
 
-namespace LROTech.Network.Debug.Editor
+namespace LROTech.Network.Editor
 {
     [CustomEditor(typeof(NetObjectIdentity), editorForChildClasses: true)]
     internal sealed class NetObjectIdentityEditor : UnityEditor.Editor
@@ -20,15 +21,15 @@ namespace LROTech.Network.Debug.Editor
             EditorGUILayout.ObjectField(label: $"Prefab ({prefabUid})", prefab, typeof(NetObjectIdentity), allowSceneObjects: false);
             EditorGUI.EndDisabledGroup();
 
-            if (identity.State != null)
-            {
-                _drawer ??= new NetObjectStateDrawer(identity.State, identity.World);
-                if (_drawer.IsValid())
-                {
-                    EditorGUILayout.Space();
-                    _drawer.Draw();
-                }
-            }
+            if (identity.State == null)
+                return;
+
+            _drawer ??= new NetObjectStateDrawer(identity.State, identity.World);
+            if (!_drawer.IsValid())
+                return;
+
+            EditorGUILayout.Space();
+            _drawer.Draw();
         }
     }
 }
