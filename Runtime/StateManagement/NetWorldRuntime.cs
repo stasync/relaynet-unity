@@ -68,6 +68,22 @@ namespace LROTech.Network.StateManagement
         protected override ClientUid GetMasterClientUid() =>
             _masterClientUidProvider();
 
+        /// <summary>
+        /// Whether the automatic distribution pass may move this object. Consulted both when asking for an
+        /// object and when answering somebody else's request, so the two sides cannot disagree about who is
+        /// allowed to hold it. An explicit <see cref="NetObjectIdentity.OwnObject"/> bypasses the rules.
+        /// </summary>
+        private bool IsOwnershipDistributionAllowed(NetObjectState state)
+        {
+            foreach (var rule in _ownershipDistributionRules)
+            {
+                if (!rule.CanRequestOwnership(state))
+                    return false;
+            }
+
+            return true;
+        }
+
         protected override void UpdateImplementation(float deltaTime)
         {
             _localUpdateTime += deltaTime;
@@ -527,16 +543,7 @@ namespace LROTech.Network.StateManagement
                         if (targetObject.IsTagObjectForCurrentOwner)
                             continue;
 
-                        // Apply rules.
-                        var canChangeOwner = true;
-                        foreach (var rule in _ownershipDistributionRules)
-                        {
-                            canChangeOwner &= rule.CanRequestOwnership(targetObject);
-                            if (!canChangeOwner)
-                                break;
-                        }
-
-                        if (!canChangeOwner)
+                        if (!IsOwnershipDistributionAllowed(targetObject))
                             continue;
 
                         // Object could be in the dictionary only if it was recently requested to validate ownership.
@@ -567,16 +574,7 @@ namespace LROTech.Network.StateManagement
                         if (state.IsOwnedByLocalPlayer || state.IsTagObjectForCurrentOwner)
                             continue;
 
-                        // Apply rules.
-                        var canChangeOwner = true;
-                        foreach (var rule in _ownershipDistributionRules)
-                        {
-                            canChangeOwner &= rule.CanRequestOwnership(state);
-                            if (!canChangeOwner)
-                                break;
-                        }
-
-                        if (!canChangeOwner)
+                        if (!IsOwnershipDistributionAllowed(state))
                             continue;
 
                         var potentialOwner = GetPotentialOwner(state.Uid);
