@@ -4,7 +4,7 @@ Networking for Unity. RelayNet keeps game objects, their state and RPCs in sync 
 
 There's no game server and clients never connect to each other. Each client sends to the Relay room, and the room forwards the message to the other clients. Every networked object has one owner: the client that has authority over its state. The other clients receive that state and apply it.
 
-Networked state lives in plain data classes owned by the world, apart from MonoBehaviours, and GameObjects are views of it. For how this and other choices differ from Unity's Netcode for GameObjects, see [RelayNet compared with Netcode for GameObjects](Documentation~/comparison-with-netcode-for-gameobjects.md).
+Networked state lives in plain data classes owned by the world, apart from MonoBehaviours, and GameObjects are views of it. For how this and other choices differ from Unity's Netcode for GameObjects, see [RelayNet compared with Netcode for GameObjects](Documentation~/comparison-with-netcode-for-gameobjects.md). Known issues and planned work are in the [roadmap](Documentation~/roadmap.md).
 
 ## Requirements
 
