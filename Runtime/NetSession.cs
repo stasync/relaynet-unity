@@ -9,7 +9,7 @@ namespace Keel.RelayNet
     {
         /// <summary>
         /// Every session alive at the moment, in creation order. Kept for the debug tooling - there is no other way to
-        /// reach a session from the outside, the gameplay code holds its own reference (see 'NetworkService').
+        /// reach a session from the outside, whoever creates a session holds its own reference.
         /// </summary>
         public static IReadOnlyList<NetSession> All => s_all;
         private static readonly List<NetSession> s_all = new();

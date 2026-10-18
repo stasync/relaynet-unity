@@ -1,0 +1,28 @@
+{
+  "name": "com.stasync.relaynet",
+  "version": "0.1.0",
+  "displayName": "RelayNet",
+  "description": "Networking for Unity. Replicates game objects, their state and RPCs between clients in a Relay room (https://github.com/stasync/relay-dotnet), over Keel's reliable UDP (https://github.com/stasync/keel-dotnet). Includes an offline mode that emulates the relay in-process.",
+  "unity": "2022.3",
+  "author": {
+    "name": "stasync",
+    "url": "https://github.com/stasync"
+  },
+  "license": "MIT",
+  "documentationUrl": "https://github.com/stasync/relaynet-unity#readme",
+  "changelogUrl": "https://github.com/stasync/relaynet-unity/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/stasync/relaynet-unity/blob/main/LICENSE.md",
+  "keywords": [
+    "networking",
+    "netcode",
+    "multiplayer",
+    "relay",
+    "udp"
+  ],
+  "dependencies": {
+    "com.unity.modules.animation": "1.0.0",
+    "com.unity.modules.audio": "1.0.0",
+    "com.unity.modules.imgui": "1.0.0",
+    "com.unity.modules.physics": "1.0.0"
+  }
+}
