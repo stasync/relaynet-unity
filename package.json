@@ -24,5 +24,12 @@
     "com.unity.modules.audio": "1.0.0",
     "com.unity.modules.imgui": "1.0.0",
     "com.unity.modules.physics": "1.0.0"
-  }
+  },
+  "samples": [
+    {
+      "displayName": "Capsules",
+      "description": "Each client spawns a capsule and moves it with WASD; the other clients see it move. Plays offline until you set a relay room on the Demo object.",
+      "path": "Samples~/Capsules"
+    }
+  ]
 }

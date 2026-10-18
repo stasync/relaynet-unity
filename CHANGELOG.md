@@ -10,3 +10,4 @@ First release as a Unity package.
 - Renamed from `LROTech.Network`. Namespaces and assemblies are now `Keel.RelayNet`, `Keel.RelayNet.Behaviours`, `Keel.RelayNet.Debug` and `Keel.RelayNet.Editor`, and the menus are under **Tools > RelayNet**. RPC and behaviour ids come from type names, so clients from before the rename can't play with clients after it.
 - `NetWorldPlayer.Platform` is a `DevicePlatform`. The values are the same as before, so the wire format doesn't change.
 - The world view debug overlay draws with `Debug.DrawLine`, so it only shows in the editor.
+- A **Capsules** sample: each client spawns a capsule and moves it with WASD, online through a Relay room or offline.

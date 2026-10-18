@@ -27,6 +27,14 @@ Keel ships inside the package, in `Plugins/Keel`. Don't add Keel's DLLs to the p
 
 The code is in the `Keel.RelayNet` namespace and its sub-namespaces. The package's assemblies are `Keel.RelayNet`, `Keel.RelayNet.Behaviours`, `Keel.RelayNet.Debug` and `Keel.RelayNet.Editor`.
 
+## Sample
+
+The **Capsules** sample is the quickest way to see RelayNet run. Import it from **Package Manager > RelayNet > Samples**, open the `Capsules` scene and press Play. You get a capsule that you move with WASD or the arrow keys.
+
+The scene plays offline by default. To play with other clients, select the `Demo` object and set **Host**, **Port** and **Connection Token** to a Relay room, then start a second client the same way. Each client needs its own token from your backend. Every client sees the others' capsules move.
+
+The sample reads the keyboard through the legacy Input Manager, so **Active Input Handling** must be set to **Input Manager** or **Both**.
+
 ## Connecting
 
 A `NetSession` is one connection to a Relay room. Your backend opens the room and gives the client the room's address and a connection token (see Relay's [HTTP API guide](https://github.com/stasync/relay-dotnet/blob/main/docs/http-api-guide.md)). Pass both to the session:
