@@ -47,6 +47,8 @@ public sealed class Health : NetObjectBehaviour<HealthData>
 }
 ```
 
+The behaviour is optional. The owner of an object can add and remove data through its `State.DataCollection` at any time, with `GetOrCreateData<T>()` and `RemoveData<T>()`, and the change reaches the other clients with the next state update.
+
 GameObjects are views of the state. `NetWorldView` creates, updates and destroys them to match the world. The world doesn't need them to run.
 
 This separation lets RelayNet do things that are hard when the state lives inside components:

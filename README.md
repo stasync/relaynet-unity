@@ -124,6 +124,26 @@ public sealed class Health : NetObjectBehaviour<HealthData>
 
 Besides `NetworkValue<T>`, state data can hold `NetworkString`, `NetworkList<T>`, `NetworkHashSet<T>` and `NetworkDictionary<TKey, TValue>`.
 
+### Data without a behaviour
+
+You don't have to derive from `NetObjectBehaviour<TData>` to network data. That class is a shortcut: when the object spawns, it adds its `TData` to the object on the owner, and exposes it as `Data`. Every object has a data collection, `State.DataCollection`, and the owner can add and remove data there at any time:
+
+```csharp
+var dataCollection = identity.State.DataCollection; // or world.GetObject(uid).DataCollection
+
+// On the owner: add the data, or get it if it's already there, and change it.
+dataCollection.GetOrCreateData<HealthData>().Health.Value = 100f;
+
+// On the owner: remove it.
+dataCollection.RemoveData<HealthData>();
+
+// On any client: read it, if the owner added it.
+if (dataCollection.TryGetData<HealthData>(out var health))
+    Debug.Log(health.Health.Value);
+```
+
+Added and removed data reaches the other clients with the object's next state update. `GetOrCreateData` and `RemoveData` throw if the local client doesn't own the object. Reading works on every client. An object holds at most one instance of each data type.
+
 An RPC handler is a `void Handler(byte[] data)` method marked `[AutoRegisterRpcHandler]`. There are three ways to send one:
 
 - `ToOwnerRpc` sends to the object's owner. On the owner, it runs locally.
