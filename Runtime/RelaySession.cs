@@ -180,8 +180,6 @@ namespace Keel.RelayNet
 
         private void OnConnected()
         {
-            Debug.Log(nameof(OnConnected));
-
             // Send auth request.
             _dataWriter.SeekZero();
             _dataWriter.WriteByte((byte)RelayClientMessageType.OnAuth);
@@ -189,11 +187,8 @@ namespace Keel.RelayNet
             _transport.Send(_dataWriter.AsArraySegment(), UdpProtocol.DeliveryMethod.Reliable);
         }
 
-        private void OnDisconnected()
-        {
-            Debug.Log(nameof(OnDisconnected));
+        private void OnDisconnected() =>
             TryDispose();
-        }
 
         private void OnConnectionRejected(ReliableUdpClient.RejectionReason reason)
         {

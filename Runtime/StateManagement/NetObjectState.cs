@@ -119,9 +119,6 @@ namespace Keel.RelayNet.StateManagement
         {
             var validateOwner = snapshot.StateChangeType < NetObjectStateChangeRequestType.ReliableUpdateOwnerChange;
 
-            if (snapshot.StateChangeType == NetObjectStateChangeRequestType.ReliableUpdateOwnerChange)
-                Debug.LogError($"_______OWNER CHANGED {snapshot.StateChangeType} {Uid} : {PrefabUid}");
-
             if (validateOwner && IsOwnedByLocalPlayer)
             {
                 Debug.LogError($"Unable to restore local object with '{Uid}' : '{PrefabUid}' Change type: '{snapshot.StateChangeType}'. This can be normal in some cases.");
