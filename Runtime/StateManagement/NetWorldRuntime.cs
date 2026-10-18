@@ -671,10 +671,10 @@ namespace Keel.RelayNet.StateManagement
         /// Create another world that could evaluate and re-player this world's history buffer.
         /// </summary>
         /// <returns></returns>
-        public NetWorldEvaluator Replicate()
+        public NetWorldReplica Replicate()
         {
             EnsureValid();
-            return new NetWorldEvaluator(runtime: this);
+            return new NetWorldReplica(runtime: this);
         }
 
         internal override void RemoveObject(NetObjectUid uid)

@@ -77,9 +77,9 @@ Generated code is easy to read and debug, which is why source generators are pre
 
 ## 6. Replays
 
-`NetWorldEvaluator` (`NetWorldRuntime.Replicate()`) replays the runtime world's last 10 seconds in a separate world, with its own view and physics scene. The Debug Window's playback uses it, and so do kill cams. Keep the feature, but replace the class with a clearer, more complete replay API:
+`NetWorldReplica` (`NetWorldRuntime.Replicate()`) replays the runtime world's last 10 seconds in a separate world, with its own view and physics scene. The Debug Window's playback uses it, and so do kill cams. Keep the feature, and grow it into a more complete replay API:
 
-- **Naming and controls.** "Evaluator" doesn't say what it does. The API is index-based (`MoveToSnapshot(int)`, `FindLastSnapshotIndexAndPeekNext`, `GetRemainTimeFromSnapshot`) and stops or disposes itself at the end (`autoDestroy`). Offer a `NetWorldReplay` with time-based controls instead: `Duration`, `Time`, `Seek(time)`, `Play`, `Pause`, `Speed`, looping, and an event when it ends.
+- **Controls.** The API is index-based (`MoveToSnapshot(int)`, `FindLastSnapshotIndexAndPeekNext`, `GetRemainTimeFromSnapshot`) and stops or disposes itself at the end (`autoDestroy`). Add time-based controls: `Duration`, `Time`, `Seek(time)`, `Play`, `Pause`, `Speed`, looping, and an event when it ends.
 - **Smooth playback.** The replay jumps from snapshot to snapshot at 10 Hz, and only behaviours that interpolate on their own look smooth. Interpolate between snapshots in the replay itself.
 - **Recording.** History is always on, always 10 seconds long, and stores a full snapshot per tick, about 100 snapshots alive at a time (see Zero GC allocations). `Replicate()` copies all of it. Make recording optional, with a configurable length, store it compactly (deltas, a ring buffer), and let a replay read the recording without copying.
 - **Saved replays.** Snapshots are already serializable. Add saving a recording to a file and loading it, for match replays and bug reports.

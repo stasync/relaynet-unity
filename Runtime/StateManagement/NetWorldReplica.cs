@@ -4,7 +4,7 @@ using Keel.RelayNet.StateManagement.Snapshots;
 
 namespace Keel.RelayNet.StateManagement
 {
-    public sealed class NetWorldEvaluator : NetWorld
+    public sealed class NetWorldReplica : NetWorld
     {
         public int CurrentSnapshotIndex { get; private set; }
         public bool Paused { get; private set; }
@@ -17,7 +17,7 @@ namespace Keel.RelayNet.StateManagement
         private float _nextSnapshotTime;
         private readonly bool _autoDestroy;
 
-        public NetWorldEvaluator(NetWorldRuntime runtime, bool autoDestroy = true) : base(id: runtime.Id, worldName: $"World {runtime.Id} evaluator", runtime.Id)
+        public NetWorldReplica(NetWorldRuntime runtime, bool autoDestroy = true) : base(id: runtime.Id, worldName: $"World {runtime.Id} replica", runtime.Id)
         {
             InitializeView(NetWorldViewInitMode.SeparatePhysicsSimulation);
 

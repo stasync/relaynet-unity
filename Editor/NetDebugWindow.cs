@@ -276,9 +276,9 @@ namespace Keel.RelayNet.Editor
             }
         }
 
-        private class ReplicaWorldDrawer : WorldDrawer<NetWorldEvaluator>
+        private class ReplicaWorldDrawer : WorldDrawer<NetWorldReplica>
         {
-            public ReplicaWorldDrawer(NetWorldEvaluator replicaWorld) : base(replicaWorld)
+            public ReplicaWorldDrawer(NetWorldReplica replicaWorld) : base(replicaWorld)
             {
             }
 
@@ -323,7 +323,7 @@ namespace Keel.RelayNet.Editor
 
         private MainWorldDrawer _mainWorldDrawer;
         private ReplicaWorldDrawer _currentWorldReplicaDrawer;
-        private NetWorldEvaluator _replica;
+        private NetWorldReplica _replica;
 
         [MenuItem("Tools/RelayNet/Debug Window")]
         private static void Init()
@@ -389,7 +389,7 @@ namespace Keel.RelayNet.Editor
 
                 EditorGUILayout.BeginHorizontal();
                 {
-                    // Replicating an empty history produces an evaluator with no snapshot to stand on.
+                    // Replicating an empty history produces a replica with no snapshot to stand on.
                     EditorGUI.BeginDisabledGroup(_replica != null || mainWorld.HistoryBuffer.Count == 0);
                     if (GUILayout.Button("Playback"))
                         StartPlayback(mainWorld);

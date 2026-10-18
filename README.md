@@ -127,7 +127,7 @@ A world is the shared state of a room: the players, the networked objects and th
 
 A world runs without GameObjects. Its view, `NetWorldView`, turns the state into GameObjects. `OnSceneLoaded()` creates the view in a scene of its own. From then on, the view creates, updates and destroys a GameObject for every object state. Views of remote objects more than 50 meters from the main camera are destroyed while they're out of range, and created again when they come back, while their state keeps updating. `world.View.SetDrawDistance(meters)` changes that distance.
 
-Each world records the last 10 seconds of its state. `Replicate()` creates a `NetWorldEvaluator`, a separate world that replays that history with its own view. The Debug Window's playback uses it, and so can a kill cam. `NetWorld.All` lists every world, live or replayed.
+Each world records the last 10 seconds of its state. `Replicate()` creates a `NetWorldReplica`, a separate world that replays that history with its own view. The Debug Window's playback uses it, and so can a kill cam. `NetWorld.All` lists every world, live or replayed.
 
 Worlds also keep their physics apart. The live world's view uses Unity's default physics scene, like the rest of your game. A replay's view gets a physics scene of its own (`LocalPhysicsMode.Physics3D`), so replayed objects never collide with the live game or show up in its raycasts. Unity doesn't simulate a separate physics scene by itself. If a replay needs physics, step it with `scene.GetPhysicsScene().Simulate(deltaTime)`.
 
