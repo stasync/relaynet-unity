@@ -9,6 +9,7 @@ The comparison covers NGO 1.x (Unity 2021.3 to 6000.2) and 2.x (Unity 6 and late
 | | Netcode for GameObjects | RelayNet |
 |---|---|---|
 | Where networked state lives | In `NetworkVariable` fields of `NetworkBehaviour` components | In plain C# data classes held by the world, apart from GameObjects |
+| World model | The `NetworkManager` and the `NetworkObject`s it has spawned | A world object that holds the players, object states and properties, with a view that maps them to GameObjects |
 | Topology | Client-server, with a host or a dedicated server. 2.x adds distributed authority. | Clients in a Relay room. There's no game server. |
 | Authority | The server, by default | The client that owns the object |
 | Transport and hosting | Unity Transport, with Unity's Relay or Multiplayer Services | Keel's reliable UDP and a Relay server you host yourself |
@@ -69,13 +70,21 @@ This separation lets RelayNet do things that are hard when the state lives insid
 
 There's a cost: you learn two layers, a data class and a behaviour, where NGO has one. In RelayNet, a MonoBehaviour field is never networked by itself. The state has to go through the object's data.
 
+## Worlds
+
+In NGO, a session is the `NetworkManager` and the `NetworkObject`s it has spawned. Networked state exists as part of those spawned GameObjects.
+
+RelayNet puts that state in a world. A world holds the players, every networked object's state and data, and world-wide properties. `NetWorldRuntime` is the live world of a session (`session.MainWorld`): ten times per second it sends the state of the objects this client owns and applies what the others sent. A world has a view, `NetWorldView`, which creates a GameObject for each object state in a scene of its own. The world doesn't depend on that view: it runs before the view exists, and the view may skip the GameObjects of distant remote objects while their state keeps updating.
+
+Because worlds are plain objects, there can be more than one. The runtime world records the last 10 seconds of its state, and `Replicate()` creates a `NetWorldEvaluator`, a second world that replays that history with its own view, next to the live one.
+
 ## Topology and authority
 
 NGO assumes a client-server topology by default. The server owns most objects and decides what spawns and despawns, which suits server-authoritative games, client prediction and rollback. NGO 2.x adds a distributed authority mode. In that mode authority is spread across clients, and one client, the session owner, manages global state. Unity documents distributed authority with its distributed authority service in the Multiplayer Services package.
 
-RelayNet always works like distributed authority. Clients join a room on a [Relay](https://github.com/stasync/relay-dotnet) server, which only forwards their messages, and no machine runs the simulation for everyone. Each object belongs to the client that created it, and only that client changes the object's state. When a client leaves, the objects it created leave with it.
+RelayNet always works like distributed authority. Clients join a room on a [Relay](https://github.com/stasync/relay-dotnet) server, which only forwards their messages, and no machine runs the simulation for everyone. Each object has one owner, at first the client that created it, and only the owner changes the object's state. An object created with `shared: false` belongs to its creator for good: its owner never changes, and it leaves with its creator. A shared object belongs to the room: it stays when its owner leaves, and its ownership can move.
 
-The client with the lowest id is the master. It registers the networked objects placed in the scene, and takes over a scene object when its owner leaves. Every 5 seconds, clients also spread the ownership of objects among themselves, so the work doesn't pile up on one client. A player's tag objects never move, and you can keep other objects in place with a rule derived from `NetObjectOwnershipDistributionRule`.
+The client with the lowest id is the master. It registers the networked objects placed in the scene, which are always shared, and takes over shared objects whose owner leaves. Every 5 seconds, clients also spread the ownership of shared objects among themselves, so the work doesn't pile up on one client. A player's tag objects never move, and you can keep other objects in place with a rule derived from `NetObjectOwnershipDistributionRule`.
 
 Without a central authority, every client is trusted with the objects it owns. If your game needs server-side validation to resist cheating, NGO's client-server mode is the better fit.
 

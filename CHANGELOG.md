@@ -10,6 +10,19 @@
 ### Changed
 
 - State updates no longer carry the empty persistent RPC list. This changes the wire format: clients on 0.1.0 can't play with clients built from this version.
+- The `isSceneObject` parameter of `CreateObject` and `CreateObjectAsync` is now `shared`, and `IsSceneObject` is now `IsShared` on `NetObjectState`, `NetObjectIdentity` and `NetObjectStateSnapshot`. The meaning is unchanged: a shared object stays when its owner leaves and its ownership can move; an object that isn't shared belongs to its creator. The wire format is unchanged too.
+- **Tools > RelayNet > Fix scene objects** assigns ids deterministically. It keeps valid, unique ids, and gives every new or duplicated object the lowest free id in a stable order, instead of a random one. It now also fixes invalid ids, includes inactive objects, and marks the changed scenes dirty.
+- `[FormerlySerializedAs]` attributes were removed from `NetObjectLifetime`, `NetObjectTransformSync` and `NetObjectAnimatorSync`. Assets still saved with the old `m_` field names lose those values: open and save them, or reserialize them, before you upgrade.
+
+### Fixed
+
+- Automatic ownership distribution no longer moves objects that aren't shared. Before, the client that won such an object threw an exception from the world update.
+- A prefab with a `NetObjectSceneIdentity` that was created from code could bake the prefab id `32` (the hash of an empty GUID) before it was saved. Unsaved objects are now left alone.
+
+### Samples
+
+- Capsules: the capsule's color is networked through a `NetObjectStateData` class, `CapsuleData`. `CapsuleMover` became `Capsule`, a `NetObjectBehaviour<CapsuleData>`.
+- Capsules: a bar placed in the scene with a `NetObjectSceneIdentity` spins on its owner, the master at first.
 
 ## 0.1.0 - 2026-10-18
 

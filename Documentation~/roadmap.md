@@ -73,7 +73,6 @@ Generated code is easy to read and debug, which is why source generators are pre
 - **A spurious error on teardown.** `NetWorld.Dispose` logs "View already destroyed" whenever the world has no view. That happens if the session never got as far as creating one, or if its scene was unloaded first.
 - **Errors for normal situations.** `NetObjectState.ChangeObjectRemotely` and `NetObjectIdentity` log errors for cases their own messages call normal. `NetObjectIdentity` has a TODO to handle data that arrives during an ownership change.
 - **Clock estimate.** The world time estimate doesn't account for the relay round trip (TODO in `NetWorldRuntime`).
-- **Naming.** The `isSceneObject` parameter of `CreateObject` really means "keep the object when its owner leaves" (TODO in `NetWorldRuntime`).
 - **Animator sync is incomplete.** Per-layer sync flags and remote layer-weight smoothing in `NetObjectAnimatorSync` are commented out.
 
 ## 6. Debug tools
