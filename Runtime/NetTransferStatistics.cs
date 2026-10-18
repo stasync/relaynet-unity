@@ -1,4 +1,4 @@
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     /// <summary>
     /// Raw traffic counters of an <see cref="IRelayTransport"/>, accumulated since it was created.

@@ -2,10 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using LROTech.Network.StateManagement.Snapshots;
-using LROTech.Network.StateManagement.Values.Serialization;
+using Keel.RelayNet.StateManagement.Snapshots;
+using Keel.RelayNet.StateManagement.Values.Serialization;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public sealed class NetProperties
     {

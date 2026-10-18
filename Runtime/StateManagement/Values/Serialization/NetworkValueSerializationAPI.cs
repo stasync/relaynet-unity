@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace LROTech.Network.StateManagement.Values.Serialization
+namespace Keel.RelayNet.StateManagement.Values.Serialization
 {
     internal static class NetworkValueSerializationAPI<T> where T : unmanaged
     {

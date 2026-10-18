@@ -1,6 +1,6 @@
 {
-    "name": "LROTech.NetworkBehaviours",
-    "rootNamespace": "",
+    "name": "Keel.RelayNet.Behaviours",
+    "rootNamespace": "Keel.RelayNet.Behaviours",
     "references": [
         "GUID:afb40243426854883806aee4459d32e9"
     ],

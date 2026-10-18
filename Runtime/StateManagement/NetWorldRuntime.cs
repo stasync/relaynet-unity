@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Keel.Networking;
-using LROTech.Network.GameObjects;
-using LROTech.Network.StateManagement.Snapshots;
+using Keel.RelayNet.GameObjects;
+using Keel.RelayNet.StateManagement.Snapshots;
 using UnityEngine.SceneManagement;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public sealed class NetWorldRuntime : NetWorld
     {

@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using LROTech.Network.GameObjects;
+using Keel.RelayNet.GameObjects;
 using UnityEditor;
 using UnityEngine;
 
-namespace LROTech.Network.Editor
+namespace Keel.RelayNet.Editor
 {
     /// <summary>
     /// Keeps the default <see cref="NetPrefabDatabase"/> in sync with the project: whenever a

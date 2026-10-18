@@ -4,7 +4,7 @@ using Keel.Networking.Udp;
 using Keel.Networking.Udp.LowLevel;
 using Keel.Networking.Udp.LowLevel.DataTransferLayers;
 
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     /// <summary>
     /// The real transport - a thin wrapper over the <see cref="ReliableUdpClient"/>.

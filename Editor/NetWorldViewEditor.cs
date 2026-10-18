@@ -1,7 +1,7 @@
-﻿using LROTech.Network.StateManagement;
+﻿using Keel.RelayNet.StateManagement;
 using UnityEditor;
 
-namespace LROTech.Network.Debug.Editor
+namespace Keel.RelayNet.Debug.Editor
 {
     [CustomEditor(typeof(NetWorldView))]
     internal sealed class NetWorldViewEditor : UnityEditor.Editor

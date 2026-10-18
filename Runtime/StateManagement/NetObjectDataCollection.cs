@@ -3,9 +3,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using LROTech.Network.StateManagement.Snapshots;
+using Keel.RelayNet.StateManagement.Snapshots;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public sealed class NetObjectDataCollection : IReadOnlyCollection<NetObjectStateData>
     {

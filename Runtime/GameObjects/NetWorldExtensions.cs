@@ -1,9 +1,9 @@
 using System;
 using System.Runtime.CompilerServices;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.StateManagement;
 using UnityEngine;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     public static class NetWorldExtensions
     {

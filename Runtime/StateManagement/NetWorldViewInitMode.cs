@@ -1,4 +1,4 @@
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public enum NetWorldViewInitMode
     {

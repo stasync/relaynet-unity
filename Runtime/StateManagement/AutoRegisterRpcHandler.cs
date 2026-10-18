@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine.Scripting;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     [RequireAttributeUsages]
     [AttributeUsage(validOn: AttributeTargets.Method)]

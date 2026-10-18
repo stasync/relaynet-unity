@@ -1,3 +1,3 @@
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo(assemblyName: "LROTech.Network.Editor")]
+[assembly: InternalsVisibleTo(assemblyName: "Keel.RelayNet.Editor")]

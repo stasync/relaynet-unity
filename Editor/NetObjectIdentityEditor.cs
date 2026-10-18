@@ -1,8 +1,8 @@
-using LROTech.Network.Debug.Editor;
-using LROTech.Network.GameObjects;
+using Keel.RelayNet.Debug.Editor;
+using Keel.RelayNet.GameObjects;
 using UnityEditor;
 
-namespace LROTech.Network.Editor
+namespace Keel.RelayNet.Editor
 {
     [CustomEditor(typeof(NetObjectIdentity), editorForChildClasses: true)]
     internal sealed class NetObjectIdentityEditor : UnityEditor.Editor

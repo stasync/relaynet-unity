@@ -1,6 +1,6 @@
 using Keel.Networking;
 
-namespace LROTech.Network.StateManagement.Values.Serialization
+namespace Keel.RelayNet.StateManagement.Values.Serialization
 {
     internal sealed class MemCpySerializer<T> : VariableSerializer<T> where T : unmanaged
     {

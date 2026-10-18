@@ -1,7 +1,7 @@
 using System;
 using Keel.Networking;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public sealed class NetObjectViewStateData : NetObjectStateData
     {

@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Keel.Networking;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.StateManagement;
 using UnityEngine;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     [DisallowMultipleComponent]
     public sealed class NetObjectIdentity : MonoBehaviour

@@ -2,7 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Keel.Networking;
 
-namespace LROTech.Network.StateManagement.Values
+namespace Keel.RelayNet.StateManagement.Values
 {
     public abstract class NetworkValueManaged<TValue, TExposed> : NetworkValueBase where TValue : TExposed
     {

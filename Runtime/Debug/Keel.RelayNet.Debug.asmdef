@@ -1,6 +1,6 @@
 {
-    "name": "LROTech.Network.Runtime",
-    "rootNamespace": "",
+    "name": "Keel.RelayNet.Debug",
+    "rootNamespace": "Keel.RelayNet.Debug",
     "references": [
         "GUID:afb40243426854883806aee4459d32e9"
     ],

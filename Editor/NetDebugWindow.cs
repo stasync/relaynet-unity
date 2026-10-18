@@ -1,14 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using LROTech.Network.Debug;
-using LROTech.Network.Debug.Editor;
-using LROTech.Network.GameObjects;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.Debug;
+using Keel.RelayNet.Debug.Editor;
+using Keel.RelayNet.GameObjects;
+using Keel.RelayNet.StateManagement;
 using UnityEditor;
 using UnityEngine;
 
-namespace LROTech.Network.Editor
+namespace Keel.RelayNet.Editor
 {
     internal sealed class NetDebugWindow : EditorWindow
     {
@@ -325,7 +325,7 @@ namespace LROTech.Network.Editor
         private ReplicaWorldDrawer _currentWorldReplicaDrawer;
         private NetWorldEvaluator _replica;
 
-        [MenuItem("System/Network/Debug Window")]
+        [MenuItem("Tools/RelayNet/Debug Window")]
         private static void Init()
         {
             var window = GetWindow<NetDebugWindow>("Network Debug Info");

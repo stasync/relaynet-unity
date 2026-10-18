@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using Keel.Networking;
-using LROTech.Network.GameObjects;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.GameObjects;
+using Keel.RelayNet.StateManagement;
 using UnityEditor;
 using UnityEngine;
 
-namespace LROTech.Network.Debug.Editor
+namespace Keel.RelayNet.Debug.Editor
 {
     internal sealed class NetObjectStateDrawer
     {

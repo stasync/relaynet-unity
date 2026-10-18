@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Keel.Utils.Math;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.StateManagement;
 using UnityEngine;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     [DisallowMultipleComponent]
     public sealed class NetObjectSceneIdentity : NetObjectBehaviour<NetObjectSceneIdentity.BehaviourData>
@@ -41,7 +41,7 @@ namespace LROTech.Network.GameObjects
             }
         }
 
-        [UnityEditor.MenuItem("System/Network/Validate scene objects")]
+        [UnityEditor.MenuItem("Tools/RelayNet/Validate scene objects")]
         private static void ValidateSceneObjects()
         {
             if (UnityEditor.EditorApplication.isPlaying)
@@ -71,7 +71,7 @@ namespace LROTech.Network.GameObjects
             Debug.LogWarning("Validation finished");
         }
 
-        [UnityEditor.MenuItem("System/Network/Fix scene objects")]
+        [UnityEditor.MenuItem("Tools/RelayNet/Fix scene objects")]
         private static void FixSceneObjects()
         {
             if (UnityEditor.EditorApplication.isPlaying)

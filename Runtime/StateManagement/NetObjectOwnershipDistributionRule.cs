@@ -1,6 +1,6 @@
 using UnityEngine.Scripting;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     [RequireDerived]
     public abstract class NetObjectOwnershipDistributionRule

@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using Keel.Networking;
-using LROTech.Network.GameObjects;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.GameObjects;
+using Keel.RelayNet.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace LROTech.NetworkBehaviours
+namespace Keel.RelayNet.Behaviours
 {
     [DisallowMultipleComponent]
     public sealed class NetObjectTransformSync : NetObjectBehaviour<NetObjectTransformData>

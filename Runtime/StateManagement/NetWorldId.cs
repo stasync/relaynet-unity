@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public readonly struct NetWorldId : IComparable<NetWorldId>, IEquatable<NetWorldId>
     {

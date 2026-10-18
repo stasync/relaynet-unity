@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 
-namespace LROTech.Network.Debug.Editor
+namespace Keel.RelayNet.Debug.Editor
 {
     /// <summary>
     /// Toggles a scripting define symbol for the Standalone, Android and iOS build targets at once.

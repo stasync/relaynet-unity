@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using Keel.Networking;
-using LROTech.Network.StateManagement.Values.Serialization;
+using Keel.RelayNet.StateManagement.Values.Serialization;
 
-namespace LROTech.Network.StateManagement.Values
+namespace Keel.RelayNet.StateManagement.Values
 {
     public sealed class NetworkValue<TValue> : NetworkValueBase where TValue : unmanaged
     {

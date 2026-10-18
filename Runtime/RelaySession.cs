@@ -7,7 +7,7 @@ using Keel.Networking.Udp;
 using Keel.Networking.Udp.LowLevel;
 using UnityEngine;
 
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     internal sealed class RelaySession
     {

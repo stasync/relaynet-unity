@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.StateManagement;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     public abstract class NetObjectBehaviour<TObjectData> : NetObjectBehaviourBase where TObjectData : NetObjectStateData, new()
     {

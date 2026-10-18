@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using Keel.Networking;
 using UnityEngine;
 
-namespace LROTech.Network.StateManagement.Values
+namespace Keel.RelayNet.StateManagement.Values
 {
     public abstract class NetworkValueBase
     {

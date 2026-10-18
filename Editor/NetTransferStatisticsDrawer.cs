@@ -1,7 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace LROTech.Network.Editor
+namespace Keel.RelayNet.Editor
 {
     /// <summary>
     /// Draws the traffic of a <see cref="NetSession"/>. The transport only counts totals, so the rates are derived here

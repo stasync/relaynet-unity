@@ -2,7 +2,7 @@
 using Keel.Networking;
 using UnityEngine;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     [RequireComponent(typeof(NetObjectIdentity))]
     public abstract class NetObjectBehaviourBase : MonoBehaviour
@@ -71,7 +71,7 @@ namespace LROTech.Network.GameObjects
 
         /// <summary>
         /// Used instead of start, but will be only called when the object was created for first time.
-        /// See <see cref="LROTech.Network.StateManagement.NetObjectViewStateData.ViewInitialized"/> flag.
+        /// See <see cref="Keel.RelayNet.StateManagement.NetObjectViewStateData.ViewInitialized"/> flag.
         /// </summary>
         protected virtual void OnPostInitializeOnce()
         {

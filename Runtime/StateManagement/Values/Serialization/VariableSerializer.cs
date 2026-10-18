@@ -1,7 +1,7 @@
 using Keel.Networking;
 using UnityEngine.Scripting;
 
-namespace LROTech.Network.StateManagement.Values.Serialization
+namespace Keel.RelayNet.StateManagement.Values.Serialization
 {
     [RequireDerived]
     internal abstract class VariableSerializer

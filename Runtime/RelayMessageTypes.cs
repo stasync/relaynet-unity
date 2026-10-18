@@ -1,4 +1,4 @@
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     /// <summary>
     /// Wire codes of the messages sent by a client to the relay server.

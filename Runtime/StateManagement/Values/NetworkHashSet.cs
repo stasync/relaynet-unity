@@ -3,9 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Keel.Networking;
-using LROTech.Network.StateManagement.Values.Serialization;
+using Keel.RelayNet.StateManagement.Values.Serialization;
 
-namespace LROTech.Network.StateManagement.Values
+namespace Keel.RelayNet.StateManagement.Values
 {
     public class NetworkHashSet<TValue> : NetworkValueManaged<HashSet<TValue>, IReadOnlyCollection<TValue>>, IReadOnlyCollection<TValue>
         where TValue : unmanaged

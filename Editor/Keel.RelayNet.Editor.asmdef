@@ -1,6 +1,6 @@
 {
-    "name": "LROTech.Network.Editor",
-    "rootNamespace": "",
+    "name": "Keel.RelayNet.Editor",
+    "rootNamespace": "Keel.RelayNet.Editor",
     "references": [
         "GUID:afb40243426854883806aee4459d32e9",
         "GUID:4d870085a07f143be99024f4e26331f5"

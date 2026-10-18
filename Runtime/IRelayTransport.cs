@@ -3,7 +3,7 @@ using System.Net;
 using Keel.Networking.Udp;
 using Keel.Networking.Udp.LowLevel;
 
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     /// <summary>
     /// A transport the <see cref="RelaySession"/> exchanges raw relay messages over.

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     [Serializable]
     public struct NetPrefabObjectWeakRef : IComparable<NetPrefabObjectWeakRef>, IEquatable<NetPrefabObjectWeakRef>

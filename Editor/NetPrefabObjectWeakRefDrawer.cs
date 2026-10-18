@@ -1,8 +1,8 @@
-using LROTech.Network.GameObjects;
+using Keel.RelayNet.GameObjects;
 using UnityEditor;
 using UnityEngine;
 
-namespace LROTech.Network.Editor
+namespace Keel.RelayNet.Editor
 {
     /// <summary>
     /// Draws a <see cref="NetPrefabObjectWeakRef"/> as a GameObject picker instead of a raw number.

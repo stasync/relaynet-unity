@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace LROTech.Network.StateManagement.Snapshots
+namespace Keel.RelayNet.StateManagement.Snapshots
 {
     public readonly struct NetWorldPlayersCollectionsSnapshot
     {

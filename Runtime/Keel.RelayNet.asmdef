@@ -1,6 +1,6 @@
 {
-    "name": "LROTech.Network",
-    "rootNamespace": "",
+    "name": "Keel.RelayNet",
+    "rootNamespace": "Keel.RelayNet",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

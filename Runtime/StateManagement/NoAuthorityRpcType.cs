@@ -1,4 +1,4 @@
-﻿namespace LROTech.Network.StateManagement
+﻿namespace Keel.RelayNet.StateManagement
 {
     /// <summary>
     /// Type of PRC that is being sent without authority.

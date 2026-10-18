@@ -1,4 +1,4 @@
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     /// <summary>
     /// The platform a player runs on, as reported by its own client.

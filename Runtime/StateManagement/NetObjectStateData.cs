@@ -3,11 +3,11 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using LROTech.Network.StateManagement.Values;
+using Keel.RelayNet.StateManagement.Values;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     [RequireDerived]
     public abstract class NetObjectStateData

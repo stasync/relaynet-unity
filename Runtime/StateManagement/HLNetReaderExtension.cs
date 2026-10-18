@@ -1,9 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using Keel.Networking;
-using LROTech.Network.GameObjects;
+using Keel.RelayNet.GameObjects;
 using UnityEngine;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public static class HLNetReaderExtension
     {

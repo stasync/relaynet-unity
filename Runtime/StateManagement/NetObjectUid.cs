@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public readonly struct NetObjectUid : IComparable<NetObjectUid>, IEquatable<NetObjectUid>
     {

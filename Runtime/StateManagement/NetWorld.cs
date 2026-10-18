@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using LROTech.Network.StateManagement.Snapshots;
+using Keel.RelayNet.StateManagement.Snapshots;
 using UnityEngine;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public abstract class NetWorld
     {

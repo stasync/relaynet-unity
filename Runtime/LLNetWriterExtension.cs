@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using Keel.Networking;
 
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     public static class LLNetWriterExtension
     {

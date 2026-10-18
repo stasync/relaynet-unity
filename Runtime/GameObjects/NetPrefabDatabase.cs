@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     /// <summary>
     /// A ScriptableObject holding a list of network prefabs. This is the serialized "source of

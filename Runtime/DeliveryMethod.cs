@@ -1,4 +1,4 @@
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     public enum DeliveryMethod
     {

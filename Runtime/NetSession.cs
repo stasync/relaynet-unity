@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.StateManagement;
 
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     public sealed class NetSession
     {

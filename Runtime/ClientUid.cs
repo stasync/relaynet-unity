@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     public readonly struct ClientUid : IComparable<ClientUid>, IEquatable<ClientUid>
     {

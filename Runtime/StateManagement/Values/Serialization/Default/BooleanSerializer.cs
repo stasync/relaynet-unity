@@ -1,6 +1,6 @@
 using Keel.Networking;
 
-namespace LROTech.Network.StateManagement.Values.Serialization.Default
+namespace Keel.RelayNet.StateManagement.Values.Serialization.Default
 {
     internal sealed class BooleanSerializer : VariableSerializer<bool>
     {

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.StateManagement;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     public sealed class NetWorldObjectViewPromise : IDisposable
     {

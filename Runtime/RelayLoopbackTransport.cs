@@ -5,7 +5,7 @@ using Keel.Networking;
 using Keel.Networking.Udp;
 using Keel.Networking.Udp.LowLevel;
 
-namespace LROTech.Network
+namespace Keel.RelayNet
 {
     /// <summary>
     /// The offline transport - a relay server running in-process, hosting a room with a single (local) connection.

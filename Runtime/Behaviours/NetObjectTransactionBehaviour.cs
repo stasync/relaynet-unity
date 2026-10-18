@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using Keel.Networking;
-using LROTech.Network;
-using LROTech.Network.GameObjects;
-using LROTech.Network.StateManagement;
-using LROTech.Network.StateManagement.Values;
+using Keel.RelayNet;
+using Keel.RelayNet.GameObjects;
+using Keel.RelayNet.StateManagement;
+using Keel.RelayNet.StateManagement.Values;
 using UnityEngine;
 
-namespace LROTech.NetworkBehaviours
+namespace Keel.RelayNet.Behaviours
 {
     [DisallowMultipleComponent]
     public sealed class NetObjectTransactionBehaviour : NetObjectBehaviour<NetObjectTransactionBehaviour.StateData>

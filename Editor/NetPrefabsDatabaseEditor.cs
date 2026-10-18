@@ -1,9 +1,9 @@
-using LROTech.Network.GameObjects;
+using Keel.RelayNet.GameObjects;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-namespace LROTech.Network.Editor
+namespace Keel.RelayNet.Editor
 {
     /// <summary>
     /// Custom inspector for <see cref="NetPrefabDatabase"/>: a simple reorderable list of prefab

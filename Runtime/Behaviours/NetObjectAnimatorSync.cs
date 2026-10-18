@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using Keel.Networking;
-using LROTech.Network;
-using LROTech.Network.GameObjects;
-using LROTech.Network.StateManagement;
+using Keel.RelayNet;
+using Keel.RelayNet.GameObjects;
+using Keel.RelayNet.StateManagement;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace LROTech.NetworkBehaviours
+namespace Keel.RelayNet.Behaviours
 {
     public interface IAnimatorValueProxy
     {

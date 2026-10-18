@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Keel.Networking;
 
-namespace LROTech.Network.StateManagement.Values
+namespace Keel.RelayNet.StateManagement.Values
 {
     public sealed class NetworkString : NetworkValueManaged<string, string>
     {

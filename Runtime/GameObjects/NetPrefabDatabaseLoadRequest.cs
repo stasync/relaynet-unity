@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace LROTech.Network.GameObjects
+namespace Keel.RelayNet.GameObjects
 {
     /// <summary>
     /// A hook that allows initiate the loading of the <see cref="NetPrefabDatabase"/> in the background.

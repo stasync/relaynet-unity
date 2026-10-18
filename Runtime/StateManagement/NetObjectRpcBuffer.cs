@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using LROTech.Network.StateManagement.Snapshots;
+using Keel.RelayNet.StateManagement.Snapshots;
 
-namespace LROTech.Network.StateManagement
+namespace Keel.RelayNet.StateManagement
 {
     public sealed class NetObjectRpcBuffer
     {

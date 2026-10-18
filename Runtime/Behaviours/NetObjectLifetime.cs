@@ -1,11 +1,11 @@
 ﻿using System;
-using LROTech.Network.GameObjects;
-using LROTech.Network.StateManagement;
-using LROTech.Network.StateManagement.Values;
+using Keel.RelayNet.GameObjects;
+using Keel.RelayNet.StateManagement;
+using Keel.RelayNet.StateManagement.Values;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace LROTech.NetworkBehaviours
+namespace Keel.RelayNet.Behaviours
 {
     public sealed class NetObjectLifetimeData : NetObjectStateData
     {

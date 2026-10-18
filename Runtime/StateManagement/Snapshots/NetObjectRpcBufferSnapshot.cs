@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Keel.Networking;
 
-namespace LROTech.Network.StateManagement.Snapshots
+namespace Keel.RelayNet.StateManagement.Snapshots
 {
     public readonly struct NetObjectRpcBufferSnapshot
     {

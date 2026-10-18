@@ -1,7 +1,7 @@
-using LROTech.Network.StateManagement;
+using Keel.RelayNet.StateManagement;
 using UnityEngine;
 
-namespace LROTech.Network.Debug
+namespace Keel.RelayNet.Debug
 {
     [DisallowMultipleComponent]
     internal sealed class NetWorldViewDebug : MonoBehaviour
