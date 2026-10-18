@@ -1,0 +1,28 @@
+# Tags every new package version: on a push to main, creates 'v<version>' from package.json unless that tag exists.
+# To release, bump "version" in package.json (and add a CHANGELOG.md section), then push to main.
+name: Tag version
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag the package.json version
+        run: |
+          tag="v$(jq -r .version package.json)"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "$tag already exists, nothing to tag."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "RelayNet ${tag#v}"
+          git push origin "$tag"
