@@ -39,7 +39,7 @@ namespace Keel.RelayNet.Samples
 
             world.OnSceneLoaded();
             var position = new Vector3(Random.Range(-4f, 4f), 1f, Random.Range(-4f, 4f));
-            world.CreateObject(_capsule, isSceneObject: false, position, Quaternion.identity);
+            world.CreateObject(_capsule, shared: false, position, Quaternion.identity);
             _spawned = true;
         }
 
