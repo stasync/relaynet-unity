@@ -5,7 +5,6 @@ using Keel.RelayNet;
 using Keel.RelayNet.GameObjects;
 using Keel.RelayNet.StateManagement;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Keel.RelayNet.Behaviours
 {
@@ -125,7 +124,7 @@ namespace Keel.RelayNet.Behaviours
 
         [SerializeField, Range(0f, 1f)] private float m_CrossFadeDuration = 0.1f;
 
-        [FormerlySerializedAs("m_RemoteLayerWeightChnageSpeed")] [SerializeField, Range(0f, 10f)]
+        [SerializeField, Range(0f, 10f)]
         private float m_RemoteLayerWeightChangeSpeed = 5f;
 
         private readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new();

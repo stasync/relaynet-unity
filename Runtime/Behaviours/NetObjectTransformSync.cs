@@ -3,26 +3,25 @@ using Keel.Networking;
 using Keel.RelayNet.GameObjects;
 using Keel.RelayNet.StateManagement;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Keel.RelayNet.Behaviours
 {
     [DisallowMultipleComponent]
     public sealed class NetObjectTransformSync : NetObjectBehaviour<NetObjectTransformData>
     {
-        [FormerlySerializedAs("m_InterpolateMovement")] [SerializeField, Range(0f, 1f)]
+        [SerializeField, Range(0f, 1f)]
         private float _interpolateMovement = 1f;
 
-        [FormerlySerializedAs("m_InterpolateRotation")] [SerializeField, Range(0f, 1f)]
+        [SerializeField, Range(0f, 1f)]
         private float _interpolateRotation = 1f;
 
-        [FormerlySerializedAs("m_Prediction")] [SerializeField]
+        [SerializeField]
         private bool _prediction = true;
 
-        [FormerlySerializedAs("m_PredictionMultiplier")] [FormerlySerializedAs("m_PredictionMultipler")] [SerializeField, Range(0.1f, 2f)]
+        [SerializeField, Range(0.1f, 2f)]
         private float _predictionMultiplier = 1f;
 
-        [FormerlySerializedAs("m_NestedTransforms")] [SerializeField]
+        [SerializeField]
         private List<Transform> _nestedTransforms = new();
 
         private Vector3 _lastFramePosition;

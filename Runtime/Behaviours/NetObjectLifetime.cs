@@ -3,7 +3,6 @@ using Keel.RelayNet.GameObjects;
 using Keel.RelayNet.StateManagement;
 using Keel.RelayNet.StateManagement.Values;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Keel.RelayNet.Behaviours
 {
@@ -21,13 +20,10 @@ namespace Keel.RelayNet.Behaviours
         public float NormalizedLifetime => Data.NormalizedLifetime;
         public float CurrentLifetime => Data.CurrentLifetime.Value;
 
-        [FormerlySerializedAs("m_UpdateTime")] 
         [SerializeField] private bool _updateTime = true;
 
-        [FormerlySerializedAs("m_Lifetime")] 
         [SerializeField] private float _lifetime = 60f;
 
-        [FormerlySerializedAs("m_AutoDestroy")] 
         [SerializeField] private bool _autoDestroy;
 
         public void SetLifetimeWithAuthority(float lifetime)
