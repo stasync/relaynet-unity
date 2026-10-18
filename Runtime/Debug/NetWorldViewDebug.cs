@@ -1,5 +1,4 @@
 using LROTech.Network.StateManagement;
-using LROTech.RuntimeDebug;
 using UnityEngine;
 
 namespace LROTech.Network.Debug
@@ -70,8 +69,8 @@ namespace LROTech.Network.Debug
                             if (sizeDistanceFactor < 1)
                                 sizeDistanceFactor = 1f;
 
-                            Draw.Quad(data.Position.Value, color, size: 0.02f * sizeDistanceFactor, depthTest: false);
-                            Draw.Circle(data.Position.Value, radius: 0.5f, normal: Vector3.up, color, depthTest: false);
+                            DrawQuad(data.Position.Value, color, size: 0.02f * sizeDistanceFactor);
+                            DrawCircle(data.Position.Value, radius: 0.5f, normal: Vector3.up, color);
                         }
 
                         // Transformation.
@@ -80,12 +79,52 @@ namespace LROTech.Network.Debug
                             var right = data.Rotation.Value * Vector3.right;
                             var up = data.Rotation.Value * Vector3.up;
 
-                            Draw.Ray(data.Position.Value, direction: forward, color: Color.blue);
-                            Draw.Ray(data.Position.Value, direction: right, color: Color.red);
-                            Draw.Ray(data.Position.Value, direction: up, color: Color.green);
+                            UnityEngine.Debug.DrawRay(data.Position.Value, forward, Color.blue, duration: 0f, depthTest: false);
+                            UnityEngine.Debug.DrawRay(data.Position.Value, right, Color.red, duration: 0f, depthTest: false);
+                            UnityEngine.Debug.DrawRay(data.Position.Value, up, Color.green, duration: 0f, depthTest: false);
                         }
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// A camera-facing square outline. 'Debug.DrawLine' only shows in the editor (Scene view, and Game view with gizmos on).
+        /// </summary>
+        private static void DrawQuad(Vector3 position, Color color, float size)
+        {
+            var cameraTransform = Camera.main!.transform;
+            var right = cameraTransform.right * size;
+            var up = cameraTransform.up * size;
+
+            var p0 = position + right + up;
+            var p1 = position + right - up;
+            var p2 = position - right - up;
+            var p3 = position - right + up;
+
+            UnityEngine.Debug.DrawLine(p0, p1, color, duration: 0f, depthTest: false);
+            UnityEngine.Debug.DrawLine(p1, p2, color, duration: 0f, depthTest: false);
+            UnityEngine.Debug.DrawLine(p2, p3, color, duration: 0f, depthTest: false);
+            UnityEngine.Debug.DrawLine(p3, p0, color, duration: 0f, depthTest: false);
+        }
+
+        private static void DrawCircle(Vector3 position, float radius, Vector3 normal, Color color)
+        {
+            var from = Vector3.Cross(normal, Vector3.up);
+            if (from.sqrMagnitude < 0.001f)
+                from = Vector3.Cross(normal, Vector3.right);
+
+            const int count = 12;
+            var rotation = Quaternion.AngleAxis(360f / (count - 1), normal);
+            var vector = from.normalized * radius;
+            var previous = position + vector;
+
+            for (var i = 1; i < count; i++)
+            {
+                vector = rotation * vector;
+                var current = position + vector;
+                UnityEngine.Debug.DrawLine(previous, current, color, duration: 0f, depthTest: false);
+                previous = current;
             }
         }
 

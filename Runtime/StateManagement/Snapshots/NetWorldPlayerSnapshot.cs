@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Core;
 using Keel.Networking;
 
 namespace LROTech.Network.StateManagement.Snapshots
@@ -9,7 +8,7 @@ namespace LROTech.Network.StateManagement.Snapshots
         public readonly ClientUid Uid;
         public readonly string Name;
         public readonly bool IsInGameScene;
-        public readonly UserDevice.Platform Platform;
+        public readonly DevicePlatform Platform;
         public readonly int RTTMs;
         public readonly IReadOnlyCollection<NetObjectUid> TagObjects;
         public readonly NetObjectUid MainTagObject;
@@ -34,7 +33,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             Uid = reader.ReadClientUid();
             Name = reader.ReadString();
             IsInGameScene = reader.ReadBoolean();
-            Platform = (UserDevice.Platform)reader.ReadInt32();
+            Platform = (DevicePlatform)reader.ReadInt32();
             RTTMs = reader.ReadInt32();
 
             var targetObjectCount = reader.ReadPackedUInt32();
@@ -71,7 +70,7 @@ namespace LROTech.Network.StateManagement.Snapshots
             result += ClientUid.SIZE; // Uid
             result += Name.Length;
             result += sizeof(bool); // IsInGameScene
-            result += sizeof(UserDevice.Platform); // Platform
+            result += sizeof(DevicePlatform); // Platform
             result += sizeof(int); // RTT
 
             result += NetObjectUid.SIZE * TagObjects.Count;

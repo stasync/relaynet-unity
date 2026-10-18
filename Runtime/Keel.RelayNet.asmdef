@@ -1,9 +1,7 @@
 {
     "name": "LROTech.Network",
     "rootNamespace": "",
-    "references": [
-        "GUID:30fe14bf48ca6429f89ec80c366d94a0"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

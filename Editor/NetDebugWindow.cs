@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using Core;
 using LROTech.Network.Debug;
 using LROTech.Network.Debug.Editor;
 using LROTech.Network.GameObjects;
@@ -440,7 +439,7 @@ namespace LROTech.Network.Editor
             _replica = mainWorld.Replicate();
             _currentWorldReplicaDrawer = new ReplicaWorldDrawer(_replica);
 
-            Bootstrap.UnityUpdate += OnReplicaUpdate;
+            EditorApplication.update += OnReplicaUpdate;
         }
 
         /// <summary>
@@ -452,7 +451,7 @@ namespace LROTech.Network.Editor
             if (_replica == null)
                 return;
 
-            Bootstrap.UnityUpdate -= OnReplicaUpdate;
+            EditorApplication.update -= OnReplicaUpdate;
 
             if (_replica.IsValid)
                 _replica.Dispose();
@@ -464,6 +463,10 @@ namespace LROTech.Network.Editor
         private void OnReplicaUpdate()
         {
             if (_replica == null)
+                return;
+
+            // The editor loop also ticks in edit mode and while paused - the replica only advances with the game.
+            if (!EditorApplication.isPlaying || EditorApplication.isPaused)
                 return;
 
             // The replica disposes itself once it reaches the end of the history it was taken from.

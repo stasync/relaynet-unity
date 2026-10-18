@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Core;
 using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement
@@ -42,7 +41,7 @@ namespace LROTech.Network.StateManagement
 
         private bool _isReady;
 
-        public UserDevice.Platform Platform
+        public DevicePlatform Platform
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _platform;
@@ -55,7 +54,7 @@ namespace LROTech.Network.StateManagement
             }
         }
 
-        private UserDevice.Platform _platform = UserDevice.Platform.Unknown;
+        private DevicePlatform _platform = DevicePlatform.Unknown;
 
         public int RttMs
         {
@@ -120,7 +119,7 @@ namespace LROTech.Network.StateManagement
             Uid = ClientUid.Invalid;
             _name = null;
             _isReady = false;
-            _platform = UserDevice.Platform.Unknown;
+            _platform = DevicePlatform.Unknown;
             _rttMs = 0;
 
             _tagObjectUidCollection.Clear();
