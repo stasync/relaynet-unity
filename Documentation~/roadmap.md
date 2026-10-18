@@ -75,14 +75,25 @@ Generated code is easy to read and debug, which is why source generators are pre
 - **Clock estimate.** The world time estimate doesn't account for the relay round trip (TODO in `NetWorldRuntime`).
 - **Animator sync is incomplete.** Per-layer sync flags and remote layer-weight smoothing in `NetObjectAnimatorSync` are commented out.
 
-## 6. Debug tools
+## 6. Replays
+
+`NetWorldEvaluator` (`NetWorldRuntime.Replicate()`) replays the runtime world's last 10 seconds in a separate world, with its own view and physics scene. The Debug Window's playback uses it, and so do kill cams. Keep the feature, but replace the class with a clearer, more complete replay API:
+
+- **Naming and controls.** "Evaluator" doesn't say what it does. The API is index-based (`MoveToSnapshot(int)`, `FindLastSnapshotIndexAndPeekNext`, `GetRemainTimeFromSnapshot`) and stops or disposes itself at the end (`autoDestroy`). Offer a `NetWorldReplay` with time-based controls instead: `Duration`, `Time`, `Seek(time)`, `Play`, `Pause`, `Speed`, looping, and an event when it ends.
+- **Smooth playback.** The replay jumps from snapshot to snapshot at 10 Hz, and only behaviours that interpolate on their own look smooth. Interpolate between snapshots in the replay itself.
+- **Recording.** History is always on, always 10 seconds long, and stores a full snapshot per tick, about 100 snapshots alive at a time (see Zero GC allocations). `Replicate()` copies all of it. Make recording optional, with a configurable length, store it compactly (deltas, a ring buffer), and let a replay read the recording without copying.
+- **Saved replays.** Snapshots are already serializable. Add saving a recording to a file and loading it, for match replays and bug reports.
+- **Replay mode for behaviours.** Replayed objects run their behaviours as remote objects. Behaviours that talk to the session or send RPCs need to know they're in a replay; `NetWorld.IsReplica` exists, but nothing tells behaviours about it. Add a clear signal, such as a property on the behaviour or a callback.
+- **Physics.** The replay's physics scene is never simulated, so physics-driven visuals, such as ragdolls, don't move. Add an option to step it.
+
+## 7. Debug tools
 
 - `NetWorldViewDebug` creates itself in every build, release builds included, and starts enabled.
 - Its toggle only works when Left Shift and V go down in the same frame.
 - It reads the keyboard with the legacy `Input` class, which throws when a project uses only the Input System package. The Capsules sample has the same dependency.
 - Small TODOs: `NetDebugWindow` keeps all its drawers in one file, and `NetObjectRpcUtils` detects anonymous delegates by their name.
 
-## 7. Platforms, packaging and tests
+## 8. Platforms, packaging and tests
 
 - **Untested platforms.** RelayNet has only been tested in the editor on Unity 2022.3, with Mono. Test Unity 6, IL2CPP and code stripping. `[RequireDerived]` and `[RequireAttributeUsages]` already protect some reflection targets from stripping.
 - **Deprecated API.** `ScriptingDefineSymbols` uses the `BuildTargetGroup` overloads of `PlayerSettings`, which newer Unity versions deprecate in favour of `NamedBuildTarget`.

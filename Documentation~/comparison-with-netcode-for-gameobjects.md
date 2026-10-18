@@ -78,6 +78,8 @@ RelayNet puts that state in a world. A world holds the players, every networked 
 
 Because worlds are plain objects, there can be more than one. The runtime world records the last 10 seconds of its state, and `Replicate()` creates a `NetWorldEvaluator`, a second world that replays that history with its own view, next to the live one.
 
+Each world's view lives in a scene of its own, so worlds can also keep their physics apart. A replay's view gets its own physics scene: replayed objects don't collide with the live game or show up in its raycasts, which is what a kill cam needs. NGO doesn't come with a replay world: a replay there is something you build yourself.
+
 ## Topology and authority
 
 NGO assumes a client-server topology by default. The server owns most objects and decides what spawns and despawns, which suits server-authoritative games, client prediction and rollback. NGO 2.x adds a distributed authority mode. In that mode authority is spread across clients, and one client, the session owner, manages global state. Unity documents distributed authority with its distributed authority service in the Multiplayer Services package.
