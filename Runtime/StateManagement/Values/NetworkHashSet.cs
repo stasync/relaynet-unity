@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Core.Networking;
+using Keel.Networking;
 using LROTech.Network.StateManagement.Values.Serialization;
 
 namespace LROTech.Network.StateManagement.Values

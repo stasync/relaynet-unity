@@ -1,4 +1,4 @@
-using Core.Networking;
+using Keel.Networking;
 using LROTech.Network.StateManagement.Snapshots;
 
 namespace LROTech.Network.StateManagement

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Core.Networking;
+using Keel.Networking;
 using LROTech.Network.GameObjects;
 using LROTech.Network.StateManagement.Snapshots;
 using UnityEngine.SceneManagement;
@@ -58,7 +58,7 @@ namespace LROTech.Network.StateManagement
         public NetWorldRuntime(Func<ClientUid> masterClientUidProvider, string worldName = "NetworkWorldRoot") : base(NetWorldId.Allocate(), worldName)
         {
             _masterClientUidProvider = masterClientUidProvider ?? throw new ArgumentNullException(nameof(masterClientUidProvider));
-            foreach (var ruleType in Core.Utils.Types.Lookup<NetObjectOwnershipDistributionRule>.Value)
+            foreach (var ruleType in Keel.Utils.Types.Lookup<NetObjectOwnershipDistributionRule>.Value)
             {
                 if (Activator.CreateInstance(ruleType) is NetObjectOwnershipDistributionRule instance)
                     _ownershipDistributionRules.Add(instance);

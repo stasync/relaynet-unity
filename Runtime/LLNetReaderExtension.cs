@@ -1,5 +1,5 @@
 using System.Runtime.CompilerServices;
-using Core.Networking;
+using Keel.Networking;
 
 namespace LROTech.Network
 {

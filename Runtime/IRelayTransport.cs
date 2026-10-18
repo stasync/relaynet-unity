@@ -1,13 +1,13 @@
 using System;
 using System.Net;
-using Core.Networking.Udp;
-using Core.Networking.Udp.LowLevel;
+using Keel.Networking.Udp;
+using Keel.Networking.Udp.LowLevel;
 
 namespace LROTech.Network
 {
     /// <summary>
     /// A transport the <see cref="RelaySession"/> exchanges raw relay messages over.
-    /// Mirrors the surface of the <see cref="Core.Networking.Udp.ReliableUdpClient"/>, so the session doesn't know
+    /// Mirrors the surface of the <see cref="Keel.Networking.Udp.ReliableUdpClient"/>, so the session doesn't know
     /// whether it talks to a real relay server or to an in-process one (see <see cref="RelayLoopbackTransport"/>).
     /// </summary>
     internal interface IRelayTransport
@@ -17,7 +17,7 @@ namespace LROTech.Network
         event Action ConnectionFailed;
         event Action Disconnected;
         event Action ReliabilityFailure;
-        event Action<byte[], UdpFullProtocol.DgramDeliveryMethod> DataReceived;
+        event Action<byte[], UdpProtocol.DeliveryMethod> DataReceived;
 
         bool IsConnected { get; }
         uint ConnectionUid { get; }
@@ -28,7 +28,7 @@ namespace LROTech.Network
         NetTransferStatistics Statistics { get; }
 
         void Connect(IPEndPoint endPoint, string connectionData);
-        void Send(ArraySegment<byte> data, UdpFullProtocol.DgramDeliveryMethod deliveryMethod);
+        void Send(ArraySegment<byte> data, UdpProtocol.DeliveryMethod deliveryMethod);
         void Update();
         void Disconnect();
     }

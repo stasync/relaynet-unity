@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using Core.Networking;
-using Core.Networking.Udp;
-using Core.Networking.Udp.LowLevel;
+using Keel.Networking;
+using Keel.Networking.Udp;
+using Keel.Networking.Udp.LowLevel;
 
 namespace LROTech.Network
 {
@@ -26,7 +26,7 @@ namespace LROTech.Network
         public event Action ConnectionFailed = delegate { };
         public event Action Disconnected = delegate { };
         public event Action ReliabilityFailure = delegate { };
-        public event Action<byte[], UdpFullProtocol.DgramDeliveryMethod> DataReceived = delegate { };
+        public event Action<byte[], UdpProtocol.DeliveryMethod> DataReceived = delegate { };
 
         public bool IsConnected { get; private set; }
         public uint ConnectionUid { get; private set; }
@@ -38,7 +38,7 @@ namespace LROTech.Network
         public NetTransferStatistics Statistics =>
             new(_bytesSent, _bytesReceived, _packetsSent, _packetsReceived);
 
-        private readonly Queue<(byte[] Data, UdpFullProtocol.DgramDeliveryMethod DeliveryMethod)> _incoming = new();
+        private readonly Queue<(byte[] Data, UdpProtocol.DeliveryMethod DeliveryMethod)> _incoming = new();
         private readonly HashSet<uint> _connections = new();
         private readonly NetReader _dataReader = new();
         private readonly NetWriter _dataWriter = new();
@@ -79,7 +79,7 @@ namespace LROTech.Network
             }
         }
 
-        public void Send(ArraySegment<byte> data, UdpFullProtocol.DgramDeliveryMethod deliveryMethod)
+        public void Send(ArraySegment<byte> data, UdpProtocol.DeliveryMethod deliveryMethod)
         {
             if (!IsConnected)
                 return;
@@ -105,7 +105,7 @@ namespace LROTech.Network
                     foreach (var existedConnection in _connections)
                         _dataWriter.WritePackedUInt32(existedConnection);
 
-                    Enqueue(UdpFullProtocol.DgramDeliveryMethod.ReliableOrdered);
+                    Enqueue(UdpProtocol.DeliveryMethod.ReliableOrdered);
                     break;
                 }
 
@@ -128,7 +128,7 @@ namespace LROTech.Network
             _incoming.Clear();
         }
 
-        private void Enqueue(UdpFullProtocol.DgramDeliveryMethod deliveryMethod) =>
+        private void Enqueue(UdpProtocol.DeliveryMethod deliveryMethod) =>
             _incoming.Enqueue((_dataWriter.ToArray(), deliveryMethod));
 
         private static byte[] ToArray(ArraySegment<byte> data)

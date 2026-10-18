@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Core.Networking;
+using Keel.Networking;
 using UnityEngine;
 
 namespace LROTech.Network.StateManagement.Values

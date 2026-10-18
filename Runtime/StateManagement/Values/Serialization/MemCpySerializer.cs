@@ -1,4 +1,4 @@
-using Core.Networking;
+using Keel.Networking;
 
 namespace LROTech.Network.StateManagement.Values.Serialization
 {

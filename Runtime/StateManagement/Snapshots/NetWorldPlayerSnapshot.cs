@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Core;
-using Core.Networking;
+using Keel.Networking;
 
 namespace LROTech.Network.StateManagement.Snapshots
 {

@@ -20,7 +20,7 @@ namespace LROTech.Network.StateManagement.Values.Serialization
 
         static NetworkValueSerializationAPI()
         {
-            foreach (var type in Core.Utils.Types.Lookup<VariableSerializer>.Value)
+            foreach (var type in Keel.Utils.Types.Lookup<VariableSerializer>.Value)
             {
                 var genericArguments = type.BaseType!.GetGenericArguments();
                 var targetType = genericArguments[0];

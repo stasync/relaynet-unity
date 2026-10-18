@@ -1,8 +1,8 @@
 using System;
 using System.Net;
-using Core.Networking.Udp;
-using Core.Networking.Udp.LowLevel;
-using Core.Networking.Udp.LowLevel.DataTransferLayers;
+using Keel.Networking.Udp;
+using Keel.Networking.Udp.LowLevel;
+using Keel.Networking.Udp.LowLevel.DataTransferLayers;
 
 namespace LROTech.Network
 {
@@ -41,7 +41,7 @@ namespace LROTech.Network
             remove => _client.ReliabilityFailure -= value;
         }
 
-        public event Action<byte[], UdpFullProtocol.DgramDeliveryMethod> DataReceived
+        public event Action<byte[], UdpProtocol.DeliveryMethod> DataReceived
         {
             add => _client.DataReceived += value;
             remove => _client.DataReceived -= value;
@@ -70,7 +70,7 @@ namespace LROTech.Network
             _client.RegisterDataTransferLayer(_transferAmountCapture);
         }
 
-        public void Send(ArraySegment<byte> data, UdpFullProtocol.DgramDeliveryMethod deliveryMethod) =>
+        public void Send(ArraySegment<byte> data, UdpProtocol.DeliveryMethod deliveryMethod) =>
             _client.Send(data, deliveryMethod);
 
         public void Update() =>

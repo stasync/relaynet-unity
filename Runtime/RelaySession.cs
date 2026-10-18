@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Runtime.CompilerServices;
-using Core.Networking;
-using Core.Networking.Udp;
-using Core.Networking.Udp.LowLevel;
+using Keel.Networking;
+using Keel.Networking.Udp;
+using Keel.Networking.Udp.LowLevel;
 using UnityEngine;
 
 namespace LROTech.Network
@@ -104,7 +104,7 @@ namespace LROTech.Network
             _dataWriter.WritePackedUInt32(0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that the message will be sent to everyone except sender.
             _dataWriter.WriteBytesAndSize(data);
 
-            _transport.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
+            _transport.Send(_dataWriter.AsArraySegment(), (UdpProtocol.DeliveryMethod)deliveryMethod);
         }
 
         public void SendRaw(byte[] data, DeliveryMethod deliveryMethod)
@@ -113,10 +113,10 @@ namespace LROTech.Network
 
             _dataWriter.SeekZero();
             _dataWriter.WriteBytesAndSize(data);
-            _transport.Send(_dataWriter.AsArraySegment(), (UdpFullProtocol.DgramDeliveryMethod)deliveryMethod);
+            _transport.Send(_dataWriter.AsArraySegment(), (UdpProtocol.DeliveryMethod)deliveryMethod);
         }
 
-        private void OnDataReceived(byte[] rawData, UdpFullProtocol.DgramDeliveryMethod deliveryMethod)
+        private void OnDataReceived(byte[] rawData, UdpProtocol.DeliveryMethod deliveryMethod)
         {
             try
             {
@@ -186,7 +186,7 @@ namespace LROTech.Network
             _dataWriter.SeekZero();
             _dataWriter.WriteByte((byte)RelayClientMessageType.OnAuth);
 
-            _transport.Send(_dataWriter.AsArraySegment(), UdpFullProtocol.DgramDeliveryMethod.Reliable);
+            _transport.Send(_dataWriter.AsArraySegment(), UdpProtocol.DeliveryMethod.Reliable);
         }
 
         private void OnDisconnected()

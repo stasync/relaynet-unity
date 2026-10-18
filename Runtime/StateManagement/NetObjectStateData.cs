@@ -1,4 +1,4 @@
-﻿using Core.Networking;
+﻿using Keel.Networking;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -131,13 +131,13 @@ namespace LROTech.Network.StateManagement
         }
 
         private static byte GetTypeIndex(Type dataType) =>
-            Core.Utils.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
+            Keel.Utils.Types.Lookup<NetObjectStateData>.IndexOf(dataType);
 
         internal static int GetTypeIndex<TData>() where TData : NetObjectStateData, new() =>
             GetTypeIndex(typeof(TData));
 
         internal static bool TryGetType(byte index, out Type type) =>
-            Core.Utils.Types.Lookup<NetObjectStateData>.WithIndex(index, out type);
+            Keel.Utils.Types.Lookup<NetObjectStateData>.WithIndex(index, out type);
 
 #if UNITY_EDITOR
         public virtual IEnumerable<KeyValuePair<string, string>> GetValuesInfo_Editor()

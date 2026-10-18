@@ -1,5 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
-using Core.Networking;
+using Keel.Networking;
 using UnityEngine;
 
 namespace LROTech.Network.GameObjects
@@ -43,7 +43,7 @@ namespace LROTech.Network.GameObjects
 
 #if NETWORK_DEBUG
             var type = GetType();
-            Core.Utils.Types.TryGetTypeStableHashCode(type, out var hashCode);
+            Keel.Utils.Types.TryGetTypeStableHashCode(type, out var hashCode);
             writer.WriteInt32(hashCode);
 #endif
         }
@@ -55,7 +55,7 @@ namespace LROTech.Network.GameObjects
 
 #if NETWORK_DEBUG
             var type = GetType();
-            Core.Utils.Types.TryGetTypeStableHashCode(type, out var hashCode);
+            Keel.Utils.Types.TryGetTypeStableHashCode(type, out var hashCode);
             var serializedHash = reader.ReadInt32();
 
             if (!hashCode.Equals(serializedHash))

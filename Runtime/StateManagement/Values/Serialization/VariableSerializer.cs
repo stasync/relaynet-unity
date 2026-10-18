@@ -1,4 +1,4 @@
-using Core.Networking;
+using Keel.Networking;
 using UnityEngine.Scripting;
 
 namespace LROTech.Network.StateManagement.Values.Serialization
