@@ -75,7 +75,13 @@ Generated code is easy to read and debug, which is why source generators are pre
 - **Clock estimate.** The world time estimate doesn't account for the relay round trip (TODO in `NetWorldRuntime`).
 - **Naming.** The `isSceneObject` parameter of `CreateObject` really means "keep the object when its owner leaves" (TODO in `NetWorldRuntime`).
 - **Animator sync is incomplete.** Per-layer sync flags and remote layer-weight smoothing in `NetObjectAnimatorSync` are commented out.
-- **Dead code.** The persistent RPC buffer is still in `NetObjectRpcBuffer` and `NetObjectIdentity`, but nothing sends persistent RPCs since buffered RPCs were removed.
+- **Dead code: the persistent half of the RPC buffer.** `NetObjectRpcBuffer` itself is in use: its temporal buffer carries every `OwnerToOthersRpc` with the object's state update. Its persistent half is unreachable since buffered RPCs were removed. The only sender, `OwnerToOthersRpc`, always passes `persistent: false` and `RpcBufferChangeMethod.Add`, so:
+  - the persistent buffer stays empty on owners and receivers, and `RpcBufferChangeMethod.Replace` is never used;
+  - the public `NetObjectIdentity.RemoveRpcFromBuffer` has no effect;
+  - `ExecuteRemotely(executePersistent: true)` walks an empty list;
+  - every state snapshot still writes an empty persistent list, and the Debug Window shows "Persistent: 0".
+
+  Either remove these paths, or bring buffered RPCs back on purpose.
 
 ## 6. Debug tools
 
