@@ -63,7 +63,7 @@ namespace Keel.RelayNet.Debug.Editor
 
                 EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.LabelField($"Uid: {_state.Uid} Scene: {_state.IsSceneObject} Prefab: {prefabLabel}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Uid: {_state.Uid} Shared: {_state.IsShared} Prefab: {prefabLabel}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
 
                 // An object outlives the player that owned it, and a scene object starts with no owner at all.

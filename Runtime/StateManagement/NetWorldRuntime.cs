@@ -19,9 +19,9 @@ namespace Keel.RelayNet.StateManagement
         private const float OWNERSHIP_DISTRIBUTION_REQUEST_TIMEOUT = 2f;
 
         /// <summary>
-        /// This id's for network objects that located in a scene by default.
-        /// If you create a scene object in runtime, they use the default peer-based ID space.
-        /// 1000 means scene object in must be from 0 to 1000 (1000 inclusive).
+        /// Ids reserved for the objects placed in scenes (see <see cref="NetObjectSceneIdentity"/>).
+        /// Objects created at runtime get ids above this space, from a range per client.
+        /// Scene object ids go from <see cref="NetObjectUid.FIRST_VALID_UID"/> to FIRST_VALID_UID + 1000, inclusive.
         /// </summary>
         internal const uint SCENE_OBJECT_RESERVED_UID_SPACE = 1000;
 
@@ -75,6 +75,10 @@ namespace Keel.RelayNet.StateManagement
         /// </summary>
         private bool IsOwnershipDistributionAllowed(NetObjectState state)
         {
+            // Objects that belong to their creator never change owner.
+            if (!state.IsShared)
+                return false;
+
             foreach (var rule in _ownershipDistributionRules)
             {
                 if (!rule.CanRequestOwnership(state))
@@ -441,7 +445,7 @@ namespace Keel.RelayNet.StateManagement
                     {
                         var sceneIdentity = _unregisteredSceneObjects[uid];
 
-                        var newState = new NetObjectState(Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabUid, isSceneObject: true, owner: Players.LocalPlayer.Uid);
+                        var newState = new NetObjectState(Players.Get, sceneIdentity.SceneObjectId, sceneIdentity.PrefabUid, shared: true, owner: Players.LocalPlayer.Uid);
                         AddObject(newState);
                         newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 
@@ -702,8 +706,8 @@ namespace Keel.RelayNet.StateManagement
                 // Object owned by disconnected player.
                 if (state.IsOwnedBy(uid))
                 {
-                    // Change owner if an object is a scene object.
-                    if (state.IsSceneObject)
+                    // A shared object stays: the master takes it over.
+                    if (state.IsShared)
                     {
                         // Is local client becomes the master client, set the object's owner and sync it.
                         if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
@@ -732,13 +736,18 @@ namespace Keel.RelayNet.StateManagement
 
         /// <summary>
         /// Create an object with position and rotation input.
-        /// Should be called on a local client to create the object across network.
+        /// Should be called on a local client to create the object across network. The local client owns it.
         /// </summary>
-        public NetObjectIdentity CreateObject(uint prefabUid, bool isSceneObject, Vector3 position, Quaternion rotation)
+        /// <param name="shared">
+        /// False: the object belongs to its creator. Its owner never changes, and it's removed when the creator leaves.
+        /// True: the object belongs to the room. It stays when its owner leaves (the master takes it over), and its
+        /// ownership can move to other clients, through <see cref="NetObjectIdentity.OwnObject"/> or ownership distribution.
+        /// Objects placed in a scene are always shared.
+        /// </param>
+        public NetObjectIdentity CreateObject(uint prefabUid, bool shared, Vector3 position, Quaternion rotation)
         {
             EnsureValid();
 
-            // TODO: isSceneObject should be renamed to something else, like destroy with owner (when owner disconnected).
             var owner = Players.LocalPlayer;
             if (owner == null)
                 throw new InvalidOperationException("Local player is not registered.");
@@ -750,14 +759,23 @@ namespace Keel.RelayNet.StateManagement
             var newObjectUid = NetObjectUid.FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)owner.Uid * RESERVED_UID_SPACE_PER_CLIENT + _netObjectUidCounter;
 
             // Create and register a new state.
-            var newState = new NetObjectState(Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
+            var newState = new NetObjectState(Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, shared, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 
             return View.CreateObjectViewForState(newState, position, rotation);
         }
 
-        public NetObjectState CreateObjectAsync(uint prefabUid, bool isSceneObject, Vector3 position, Quaternion rotation, Action<NetObjectIdentity> callback)
+        /// <summary>
+        /// Same as CreateObject, but instantiates the view asynchronously and passes it to the callback.
+        /// </summary>
+        /// <param name="shared">
+        /// False: the object belongs to its creator. Its owner never changes, and it's removed when the creator leaves.
+        /// True: the object belongs to the room. It stays when its owner leaves (the master takes it over), and its
+        /// ownership can move to other clients, through <see cref="NetObjectIdentity.OwnObject"/> or ownership distribution.
+        /// Objects placed in a scene are always shared.
+        /// </param>
+        public NetObjectState CreateObjectAsync(uint prefabUid, bool shared, Vector3 position, Quaternion rotation, Action<NetObjectIdentity> callback)
         {
             EnsureValid();
             var owner = Players.LocalPlayer;
@@ -771,7 +789,7 @@ namespace Keel.RelayNet.StateManagement
             var newObjectUid = NetObjectUid.FIRST_VALID_UID + SCENE_OBJECT_RESERVED_UID_SPACE + (uint)owner.Uid * RESERVED_UID_SPACE_PER_CLIENT + _netObjectUidCounter;
 
             // Create and register a new state.
-            var newState = new NetObjectState(Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, isSceneObject, owner.Uid);
+            var newState = new NetObjectState(Players.Get, uid: new NetObjectUid(newObjectUid), prefabUid, shared, owner.Uid);
             AddObject(newState);
             newState.ScheduleUpdate(NetObjectStateChangeRequestType.UnreliableUpdate);
 

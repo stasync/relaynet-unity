@@ -7,7 +7,7 @@ namespace Keel.RelayNet.StateManagement.Snapshots
         public readonly ClientUid OwnerUid;
         public readonly NetObjectUid ObjectUid;
         public readonly uint PrefabUid;
-        public readonly bool IsSceneObject;
+        public readonly bool IsShared;
         public readonly float WorldTime;
         public readonly NetObjectStateChangeRequestType StateChangeType;
         public readonly NetObjectRpcBufferSnapshot RpcState;
@@ -18,7 +18,7 @@ namespace Keel.RelayNet.StateManagement.Snapshots
             OwnerUid = reader.ReadClientUid();
             ObjectUid = reader.ReadNetObjectUid();
             PrefabUid = reader.ReadUInt32();
-            IsSceneObject = reader.ReadBoolean();
+            IsShared = reader.ReadBoolean();
             WorldTime = reader.ReadSingle();
             StateChangeType = (NetObjectStateChangeRequestType)reader.ReadByte();
             RpcState = new NetObjectRpcBufferSnapshot(reader);
@@ -30,7 +30,7 @@ namespace Keel.RelayNet.StateManagement.Snapshots
             OwnerUid = state.OwnerUid;
             ObjectUid = state.Uid;
             PrefabUid = state.PrefabUid;
-            IsSceneObject = state.IsSceneObject;
+            IsShared = state.IsShared;
             WorldTime = state.WorldTime;
             StateChangeType = state.StateChangeType;
             RpcState = state.RpcBuffer.ToSnapshot();
@@ -42,7 +42,7 @@ namespace Keel.RelayNet.StateManagement.Snapshots
             writer.WriteClientUid(OwnerUid);
             writer.WriteNetObjectUid(ObjectUid);
             writer.WriteUInt32(PrefabUid);
-            writer.WriteBoolean(IsSceneObject);
+            writer.WriteBoolean(IsShared);
             writer.WriteSingle(WorldTime);
             writer.WriteByte((byte)StateChangeType);
             RpcState.Serialize(writer);
@@ -50,7 +50,7 @@ namespace Keel.RelayNet.StateManagement.Snapshots
         }
 
         public override string ToString() =>
-            $"{ObjectUid}:{PrefabUid} owner:{OwnerUid} s:{IsSceneObject} st:{StateChangeType}";
+            $"{ObjectUid}:{PrefabUid} owner:{OwnerUid} s:{IsShared} st:{StateChangeType}";
 
         public int GetSize()
         {
@@ -58,7 +58,7 @@ namespace Keel.RelayNet.StateManagement.Snapshots
             result += ClientUid.SIZE; // OwnerUid
             result += NetObjectUid.SIZE; // ObjectUID
             result += sizeof(uint); // PrefabId
-            result += sizeof(bool); // IsSceneObject
+            result += sizeof(bool); // IsShared
             result += sizeof(float); // Time
             result += sizeof(NetObjectStateChangeRequestType); // StateChangeType
             result += RpcState.GetSize();

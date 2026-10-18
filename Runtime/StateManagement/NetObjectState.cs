@@ -14,7 +14,7 @@ namespace Keel.RelayNet.StateManagement
 
         public uint PrefabUid { get; private set; }
 
-        public bool IsSceneObject { get; private set; }
+        public bool IsShared { get; private set; }
 
         public ClientUid OwnerUid { get; private set; }
 
@@ -47,13 +47,13 @@ namespace Keel.RelayNet.StateManagement
         public event Action<NetObjectStateChangeRequestType> LocalUpdateRequest = delegate { };
         public event Action Invalidated = delegate { };
 
-        internal NetObjectState(Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, uint prefabUid, bool isSceneObject, ClientUid owner)
+        internal NetObjectState(Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectUid uid, uint prefabUid, bool shared, ClientUid owner)
         {
             _playerProvider = playerProvider;
 
             Uid = uid;
             PrefabUid = prefabUid;
-            IsSceneObject = isSceneObject;
+            IsShared = shared;
             OwnerUid = owner;
 
             StateChangeType = NetObjectStateChangeRequestType.UnreliableUpdate;
@@ -63,7 +63,7 @@ namespace Keel.RelayNet.StateManagement
         }
 
         internal NetObjectState(Func<ClientUid, NetWorldPlayer> playerProvider, NetObjectStateSnapshot snapshot) :
-            this(playerProvider, snapshot.ObjectUid, snapshot.PrefabUid, snapshot.IsSceneObject, snapshot.OwnerUid) =>
+            this(playerProvider, snapshot.ObjectUid, snapshot.PrefabUid, snapshot.IsShared, snapshot.OwnerUid) =>
             ChangeObjectRemotely(snapshot);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -78,7 +78,7 @@ namespace Keel.RelayNet.StateManagement
             OwnerUid = ClientUid.Invalid;
 
             PrefabUid = 0;
-            IsSceneObject = false;
+            IsShared = false;
             StateChangeType = NetObjectStateChangeRequestType.None;
 
             RpcBuffer.Clear();
@@ -200,8 +200,8 @@ namespace Keel.RelayNet.StateManagement
 
         internal void ChangedOwner(ClientUid newOwner)
         {
-            if (!IsSceneObject)
-                throw new InvalidOperationException("You can manage owners only for scene objects");
+            if (!IsShared)
+                throw new InvalidOperationException("Only shared objects can change owner.");
 
             if (newOwner.IsValid)
             {
@@ -235,7 +235,7 @@ namespace Keel.RelayNet.StateManagement
             var hash = 13;
             hash = hash * 7 + Uid.GetHashCode();
             hash = hash * 7 + PrefabUid.GetHashCode();
-            hash = hash * 7 + IsSceneObject.GetHashCode();
+            hash = hash * 7 + IsShared.GetHashCode();
             hash = hash * 7 + OwnerUid.GetHashCode();
             hash = hash * 7 + StateChangeType.GetHashCode();
             hash = hash * 7 + WorldTime.GetHashCode();
@@ -256,7 +256,7 @@ namespace Keel.RelayNet.StateManagement
             EnsureValid();
 
             return $"{Uid}:{PrefabUid} " +
-                   $"s:{IsSceneObject} " +
+                   $"s:{IsShared} " +
                    $"st:{StateChangeType} " +
                    $"own:{OwnerUid}:{(Owner == null ? "null" : Owner.ToString())} " +
                    $"l:{IsOwnedByLocalPlayer} " +

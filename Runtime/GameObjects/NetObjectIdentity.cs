@@ -28,10 +28,13 @@ namespace Keel.RelayNet.GameObjects
             get => State is { IsOwnedByLocalPlayer: true };
         }
 
-        public bool IsSceneObject
+        /// <summary>
+        /// A shared object stays when its owner leaves, and its ownership can move. See NetWorldRuntime.CreateObject.
+        /// </summary>
+        public bool IsShared
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => State is { IsSceneObject: true };
+            get => State is { IsShared: true };
         }
 
         public bool IsLocalPlayerMainTagObject
@@ -167,15 +170,15 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// Ownership management, anyone can change a scene object owner.
+        /// Takes ownership of a shared object. Any client can call it.
         /// </summary>
         public void OwnObject()
         {
             if (!Initialized)
                 throw new InvalidOperationException("You can manage owners only for initialized objects");
 
-            if (!IsSceneObject)
-                throw new InvalidOperationException("You can manage owners only for scene objects");
+            if (!IsShared)
+                throw new InvalidOperationException("Only shared objects can change owner.");
 
             State.ChangedOwner(World.Players.LocalPlayer.Uid);
         }
