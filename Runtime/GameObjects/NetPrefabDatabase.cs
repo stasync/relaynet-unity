@@ -174,8 +174,10 @@ namespace Keel.RelayNet.GameObjects
                 }
                 else
                 {
+                    // An object that isn't saved as an asset yet has no GUID - return 0 ("unknown") rather than a hash of nothing.
                     var guid = UnityEditor.AssetDatabase.AssetPathToGUID(UnityEditor.AssetDatabase.GetAssetPath(targetGameObject));
-                    result = GetStableHashCode(guid);
+                    if (!string.IsNullOrWhiteSpace(guid))
+                        result = GetStableHashCode(guid);
                 }
 
                 return result;

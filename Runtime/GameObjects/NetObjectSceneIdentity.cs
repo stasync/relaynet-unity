@@ -1,11 +1,15 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using Keel.Utils.Math;
 using Keel.RelayNet.StateManagement;
 using UnityEngine;
 
 namespace Keel.RelayNet.GameObjects
 {
+    /// <summary>
+    /// Marks a networked object that is placed in a scene, instead of created at runtime. Every client loads the same
+    /// scene instance; the master registers it in the world, and the other clients bind their copy to that state.
+    /// The object must be an instance of a network prefab, and its scene id must be unique among the scenes loaded together
+    /// (see Tools > RelayNet > Fix scene objects). Scene objects are shared: they stay when their owner leaves.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class NetObjectSceneIdentity : NetObjectBehaviour<NetObjectSceneIdentity.BehaviourData>
     {
@@ -13,11 +17,13 @@ namespace Keel.RelayNet.GameObjects
         {
         }
 
+        private const int MAX_SCENE_OBJECT_ID = (int)(NetObjectUid.FIRST_VALID_UID + NetWorldRuntime.SCENE_OBJECT_RESERVED_UID_SPACE);
+
         [field: HideInInspector]
         [field: SerializeField]
         internal uint PrefabUid { get; private set; }
 
-        [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, NetObjectUid.FIRST_VALID_UID + NetWorldRuntime.SCENE_OBJECT_RESERVED_UID_SPACE)]
+        [SerializeField, Range(NetObjectUid.FIRST_VALID_UID, MAX_SCENE_OBJECT_ID)]
         private int _sceneObjectId;
 
         public NetObjectUid SceneObjectId => new((uint)_sceneObjectId);
@@ -46,58 +52,98 @@ namespace Keel.RelayNet.GameObjects
         {
             if (UnityEditor.EditorApplication.isPlaying)
             {
-                Debug.LogWarning("Unable to validate in play mode");
+                Debug.LogWarning("Scene objects can't be validated in play mode.");
                 return;
             }
 
-            var sceneObjects = FindObjectsOfType<NetObjectSceneIdentity>();
-            foreach (var obj in sceneObjects)
+            var objectsById = new Dictionary<int, NetObjectSceneIdentity>();
+            var problemCount = 0;
+            foreach (var sceneObject in FindSceneObjects())
             {
-                if (!obj.SceneObjectId.IsValid)
+                if (!HasValidId(sceneObject))
                 {
-                    Debug.LogError($"{obj.gameObject.name} has invalid id {obj.SceneObjectId} (Has to be fixed manually)");
-                    continue;
+                    Debug.LogError($"'{sceneObject.gameObject.name}' has the invalid scene id {sceneObject._sceneObjectId}. Use Tools > RelayNet > Fix scene objects.", sceneObject);
+                    problemCount++;
                 }
-
-                var objectWithSameId = ObjectWithSameId(sceneObjects, obj);
-
-                if (objectWithSameId == null)
-                    continue;
-
-                Debug.LogErrorFormat(
-                    $"'{obj.gameObject.name}' and '{objectWithSameId.gameObject.name}' game objects has same scene id '{obj._sceneObjectId}'.");
+                else if (objectsById.TryGetValue(sceneObject._sceneObjectId, out var otherObject))
+                {
+                    Debug.LogError($"'{sceneObject.gameObject.name}' and '{otherObject.gameObject.name}' have the same scene id {sceneObject._sceneObjectId}. Use Tools > RelayNet > Fix scene objects.", sceneObject);
+                    problemCount++;
+                }
+                else
+                    objectsById.Add(sceneObject._sceneObjectId, sceneObject);
             }
 
-            Debug.LogWarning("Validation finished");
+            Debug.Log(problemCount == 0
+                ? $"All {objectsById.Count} scene objects have valid, unique ids."
+                : $"{problemCount} scene object(s) have invalid or duplicate ids.");
         }
 
+        /// <summary>
+        /// Gives every scene object of the loaded scenes a valid, unique id. Valid unique ids never change. When objects share
+        /// an id, the first one in a stable order (by GlobalObjectId) keeps it. Every other object gets the lowest free id, in
+        /// the same order, so running it twice on the same scenes gives the same result.
+        /// </summary>
         [UnityEditor.MenuItem("Tools/RelayNet/Fix scene objects")]
         private static void FixSceneObjects()
         {
             if (UnityEditor.EditorApplication.isPlaying)
             {
-                Debug.LogWarning("Unable to validate in play mode");
+                Debug.LogWarning("Scene objects can't be fixed in play mode.");
                 return;
             }
 
-            var sceneObjects = FindObjectsByType<NetObjectSceneIdentity>(FindObjectsSortMode.None);
-            foreach (var sceneObjectIdentity in sceneObjects)
+            var usedIds = new HashSet<int>();
+            var objectsToFix = new List<NetObjectSceneIdentity>();
+            foreach (var sceneObject in FindSceneObjects())
             {
-                UnityEditor.Undo.RecordObject(sceneObjectIdentity, "Peek scene instance id");
-                while (ObjectWithSameId(sceneObjects, sceneObjectIdentity) != null)
-                    sceneObjectIdentity._sceneObjectId =
-                        RandomExtended.Default.Int((int)NetObjectUid.FIRST_VALID_UID, (int)NetWorldRuntime.SCENE_OBJECT_RESERVED_UID_SPACE);
+                if (!HasValidId(sceneObject) || !usedIds.Add(sceneObject._sceneObjectId))
+                    objectsToFix.Add(sceneObject);
+            }
 
-                UnityEditor.EditorUtility.SetDirty(sceneObjectIdentity);
+            var nextId = (int)NetObjectUid.FIRST_VALID_UID;
+            foreach (var sceneObject in objectsToFix)
+            {
+                while (usedIds.Contains(nextId))
+                    nextId++;
+
+                if (nextId > MAX_SCENE_OBJECT_ID)
+                {
+                    Debug.LogError($"No free scene id left for '{sceneObject.gameObject.name}'. Scenes loaded together can hold {MAX_SCENE_OBJECT_ID} scene objects.", sceneObject);
+                    break;
+                }
+
+                UnityEditor.Undo.RecordObject(sceneObject, "Fix scene object id");
+                sceneObject._sceneObjectId = nextId;
+                usedIds.Add(nextId);
+                UnityEditor.PrefabUtility.RecordPrefabInstancePropertyModifications(sceneObject);
+                UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(sceneObject.gameObject.scene);
             }
 
             ValidateSceneObjects();
         }
 
-        private static NetObjectSceneIdentity ObjectWithSameId(IEnumerable<NetObjectSceneIdentity> sceneObjects, NetObjectSceneIdentity target) =>
-            sceneObjects
-                .Where(o => o != target)
-                .FirstOrDefault(o => o._sceneObjectId == target._sceneObjectId);
+        private static bool HasValidId(NetObjectSceneIdentity sceneObject) =>
+            sceneObject._sceneObjectId >= NetObjectUid.FIRST_VALID_UID && sceneObject._sceneObjectId <= MAX_SCENE_OBJECT_ID;
+
+        /// <summary>
+        /// The scene objects of every loaded scene, inactive ones included, in a stable order.
+        /// </summary>
+        private static List<NetObjectSceneIdentity> FindSceneObjects()
+        {
+            var sceneObjects = new List<NetObjectSceneIdentity>();
+            foreach (var sceneObject in FindObjectsByType<NetObjectSceneIdentity>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (sceneObject.gameObject.scene.IsValid())
+                    sceneObjects.Add(sceneObject);
+            }
+
+            sceneObjects.Sort((a, b) => string.CompareOrdinal(
+                UnityEditor.GlobalObjectId.GetGlobalObjectIdSlow(a).ToString(),
+                UnityEditor.GlobalObjectId.GetGlobalObjectIdSlow(b).ToString()));
+
+            return sceneObjects;
+        }
 #endif
     }
 }
