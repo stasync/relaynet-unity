@@ -10,7 +10,7 @@ The tracks below are ordered by priority. Within each track, items name the code
 
 - **Per-tick collections.** `NetWorldRuntime` creates four new dictionaries and queues at the start of every world update (marked `// TODO: Avoid allocations.`). It also copies key collections with `new List<>(… .Keys)` so it can iterate while changing them, in nine places.
 - **A new array per message.** Every outgoing message is copied out with `_writer.ToArray()` before `DataSendRequested`. Every incoming payload is read into a new array with `ReadBytesAndSize()`, in `RelaySession` and in the snapshot readers.
-- **Snapshots per object.** Each tick, every object the client owns is turned into a `NetObjectStateSnapshot`, with new lists for its RPC buffer and a new array for its data. Each player becomes a `NetWorldPlayerSnapshot`, with a new list of tag objects.
+- **Snapshots per object.** Each tick, every object the client owns is turned into a `NetObjectStateSnapshot`, with a new list for its RPC buffer and a new array for its data. Each player becomes a `NetWorldPlayerSnapshot`, with a new list of tag objects.
 - **History.** The runtime world stores a full `NetWorldSnapshot` every tick and keeps 10 seconds of them, so about 100 snapshots are alive at any time.
 - **RPC calls.** Passing a method group as `Action<byte[]>` creates a new delegate on every call, and every payload is a new `byte[]`.
 
@@ -75,13 +75,6 @@ Generated code is easy to read and debug, which is why source generators are pre
 - **Clock estimate.** The world time estimate doesn't account for the relay round trip (TODO in `NetWorldRuntime`).
 - **Naming.** The `isSceneObject` parameter of `CreateObject` really means "keep the object when its owner leaves" (TODO in `NetWorldRuntime`).
 - **Animator sync is incomplete.** Per-layer sync flags and remote layer-weight smoothing in `NetObjectAnimatorSync` are commented out.
-- **Dead code: the persistent half of the RPC buffer.** `NetObjectRpcBuffer` itself is in use: its temporal buffer carries every `OwnerToOthersRpc` with the object's state update. Its persistent half is unreachable since buffered RPCs were removed. The only sender, `OwnerToOthersRpc`, always passes `persistent: false` and `RpcBufferChangeMethod.Add`, so:
-  - the persistent buffer stays empty on owners and receivers, and `RpcBufferChangeMethod.Replace` is never used;
-  - the public `NetObjectIdentity.RemoveRpcFromBuffer` has no effect;
-  - `ExecuteRemotely(executePersistent: true)` walks an empty list;
-  - every state snapshot still writes an empty persistent list, and the Debug Window shows "Persistent: 0".
-
-  Either remove these paths, or bring buffered RPCs back on purpose.
 
 ## 6. Debug tools
 

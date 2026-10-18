@@ -128,10 +128,10 @@ namespace Keel.RelayNet.GameObjects
             foreach (var behaviour in _behaviours)
                 behaviour.OnPostInitializeInternal();
 
-            // Invokes buffered rpc, must be called after deserialization done.
+            // Runs the RPCs that came with the state, must be called after deserialization done.
             // Only for remote objects.
             if (!IsLocal)
-                State.RpcBuffer.ExecuteRemotely(executePersistent: true, ReceiveRpcRemotely);
+                State.RpcBuffer.ExecuteRemotely(ReceiveRpcRemotely);
         }
 
         /// <summary>
@@ -228,7 +228,7 @@ namespace Keel.RelayNet.GameObjects
 
             // Receive rpc buffer if the object initialized.
             if (Initialized)
-                State.RpcBuffer.ExecuteRemotely(executePersistent: false, ReceiveRpcRemotely);
+                State.RpcBuffer.ExecuteRemotely(ReceiveRpcRemotely);
         }
 
         /// <summary>
@@ -247,10 +247,7 @@ namespace Keel.RelayNet.GameObjects
         /// <summary>
         /// RPC, invokes locally and sends to ALL clients who HAVE NO AUTHORITY on this object.
         /// </summary>
-        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod, bool invokeLocally = true) =>
-            OwnerToOthersRpc(rpcHandlerMethod, data, persistent: false, RpcBufferChangeMethod.Add, deliveryMethod, invokeLocally);
-
-        private void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod, bool invokeLocally = true)
+        public void OwnerToOthersRpc(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod, bool invokeLocally = true)
         {
             if (!IsLocal)
                 throw new InvalidOperationException(
@@ -263,7 +260,7 @@ namespace Keel.RelayNet.GameObjects
                 InvokeRpcHandler(hashCode, data);
 
             // Add to sending buffer.
-            State.ScheduleRpc(hashCode, data, persistent, bufferChangeMethod, deliveryMethod);
+            State.ScheduleRpc(hashCode, data, deliveryMethod);
         }
 
         /// <summary>
@@ -307,13 +304,6 @@ namespace Keel.RelayNet.GameObjects
 
             State.ScheduleRpcWithoutAuthority(NoAuthorityRpcType.ToAll, hashCode, data, deliveryMethod);
         }
-
-        /// <summary>
-        /// Remove RPC from the buffer.
-        /// </summary>
-        /// <param name="rpcHandlerMethod"></param>
-        public void RemoveRpcFromBuffer(Action<byte[]> rpcHandlerMethod) =>
-            State.ScheduleRemovePersistentRpc(NetObjectRpcUtils.ActionToHash(rpcHandlerMethod));
 
         /// <summary>
         /// Receive rpc on object WITHOUT authority.

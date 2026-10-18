@@ -28,7 +28,6 @@ namespace Keel.RelayNet.StateManagement
 
         #endregion
 
-        private readonly Queue<int> _persistentRpcToRemoveQueue = new();
         private readonly Func<ClientUid, NetWorldPlayer> _playerProvider;
         private readonly Queue<NetObjectRpcBuffer.NewRpcData> _rpcBufferUpdateQueue = new();
         private readonly Queue<RpcWithoutAuthorityRequest> _rpcWithoutAuthorityQueue = new();
@@ -89,7 +88,6 @@ namespace Keel.RelayNet.StateManagement
             _stateChangeTypeQueue.Clear();
             _rpcBufferUpdateQueue.Clear();
             _rpcWithoutAuthorityQueue.Clear();
-            _persistentRpcToRemoveQueue.Clear();
 
             Invalidated();
 
@@ -153,19 +151,15 @@ namespace Keel.RelayNet.StateManagement
             // Clear rpc request without authority.
             _rpcWithoutAuthorityRequests.Clear();
 
-            // Clear temporal rpc buffer.
-            RpcBuffer.ClearTemporal();
+            // Clear the RPCs of the previous update.
+            RpcBuffer.Clear();
 
             // Return object to regular UDP pipeline.
             StateChangeType = NetObjectStateChangeRequestType.UnreliableUpdate;
 
             // New RPC requests.
             while (_rpcBufferUpdateQueue.TryDequeue(out var newRpcState))
-                RpcBuffer.AddOrUpdate(newRpcState);
-
-            // Persistent RPC remove request.
-            while (_persistentRpcToRemoveQueue.TryDequeue(out var rpcHash))
-                RpcBuffer.RemovePersistent(rpcHash);
+                RpcBuffer.Add(newRpcState);
 
             // Update no-authority RPC requests. Note that it is not a part of the state.
             while (_rpcWithoutAuthorityQueue.TryDequeue(out var rpcWithoutAuthorityRequest))
@@ -224,22 +218,17 @@ namespace Keel.RelayNet.StateManagement
         internal void ScheduleRpcWithoutAuthority(NoAuthorityRpcType type, int hashCode, byte[] data, DeliveryMethod deliveryMethod) =>
             _rpcWithoutAuthorityQueue.Enqueue(new RpcWithoutAuthorityRequest(Uid, type, hashCode, data, deliveryMethod));
 
-        internal void ScheduleRpc(int hashCode, byte[] data, bool persistent, RpcBufferChangeMethod bufferChangeMethod, DeliveryMethod deliveryMethod)
+        internal void ScheduleRpc(int hashCode, byte[] data, DeliveryMethod deliveryMethod)
         {
             _rpcBufferUpdateQueue.Enqueue(new NetObjectRpcBuffer.NewRpcData
             {
                 HashCode = hashCode,
-                Data = data,
-                Persistent = persistent,
-                BufferChangeMethod = bufferChangeMethod
+                Data = data
             });
 
             if (deliveryMethod == DeliveryMethod.Reliable)
                 ScheduleUpdate(NetObjectStateChangeRequestType.ReliableUpdate);
         }
-
-        internal void ScheduleRemovePersistentRpc(int hashCode) =>
-            _persistentRpcToRemoveQueue.Enqueue(hashCode);
 
         internal int GetVersionHash()
         {
@@ -272,7 +261,7 @@ namespace Keel.RelayNet.StateManagement
                    $"own:{OwnerUid}:{(Owner == null ? "null" : Owner.ToString())} " +
                    $"l:{IsOwnedByLocalPlayer} " +
                    $"m:{IsOwnedByMasterClient} " +
-                   $"rpc: t:{RpcBuffer.TemporalBuffer.Count} p:{RpcBuffer.PersistentBuffer.Count}";
+                   $"rpc: {RpcBuffer.TemporalBuffer.Count}";
         }
 
         internal readonly struct RpcWithoutAuthorityRequest

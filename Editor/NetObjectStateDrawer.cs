@@ -90,21 +90,12 @@ namespace Keel.RelayNet.Debug.Editor
                 stateSnapshot.Serialize(s_networkStateSizeWriter);
                 EditorGUILayout.LabelField($"Network Size: {s_networkStateSizeWriter.Position}");
 
-                var temporalBuffer = _state.RpcBuffer.TemporalBuffer;
-                var persistentBuffer = _state.RpcBuffer.PersistentBuffer;
+                var rpcBuffer = _state.RpcBuffer.TemporalBuffer;
 
-                EditorGUILayout.LabelField($"RPC: Temporal: {temporalBuffer.Count}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"RPC: {rpcBuffer.Count}", EditorStyles.boldLabel);
                 {
                     EditorGUI.indentLevel++;
-                    foreach (var rpc in temporalBuffer)
-                        DrawRpc(rpc);
-                    EditorGUI.indentLevel--;
-                }
-
-                EditorGUILayout.LabelField($"RPC: Persistent: {persistentBuffer.Count}", EditorStyles.boldLabel);
-                {
-                    EditorGUI.indentLevel++;
-                    foreach (var rpc in persistentBuffer)
+                    foreach (var rpc in rpcBuffer)
                         DrawRpc(rpc);
                     EditorGUI.indentLevel--;
                 }

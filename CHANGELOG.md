@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+
+- The persistent half of the RPC buffer. Nothing could fill it since buffered RPCs were removed, so it was always empty. This removes `NetObjectIdentity.RemoveRpcFromBuffer`, `NetObjectRpcBuffer.PersistentBuffer`, `NetObjectRpcBufferSnapshot.PersistentBuffer` and the `RpcBufferChangeMethod` enum. `OwnerToOthersRpc` works as before.
+- Leftover debug logs: an error on every ownership change, and a log on every connect and disconnect.
+
+### Changed
+
+- State updates no longer carry the empty persistent RPC list. This changes the wire format: clients on 0.1.0 can't play with clients built from this version.
+
 ## 0.1.0 - 2026-10-18
 
 First release as a Unity package.
