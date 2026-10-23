@@ -65,7 +65,7 @@ This separation lets RelayNet do things that are hard when the state lives insid
   }
   ```
 
-- **Snapshots and replay.** The whole world can be serialized as a snapshot. The runtime world keeps the last 10 seconds of snapshots, and a `NetWorldReplica` replays them into a separate world. The **Debug Window** uses this to scrub through recent history.
+- **Snapshots and replay.** The whole world can be serialized as a snapshot. The runtime world keeps the last 10 seconds of snapshots, and a `NetWorldReplica` replays them into a separate world. Use it to show a kill cam or an instant replay, or to step back through a bug you just saw (see [How to use RelayNet](how-to.md#show-a-kill-cam)).
 - **One write rule.** Only the owner of an object can change its data. A `NetworkValue` throws if any other client writes it.
 
 There's a cost: you learn two layers, a data class and a behaviour, where NGO has one. In RelayNet, a MonoBehaviour field is never networked by itself. The state has to go through the object's data.
@@ -78,7 +78,7 @@ RelayNet puts that state in a world. A world holds the players, every networked 
 
 Because worlds are plain objects, there can be more than one. The runtime world records the last 10 seconds of its state, and `Replicate()` creates a `NetWorldReplica`, a second world that replays that history with its own view, next to the live one.
 
-Each world's view lives in a scene of its own, so worlds can also keep their physics apart. A replay's view gets its own physics scene: replayed objects don't collide with the live game or show up in its raycasts, which is what a kill cam needs. NGO doesn't come with a replay world: a replay there is something you build yourself.
+Each world's view lives in a scene of its own, so worlds can also keep their physics apart. A replay's view gets its own physics scene, so a replay can play next to the live game: replayed objects don't collide with it or show up in its raycasts. NGO doesn't come with a replay world: a replay there is something you build yourself.
 
 ## Topology and authority
 

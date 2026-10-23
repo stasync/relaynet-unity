@@ -4,7 +4,7 @@ Networking for Unity. RelayNet keeps game objects, their state and RPCs in sync 
 
 There's no game server and clients never connect to each other. Each client sends to the Relay room, and the room forwards the message to the other clients. Every networked object has one owner: the client that has authority over its state. The other clients receive that state and apply it.
 
-Networked state lives in plain data classes owned by the world, apart from MonoBehaviours, and GameObjects are views of it. For how this and other choices differ from Unity's Netcode for GameObjects, see [RelayNet compared with Netcode for GameObjects](Documentation~/comparison-with-netcode-for-gameobjects.md). Known issues and planned work are in the [roadmap](Documentation~/roadmap.md).
+Networked state lives in plain data classes owned by the world, apart from MonoBehaviours, and GameObjects are views of it. For how this and other choices differ from Unity's Netcode for GameObjects, see [RelayNet compared with Netcode for GameObjects](Documentation~/comparison-with-netcode-for-gameobjects.md). [How to use RelayNet](Documentation~/how-to.md) shows how to build common game features with it. Known issues and planned work are in the [roadmap](Documentation~/roadmap.md).
 
 ## Requirements
 
@@ -127,7 +127,7 @@ A world is the shared state of a room: the players, the networked objects and th
 
 A world runs without GameObjects. Its view, `NetWorldView`, turns the state into GameObjects. `OnSceneLoaded()` creates the view in a scene of its own. From then on, the view creates, updates and destroys a GameObject for every object state. Views of remote objects more than 50 meters from the main camera are destroyed while they're out of range, and created again when they come back, while their state keeps updating. `world.View.SetDrawDistance(meters)` changes that distance.
 
-Each world records the last 10 seconds of its state. `Replicate()` creates a `NetWorldReplica`, a separate world that replays that history with its own view. The Debug Window's playback uses it, and so can a kill cam. `NetWorld.All` lists every world, live or replayed.
+Each world records the last 10 seconds of its state. `Replicate()` creates a `NetWorldReplica`, a separate world that replays that history with its own view. Use it to show a [kill cam](Documentation~/how-to.md#show-a-kill-cam) or an [instant replay](Documentation~/how-to.md#show-an-instant-replay), or to [step back through a bug](Documentation~/how-to.md#step-back-through-a-bug) you just saw. `NetWorld.All` lists every world, live or replayed.
 
 Worlds also keep their physics apart. The live world's view uses Unity's default physics scene, like the rest of your game. A replay's view gets a physics scene of its own (`LocalPhysicsMode.Physics3D`), so replayed objects never collide with the live game or show up in its raycasts. Unity doesn't simulate a separate physics scene by itself. If a replay needs physics, step it with `scene.GetPhysicsScene().Simulate(deltaTime)`.
 

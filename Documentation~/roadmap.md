@@ -77,7 +77,7 @@ Generated code is easy to read and debug, which is why source generators are pre
 
 ## 6. Replays
 
-`NetWorldReplica` (`NetWorldRuntime.Replicate()`) replays the runtime world's last 10 seconds in a separate world, with its own view and physics scene. The Debug Window's playback uses it, and so do kill cams. Keep the feature, and grow it into a more complete replay API:
+`NetWorldReplica` (`NetWorldRuntime.Replicate()`) replays the runtime world's last 10 seconds in a separate world, with its own view and physics scene. It can show a kill cam or an instant replay, or step back through a bug you just saw. Keep the feature, and grow it into a more complete replay API:
 
 - **Controls.** The API is index-based (`MoveToSnapshot(int)`, `FindLastSnapshotIndexAndPeekNext`, `GetRemainTimeFromSnapshot`) and stops or disposes itself at the end (`autoDestroy`). Add time-based controls: `Duration`, `Time`, `Seek(time)`, `Play`, `Pause`, `Speed`, looping, and an event when it ends.
 - **Smooth playback.** The replay jumps from snapshot to snapshot at 10 Hz, and only behaviours that interpolate on their own look smooth. Interpolate between snapshots in the replay itself.
