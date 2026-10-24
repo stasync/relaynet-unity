@@ -22,6 +22,7 @@
 - `WriteColor32` wrote four floats, while `ReadColor32` reads four bytes, so everything read after a `Color32` was garbage. It now writes four bytes. This changes the wire format of any data that holds a `Color32`.
 - `Equals(object)` on `NetObjectUid`, `NetWorldId` and `NetPrefabObjectWeakRef` returned `false` even for equal values.
 - `ToMasterRPC` only worked when the master called it on an object the master owns. Otherwise it ran on the caller instead, or nowhere: both the sender and the receivers checked whether the master owns the object, instead of whether the local client is the master. It now runs on the master client, whoever owns the object.
+- `OnSceneLoaded()` could throw, or skip the last loaded scene, while another scene was still loading. It now goes through every scene and skips the ones that aren't loaded.
 
 ### Samples
 

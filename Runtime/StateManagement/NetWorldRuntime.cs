@@ -846,10 +846,13 @@ namespace Keel.RelayNet.StateManagement
             // Create view.
             InitializeView();
 
-            // Init scene objects.
-            for (var i = 0; i < SceneManager.loadedSceneCount; i++)
+            // Init scene objects. 'GetSceneAt' also counts the scenes that are still loading - those have no objects yet.
+            for (var i = 0; i < SceneManager.sceneCount; i++)
             {
                 var scene = SceneManager.GetSceneAt(i);
+                if (!scene.isLoaded)
+                    continue;
+
                 foreach (var rootObject in scene.GetRootGameObjects())
                 {
                     var sceneIdentities = rootObject.GetComponentsInChildren<NetObjectSceneIdentity>(includeInactive: false);
