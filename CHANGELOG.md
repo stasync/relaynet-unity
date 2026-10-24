@@ -26,6 +26,7 @@
 - **Tools > RelayNet > Enable debug** and **Disable debug** replaced the Android and iOS scripting defines with the Standalone ones. Each platform now keeps its own defines, and only `NETWORK_DEBUG` is added or removed.
 - In a replica, a player who first appeared in a snapshot had only a name, without properties, tag objects or the ready flag, until the next snapshot. The `WorldTime` of remote and replayed players was always 0.
 - A replica of an empty history threw a `NullReferenceException` on its first update. It now ends right away.
+- Without a main camera, the view threw a `NullReferenceException` for every remote object with a transform, which stopped the view from updating, and the debug overlay threw every frame. Remote objects now stay in view, and the overlay draws nothing.
 
 ### Samples
 

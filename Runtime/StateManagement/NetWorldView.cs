@@ -122,7 +122,12 @@ namespace Keel.RelayNet.StateManagement
             if (_temporaryUnregisteredViews.ContainsKey(uid))
                 return true;
 
-            var directionToCamera = Camera.main!.transform.position - transformData.Position.Value;
+            // No camera, no distance to measure.
+            var mainCamera = Camera.main;
+            if (mainCamera == null)
+                return true;
+
+            var directionToCamera = mainCamera.transform.position - transformData.Position.Value;
             return directionToCamera.sqrMagnitude < DrawDistance * DrawDistance;
         }
 

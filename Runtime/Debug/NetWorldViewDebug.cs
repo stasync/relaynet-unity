@@ -54,6 +54,10 @@ namespace Keel.RelayNet.Debug
             if (!s_enabled)
                 return;
 
+            // The markers face the main camera - without one there is nothing to draw them for.
+            if (Camera.main == null)
+                return;
+
             foreach (var world in NetWorld.All.Values)
             {
                 foreach (var objectState in world.ObjectStates.Values)
