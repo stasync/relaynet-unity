@@ -13,25 +13,28 @@ namespace Keel.RelayNet.Debug.Editor
 
         public static void SetEnabled(string symbolName, bool value)
         {
-            var defines = GetSymbolsList(BuildTargetGroup.Standalone);
-            if (value)
+            // Every group keeps its own defines - only this one symbol is added or removed.
+            foreach (var group in new[] { BuildTargetGroup.Standalone, BuildTargetGroup.Android, BuildTargetGroup.iOS })
             {
-                if (!defines.Contains(symbolName))
+                var defines = GetSymbolsList(group);
+                if (value)
+                {
+                    if (defines.Contains(symbolName))
+                        continue;
+
                     defines.Add(symbolName);
-            }
-            else
-            {
-                if (!defines.Contains(symbolName))
-                    return;
+                }
+                else
+                {
+                    if (!defines.Contains(symbolName))
+                        continue;
 
-                while (defines.Contains(symbolName))
-                    defines.Remove(symbolName);
-            }
+                    while (defines.Contains(symbolName))
+                        defines.Remove(symbolName);
+                }
 
-            var definesString = string.Join(";", defines.ToArray());
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone, definesString);
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android, definesString);
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.iOS, definesString);
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(group, string.Join(";", defines.ToArray()));
+            }
         }
 
         private static List<string> GetSymbolsList(BuildTargetGroup group) =>
