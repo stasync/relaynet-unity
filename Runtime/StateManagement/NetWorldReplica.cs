@@ -148,6 +148,15 @@ namespace Keel.RelayNet.StateManagement
             if (Paused)
                 return;
 
+            // Nothing was recorded - the replay ends before it starts.
+            if (_historyBuffer.Count == 0)
+            {
+                if (_autoDestroy)
+                    Dispose();
+
+                return;
+            }
+
             _currentTime += deltaTime;
             if (_currentTime < _nextSnapshotTime)
                 return;

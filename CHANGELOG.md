@@ -25,6 +25,7 @@
 - `OnSceneLoaded()` could throw, or skip the last loaded scene, while another scene was still loading. It now goes through every scene and skips the ones that aren't loaded.
 - **Tools > RelayNet > Enable debug** and **Disable debug** replaced the Android and iOS scripting defines with the Standalone ones. Each platform now keeps its own defines, and only `NETWORK_DEBUG` is added or removed.
 - In a replica, a player who first appeared in a snapshot had only a name, without properties, tag objects or the ready flag, until the next snapshot. The `WorldTime` of remote and replayed players was always 0.
+- A replica of an empty history threw a `NullReferenceException` on its first update. It now ends right away.
 
 ### Samples
 
