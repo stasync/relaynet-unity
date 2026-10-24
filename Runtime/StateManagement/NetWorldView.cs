@@ -82,7 +82,7 @@ namespace Keel.RelayNet.StateManagement
                     else
                     {
                         // The instance lands some frames later, so there is nothing to initialize this time round.
-                        // Only request the view if the object is owned by the local player or if it has a view date.
+                        // Only request the view if the object is owned by the local player or if it has view data.
                         if (state.IsOwnedByLocalPlayer || state.DataCollection.HasData<NetObjectViewStateData>())
                             RequestObjectView(state);
 
@@ -149,7 +149,7 @@ namespace Keel.RelayNet.StateManagement
                 rotation = transformData.Rotation.Value;
             }
 
-            // Stat async operation.
+            // Start async operation.
             var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation,
                 new InstantiateParameters
                 {
@@ -170,7 +170,7 @@ namespace Keel.RelayNet.StateManagement
             if (_pendingObjectViews.ContainsKey(state.Uid))
                 return;
 
-            // Stat async operation.
+            // Start async operation.
             var asyncOperation = InstantiateAsync(original: GetViewPrefab(state.PrefabUid), position, rotation,
                 new InstantiateParameters
                 {

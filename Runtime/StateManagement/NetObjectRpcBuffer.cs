@@ -34,7 +34,7 @@ namespace Keel.RelayNet.StateManagement
         internal void Clear() =>
             _temporalBuffer.Clear();
 
-        internal void RestoreFormSnapshot(NetObjectRpcBufferSnapshot snapshot)
+        internal void RestoreFromSnapshot(NetObjectRpcBufferSnapshot snapshot)
         {
             _temporalBuffer.Clear();
             foreach (var rpcSnapshot in snapshot.TemporalBuffer)

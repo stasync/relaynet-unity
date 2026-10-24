@@ -78,7 +78,7 @@ namespace Keel.RelayNet.GameObjects
         private readonly Dictionary<int, Action<byte[]>> _rpcHandlers = new();
 
         /// <summary>
-        /// Initialization. Called from GSInstanceFactory. 
+        /// Initialization. Called from <see cref="NetWorldView"/>.
         /// Shouldn't be called from top-level API.
         /// </summary>
         internal void Initialize(NetWorld world, NetObjectUid stateUid)
@@ -259,7 +259,7 @@ namespace Keel.RelayNet.GameObjects
         {
             if (!IsLocal)
                 throw new InvalidOperationException(
-                    "Trying to send AuthRPC on remote object's behaviour, this is not allowed. Use NonAuthRPC if you not sure about object's authority");
+                    $"Trying to send {nameof(OwnerToOthersRpc)} on remote object's behaviour, this is not allowed. Use {nameof(ToOwnerRpc)}, {nameof(ToMasterRPC)} or {nameof(ToAllRpc)} if you're not sure about object's authority");
 
             var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
 
@@ -287,7 +287,7 @@ namespace Keel.RelayNet.GameObjects
 
         /// <summary>
         /// RPC variation, sends RPC to MASTER client.
-        /// It does not matter whether MASTER client is a owner of this object or not.
+        /// It does not matter whether MASTER client is the owner of this object or not.
         /// IF we are a master client, just invokes locally without sending data.
         /// </summary>
         public void ToMasterRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod)
@@ -301,8 +301,8 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// RPC variation sends RPC to SINGLE client, who HAS AUTHORITY on this object.
-        /// IF we have authority, just invoke it locally without sending data.
+        /// RPC variation, sends RPC to ALL clients that have this object, whoever owns it.
+        /// Also invokes it locally if <paramref name="invokeLocally"/> is set.
         /// </summary>
         public void ToAllRpc(Action<byte[]> rpcHandlerMethod, byte[] data, bool invokeLocally, DeliveryMethod deliveryMethod)
         {
@@ -336,7 +336,7 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// Receive rpc on a master client. (Called from GSTransport).
+        /// Receive rpc on a master client. (Called from <see cref="NetWorldRuntime"/>).
         /// </summary>
         internal void ReceiveRpcOnMasterClient(RpcWithoutAuthorityState state)
         {
@@ -347,9 +347,8 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// Receive prc anywhere.
+        /// Receive rpc anywhere.
         /// </summary>
-        /// <param name="state"></param>
         internal void ReceiveRpc(RpcWithoutAuthorityState state) =>
             InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
 

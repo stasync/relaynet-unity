@@ -78,7 +78,7 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// Use this instead of start, called after objet was deserialized first time.
+        /// Use this instead of start, called after object was deserialized first time.
         /// </summary>
         protected virtual void OnPostInitialize()
         {

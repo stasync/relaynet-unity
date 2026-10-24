@@ -188,7 +188,7 @@ namespace Keel.RelayNet.StateManagement
             EnsureValid();
 
             if (!IsLocal())
-                throw new InvalidOperationException($"Trying to register tag object without authority, this is not allowed. Player id: {uid}.");
+                throw new InvalidOperationException($"Trying to register tag object without authority, this is not allowed. Player id: {Uid}.");
 
             if (!uid.IsValid)
                 throw new InvalidOperationException("Trying to register invalid object Uid as tag object.");
@@ -203,10 +203,10 @@ namespace Keel.RelayNet.StateManagement
             EnsureValid();
 
             if (!IsLocal())
-                throw new InvalidOperationException($"Trying to unregister tag object without authority, this is not allowed. Player id: {uid}.");
+                throw new InvalidOperationException($"Trying to unregister tag object without authority, this is not allowed. Player id: {Uid}.");
 
             if (!uid.IsValid)
-                throw new InvalidOperationException("Trying to register invalid object Uid as tag object.");
+                throw new InvalidOperationException("Trying to unregister invalid object Uid as tag object.");
 
             _tagObjectUidCollection.Remove(uid);
             if (MainTagObjectUid == uid)

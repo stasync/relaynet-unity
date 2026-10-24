@@ -36,7 +36,7 @@ namespace Keel.RelayNet.GameObjects
 #endif
             s_instance = Resources.Load<NetPrefabDatabase>(path: nameof(NetPrefabDatabase));
             if (s_instance == null)
-                throw new InvalidOperationException("Could not find NetworkPrefabDatabase.asset");
+                throw new InvalidOperationException($"Could not find {nameof(NetPrefabDatabase)}.asset in a Resources folder.");
         }
 
         internal static ResourceRequest LoadAsync()

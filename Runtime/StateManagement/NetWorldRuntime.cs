@@ -14,7 +14,7 @@ namespace Keel.RelayNet.StateManagement
 
         private const float HISTORY_BUFFER_MAX_LENGTH_IN_SECONDS = 10f; // Record last 'N' seconds.
         private const float MIN_UPDATE_INTERVAL_S = 0.1f; // 10 times per second.
-        private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 6f; // Remove remote objects if now data was received for 'N' seconds.
+        private const float AUTO_REMOVE_REMOTE_OBJECT_TIME_S = 6f; // Remove remote objects if no data was received for 'N' seconds.
         private const float OWNERSHIP_DISTRIBUTION_UPDATE_RATE = 5f;
         private const float OWNERSHIP_DISTRIBUTION_REQUEST_TIMEOUT = 2f;
 
@@ -202,11 +202,11 @@ namespace Keel.RelayNet.StateManagement
                         {
                             var state = new RpcWithoutAuthorityState(_reader);
                             if (!state.IsValid)
-                                throw new ArgumentException();
+                                throw new ArgumentException($"Received an invalid RPC with code '{state.RpcState.Hash}' for object '{state.ObjectUid}'.");
 
                             var objectIdentity = View == null ? null : View.GetObjectView(state.ObjectUid);
 
-                            // We need to handle rpc receive for objects, which are doesn't exist.
+                            // An RPC can arrive for an object that doesn't exist here.
                             // It is probably already destroyed.
                             // No exceptions here, just warning.
                             if (objectIdentity == null)
@@ -217,7 +217,7 @@ namespace Keel.RelayNet.StateManagement
                                     ? "UNKNOWN"
                                     : $"{delegateTargetType.FullName}.{methodInfo.Name}";
 
-                                Debug.LogError($"Trying to receive rpc with code '{state.RpcState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUid}' that doesnt exists, maybe it is already destroyed.");
+                                Debug.LogError($"Trying to receive rpc with code '{state.RpcState.Hash}' '{rpcHandlerMethodName}' for object '{state.ObjectUid}' that doesn't exist, maybe it is already destroyed.");
 #endif
                                 break;
                             }
@@ -246,13 +246,13 @@ namespace Keel.RelayNet.StateManagement
                                     break;
                                 }
                                 default:
-                                    throw new ArgumentOutOfRangeException();
+                                    throw new ArgumentOutOfRangeException(nameof(state.Type), state.Type, "Received an RPC of an unknown type.");
                             }
 
                             break;
                         }
                         default:
-                            throw new ArgumentOutOfRangeException();
+                            throw new ArgumentOutOfRangeException(nameof(worldChangeOpCode), worldChangeOpCode, "Received a world message of an unknown type.");
                     }
                 }
             }
@@ -281,7 +281,7 @@ namespace Keel.RelayNet.StateManagement
                 while (remoteWorldDataUpdateRequests.TryDequeue(out var data))
                 {
                     _reader.Replace(buffer: data);
-                    _reader.ReadByte(); // Offset - see ProcessInternalData var worldChangeOpCode = (NetWorldRuntimeChangeOp)_reader.ReadByte();
+                    _reader.ReadByte(); // Skip the op code - ProcessIncomingData has already read it.
 
                     var newTime = _reader.ReadSingle();
                     if (newTime < maxTime)
@@ -307,7 +307,7 @@ namespace Keel.RelayNet.StateManagement
                             throw new InvalidOperationException();
 #endif
 
-                        // Player doesnt exist.
+                        // Player doesn't exist.
                         if (player == null)
                         {
                             // Create new.
@@ -381,7 +381,7 @@ namespace Keel.RelayNet.StateManagement
                     // Object was removed remotely - no need to proceed, just clear all the queues.
                     if (snapshot.StateChangeType is NetObjectStateChangeRequestType.RemoveHard or NetObjectStateChangeRequestType.RemoveSoft)
                     {
-                        Debug.LogError($"Remote update snapshot form object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabUid}' has state '{snapshot.StateChangeType}', but object doesn't exists.");
+                        Debug.LogError($"Remote update snapshot for object with Uid: '{snapshot.ObjectUid}:{snapshot.PrefabUid}' has state '{snapshot.StateChangeType}', but object doesn't exist.");
 
                         _unregisteredSceneObjects.Remove(snapshot.ObjectUid);
 
@@ -517,7 +517,7 @@ namespace Keel.RelayNet.StateManagement
                 while (remoteObjectOwnershipValidationsUpdateRequests.TryDequeue(out var data))
                 {
                     _reader.Replace(buffer: data);
-                    _reader.ReadByte(); // Offset - see ProcessInternalData var worldChangeOpCode = (NetWorldRuntimeChangeOp)_reader.ReadByte();
+                    _reader.ReadByte(); // Skip the op code - ProcessIncomingData has already read it.
 
                     var isResponse = _reader.ReadBoolean();
                     if (isResponse)
@@ -669,9 +669,8 @@ namespace Keel.RelayNet.StateManagement
         }
 
         /// <summary>
-        /// Create another world that could evaluate and re-player this world's history buffer.
+        /// Create another world that replays this world's history buffer.
         /// </summary>
-        /// <returns></returns>
         public NetWorldReplica Replicate()
         {
             EnsureValid();
@@ -710,7 +709,7 @@ namespace Keel.RelayNet.StateManagement
                     // A shared object stays: the master takes it over.
                     if (state.IsShared)
                     {
-                        // Is local client becomes the master client, set the object's owner and sync it.
+                        // If the local client is the master now, set the object's owner and sync it.
                         if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
                             state.ChangedOwner(Players.LocalPlayer.Uid);
                         else

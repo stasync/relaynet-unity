@@ -39,19 +39,19 @@ namespace Keel.RelayNet.StateManagement
             TypeHashCode = GetTypeIndex(GetType());
 
             // Collect serializable values.
-            foreach (var filedInfo in NetworkValueBase.GetFields(GetType()))
+            foreach (var fieldInfo in NetworkValueBase.GetFields(GetType()))
             {
-                if (filedInfo.GetValue(this) is NetworkValueBase value)
+                if (fieldInfo.GetValue(this) is NetworkValueBase value)
                 {
-                    if (_internalValueCollection.ContainsKey(filedInfo))
-                        throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{filedInfo.Name}'.");
+                    if (_internalValueCollection.ContainsKey(fieldInfo))
+                        throw new InvalidOperationException($"'{GetType().FullName}' already contains value with name '{fieldInfo.Name}'.");
 
                     value.InternalWritePermission = _writePermission;
                     value.InternalValidator = _validator;
-                    _internalValueCollection.Add(filedInfo, value);
+                    _internalValueCollection.Add(fieldInfo, value);
                 }
                 else
-                    Debug.LogError($"'{GetType().FullName}.{filedInfo.Name}' field is not assigned and will be skipped.");
+                    Debug.LogError($"'{GetType().FullName}.{fieldInfo.Name}' field is not assigned and will be skipped.");
             }
         }
 
@@ -115,7 +115,7 @@ namespace Keel.RelayNet.StateManagement
         {
             var dataType = typeof(NetObjectStateData);
             if (!dataType.IsAssignableFrom(type) || type == dataType)
-                throw new InvalidOperationException($"'{type.FullName} must derive from '{dataType.FullName}'.");
+                throw new InvalidOperationException($"'{type.FullName}' must derive from '{dataType.FullName}'.");
 
             var dataInstance = (NetObjectStateData)Activator.CreateInstance(type);
             dataInstance.Init(validator, writePermission);
