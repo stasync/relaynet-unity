@@ -112,6 +112,7 @@ namespace Keel.RelayNet.StateManagement
 
             Properties.RestoreFromSnapshot(snapshot.Properties);
             MainTagObjectUid = snapshot.MainTagObject;
+            WorldTime = snapshot.WorldTime;
         }
 
         internal void Invalidate()

@@ -24,6 +24,7 @@
 - `ToMasterRPC` only worked when the master called it on an object the master owns. Otherwise it ran on the caller instead, or nowhere: both the sender and the receivers checked whether the master owns the object, instead of whether the local client is the master. It now runs on the master client, whoever owns the object.
 - `OnSceneLoaded()` could throw, or skip the last loaded scene, while another scene was still loading. It now goes through every scene and skips the ones that aren't loaded.
 - **Tools > RelayNet > Enable debug** and **Disable debug** replaced the Android and iOS scripting defines with the Standalone ones. Each platform now keeps its own defines, and only `NETWORK_DEBUG` is added or removed.
+- In a replica, a player who first appeared in a snapshot had only a name, without properties, tag objects or the ready flag, until the next snapshot. The `WorldTime` of remote and replayed players was always 0.
 
 ### Samples
 

@@ -119,11 +119,13 @@ namespace Keel.RelayNet.StateManagement
             // Add or update.
             foreach (var (clientUid, playerSnapshot) in snapshot.PlayersCollection)
             {
-                if (_playersCollection.TryGetValue(clientUid, out var player))
-                    player.RestoreFromSnapshot(playerSnapshot);
-                else
-                    _playersCollection.Add(clientUid,
-                        new NetWorldPlayer(playerSnapshot.Uid, playerSnapshot.Name, isLocal: false, masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid));
+                if (!_playersCollection.TryGetValue(clientUid, out var player))
+                {
+                    player = new NetWorldPlayer(playerSnapshot.Uid, playerSnapshot.Name, isLocal: false, masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid);
+                    _playersCollection.Add(clientUid, player);
+                }
+
+                player.RestoreFromSnapshot(playerSnapshot);
             }
 
             // Use invalid references for local and master - player collection snapshot only used for the world history buffer.
