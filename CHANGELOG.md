@@ -28,6 +28,7 @@
 - A replica of an empty history threw a `NullReferenceException` on its first update. It now ends right away.
 - Without a main camera, the view threw a `NullReferenceException` for every remote object with a transform, which stopped the view from updating, and the debug overlay threw every frame. Remote objects now stay in view, and the overlay draws nothing.
 - `NetObjectTransformSync` threw when you added an empty slot to **Nested Transforms** in the inspector, and logged the wrong transform when it removed one that isn't a child.
+- The prefab database could drop a deleted prefab without marking itself dirty, so the change wasn't saved, and deleting several network prefabs at once could remove the wrong path from its list of pending deletions.
 
 ### Samples
 
