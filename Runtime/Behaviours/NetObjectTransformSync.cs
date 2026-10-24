@@ -32,11 +32,13 @@ namespace Keel.RelayNet.Behaviours
         {
             for (var i = _nestedTransforms.Count - 1; i >= 0; i--)
             {
-                if (_nestedTransforms[i].IsChildOf(transform))
+                // An empty slot is left alone - it's about to be filled in.
+                var nestedTransform = _nestedTransforms[i];
+                if (nestedTransform == null || nestedTransform.IsChildOf(transform))
                     continue;
 
+                Debug.LogError($"'{nestedTransform.gameObject.name}' is not a child of '{gameObject.name}'", this);
                 _nestedTransforms.RemoveAt(i);
-                Debug.LogError($"'{_nestedTransforms[i].gameObject.name}' is not a child of '{gameObject.name}'");
             }
         }
 #endif
