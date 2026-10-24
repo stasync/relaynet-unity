@@ -234,7 +234,8 @@ namespace Keel.RelayNet.StateManagement
                                 }
                                 case NoAuthorityRpcType.ToMaster:
                                 {
-                                    if (objectIdentity.IsOwnedByMasterClient)
+                                    // Check if we are the master - whoever owns the object.
+                                    if (Players.LocalPlayer != null && Players.LocalPlayer.IsMaster())
                                         objectIdentity.ReceiveRpcOnMasterClient(state);
 
                                     break;

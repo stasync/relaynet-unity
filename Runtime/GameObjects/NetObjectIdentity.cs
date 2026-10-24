@@ -56,6 +56,11 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
+        /// The local client is the master client - whoever owns this object.
+        /// </summary>
+        private bool IsLocalPlayerMaster => World?.Players.LocalPlayer is { } localPlayer && localPlayer.IsMaster();
+
+        /// <summary>
         /// World that contains this object;
         /// </summary>
         public NetWorld World { get; private set; }
@@ -288,8 +293,8 @@ namespace Keel.RelayNet.GameObjects
         public void ToMasterRPC(Action<byte[]> rpcHandlerMethod, byte[] data, DeliveryMethod deliveryMethod)
         {
             var hashCode = NetObjectRpcUtils.ActionToHash(rpcHandlerMethod);
-            // If we have authority on this object, don't need to send this kind of RPC.
-            if (IsOwnedByMasterClient)
+            // If we are the master, don't need to send this kind of RPC.
+            if (IsLocalPlayerMaster)
                 InvokeRpcHandler(hashCode, data);
             else
                 State.ScheduleRpcWithoutAuthority(NoAuthorityRpcType.ToMaster, hashCode, data, deliveryMethod);
@@ -335,8 +340,8 @@ namespace Keel.RelayNet.GameObjects
         /// </summary>
         internal void ReceiveRpcOnMasterClient(RpcWithoutAuthorityState state)
         {
-            if (!IsOwnedByMasterClient)
-                throw new InvalidOperationException("Trying to receive MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
+            if (!IsLocalPlayerMaster)
+                throw new InvalidOperationException("Trying to receive MASTER CLIENT RPC on a client that is not the master, this is not allowed");
 
             InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
         }
