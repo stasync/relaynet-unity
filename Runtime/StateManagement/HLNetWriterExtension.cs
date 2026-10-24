@@ -55,10 +55,10 @@ namespace Keel.RelayNet.StateManagement
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteColor32(this NetWriter writer, Color32 value)
         {
-            writer.WriteSingle(value.r);
-            writer.WriteSingle(value.g);
-            writer.WriteSingle(value.b);
-            writer.WriteSingle(value.a);
+            writer.WriteByte(value.r);
+            writer.WriteByte(value.g);
+            writer.WriteByte(value.b);
+            writer.WriteByte(value.a);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
