@@ -38,7 +38,7 @@ namespace Keel.RelayNet.StateManagement
             IsValid ? _value.ToString() : "INVALID";
 
         public override bool Equals(object obj) =>
-            _value.Equals(obj);
+            obj is NetObjectUid other && Equals(other);
 
         public override int GetHashCode() =>
             _value.GetHashCode();

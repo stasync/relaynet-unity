@@ -56,11 +56,15 @@ namespace Keel.RelayNet.Editor
                     catch (MissingReferenceException)
                     {
                         s_prefabDatabase._list.RemoveAt(i);
+                        dirty = true;
                         continue;
                     }
 
                     if (prefab == null)
+                    {
                         s_prefabDatabase._list.RemoveAt(i);
+                        dirty = true;
+                    }
                     else
                     {
                         var path = AssetDatabase.GetAssetPath(prefab);
@@ -70,7 +74,7 @@ namespace Keel.RelayNet.Editor
                                 continue;
 
                             s_prefabDatabase._list.RemoveAt(i);
-                            deleted.RemoveAt(j);
+                            deleted.Remove(assets[j]);
                             dirty = true;
                         }
                     }

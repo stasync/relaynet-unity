@@ -106,7 +106,7 @@ namespace Keel.RelayNet.StateManagement
         {
             var result = $"'{GetType().FullName}'";
             foreach (var kvp in _internalValueCollection)
-                result += $" {kvp.Key}:{kvp.Value}";
+                result += $" {kvp.Key.Name}:{kvp.Value}";
 
             return result;
         }

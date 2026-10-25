@@ -19,6 +19,12 @@
 
 - Automatic ownership distribution no longer moves objects that aren't shared. Before, the client that won such an object threw an exception from the world update.
 - A prefab with a `NetObjectSceneIdentity` that was created from code could bake the prefab id `32` (the hash of an empty GUID) before it was saved. Unsaved objects are now left alone.
+- `WriteColor32` wrote four floats, while `ReadColor32` reads four bytes, so everything read after a `Color32` was garbage. It now writes four bytes. This changes the wire format of any data that holds a `Color32`.
+- `Equals(object)` on `NetObjectUid`, `NetWorldId` and `NetPrefabObjectWeakRef` returned `false` even for equal values.
+- The prefab database could drop a deleted prefab without marking itself dirty, so the change wasn't saved, and deleting several network prefabs at once could remove the wrong path from its list of pending deletions.
+- The `WorldTime` of remote and replayed players was always 0: restoring a player from a snapshot skipped it.
+- `NetObjectStateData.ToString()` printed each value with its field's type in front of its name, instead of just the name.
+- `NetWorldObjectViewPromise` kept an empty list for every object it had waited for, and threw if a callback waited for the same object again. It now forgets an object once its callbacks have run.
 
 ### Samples
 
