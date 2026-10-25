@@ -242,7 +242,7 @@ namespace Keel.RelayNet.Behaviours
                     var targetLayerWeight = m_RemoteLayerWeights[layerIndex];
                     var currentLayerWeight = m_Animator.GetLayerWeight(layerIndex);
 
-                    // Not sure if we should smooth the layer weight, it might be intended to be changed immediately, form 0 to 1 for instance.
+                    // Not sure if we should smooth the layer weight, it might be intended to be changed immediately, from 0 to 1 for instance.
                     //m_Animator.SetLayerWeight(layerIndex, Mathf.MoveTowards(currentLayerWeight, targetLayerWeight, Time.deltaTime * m_RemoteLayerWeightChnageSpeed));
                     m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);
                 }

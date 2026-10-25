@@ -46,7 +46,7 @@ namespace Keel.RelayNet.Behaviours
         {
             if (_interactionChangeRequestCallbacks.TryGetValue(sender, out _))
             {
-                Debug.LogError($"Callback already registered for transaction with object '{sender}' on '{gameObject.name}' and will be merged");
+                Debug.LogError($"Callback already registered for transaction with object '{sender}' on '{gameObject.name}', the request is rejected.");
                 callback(false);
                 return;
             }
@@ -60,7 +60,7 @@ namespace Keel.RelayNet.Behaviours
 
             if (Data.CurrentInteraction.Value.IsValid && value)
             {
-                // Validate current interaction sate.
+                // Validate current interaction state.
                 if (Identity.World.ObjectExists(Data.CurrentInteraction.Value))
                 {
                     Debug.LogWarning($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Current: '{Data.CurrentInteraction.Value}' Enabled: '{Data.InteractionsEnabled.Value}'.");

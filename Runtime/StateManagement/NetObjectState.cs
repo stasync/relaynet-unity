@@ -8,7 +8,7 @@ namespace Keel.RelayNet.StateManagement
 {
     public sealed class NetObjectState
     {
-        #region SYNCRONIZED STATE
+        #region SYNCHRONIZED STATE
 
         public NetObjectUid Uid { get; private set; }
 
@@ -127,8 +127,8 @@ namespace Keel.RelayNet.StateManagement
 
             StateChangeType = snapshot.StateChangeType;
             WorldTime = snapshot.WorldTime;
-            RpcBuffer.RestoreFormSnapshot(snapshot.RpcState);
-            DataCollection.RestoreFromSnapShot(snapshot.DataState);
+            RpcBuffer.RestoreFromSnapshot(snapshot.RpcState);
+            DataCollection.RestoreFromSnapshot(snapshot.DataState);
         }
 
         private void UpdateOwnerInternal(ClientUid newOwner)

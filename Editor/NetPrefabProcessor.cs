@@ -6,12 +6,10 @@ using UnityEngine;
 namespace Keel.RelayNet.Editor
 {
     /// <summary>
-    /// Keeps the default <see cref="NetPrefabDatabase"/> in sync with the project: whenever a
-    /// prefab carrying a <see cref="NetObjectIdentity"/> is created, moved, or deleted, this
-    /// AssetPostprocessor adds/removes it automatically. This is the "nicely tracks every prefab
-    /// in the project" behavior - no manual list maintenance, no Resources folder, no name-as-id.
-    ///
-    /// Toggle it off (or change the asset path) under Project Settings &gt; Prefab Registry.
+    /// Keeps the <see cref="NetPrefabDatabase"/> (Assets/Resources/NetPrefabDatabase.asset) in sync with the project:
+    /// whenever a prefab carrying a <see cref="NetObjectIdentity"/> is imported or deleted, this AssetPostprocessor adds or
+    /// removes it, so the list never needs maintaining by hand. A prefab's id is a hash of its asset GUID, so it survives
+    /// renames and moves.
     /// </summary>
     internal sealed class NetPrefabProcessor : AssetPostprocessor
     {
