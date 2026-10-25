@@ -22,6 +22,7 @@
 - `WriteColor32` wrote four floats, while `ReadColor32` reads four bytes, so everything read after a `Color32` was garbage. It now writes four bytes. This changes the wire format of any data that holds a `Color32`.
 - `Equals(object)` on `NetObjectUid`, `NetWorldId` and `NetPrefabObjectWeakRef` returned `false` even for equal values.
 - The prefab database could drop a deleted prefab without marking itself dirty, so the change wasn't saved, and deleting several network prefabs at once could remove the wrong path from its list of pending deletions.
+- The `WorldTime` of remote and replayed players was always 0: restoring a player from a snapshot skipped it.
 
 ### Samples
 
