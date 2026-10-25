@@ -52,7 +52,7 @@ namespace Keel.RelayNet.StateManagement.Values
             set
             {
                 if (!HasPermission)
-                    throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
+                    throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TKey).Name}, {typeof(TValue).Name}>");
 
                 InternalValue[key] = value;
             }
@@ -86,7 +86,7 @@ namespace Keel.RelayNet.StateManagement.Values
         public void Add(TKey key, TValue value)
         {
             if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
+                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TKey).Name}, {typeof(TValue).Name}>");
 
             InternalValue.Add(key, value);
         }
@@ -95,7 +95,7 @@ namespace Keel.RelayNet.StateManagement.Values
         public void Add(KeyValuePair<TKey, TValue> item)
         {
             if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
+                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TKey).Name}, {typeof(TValue).Name}>");
 
             InternalValue.Add(item.Key, item.Value);
         }
@@ -104,7 +104,7 @@ namespace Keel.RelayNet.StateManagement.Values
         public void Clear()
         {
             if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
+                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TKey).Name}, {typeof(TValue).Name}>");
 
             if (InternalValue.Count == 0)
                 return;
@@ -120,7 +120,7 @@ namespace Keel.RelayNet.StateManagement.Values
         public bool Remove(TKey key)
         {
             if (!HasPermission)
-                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TValue).Name}, {typeof(TValue).Name}>");
+                throw new InvalidOperationException($"No authority to change dictionary of type <{typeof(TKey).Name}, {typeof(TValue).Name}>");
 
             return InternalValue.Remove(key);
         }

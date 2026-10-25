@@ -34,24 +34,24 @@ namespace Keel.RelayNet.StateManagement.Values
             if (s_fieldCache.TryGetValue(type, out var result))
                 return result;
 
-            var newFiledList = new List<FieldInfo>();
-            s_fieldCache.Add(type, newFiledList);
+            var newFieldList = new List<FieldInfo>();
+            s_fieldCache.Add(type, newFieldList);
 
-            foreach (var filedInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+            foreach (var fieldInfo in type.GetFields(bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
             {
-                if (!typeof(NetworkValueBase).IsAssignableFrom(filedInfo.FieldType))
+                if (!typeof(NetworkValueBase).IsAssignableFrom(fieldInfo.FieldType))
                     continue;
 
-                if (!filedInfo.IsInitOnly)
+                if (!fieldInfo.IsInitOnly)
                 {
-                    Debug.LogError($"Network field '{type.FullName}.{filedInfo.Name}' will be ignored as it has to be read-only. Please set 'readOnly' to keyword'");
+                    Debug.LogError($"Network field '{type.FullName}.{fieldInfo.Name}' will be ignored as it has to be read-only. Mark it 'readonly'.");
                     continue;
                 }
 
-                newFiledList.Add(filedInfo);
+                newFieldList.Add(fieldInfo);
             }
 
-            return newFiledList;
+            return newFieldList;
         }
     }
 }

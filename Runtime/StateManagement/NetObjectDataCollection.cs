@@ -32,15 +32,15 @@ namespace Keel.RelayNet.StateManagement
             if (!_dataWritePermission())
                 throw new InvalidOperationException("No authority to modify the data collection.");
 
-            var typIndex = NetObjectStateData.GetTypeIndex<T>();
-            if (_internalCollection.TryGetValue(typIndex, out var data))
+            var typeIndex = NetObjectStateData.GetTypeIndex<T>();
+            if (_internalCollection.TryGetValue(typeIndex, out var data))
                 return data as T;
 
             data = NetObjectStateData.Provide<T>(_validator, _dataWritePermission);
             if (data == null)
                 throw new InvalidOperationException();
 
-            _internalCollection.Add(typIndex, data);
+            _internalCollection.Add(typeIndex, data);
             return (T)data;
         }
 
@@ -89,7 +89,7 @@ namespace Keel.RelayNet.StateManagement
         internal NetObjectDataCollectionSnapshot ToSnapshot() =>
             new(_internalCollection.Values);
 
-        internal void RestoreFromSnapShot(NetObjectDataCollectionSnapshot snapshot)
+        internal void RestoreFromSnapshot(NetObjectDataCollectionSnapshot snapshot)
         {
             _reader.Replace(snapshot.Data);
             _restoredTypes.Clear();
