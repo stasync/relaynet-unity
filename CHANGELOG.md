@@ -24,6 +24,7 @@
 - The prefab database could drop a deleted prefab without marking itself dirty, so the change wasn't saved, and deleting several network prefabs at once could remove the wrong path from its list of pending deletions.
 - The `WorldTime` of remote and replayed players was always 0: restoring a player from a snapshot skipped it.
 - `NetObjectStateData.ToString()` printed each value with its field's type in front of its name, instead of just the name.
+- `NetWorldObjectViewPromise` kept an empty list for every object it had waited for, and threw if a callback waited for the same object again. It now forgets an object once its callbacks have run.
 
 ### Samples
 

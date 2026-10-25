@@ -35,13 +35,11 @@ namespace Keel.RelayNet.GameObjects
 
         private void OnNewObjectInitialized(NetObjectIdentity identity)
         {
-            if (!_instances.TryGetValue(identity.InstanceId, out var waiters))
+            if (!_instances.Remove(identity.InstanceId, out var waiters))
                 return;
 
             foreach (var action in waiters)
                 action(identity);
-
-            waiters.Clear();
         }
 
         public void Dispose()
