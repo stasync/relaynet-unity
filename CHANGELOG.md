@@ -23,6 +23,7 @@
 - `Equals(object)` on `NetObjectUid`, `NetWorldId` and `NetPrefabObjectWeakRef` returned `false` even for equal values.
 - The prefab database could drop a deleted prefab without marking itself dirty, so the change wasn't saved, and deleting several network prefabs at once could remove the wrong path from its list of pending deletions.
 - The `WorldTime` of remote and replayed players was always 0: restoring a player from a snapshot skipped it.
+- `NetObjectStateData.ToString()` printed each value with its field's type in front of its name, instead of just the name.
 
 ### Samples
 
