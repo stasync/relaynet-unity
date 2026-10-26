@@ -6,6 +6,10 @@ There's no game server and clients never connect to each other. Each client send
 
 Networked state lives in plain data classes owned by the world, apart from MonoBehaviours, and GameObjects are views of it. For how this and other choices differ from Unity's Netcode for GameObjects, see [RelayNet compared with Netcode for GameObjects](Documentation~/comparison-with-netcode-for-gameobjects.md). [How to use RelayNet](Documentation~/how-to.md) shows how to build common game features with it. Known issues and planned work are in the [roadmap](Documentation~/roadmap.md).
 
+## See it in action
+
+RelayNet runs the multiplayer in my open-world prototype. [Watch a clip](https://www.youtube.com/watch?v=H3tpOhGl9mE&list=PLqzGfc5lISIo-CzIrLbUQKFAzTcLpDPZH&index=9), or see [the whole playlist](https://www.youtube.com/playlist?list=PLqzGfc5lISIo-CzIrLbUQKFAzTcLpDPZH).
+
 ## Requirements
 
 - Unity 2022.3 or later.
