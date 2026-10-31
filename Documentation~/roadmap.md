@@ -1,6 +1,6 @@
 # Roadmap and known issues
 
-This page collects RelayNet's known issues and planned work, to guide future development. It describes the state of version 0.2.0. When an item is done, remove it here and note it in [CHANGELOG.md](../CHANGELOG.md).
+This page collects RelayNet's known issues and planned work, to guide future development. It describes the state of version 0.3.0. When an item is done, remove it here and note it in [CHANGELOG.md](../CHANGELOG.md).
 
 The tracks below are ordered by priority. Within each track, items name the code they concern, so you can start from there.
 
