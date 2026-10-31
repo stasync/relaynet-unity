@@ -20,13 +20,13 @@ RelayNet runs the multiplayer in my open-world prototype. [Watch a clip](https:/
 In the Package Manager, choose **Add package from git URL** and enter:
 
 ```
-https://github.com/stasync/relaynet-unity.git#v0.2.0
+https://github.com/stasync/relaynet-unity.git#v0.3.0
 ```
 
 Or add the line to `Packages/manifest.json`:
 
 ```json
-"com.stasync.relaynet": "https://github.com/stasync/relaynet-unity.git#v0.2.0"
+"com.stasync.relaynet": "https://github.com/stasync/relaynet-unity.git#v0.3.0"
 ```
 
 Keel ships inside the package, in `Plugins/Keel`. Don't add Keel's DLLs to the project a second time, or Unity reports duplicate assemblies.

@@ -1,6 +1,6 @@
 {
   "name": "com.stasync.relaynet",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "displayName": "RelayNet",
   "description": "Networking for Unity. Replicates game objects, their state and RPCs between clients in a Relay room (https://github.com/stasync/relay-dotnet), over Keel's reliable UDP (https://github.com/stasync/keel-dotnet). Includes an offline mode that emulates the relay in-process.",
   "unity": "2022.3",
