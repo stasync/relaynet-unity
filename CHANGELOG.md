@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+
+- `NetSession.SendCustomMessage`. Nothing received custom messages, so every peer dropped them.
+- The `MessageCodes` class. Its codes are only used inside `NetSession`, which now keeps the world update code to itself. The wire format is unchanged.
+
 ## 0.2.0 - 2026-10-25
 
 ### Removed

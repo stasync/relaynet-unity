@@ -8,6 +8,11 @@ namespace Keel.RelayNet
     public sealed class NetSession
     {
         /// <summary>
+        /// The opcode of world updates. Sent over the wire - the value must not change.
+        /// </summary>
+        private const uint NET_WORLD_UPDATE = 2;
+
+        /// <summary>
         /// Every session alive at the moment, in creation order. Kept for the debug tooling - there is no other way to
         /// reach a session from the outside, whoever creates a session holds its own reference.
         /// </summary>
@@ -95,9 +100,6 @@ namespace Keel.RelayNet
         public void Dispose() =>
             MainWorld?.Dispose();
 
-        public void SendCustomMessage(byte[] data, DeliveryMethod deliveryMethod) =>
-            _clientSession.SendData(MessageCodes.CUSTOM_MESSAGE, data, deliveryMethod);
-
         private void OnLocalUserDisconnected() =>
             MainWorld?.Dispose();
 
@@ -107,18 +109,9 @@ namespace Keel.RelayNet
 
             switch (userDataOpCode)
             {
-                case MessageCodes.NET_WORLD_UPDATE:
+                case NET_WORLD_UPDATE:
                 {
                     MainWorld.ScheduleRemoteUpdate(data);
-                    break;
-                }
-
-                case MessageCodes.CUSTOM_MESSAGE:
-                {
-                    //var messageCode = _reader.ReadInt32();
-                    //var messageData = _reader.ReadBytesAndSize();
-                    //CustomMessageReceived(senderConnectionUid, messageCode, messageData);
-
                     break;
                 }
             }
@@ -150,6 +143,6 @@ namespace Keel.RelayNet
             RecalculateSessionOwner();
 
         private void OnWorldDataSendRequest(byte[] data, DeliveryMethod deliveryMethod) =>
-            _clientSession.SendData(MessageCodes.NET_WORLD_UPDATE, data, deliveryMethod);
+            _clientSession.SendData(NET_WORLD_UPDATE, data, deliveryMethod);
     }
 }
