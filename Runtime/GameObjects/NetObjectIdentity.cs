@@ -56,7 +56,7 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// World that contains this object;
+        /// World that contains this object.
         /// </summary>
         public NetWorld World { get; private set; }
 
@@ -86,7 +86,7 @@ namespace Keel.RelayNet.GameObjects
             World = world;
             State = world.GetObject(stateUid);
             if (State == null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Object with uid '{stateUid}' doesn't exist in world '{world.Name}'.");
 
             State.OwnerChanged += OwnerChanged;
             State.LocalUpdateRequest += OnLocalUpdateRequest;
@@ -121,7 +121,7 @@ namespace Keel.RelayNet.GameObjects
             // Owner changed.
             OwnerChanged();
 
-            // Tell components about the object was initialized.
+            // Tell the components that the object was initialized.
             if (!viewStateData.ViewInitialized)
             {
                 foreach (var behaviour in _behaviours)
@@ -138,7 +138,7 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// Another client disconnected. This method calls before the actual player reference is removed, so here we have a valid owner.
+        /// Another client disconnected. This method is called before the actual player reference is removed, so here we have a valid owner.
         /// </summary>
         internal void OnDisconnected(ClientUid clientUid)
         {
@@ -165,8 +165,8 @@ namespace Keel.RelayNet.GameObjects
         /// </summary>
         private void OwnerChanged()
         {
-            foreach (var behavior in _behaviours)
-                behavior.OnOwnerChangedInternal();
+            foreach (var behaviour in _behaviours)
+                behaviour.OnOwnerChangedInternal();
         }
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace Keel.RelayNet.GameObjects
             // WE DON'T NEED TO ASSIGN MORE THAN 1 (ONE) RPC HANDLER FOR EACH RPC CODE.
             if (!_rpcHandlers.TryAdd(rpcHash, handler))
                 throw new InvalidOperationException(
-                    $"'{gameObject.name}' already contains handler for '{handler.Method.DeclaringType!.FullName}.{handler.Method.Name}''{rpcHash}' rpc code.");
+                    $"'{gameObject.name}' already contains a handler for '{handler.Method.DeclaringType!.FullName}.{handler.Method.Name}' (rpc code '{rpcHash}').");
         }
 
         /// <summary>
@@ -336,7 +336,7 @@ namespace Keel.RelayNet.GameObjects
         internal void ReceiveRpcOnMasterClient(RpcWithoutAuthorityState state)
         {
             if (!IsOwnedByMasterClient)
-                throw new InvalidOperationException("Trying to receive MASTER CLIENT RPC on object behaviour, which is not owner by master client, this is not allowed");
+                throw new InvalidOperationException("Trying to receive MASTER CLIENT RPC on object behaviour, which is not owned by master client, this is not allowed");
 
             InvokeRpcHandler(state.RpcState.Hash, state.RpcState.Payload);
         }

@@ -43,7 +43,7 @@ namespace Keel.RelayNet.StateManagement
                 return result;
 
             // Anonymous delegate method name usually looks like '<Foo>m__0';
-            // TODO: More 'beautiful' way to know is delegate is anonymous.
+            // TODO: A more 'beautiful' way to tell whether a delegate is anonymous.
             s_methodValidityCache.Add(method, result = !method.Name.StartsWith("<"));
             return result;
         }
@@ -100,7 +100,7 @@ namespace Keel.RelayNet.StateManagement
                 var parameters = methodInfo.GetParameters();
                 if (parameters.Length != 1 || parameters[0].ParameterType != typeof(byte[]))
                 {
-                    Debug.LogError($"Invalid method info parameters for method '{methodInfo.Name}' that decorated with '{typeof(AutoRegisterRpcHandler).FullName}' on '{type.FullName}'.");
+                    Debug.LogError($"Invalid method info parameters for method '{methodInfo.Name}' that is decorated with '{typeof(AutoRegisterRpcHandler).FullName}' on '{type.FullName}'.");
                     continue;
                 }
 

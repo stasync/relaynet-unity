@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Keel.RelayNet.GameObjects
 {
     /// <summary>
-    /// A hook that allows initiate the loading of the <see cref="NetPrefabDatabase"/> in the background.
+    /// A hook to start loading the <see cref="NetPrefabDatabase"/> in the background.
     /// Could be used to integrate async loading of the <see cref="NetPrefabDatabase"/> with the game code.
     /// </summary>
     public sealed class NetPrefabDatabaseLoadRequest

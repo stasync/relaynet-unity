@@ -38,7 +38,7 @@ namespace Keel.RelayNet.StateManagement
 
             data = NetObjectStateData.Provide<T>(_validator, _dataWritePermission);
             if (data == null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Unable to create data of type '{typeof(T).FullName}'.");
 
             _internalCollection.Add(typeIndex, data);
             return (T)data;

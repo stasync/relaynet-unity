@@ -71,7 +71,7 @@ namespace Keel.RelayNet.Behaviours
             var senderState = Identity.World.GetObject(sender);
             if (senderState == null)
             {
-                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' not exists.");
+                Debug.LogError($"Unable to perform transaction with object '{sender}' on '{gameObject.name}'. Object state '{sender}' doesn't exist.");
                 callback(false);
                 return;
             }

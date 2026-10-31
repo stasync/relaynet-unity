@@ -83,11 +83,11 @@ namespace Keel.RelayNet.StateManagement
         protected void AddObject(NetObjectState state)
         {
             if (!state.Uid.IsValid)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Unable to add an object with an invalid uid.");
 
             var canAddObject = !ObjectExists(state.Uid);
             if (!canAddObject)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Object with uid '{state.Uid}' already exists in world '{Name}'.");
 
             _currentObjectStates.Add(state.Uid, state);
             ObjectCreated(state.Uid);

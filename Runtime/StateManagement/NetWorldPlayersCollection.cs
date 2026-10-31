@@ -38,7 +38,7 @@ namespace Keel.RelayNet.StateManagement
         internal NetWorldPlayer Register(ClientUid uid, bool isLocal)
         {
             if (_playersCollection.ContainsKey(uid))
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Player with uid '{uid}' is already registered.");
 
             var newPlayer = new NetWorldPlayer(uid, name: "Unknown", isLocal, masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid);
 

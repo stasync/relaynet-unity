@@ -70,7 +70,7 @@ namespace Keel.RelayNet.GameObjects
             OnSoftDestroyRequestedLocally();
 
         /// <summary>
-        /// Used instead of start, but will be only called when the object was created for first time.
+        /// Use this instead of Start. Only called when the object is created for the first time.
         /// See <see cref="Keel.RelayNet.StateManagement.NetObjectViewStateData.ViewInitialized"/> flag.
         /// </summary>
         protected virtual void OnPostInitializeOnce()
@@ -78,21 +78,21 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// Use this instead of start, called after object was deserialized first time.
+        /// Use this instead of Start. Called after the object was deserialized for the first time.
         /// </summary>
         protected virtual void OnPostInitialize()
         {
         }
 
         /// <summary>
-        /// Calls when the object's owner was changed locally or remotely.
+        /// Called when the object's owner was changed locally or remotely.
         /// </summary>
         protected virtual void OnOwnerChanged()
         {
         }
 
         /// <summary>
-        /// Called, when the object needs to be updated.
+        /// Called when the object needs to be updated.
         /// </summary>
         protected virtual void OnAuthorityUpdate()
         {
@@ -121,7 +121,7 @@ namespace Keel.RelayNet.GameObjects
         }
 
         /// <summary>
-        /// Called, when network data was deserialized.
+        /// Called when network data was deserialized.
         /// </summary>
         protected virtual void OnDataDeserialized()
         {

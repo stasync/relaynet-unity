@@ -30,7 +30,7 @@ namespace Keel.RelayNet.StateManagement
         public event Action<NetWorldPlayerSnapshot> PlayerAdded = delegate { };
         public event Action<NetWorldPlayerSnapshot> PlayerRemoved = delegate { };
 
-        public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene;
+        public event Action<NetWorldPlayerSnapshot> PlayerBecomesReady = delegate { }; // Player loads game scene.
         public event DataSendRequestDelegate DataSendRequested = delegate { };
 
         public IReadOnlyCollection<byte[]> IncomingStateChangeRequests => _incomingStateChangeRequests;
@@ -146,8 +146,8 @@ namespace Keel.RelayNet.StateManagement
 
                             if (!remotePlayersUpdateRequests.TryAdd(snapshot.Uid, snapshot))
                             {
-                                var currentsSnapshot = remotePlayersUpdateRequests[snapshot.Uid];
-                                if (currentsSnapshot.WorldTime < snapshot.WorldTime)
+                                var currentSnapshot = remotePlayersUpdateRequests[snapshot.Uid];
+                                if (currentSnapshot.WorldTime < snapshot.WorldTime)
                                     remotePlayersUpdateRequests[snapshot.Uid] = snapshot;
                             }
 
@@ -165,13 +165,13 @@ namespace Keel.RelayNet.StateManagement
                             if (remoteObjectUpdateRequests.TryAdd(snapshot.ObjectUid, snapshot))
                                 break;
 
-                            // If snapshot is already registered, we should check if it's older that the one we're trying to register.
+                            // If snapshot is already registered, we should check if it's older than the one we're trying to register.
                             var currentSnapshot = remoteObjectUpdateRequests[snapshot.ObjectUid];
 
                             // Packets could arrive in the wrong order.
-                            // NOTE: 'StateChangeType' is a priority here - we can't replace the data with lower 'StateChangeType', event if the new data is newer.
+                            // NOTE: 'StateChangeType' is a priority here - we can't replace the data with lower 'StateChangeType', even if the new data is newer.
                             // So, the data will be replaced if the following rule applies.
-                            // 1. 'StateChangeType' of the new data is bigger that 'StateChangeType' of the current one.
+                            // 1. 'StateChangeType' of the new data is bigger than 'StateChangeType' of the current one.
                             // OR
                             // 2. 'StateChangeType' is the same, and incoming data is newer.
                             var shouldBeUpdated =
@@ -287,7 +287,7 @@ namespace Keel.RelayNet.StateManagement
                         continue;
 
                     maxTime = newTime;
-                    Time = newTime + 0.1f; // TODO: we have to take in account round trip time the relay here, to estimate more accurate.
+                    Time = newTime + 0.1f; // TODO: take the round trip time to the relay into account here, to estimate it more accurately.
                     Properties.Deserialize(_reader);
                 }
             }
@@ -303,7 +303,7 @@ namespace Keel.RelayNet.StateManagement
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                         if (player != null && player.IsLocal())
-                            throw new InvalidOperationException();
+                            throw new InvalidOperationException($"Received a state update for the local player '{clientUid}'.");
 #endif
 
                         // Player doesn't exist.
@@ -354,7 +354,7 @@ namespace Keel.RelayNet.StateManagement
                         throw new InvalidOperationException($"Invalid Uid: '{snapshot.ObjectUid}'  Prefab: '{snapshot.PrefabUid}'");
 
                     // Check if the owner exists.
-                    // NOTE: it's equally "unsafe" to either drop and apply this packet. However, i think it's better to drop it.
+                    // NOTE: it's equally "unsafe" to either drop and apply this packet. However, I think it's better to drop it.
                     if (!Players.Contains(snapshot.OwnerUid))
                     {
                         remoteObjectUpdateRequests.Remove(uid);
@@ -693,10 +693,10 @@ namespace Keel.RelayNet.StateManagement
 
         internal void OnDisconnect(ClientUid uid)
         {
-            if (!Players.Unregister(uid, out var removePlayerSnapshot))
+            if (!Players.Unregister(uid, out var removedPlayerSnapshot))
                 return;
 
-            PlayerRemoved(removePlayerSnapshot);
+            PlayerRemoved(removedPlayerSnapshot);
 
             foreach (var objectUid in new List<NetObjectUid>(ObjectStates.Keys))
             {
@@ -815,7 +815,7 @@ namespace Keel.RelayNet.StateManagement
                 return;
             }
 
-            // At this point we don't know who's going to be the owner, client it will be invalid just for now.
+            // At this point we don't know who's going to be the owner, so the object stays unregistered for now.
             if (!_unregisteredSceneObjects.TryAdd(sceneIdentity.SceneObjectId, sceneIdentity))
                 throw new InvalidOperationException($"Unable to register object '{sceneIdentity.gameObject.name}'. Object with the same uid '{sceneIdentity.SceneObjectId}' was already registered.");
         }

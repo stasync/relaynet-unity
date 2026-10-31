@@ -36,9 +36,9 @@ namespace Keel.RelayNet.StateManagement.Snapshots
             Platform = (DevicePlatform)reader.ReadInt32();
             RTTMs = reader.ReadInt32();
 
-            var targetObjectCount = reader.ReadPackedUInt32();
-            var newTagObjects = new List<NetObjectUid>((int)targetObjectCount);
-            for (var i = 0; i < targetObjectCount; i++)
+            var tagObjectCount = reader.ReadPackedUInt32();
+            var newTagObjects = new List<NetObjectUid>((int)tagObjectCount);
+            for (var i = 0; i < tagObjectCount; i++)
                 newTagObjects.Add(reader.ReadNetObjectUid());
 
             TagObjects = newTagObjects;
