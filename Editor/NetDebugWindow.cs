@@ -333,10 +333,8 @@ namespace Keel.RelayNet.Editor
             window._showMainWorldHistoryInfo = true;
         }
 
-        private void Update()
-        {
+        private void Update() =>
             Repaint();
-        }
 
         private void OnDisable() =>
             StopPlayback();
