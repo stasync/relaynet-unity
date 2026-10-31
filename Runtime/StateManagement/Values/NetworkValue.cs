@@ -31,7 +31,7 @@ namespace Keel.RelayNet.StateManagement.Values
         internal override void InternalSerialize(NetWriter writer) =>
             NetworkValueSerializationAPI<TValue>.Serializer.Serialize(writer, Value);
         
-        public int GetValueHashCode() =>
+        public override int GetValueHashCode() =>
             _value.GetHashCode();
 
         public override string ToString() =>

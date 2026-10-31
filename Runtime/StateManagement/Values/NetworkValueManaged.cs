@@ -42,7 +42,7 @@ namespace Keel.RelayNet.StateManagement.Values
 
         protected abstract void OnSerialize(NetWriter writer);
 
-        public int GetValueHashCode() =>
+        public override int GetValueHashCode() =>
             _internalValue.GetHashCode();
 
         public override string ToString() =>

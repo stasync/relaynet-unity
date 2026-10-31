@@ -27,6 +27,8 @@ namespace Keel.RelayNet.StateManagement.Values
         internal abstract void InternalDeserialize(NetReader reader);
         internal abstract void InternalSerialize(NetWriter writer);
 
+        public abstract int GetValueHashCode();
+
         private static readonly Dictionary<Type, IReadOnlyList<FieldInfo>> s_fieldCache = new();
 
         internal static IReadOnlyList<FieldInfo> GetFields(Type type)

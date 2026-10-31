@@ -42,7 +42,7 @@ namespace Keel.RelayNet.Debug
 
         private void Update()
         {
-            if (!Input.GetKeyDown(KeyCode.LeftShift))
+            if (!Input.GetKey(KeyCode.LeftShift))
                 return;
 
             if (Input.GetKeyDown(KeyCode.V))

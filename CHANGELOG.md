@@ -11,6 +11,13 @@
 
 - The serialized fields of `NetObjectAnimatorSync` lost their `m_` prefix, like the other behaviours' fields. Assets saved with 0.2.0 or earlier lose the Animator reference, the state change method, the cross-fade duration and the layer weight speed: set them again, or the component throws in `Awake` without an Animator.
 
+### Fixed
+
+- `NetObjectTransformSync` dropped a nested transform that isn't a child of the object and then logged the entry that took its place, or threw when it was the last one. An empty entry in the list threw as well. It now logs the right transform, and leaves empty entries alone.
+- The world view debug overlay toggled only when Shift and V went down in the same frame. It now toggles on V while Shift is held.
+- The world hash in the debug window (`NetWorld.GetVersionHash`) hashed the network value objects instead of their values, so it didn't change when they did. It now hashes the values of `NetworkValue` and `NetworkString`. `GetValueHashCode` is now declared on `NetworkValueBase`.
+- `NetProperties.Clear()` didn't check authority, unlike the setters, so a client could clear properties it doesn't own until the owner's next update brought them back. It now throws without authority, like the setters.
+
 ## 0.2.0 - 2026-10-25
 
 ### Removed

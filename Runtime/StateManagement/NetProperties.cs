@@ -42,10 +42,21 @@ namespace Keel.RelayNet.StateManagement
 
         internal void Invalidate()
         {
-            Clear();
+            ClearData();
 
             _validator = null;
             _writePermission = null;
+        }
+
+        private void ClearData()
+        {
+            _byteData.Clear();
+            _uintData.Clear();
+            _intData.Clear();
+            _floatData.Clear();
+            _boolData.Clear();
+            _vector3Data.Clear();
+            _stringData.Clear();
         }
 
         internal NetworkPropertiesSnapshot ToSnapshot()
@@ -260,13 +271,11 @@ namespace Keel.RelayNet.StateManagement
 
         public void Clear()
         {
-            _byteData.Clear();
-            _uintData.Clear();
-            _intData.Clear();
-            _floatData.Clear();
-            _boolData.Clear();
-            _vector3Data.Clear();
-            _stringData.Clear();
+            EnsureValid();
+            if (!_writePermission())
+                throw new InvalidOperationException("No authority");
+
+            ClearData();
         }
 
         #endregion

@@ -59,6 +59,7 @@ namespace Keel.RelayNet.StateManagement
         {
             // Reset write permission and validator.
             _writePermission = null;
+            _validator = null;
 
             foreach (var (_, variable) in _internalValueCollection)
             {
@@ -73,7 +74,7 @@ namespace Keel.RelayNet.StateManagement
         {
             var hash = TypeHashCode;
             foreach (var value in _internalValueCollection.Values)
-                hash = hash * 7 + value.GetHashCode();
+                hash = hash * 7 + value.GetValueHashCode();
 
             return hash;
         }
