@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Keel.RelayNet.StateManagement.Snapshots;
 using Keel.RelayNet.StateManagement.Values.Serialization;
+using UnityEngine;
 
 namespace Keel.RelayNet.StateManagement
 {
@@ -15,7 +16,7 @@ namespace Keel.RelayNet.StateManagement
         private readonly Dictionary<uint, float> _floatData = new();
         private readonly Dictionary<uint, bool> _boolData = new();
         private readonly Dictionary<uint, string> _stringData = new();
-        private readonly Dictionary<uint, UnityEngine.Vector3> _vector3Data = new();
+        private readonly Dictionary<uint, Vector3> _vector3Data = new();
 
         private readonly NetWriter _writer = new();
         private readonly NetReader _reader = new();
@@ -239,7 +240,7 @@ namespace Keel.RelayNet.StateManagement
             return _boolData.GetValueOrDefault(id);
         }
 
-        public void SetVector(uint id, UnityEngine.Vector3 value)
+        public void SetVector(uint id, Vector3 value)
         {
             EnsureValid();
             if (!_writePermission())
@@ -248,7 +249,7 @@ namespace Keel.RelayNet.StateManagement
             _vector3Data[id] = value;
         }
 
-        public UnityEngine.Vector3 GetVector(uint id)
+        public Vector3 GetVector(uint id)
         {
             EnsureValid();
             return _vector3Data.GetValueOrDefault(id);

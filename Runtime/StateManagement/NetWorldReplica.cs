@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Keel.RelayNet.StateManagement.Snapshots;
+using UnityEngine;
 
 namespace Keel.RelayNet.StateManagement
 {
@@ -53,7 +54,7 @@ namespace Keel.RelayNet.StateManagement
         }
 
         public void MoveToSnapshotSafe(int snapshotIndex, bool updateImmediate = false) =>
-            MoveToSnapshot(UnityEngine.Mathf.Clamp(snapshotIndex, min: 0, max: _historyBuffer.Count - 1), updateImmediate);
+            MoveToSnapshot(Mathf.Clamp(snapshotIndex, min: 0, max: _historyBuffer.Count - 1), updateImmediate);
 
         public void MoveToSnapshot(int snapshotIndex, bool updateImmediate = false)
         {
@@ -110,7 +111,7 @@ namespace Keel.RelayNet.StateManagement
         {
             if (_historyBuffer.Count == 0)
             {
-                UnityEngine.Debug.LogError($"[{Name}] [{Uid}] history buffer is empty.");
+                Debug.LogError($"[{Name}] [{Uid}] history buffer is empty.");
                 return 0f;
             }
 
@@ -124,7 +125,7 @@ namespace Keel.RelayNet.StateManagement
         {
             if (_historyBuffer.Count == 0)
             {
-                UnityEngine.Debug.LogError($"[{Name}] [{Uid}] history buffer is empty.");
+                Debug.LogError($"[{Name}] [{Uid}] history buffer is empty.");
                 return 0f;
             }
 

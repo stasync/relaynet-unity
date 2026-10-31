@@ -9,8 +9,8 @@ namespace Keel.RelayNet.StateManagement.Values
 {
     public abstract class NetworkValueBase
     {
-        internal Func<bool> InternalWritePermission = null;
-        internal Func<bool> InternalValidator = null;
+        internal Func<bool> InternalWritePermission;
+        internal Func<bool> InternalValidator;
 
         protected bool HasPermission
         {

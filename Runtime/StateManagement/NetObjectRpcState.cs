@@ -8,7 +8,7 @@ namespace Keel.RelayNet.StateManagement
         public readonly uint Uid;
         public readonly byte[] Payload;
 
-        public bool IsValid => !Hash.Equals(0) && Payload != null;
+        public bool IsValid => Hash != 0 && Payload != null;
 
         internal NetObjectRpcState(int hash, uint uid, byte[] payload)
         {

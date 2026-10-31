@@ -341,10 +341,10 @@ namespace Keel.RelayNet.StateManagement
 
         private void UpdateVisibilityFor(Transform targetTransform)
         {
-            foreach (var renderedComponent in targetTransform.GetComponentsInChildren<Renderer>(true))
+            foreach (var renderedComponent in targetTransform.GetComponentsInChildren<Renderer>(includeInactive: true))
                 renderedComponent.forceRenderingOff = ForceRenderingOff;
 
-            foreach (var lightComponent in targetTransform.GetComponentsInChildren<Light>(true))
+            foreach (var lightComponent in targetTransform.GetComponentsInChildren<Light>(includeInactive: true))
                 lightComponent.enabled = !ForceRenderingOff;
         }
 
