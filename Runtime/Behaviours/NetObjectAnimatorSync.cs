@@ -118,50 +118,50 @@ namespace Keel.RelayNet.Behaviours
             Reset,
         }
 
-        [SerializeField] private Animator m_Animator;
+        [SerializeField] private Animator _animator;
 
-        [SerializeField] private AnimatorStateChangeMethod m_StateChangeMethod = AnimatorStateChangeMethod.CrossFade;
+        [SerializeField] private AnimatorStateChangeMethod _stateChangeMethod = AnimatorStateChangeMethod.CrossFade;
 
-        [SerializeField, Range(0f, 1f)] private float m_CrossFadeDuration = 0.1f;
+        [SerializeField, Range(0f, 1f)] private float _crossFadeDuration = 0.1f;
 
         [SerializeField, Range(0f, 10f)]
-        private float m_RemoteLayerWeightChangeSpeed = 5f;
+        private float _remoteLayerWeightChangeSpeed = 5f;
 
-        private readonly List<IAnimatorValueProxy> m_AnimatorParameterValueProxyCollection = new();
-        private readonly List<float> m_RemoteLayerWeights = new();
-        private bool[] m_LayersSyncFlags;
+        private readonly List<IAnimatorValueProxy> _animatorParameterValueProxyCollection = new();
+        private readonly List<float> _remoteLayerWeights = new();
+        private bool[] _layersSyncFlags;
 
-        private readonly NetWriter m_Writer = new();
-        private readonly NetReader m_Reader = new();
+        private readonly NetWriter _writer = new();
+        private readonly NetReader _reader = new();
 
         private void Awake()
         {
-            foreach (var parameter in m_Animator.parameters)
+            foreach (var parameter in _animator.parameters)
             {
                 switch (parameter.type)
                 {
                     case AnimatorControllerParameterType.Bool:
-                        m_AnimatorParameterValueProxyCollection.Add(new AnimatorBoolParameterValueProxy(m_Animator, parameter));
+                        _animatorParameterValueProxyCollection.Add(new AnimatorBoolParameterValueProxy(_animator, parameter));
                         break;
 
                     case AnimatorControllerParameterType.Float:
-                        m_AnimatorParameterValueProxyCollection.Add(new AnimatorFloatParameterValueProxy(m_Animator, parameter));
+                        _animatorParameterValueProxyCollection.Add(new AnimatorFloatParameterValueProxy(_animator, parameter));
                         break;
 
                     case AnimatorControllerParameterType.Int:
-                        m_AnimatorParameterValueProxyCollection.Add(new AnimatorIntParameterValueProxy(m_Animator, parameter));
+                        _animatorParameterValueProxyCollection.Add(new AnimatorIntParameterValueProxy(_animator, parameter));
                         break;
                 }
             }
 
-            for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
-                m_RemoteLayerWeights.Add(m_Animator.GetLayerWeight(layerIndex));
+            for (var layerIndex = 0; layerIndex < _animator.layerCount; layerIndex++)
+                _remoteLayerWeights.Add(_animator.GetLayerWeight(layerIndex));
 
-            /*var runtimeController = (UnityEditor.Animations.AnimatorController)m_Animator.runtimeAnimatorController;
+            /*var runtimeController = (UnityEditor.Animations.AnimatorController)_animator.runtimeAnimatorController;
 
-            m_LayersSyncFlags = new bool[runtimeController.layers.Length];
+            _layersSyncFlags = new bool[runtimeController.layers.Length];
             for (var index = 0; index < runtimeController.layers.Length; index++)
-                m_LayersSyncFlags[index] = (uint)runtimeController.layers[index].syncedLayerIndex < (uint)runtimeController.layers.Length;*/
+                _layersSyncFlags[index] = (uint)runtimeController.layers[index].syncedLayerIndex < (uint)runtimeController.layers.Length;*/
         }
 
         public void SetTrigger(string triggerName) =>
@@ -190,13 +190,13 @@ namespace Keel.RelayNet.Behaviours
         {
             DoTriggerAction(hash, action);
 
-            m_Writer.SeekZero();
-            m_Writer.WriteInt32(hash);
-            m_Writer.WriteByte((byte)action);
+            _writer.SeekZero();
+            _writer.WriteInt32(hash);
+            _writer.WriteByte((byte)action);
 
             OwnerToOthersRpc(
                 SyncAnimatorTriggersHandler,
-                data: m_Writer.ToArray(),
+                data: _writer.ToArray(),
                 DeliveryMethod.Unreliable,
                 invokeLocally: false);
         }
@@ -207,9 +207,9 @@ namespace Keel.RelayNet.Behaviours
             if (IsLocal)
                 return;
 
-            m_Reader.Replace(data);
-            var hash = m_Reader.ReadInt32();
-            var action = (AnimatorTriggerAction)m_Reader.ReadByte();
+            _reader.Replace(data);
+            var hash = _reader.ReadInt32();
+            var action = (AnimatorTriggerAction)_reader.ReadByte();
 
             DoTriggerAction(hash, action);
         }
@@ -219,10 +219,10 @@ namespace Keel.RelayNet.Behaviours
             switch (action)
             {
                 case AnimatorTriggerAction.Set:
-                    m_Animator.SetTrigger(hash);
+                    _animator.SetTrigger(hash);
                     break;
                 case AnimatorTriggerAction.Reset:
-                    m_Animator.ResetTrigger(hash);
+                    _animator.ResetTrigger(hash);
                     break;
             }
         }
@@ -232,19 +232,19 @@ namespace Keel.RelayNet.Behaviours
             if (!Identity.Initialized)
                 return;
 
-            foreach (var animatorValueProxy in m_AnimatorParameterValueProxyCollection)
+            foreach (var animatorValueProxy in _animatorParameterValueProxyCollection)
                 animatorValueProxy.OnUpdate(Time.deltaTime, IsLocal);
 
             if (!IsLocal)
             {
-                for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
+                for (var layerIndex = 0; layerIndex < _animator.layerCount; layerIndex++)
                 {
-                    var targetLayerWeight = m_RemoteLayerWeights[layerIndex];
-                    var currentLayerWeight = m_Animator.GetLayerWeight(layerIndex);
+                    var targetLayerWeight = _remoteLayerWeights[layerIndex];
+                    var currentLayerWeight = _animator.GetLayerWeight(layerIndex);
 
                     // Not sure if we should smooth the layer weight, it might be intended to be changed immediately, from 0 to 1 for instance.
-                    //m_Animator.SetLayerWeight(layerIndex, Mathf.MoveTowards(currentLayerWeight, targetLayerWeight, Time.deltaTime * m_RemoteLayerWeightChnageSpeed));
-                    m_Animator.SetLayerWeight(layerIndex, targetLayerWeight);
+                    //_animator.SetLayerWeight(layerIndex, Mathf.MoveTowards(currentLayerWeight, targetLayerWeight, Time.deltaTime * _remoteLayerWeightChangeSpeed));
+                    _animator.SetLayerWeight(layerIndex, targetLayerWeight);
                 }
             }
         }
@@ -254,23 +254,23 @@ namespace Keel.RelayNet.Behaviours
             base.OnSerialize(writer);
 
             // Parameters.
-            foreach (var p in m_AnimatorParameterValueProxyCollection)
+            foreach (var p in _animatorParameterValueProxyCollection)
                 p.Serialize(writer);
 
             // Layers.
-            for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
+            for (var layerIndex = 0; layerIndex < _animator.layerCount; layerIndex++)
             {
-                var syncFlag = false; //m_LayersSyncFlags[layerIndex];
+                var syncFlag = false; //_layersSyncFlags[layerIndex];
                 writer.WriteBoolean(syncFlag);
                 if (syncFlag)
                     continue;
 
                 var stateToSync =
-                    m_Animator.IsInTransition(layerIndex)
-                        ? m_Animator.GetNextAnimatorStateInfo(layerIndex)
-                        : m_Animator.GetCurrentAnimatorStateInfo(layerIndex);
+                    _animator.IsInTransition(layerIndex)
+                        ? _animator.GetNextAnimatorStateInfo(layerIndex)
+                        : _animator.GetCurrentAnimatorStateInfo(layerIndex);
 
-                var layerWeight = m_Animator.GetLayerWeight(layerIndex);
+                var layerWeight = _animator.GetLayerWeight(layerIndex);
 
                 writer.WriteSingle(layerWeight);
                 writer.WriteInt32(stateToSync.fullPathHash);
@@ -283,11 +283,11 @@ namespace Keel.RelayNet.Behaviours
             base.OnDeserialize(reader);
 
             // Parameters.
-            foreach (var animatorValueProxy in m_AnimatorParameterValueProxyCollection)
+            foreach (var animatorValueProxy in _animatorParameterValueProxyCollection)
                 animatorValueProxy.Deserialize(reader);
 
             // Layers.
-            for (var layerIndex = 0; layerIndex < m_Animator.layerCount; layerIndex++)
+            for (var layerIndex = 0; layerIndex < _animator.layerCount; layerIndex++)
             {
                 var remoteSyncFlag = reader.ReadBoolean();
                 if (remoteSyncFlag)
@@ -297,20 +297,20 @@ namespace Keel.RelayNet.Behaviours
                 var targetStateHash = reader.ReadInt32();
                 var targetNormalizedTime = reader.ReadSingle();
 
-                var localSyncFlag = false; //m_LayersSyncFlags[layerIndex];
+                var localSyncFlag = false; //_layersSyncFlags[layerIndex];
                 if (localSyncFlag)
                     continue;
 
-                m_RemoteLayerWeights[layerIndex] = targetLayerWeight;
+                _remoteLayerWeights[layerIndex] = targetLayerWeight;
 
-                switch (m_StateChangeMethod)
+                switch (_stateChangeMethod)
                 {
                     case AnimatorStateChangeMethod.Play:
-                        m_Animator.Play(targetStateHash, layerIndex, targetNormalizedTime);
+                        _animator.Play(targetStateHash, layerIndex, targetNormalizedTime);
                         break;
                     case AnimatorStateChangeMethod.CrossFade:
                         // todo: Calling Animator.GotoState on Synchronize layer
-                        m_Animator.CrossFade(targetStateHash, m_CrossFadeDuration, layerIndex, targetNormalizedTime);
+                        _animator.CrossFade(targetStateHash, _crossFadeDuration, layerIndex, targetNormalizedTime);
                         break;
                 }
             }

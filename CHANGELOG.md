@@ -7,6 +7,10 @@
 - `NetSession.SendCustomMessage`. Nothing received custom messages, so every peer dropped them.
 - The `MessageCodes` class. Its codes are only used inside `NetSession`, which now keeps the world update code to itself. The wire format is unchanged.
 
+### Changed
+
+- The serialized fields of `NetObjectAnimatorSync` lost their `m_` prefix, like the other behaviours' fields. Assets saved with 0.2.0 or earlier lose the Animator reference, the state change method, the cross-fade duration and the layer weight speed: set them again, or the component throws in `Awake` without an Animator.
+
 ## 0.2.0 - 2026-10-25
 
 ### Removed
