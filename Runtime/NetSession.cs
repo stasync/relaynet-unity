@@ -47,9 +47,6 @@ namespace Keel.RelayNet
 
         private NetSession(IRelayTransport transport, IPEndPoint endPoint, string connectionData)
         {
-            if (_clientSession != null)
-                throw new InvalidOperationException("Session is already initialized.");
-
             MainWorld = new NetWorldRuntime(masterClientUidProvider: () => SessionOwner);
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
@@ -105,8 +102,6 @@ namespace Keel.RelayNet
 
         private void OnDataReceived(ClientUid senderConnectionId, uint userDataOpCode, byte[] data, DeliveryMethod deliveryMethod)
         {
-            //DataReceived(senderConnectionUid, userDataOpCode, data, deliveryMethod);
-
             switch (userDataOpCode)
             {
                 case NET_WORLD_UPDATE:

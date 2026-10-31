@@ -106,6 +106,7 @@ namespace Keel.RelayNet.StateManagement
 
         internal void RestoreFromSnapshot(NetWorldPlayersCollectionsSnapshot snapshot)
         {
+            // Use invalid references for local and master - player collection snapshot only used for the world history buffer.
             LocalPlayer = null;
             MasterPlayer = null;
 
@@ -125,10 +126,6 @@ namespace Keel.RelayNet.StateManagement
                     _playersCollection.Add(clientUid,
                         new NetWorldPlayer(playerSnapshot.Uid, playerSnapshot.Name, isLocal: false, masterPlayerUidProvider: () => MasterPlayer?.Uid ?? ClientUid.Invalid));
             }
-
-            // Use invalid references for local and master - player collection snapshot only used for the world history buffer.
-            //LocalPlayer = Get(snapshot.LocalPlayerUid);
-            //MasterPlayer = Get(snapshot.MasterClientUid);
         }
 
         internal int GetVersionHash()

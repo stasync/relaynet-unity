@@ -107,15 +107,6 @@ namespace Keel.RelayNet
             _transport.Send(_dataWriter.AsArraySegment(), (UdpProtocol.DeliveryMethod)deliveryMethod);
         }
 
-        public void SendRaw(byte[] data, DeliveryMethod deliveryMethod)
-        {
-            EnsureValid();
-
-            _dataWriter.SeekZero();
-            _dataWriter.WriteBytesAndSize(data);
-            _transport.Send(_dataWriter.AsArraySegment(), (UdpProtocol.DeliveryMethod)deliveryMethod);
-        }
-
         private void OnDataReceived(byte[] rawData, UdpProtocol.DeliveryMethod deliveryMethod)
         {
             try
