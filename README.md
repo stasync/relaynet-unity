@@ -265,9 +265,11 @@ The package ships these behaviours in `Keel.RelayNet.Behaviours`:
 
 ## Debugging
 
-- **Tools > RelayNet > Debug Window** shows the worlds, players and object states while playing, and can replay a world's recorded history.
-- **Tools > RelayNet > Enable debug** adds the `NETWORK_DEBUG` define, and **Disable debug** removes it. With the define, every behaviour's serialized data carries a type hash that the receiver checks, and RPCs for missing objects are logged with their handler names. The hash changes the wire format, so all clients must be built with the same setting.
-- In play mode in the editor, every networked object that syncs its transform gets a marker in the owner's color, plus its axes.
+- **Tools > RelayNet > Debug Window** shows a running session's traffic, what compression saves, and its players and objects, and can replay a world's recorded history.
+- **F3** in Play Mode steps through the in-game overlay: a stats panel, then markers on every object, then an inspector. A build gets the overlay only with the `RELAYNET_DEBUG` define, which **Tools > RelayNet > Enable debug overlay in builds** adds.
+- **Tools > RelayNet > Enable debug** adds the `NETWORK_DEBUG` define, which checks each client's serialized data and changes the wire format.
+
+See [Debugging](Documentation~/debugging.md) for the details, and for how to draw the markers with your own renderer.
 
 ## Updating Keel
 

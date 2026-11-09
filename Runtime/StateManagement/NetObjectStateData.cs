@@ -140,7 +140,7 @@ namespace Keel.RelayNet.StateManagement
         internal static bool TryGetType(byte index, out Type type) =>
             Keel.Utils.Types.Lookup<NetObjectStateData>.WithIndex(index, out type);
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || RELAYNET_DEBUG
         public virtual IEnumerable<KeyValuePair<string, string>> GetValuesInfo_Editor()
         {
             foreach (var kvp in _internalValueCollection)

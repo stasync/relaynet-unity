@@ -5,6 +5,18 @@
 ### Added
 
 - Payload compression. Pass an `INetCompressor` to `new NetSession(...)` or `NetSession.CreateOffline(...)` to compress what the session sends. `NetZeroPackCompressor` leaves out zero bytes, which shrinks a typical state update by 20–35%. Every client in a room must use the same compressor. Without one, the wire format is unchanged.
+- An in-game debug overlay, `NetDebugOverlay`. Press F3 to step through its modes: a stats panel, then markers and labels on every object, then an inspector window. It's in the editor, and in builds with the `RELAYNET_DEBUG` define, which **Tools > RelayNet > Enable debug overlay in builds** adds. See [Debugging](Documentation~/debugging.md).
+- `INetDebugDrawer` and `NetDebugDraw.Drawer`, to draw the debug markers with your own renderer, for example one that works in builds. The default, `NetGizmoDrawer`, draws with `Debug.DrawLine`, in the editor only.
+- `NetSession.PayloadStatistics`, which counts the messages and their bytes before and after compression, and `NetSession.Compressor`.
+
+### Changed
+
+- The debug window has a toolbar and four tabs: Overview, Players, Objects and History. The Overview adds a traffic graph, message rates and what compression saves. The Objects tab can search and filter, shows how fresh each remote object is, and selects an object's GameObject.
+- `NetObjectStateData.GetValuesInfo_Editor` and `GetSerializedSize_Editor` also exist in builds with `RELAYNET_DEBUG`, for the overlay's inspector.
+
+### Removed
+
+- `NetWorldViewDebug`. Its markers are now the overlay's World mode, and they're off until you press F3, instead of on by default and toggled with Shift+V. It no longer installs itself in release builds, and no longer needs the legacy Input Manager.
 
 ## 0.3.0 - 2026-10-31
 

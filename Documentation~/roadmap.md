@@ -91,10 +91,10 @@ Generated code is easy to read and debug, which is why source generators are pre
 
 ## 7. Debug tools
 
-- `NetWorldViewDebug` creates itself in every build, release builds included, and starts enabled.
-- Its toggle only works when Left Shift and V go down in the same frame.
-- It reads the keyboard with the legacy `Input` class, which throws when a project uses only the Input System package. The Capsules sample has the same dependency.
-- Small TODOs: `NetDebugWindow` keeps all its drawers in one file, and `NetObjectRpcUtils` detects anonymous delegates by their name.
+- **Markers in builds.** The default `NetGizmoDrawer` draws with `Debug.DrawLine`, so the overlay's markers only show in the editor unless the game installs its own `INetDebugDrawer`. A line renderer that works in builds and in every render pipeline is planned as its own package, `com.stasync.debugdrawunity`, extracted from the TPS project's `RuntimeDebug`. RelayNet could then ship a drawer for it.
+- **One session in the overlay.** The overlay shows the first session in `NetSession.All`. The editor window can pick any of them.
+- The Capsules sample reads the keyboard with the legacy `Input` class, which throws when a project uses only the Input System package.
+- `NetObjectRpcUtils` detects anonymous delegates by their name.
 
 ## 8. Platforms, packaging and tests
 

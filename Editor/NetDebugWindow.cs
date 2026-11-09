@@ -1,340 +1,64 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
+﻿using System.Collections.Generic;
 using Keel.RelayNet.Debug;
-using Keel.RelayNet.Debug.Editor;
-using Keel.RelayNet.GameObjects;
 using Keel.RelayNet.StateManagement;
 using UnityEditor;
 using UnityEngine;
 
 namespace Keel.RelayNet.Editor
 {
+    /// <summary>
+    /// <b>Tools > RelayNet > Debug Window</b>: the sessions of a running game, their traffic, players and objects,
+    /// and playback of the recorded history.
+    /// </summary>
     internal sealed class NetDebugWindow : EditorWindow
     {
-        #region Drawers
-
-        // TODO: Move to a separate file.
-        private abstract class WorldDrawer<T> where T : NetWorld
+        private enum Tab
         {
-            protected readonly T World;
-
-            public bool IsValid => World is { IsValid: true };
-
-            private bool _draw;
-            private readonly Dictionary<NetObjectUid, NetObjectStateDrawer> _objectDrawers = new();
-            private readonly List<NetObjectUid> _worldObjectsIterator = new();
-
-            private bool _propertiesFoldoutState;
-            private readonly Dictionary<ClientUid, bool> _playerFoldoutStates = new();
-            private readonly Dictionary<ClientUid, bool> _propertiesFoldoutStatesPerPlayer = new();
-            private readonly Dictionary<ClientUid, bool> _tagObjectsFoldoutStatesPerPlayer = new();
-
-            protected WorldDrawer(T world)
-            {
-                World = world;
-                _draw = true;
-            }
-
-            public void Draw()
-            {
-                if (!IsValid)
-                {
-                    EditorGUILayout.HelpBox(message: "World is invalid", MessageType.Error);
-                    return;
-                }
-
-                _draw = EditorGUILayout.Foldout(_draw, World.Name);
-                if (!_draw)
-                    return;
-
-                EditorGUI.indentLevel++;
-                OnDrawWorld();
-                EditorGUI.indentLevel--;
-            }
-
-            protected virtual void OnDrawWorld()
-            {
-                EditorGUILayout.LabelField($"Uid: {World.Uid}", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField($"Time: {World.Time:f1}", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField($"Local Time: {World.LocalTime:f1}", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField($"Hash: {World.GetVersionHash()}", EditorStyles.boldLabel);
-
-                _propertiesFoldoutState = EditorGUILayout.Foldout(_propertiesFoldoutState, content: "World Properties");
-                if (_propertiesFoldoutState)
-                {
-                    EditorGUI.indentLevel++;
-                    DrawProperties(World.Properties);
-                    EditorGUI.indentLevel--;
-                    EditorGUILayout.Space();
-                }
-
-                // Players.
-                {
-                    var ownedObjectsCountPerPlayer = new Dictionary<ClientUid, int>();
-                    foreach (var state in World.ObjectStates.Values)
-                    {
-                        if (state.Owner == null)
-                            continue;
-
-                        ownedObjectsCountPerPlayer.TryAdd(state.Owner.Uid, 0);
-                        ownedObjectsCountPerPlayer[state.Owner.Uid]++;
-                    }
-
-                    EditorGUILayout.LabelField($"Players: {World.Players.All.Count}", EditorStyles.boldLabel);
-                    foreach (var worldPlayer in World.Players.All)
-                    {
-                        // Default value just in case.
-                        ownedObjectsCountPerPlayer.TryAdd(worldPlayer.Uid, 0);
-
-                        var prefix = $"[{worldPlayer.Uid}] ";
-                        if (worldPlayer.IsLocal())
-                            prefix += "[Local] ";
-                        if (worldPlayer.IsMaster())
-                            prefix += "[Master] ";
-
-                        var label = $"{prefix}{worldPlayer.Name} (Owns:{ownedObjectsCountPerPlayer[worldPlayer.Uid]})";
-                        _playerFoldoutStates.TryAdd(worldPlayer.Uid, false);
-
-                        EditorGUILayout.BeginHorizontal();
-                        _playerFoldoutStates[worldPlayer.Uid] = EditorGUILayout.Foldout(_playerFoldoutStates[worldPlayer.Uid], content: label);
-                        // Draw a colored box.
-                        var boxRect = GUILayoutUtility.GetRect(width: 20, EditorGUIUtility.singleLineHeight, GUILayout.Width(20));
-                        EditorGUI.DrawRect(boxRect, NetWorldViewDebug.GetColorForPlayer(worldPlayer));
-                        EditorGUILayout.EndHorizontal();
-
-                        if (!_playerFoldoutStates[worldPlayer.Uid])
-                            continue;
-
-                        EditorGUI.indentLevel++;
-                        DrawPlayer(worldPlayer);
-                        EditorGUI.indentLevel--;
-                    }
-                }
-
-                // Objects.
-                {
-                    foreach (var uid in new List<NetObjectUid>(_objectDrawers.Keys))
-                    {
-                        var drawer = _objectDrawers[uid];
-                        if (!World.ObjectExists(uid) || !drawer.IsValid())
-                            _objectDrawers.Remove(uid);
-                    }
-
-                    // Expand/Collapse all objects;
-                    {
-                        EditorGUILayout.BeginHorizontal();
-                        GUILayout.Space(pixels: EditorGUI.indentLevel * 15); // indent for buttons.
-
-                        if (GUILayout.Button("Collapse all"))
-                        {
-                            foreach (var drawer in _objectDrawers.Values)
-                                drawer.SetDrawingEnabled(false);
-                        }
-
-                        if (GUILayout.Button("Expand all"))
-                        {
-                            foreach (var drawer in _objectDrawers.Values)
-                                drawer.SetDrawingEnabled(true);
-                        }
-
-                        EditorGUILayout.EndHorizontal();
-                    }
-
-                    EditorGUILayout.Space();
-                    EditorGUILayout.LabelField($"Objects: {World.ObjectStates.Count}", EditorStyles.boldLabel);
-
-                    _worldObjectsIterator.Clear();
-                    _worldObjectsIterator.AddRange(World.ObjectStates.Keys);
-                    foreach (var objectUid in _worldObjectsIterator)
-                    {
-                        // Removing an object (the button below, or anything reacting to it) can take others with it,
-                        // and this is iterating over a copy of the keys taken before that happened.
-                        if (!World.ObjectStates.TryGetValue(objectUid, out var state))
-                            continue;
-
-                        if (!_objectDrawers.TryGetValue(objectUid, out var drawer))
-                        {
-                            drawer = new NetObjectStateDrawer(state, World);
-                            _objectDrawers.Add(objectUid, drawer);
-                        }
-
-                        drawer.Draw();
-                    }
-                }
-            }
-
-            private void DrawPlayer(NetWorldPlayer player)
-            {
-                EditorGUILayout.LabelField($"Uid: {player.Uid}");
-                EditorGUILayout.LabelField($"Name: {player.Name}");
-                EditorGUILayout.LabelField($"WorldTime: {player.WorldTime}");
-                EditorGUILayout.LabelField($"IsReady: {player.IsReady}");
-                EditorGUILayout.LabelField($"Platform: {player.Platform}");
-
-                _tagObjectsFoldoutStatesPerPlayer.TryAdd(player.Uid, false);
-                _tagObjectsFoldoutStatesPerPlayer[player.Uid] = EditorGUILayout.Foldout(_tagObjectsFoldoutStatesPerPlayer[player.Uid], content: $"Tag Objects: {player.TagObjectUidCollection.Count}");
-                if (_tagObjectsFoldoutStatesPerPlayer[player.Uid])
-                {
-                    EditorGUI.indentLevel++;
-                    foreach (var tagObjectUid in player.TagObjectUidCollection)
-                    {
-                        var label = tagObjectUid.ToString();
-                        if (tagObjectUid == player.MainTagObjectUid)
-                            label = $"[MAIN] {label}";
-
-                        var tagObjectState = World.GetObject(tagObjectUid);
-                        label = tagObjectState != null ? $"{label} {tagObjectState.PrefabUid}" : $"[INVALID] {label}";
-
-                        EditorGUILayout.LabelField(label);
-                    }
-
-                    EditorGUI.indentLevel--;
-                }
-
-                _propertiesFoldoutStatesPerPlayer.TryAdd(player.Uid, false);
-                _propertiesFoldoutStatesPerPlayer[player.Uid] = EditorGUILayout.Foldout(_propertiesFoldoutStatesPerPlayer[player.Uid], content: "Properties");
-                if (_propertiesFoldoutStatesPerPlayer[player.Uid])
-                {
-                    EditorGUI.indentLevel++;
-                    DrawProperties(player.Properties);
-                    EditorGUI.indentLevel--;
-                }
-            }
-
-            private void DrawProperties(NetProperties properties)
-            {
-                foreach (var fieldInfo in properties.GetType().GetFields(bindingAttr: BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-                {
-                    if (!typeof(IDictionary).IsAssignableFrom(fieldInfo.FieldType))
-                        continue;
-
-                    var dictionary = (IDictionary)fieldInfo.GetValue(properties);
-
-                    EditorGUILayout.LabelField($"{ObjectNames.NicifyVariableName(fieldInfo.Name)}: {dictionary.Keys.Count}");
-                    EditorGUI.indentLevel++;
-                    foreach (var key in dictionary.Keys)
-                        EditorGUILayout.LabelField($"{key}: {dictionary[key]}");
-                    EditorGUI.indentLevel--;
-                }
-            }
+            Overview,
+            Players,
+            Objects,
+            History
         }
 
-        private class MainWorldDrawer : WorldDrawer<NetWorldRuntime>
-        {
-            private bool _drawCommon;
-            private bool _drawPendingViews;
+        private static readonly string[] s_tabNames = { "Overview", "Players", "Objects", "History" };
 
-            public MainWorldDrawer(NetWorldRuntime runtimeWorld) : base(runtimeWorld)
-            {
-            }
+        /// <summary>
+        /// The numbers change with every sample, a few times a second; repainting faster only costs editor time.
+        /// </summary>
+        private const double REPAINT_INTERVAL_SECONDS = 0.1d;
 
-            protected override void OnDrawWorld()
-            {
-                base.OnDrawWorld();
+        private const float GRAPH_HEIGHT = 64f;
 
-                EditorGUILayout.Space();
-                _drawCommon = EditorGUILayout.Foldout(_drawCommon, content: "Common");
-                if (_drawCommon)
-                {
-                    EditorGUI.indentLevel++;
-                    {
-                        // Register requests.
-                        {
-                            var registerRequests = World.IncomingStateChangeRequests;
-                            EditorGUILayout.LabelField($"Remote Update Requests: {registerRequests.Count}", EditorStyles.boldLabel);
-                        }
+        [SerializeField] private Tab _tab;
+        [SerializeField] private int _sessionIndex;
 
-                        // Temporary Unregistered Scene Objects.
-                        {
-                            var unregisteredSceneObjects = World.UnregisteredSceneObjects;
-                            EditorGUILayout.LabelField($"Unregistered Scene Objects: {unregisteredSceneObjects.Count}", EditorStyles.boldLabel);
+        private readonly NetStatisticsSampler _sampler = new();
+        private readonly List<string> _sessionNames = new();
+        private Vector2 _scroll;
+        private double _lastRepaintTime;
 
-                            EditorGUI.indentLevel++;
-                            foreach (var objectState in unregisteredSceneObjects.Values)
-                                EditorGUILayout.LabelField($"[{objectState.SceneObjectId}] [{objectState.name}]");
-                            EditorGUI.indentLevel--;
-                        }
-                    }
-                    EditorGUI.indentLevel--;
-                }
-
-                if (World.View != null)
-                {
-                    EditorGUILayout.Space();
-                    _drawPendingViews = EditorGUILayout.Foldout(_drawPendingViews, $"Pending Views: {World.View.TemporaryUnregisteredViews.Count}");
-                    if (_drawPendingViews)
-                    {
-                        EditorGUI.indentLevel++;
-                        {
-                            foreach (var kvp in World.View.TemporaryUnregisteredViews)
-                                EditorGUILayout.ObjectField($"Uid: {kvp.Key}", kvp.Value, typeof(NetObjectIdentity), allowSceneObjects: true);
-                        }
-                        EditorGUI.indentLevel--;
-                    }
-                }
-            }
-        }
-
-        private class ReplicaWorldDrawer : WorldDrawer<NetWorldReplica>
-        {
-            public ReplicaWorldDrawer(NetWorldReplica replicaWorld) : base(replicaWorld)
-            {
-            }
-
-            protected override void OnDrawWorld()
-            {
-                var lastSnapshotIndex = World.BufferCount - 1;
-
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button(World.Paused ? "Play >" : "Pause ||"))
-                    World.SetPaused(!World.Paused);
-
-                // Every seek below addresses a snapshot by index - there is nothing to address in an empty buffer.
-                EditorGUI.BeginDisabledGroup(!World.Paused || lastSnapshotIndex < 0);
-
-                if (GUILayout.Button("<< Previous"))
-                    World.MoveToPreviousSnapshot(true);
-
-                if (GUILayout.Button("Next >>"))
-                    World.MoveToNextSnapshot(true);
-
-                EditorGUILayout.EndHorizontal();
-                EditorGUI.BeginChangeCheck();
-                var targetSnapshot = EditorGUILayout.IntSlider($"Snapshot ({World.CurrentSnapshotIndex + 1}/{World.BufferCount})", World.CurrentSnapshotIndex, leftValue: 0, Mathf.Max(lastSnapshotIndex, 0));
-                if (EditorGUI.EndChangeCheck() && targetSnapshot != World.CurrentSnapshotIndex && lastSnapshotIndex >= 0)
-                    World.MoveToSnapshotSafe(targetSnapshot, true);
-
-                EditorGUI.EndDisabledGroup();
-
-                EditorGUILayout.Space();
-
-                base.OnDrawWorld();
-            }
-        }
-
-        #endregion
-
-        private bool _showMainWorldHistoryInfo;
-        private bool _showMainWorldBuffer;
-        private Vector2 _globalScrollPosition;
-
-        private readonly NetTransferStatisticsDrawer _statisticsDrawer = new();
-
-        private MainWorldDrawer _mainWorldDrawer;
-        private ReplicaWorldDrawer _currentWorldReplicaDrawer;
+        private NetWorldDrawer _worldDrawer;
+        private NetWorldDrawer _replicaDrawer;
         private NetWorldReplica _replica;
+        private bool _historyBufferExpanded;
 
         [MenuItem("Tools/RelayNet/Debug Window")]
-        private static void Init()
-        {
-            var window = GetWindow<NetDebugWindow>("Network Debug Info");
-            window.Show();
-            window._showMainWorldHistoryInfo = true;
-        }
+        private static void Open() =>
+            GetWindow<NetDebugWindow>("RelayNet").Show();
 
-        private void Update() =>
+        private void Update()
+        {
+            if (!EditorApplication.isPlaying)
+                return;
+
+            _sampler.Sample(GetSelectedSession(), EditorApplication.timeSinceStartup);
+
+            if (EditorApplication.timeSinceStartup - _lastRepaintTime < REPAINT_INTERVAL_SECONDS)
+                return;
+
+            _lastRepaintTime = EditorApplication.timeSinceStartup;
             Repaint();
+        }
 
         private void OnDisable() =>
             StopPlayback();
@@ -345,97 +69,261 @@ namespace Keel.RelayNet.Editor
             {
                 // Nothing survives the play mode exit - the world the replica was taken from is gone by now.
                 StopPlayback();
+                _worldDrawer = null;
 
-                EditorGUILayout.HelpBox("Available only in play mode", MessageType.Error);
+                DrawToolbar(session: null);
+                EditorGUILayout.Space(20f);
+                EditorGUILayout.LabelField("Enter Play Mode to see the running sessions.", EditorStyles.centeredGreyMiniLabel);
                 return;
             }
 
-            EditorGUILayout.Space();
+            var session = GetSelectedSession();
+            DrawToolbar(session);
 
-            _statisticsDrawer.Draw(NetSession.All.Count > 0 ? NetSession.All[0] : null);
-
-            EditorGUILayout.Space();
-
-            EditorGUILayout.LabelField($"World Count: {NetWorld.All.Count}", EditorStyles.boldLabel);
-
-            var mainWorld = default(NetWorldRuntime);
-            foreach (var world in NetWorld.All.Values)
+            if (session == null)
             {
-                mainWorld = world as NetWorldRuntime;
-                if (mainWorld != null)
+                EditorGUILayout.Space(20f);
+                EditorGUILayout.LabelField("No session is running. Create a NetSession to see it here.", EditorStyles.centeredGreyMiniLabel);
+                return;
+            }
+
+            var world = session.MainWorld;
+            if (world != null && (_worldDrawer is not { IsValid: true } || _worldDrawer.World != world))
+                _worldDrawer = new NetWorldDrawer(world);
+
+            EditorGUILayout.Space(4f);
+            _tab = (Tab)GUILayout.Toolbar((int)_tab, s_tabNames, GUILayout.Height(24f));
+
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+            switch (_tab)
+            {
+                case Tab.Overview:
+                    DrawOverview(session, world);
+                    break;
+
+                case Tab.Players:
+                    if (DrawWorldMissing(world))
+                        break;
+
+                    _worldDrawer.DrawPlayers();
+                    break;
+
+                case Tab.Objects:
+                    if (DrawWorldMissing(world))
+                        break;
+
+                    _worldDrawer.DrawObjects();
+                    break;
+
+                case Tab.History:
+                    if (DrawWorldMissing(world))
+                        break;
+
+                    DrawHistory(world);
                     break;
             }
 
-            if (mainWorld == null)
-            {
-                EditorGUILayout.HelpBox("World not represented yet", MessageType.Error);
-                return;
-            }
-
-            if (_mainWorldDrawer is not { IsValid: true })
-                _mainWorldDrawer = new MainWorldDrawer(mainWorld);
-
-            EditorGUILayout.Space();
-            _globalScrollPosition = EditorGUILayout.BeginScrollView(_globalScrollPosition);
-
-            // History.
-            _showMainWorldHistoryInfo = EditorGUILayout.Foldout(_showMainWorldHistoryInfo, "Main World History Info");
-            if (_showMainWorldHistoryInfo)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField($"History size: {mainWorld.HistoryBuffer.Size} ({mainWorld.HistoryBuffer.SizeMb:f2}mb) [{mainWorld.HistoryBuffer.AverageFrameSize}] bytes, cnt: {mainWorld.HistoryBuffer.Count} frames, time: {mainWorld.HistoryBuffer.LengthInSeconds:f2} s", EditorStyles.boldLabel);
-
-                EditorGUILayout.BeginHorizontal();
-                {
-                    // Replicating an empty history produces a replica with no snapshot to stand on.
-                    EditorGUI.BeginDisabledGroup(_replica != null || mainWorld.HistoryBuffer.Count == 0);
-                    if (GUILayout.Button("Playback"))
-                        StartPlayback(mainWorld);
-
-                    EditorGUI.EndDisabledGroup();
-
-                    EditorGUI.BeginDisabledGroup(_replica == null);
-                    if (GUILayout.Button("Stop Playback"))
-                        StopPlayback();
-
-                    EditorGUI.EndDisabledGroup();
-                }
-                EditorGUILayout.EndHorizontal();
-
-                _showMainWorldBuffer = EditorGUILayout.Foldout(_showMainWorldBuffer, "Show buffer");
-                if (_showMainWorldBuffer)
-                {
-                    EditorGUI.indentLevel++;
-                    foreach (var netWorldSnapshot in mainWorld.HistoryBuffer)
-                        EditorGUILayout.LabelField($"t:{netWorldSnapshot.Time:f2} dt:{netWorldSnapshot.DeltaTime:f2} size: {netWorldSnapshot.GetSize()} obj: {netWorldSnapshot.Objects.Count} pl: {netWorldSnapshot.Players.PlayersCollection.Count}", EditorStyles.boldLabel);
-                    EditorGUI.indentLevel--;
-                }
-            }
-
-            EditorGUILayout.Space();
-            _mainWorldDrawer.Draw();
-
-            if (_currentWorldReplicaDrawer != null)
-            {
-                if (_currentWorldReplicaDrawer.IsValid)
-                {
-                    EditorGUILayout.Space();
-                    EditorGUILayout.LabelField("Replica info:", EditorStyles.boldLabel);
-                    _currentWorldReplicaDrawer.Draw();
-                }
-                else
-                    StopPlayback();
-            }
-
+            EditorGUILayout.Space(8f);
             EditorGUILayout.EndScrollView();
         }
 
-        private void StartPlayback(NetWorldRuntime mainWorld)
+        private NetSession GetSelectedSession()
+        {
+            var sessions = NetSession.All;
+            if (sessions.Count == 0)
+                return null;
+
+            _sessionIndex = Mathf.Clamp(_sessionIndex, 0, sessions.Count - 1);
+            return sessions[_sessionIndex];
+        }
+
+        #region Toolbar
+
+        private void DrawToolbar(NetSession session)
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            var sessions = NetSession.All;
+            if (sessions.Count > 1)
+            {
+                _sessionNames.Clear();
+                for (var i = 0; i < sessions.Count; i++)
+                    _sessionNames.Add($"Session {i + 1} ({sessions[i].SessionOwner})");
+
+                _sessionIndex = EditorGUILayout.Popup(_sessionIndex, _sessionNames.ToArray(), EditorStyles.toolbarPopup, GUILayout.Width(140f));
+            }
+
+            if (session != null)
+            {
+                var connected = session.IsConnected;
+                var rect = GUILayoutUtility.GetRect(new GUIContent(connected ? "Connected" : "Disconnected"), EditorStyles.label, GUILayout.ExpandWidth(false));
+                NetDebugEditorGUI.Swatch(new Rect(rect.x + 4f, rect.y, 10f, rect.height), connected ? NetDebugColors.Good : NetDebugColors.Bad);
+                GUI.Label(new Rect(rect.x + 18f, rect.y, rect.width, rect.height), connected ? "Connected" : "Disconnected", EditorStyles.miniLabel);
+                GUILayout.Space(18f);
+            }
+
+            GUILayout.FlexibleSpace();
+
+            // The in-game overlay of this editor: the same mode as its hotkey sets.
+            GUILayout.Label(new GUIContent("Overlay", $"The in-game overlay. Its hotkey is {NetDebugOverlay.Hotkey}."), EditorStyles.miniLabel);
+            NetDebugOverlay.Mode = (NetDebugOverlayMode)EditorGUILayout.EnumPopup(NetDebugOverlay.Mode, EditorStyles.toolbarPopup, GUILayout.Width(80f));
+
+            EditorGUI.BeginDisabledGroup(session == null);
+            if (GUILayout.Button(new GUIContent("Reset", "Count the totals from now on, to measure a single action."), EditorStyles.toolbarButton))
+                _sampler.Reset();
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        #endregion
+
+        #region Overview
+
+        private void DrawOverview(NetSession session, NetWorldRuntime world)
+        {
+            var transfer = _sampler.TransferTotals;
+            var payload = _sampler.PayloadTotals;
+            var lastTransfer = _sampler.LastTransfer;
+            var lastPayload = _sampler.LastPayload;
+
+            NetDebugEditorGUI.Section("Connection");
+            var localPlayer = world?.Players.LocalPlayer;
+            NetDebugEditorGUI.Row("Status", session.IsConnected ? "Connected" : "Disconnected", session.IsConnected ? NetDebugColors.Good : NetDebugColors.Bad);
+            NetDebugEditorGUI.Row("This client", localPlayer == null ? "Joining the room..." : $"{localPlayer.Uid}{(localPlayer.IsMaster() ? " (master)" : "")}");
+            NetDebugEditorGUI.Row("Master client", session.SessionOwner.ToString());
+            NetDebugEditorGUI.Row("Players", world == null ? "-" : world.Players.All.Count.ToString());
+            if (localPlayer is { RttMs: > 0 })
+                NetDebugEditorGUI.Row("Round trip", $"{localPlayer.RttMs} ms");
+
+            NetDebugEditorGUI.Section("Traffic");
+            NetDebugEditorGUI.Graph(_sampler, GRAPH_HEIGHT);
+            NetDebugEditorGUI.Row("Out", $"{NetDebugFormat.Rate(_sampler.PerSecond(lastTransfer.BytesSent))} · {_sampler.PerSecond(lastTransfer.PacketsSent):0} packets/s · {_sampler.PerSecond(lastPayload.MessagesSent):0} messages/s", NetDebugColors.Sent);
+            NetDebugEditorGUI.Row("In", $"{NetDebugFormat.Rate(_sampler.PerSecond(lastTransfer.BytesReceived))} · {_sampler.PerSecond(lastTransfer.PacketsReceived):0} packets/s · {_sampler.PerSecond(lastPayload.MessagesReceived):0} messages/s", NetDebugColors.Received);
+            NetDebugEditorGUI.Row("Sent in total", $"{NetDebugFormat.Bytes(transfer.BytesSent)} in {transfer.PacketsSent} packets");
+            NetDebugEditorGUI.Row("Received in total", $"{NetDebugFormat.Bytes(transfer.BytesReceived)} in {transfer.PacketsReceived} packets");
+            NetDebugEditorGUI.Row("Average message", $"{NetDebugFormat.Bytes(Average(payload.BytesSent, payload.MessagesSent))} out · {NetDebugFormat.Bytes(Average(payload.BytesReceived, payload.MessagesReceived))} in");
+
+            NetDebugEditorGUI.Section("Compression");
+            if (session.Compressor == null)
+                NetDebugEditorGUI.Row("Compressor", "None. Pass one to the NetSession to compress what it sends.");
+            else
+            {
+                NetDebugEditorGUI.Row("Compressor", session.Compressor.GetType().Name);
+                NetDebugEditorGUI.Row("Out", $"{NetDebugFormat.Bytes(payload.BytesSent)} packed to {NetDebugFormat.Bytes(payload.CompressedBytesSent)}, saves {NetDebugFormat.Savings(payload.BytesSent, payload.CompressedBytesSent)} ({NetDebugFormat.Rate(_sampler.PerSecond(lastPayload.BytesSent - lastPayload.CompressedBytesSent))})");
+                NetDebugEditorGUI.Row("In", $"{NetDebugFormat.Bytes(payload.CompressedBytesReceived)} unpacked to {NetDebugFormat.Bytes(payload.BytesReceived)}, saves {NetDebugFormat.Savings(payload.BytesReceived, payload.CompressedBytesReceived)}");
+            }
+
+            // What the packets carry on top of the payloads: the relay's envelope and the transport's header.
+            NetDebugEditorGUI.Row("Headers", $"{NetDebugFormat.Share(Mathf.Max(0, transfer.BytesSent - payload.CompressedBytesSent), transfer.BytesSent)} of the bytes sent");
+
+            if (world == null)
+                return;
+
+            var owned = 0;
+            foreach (var state in world.ObjectStates.Values)
+            {
+                if (state.IsOwnedByLocalPlayer)
+                    owned++;
+            }
+
+            NetDebugEditorGUI.Section("World");
+            NetDebugEditorGUI.Row("Time", $"{world.Time:0.00} s (local {world.LocalTime:0.00} s)");
+            NetDebugEditorGUI.Row("Objects", $"{world.ObjectStates.Count} · {owned} yours · {world.ObjectStates.Count - owned} remote");
+            NetDebugEditorGUI.Row("Pending updates", world.IncomingStateChangeRequests.Count.ToString());
+            NetDebugEditorGUI.Row("Hash", world.GetVersionHash().ToString());
+        }
+
+        private static float Average(int total, int count) =>
+            count <= 0 ? 0f : total / (float)count;
+
+        #endregion
+
+        #region History
+
+        private void DrawHistory(NetWorldRuntime world)
+        {
+            var history = world.HistoryBuffer;
+
+            NetDebugEditorGUI.Section("Recorded");
+            NetDebugEditorGUI.Row("Length", $"{history.LengthInSeconds:0.0} s in {history.Count} snapshots");
+            NetDebugEditorGUI.Row("Size", $"{NetDebugFormat.Bytes(history.Size)}, {NetDebugFormat.Bytes(history.AverageFrameSize)} per snapshot");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(EditorGUI.indentLevel * 15f);
+
+            // Replicating an empty history produces a replica with no snapshot to stand on.
+            EditorGUI.BeginDisabledGroup(_replica != null || history.Count == 0);
+            if (GUILayout.Button("Play back"))
+                StartPlayback(world);
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUI.BeginDisabledGroup(_replica == null);
+            if (GUILayout.Button("Stop"))
+                StopPlayback();
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUILayout.EndHorizontal();
+
+            _historyBufferExpanded = EditorGUILayout.Foldout(_historyBufferExpanded, "Snapshots", toggleOnLabelClick: true);
+            if (_historyBufferExpanded)
+            {
+                EditorGUI.indentLevel++;
+                foreach (var snapshot in history)
+                    EditorGUILayout.LabelField($"{snapshot.Time:0.00} s", $"+{snapshot.DeltaTime:0.00} s · {NetDebugFormat.Bytes(snapshot.GetSize())} · {snapshot.Objects.Count} objects · {snapshot.Players.PlayersCollection.Count} players");
+                EditorGUI.indentLevel--;
+            }
+
+            if (_replica == null)
+                return;
+
+            if (!_replica.IsValid)
+            {
+                StopPlayback();
+                return;
+            }
+
+            NetDebugEditorGUI.Section("Playback");
+            DrawPlaybackControls();
+
+            EditorGUILayout.Space(4f);
+            _replicaDrawer.DrawObjects();
+        }
+
+        private void DrawPlaybackControls()
+        {
+            var lastSnapshotIndex = _replica.BufferCount - 1;
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(_replica.Paused ? "Play" : "Pause", GUILayout.Width(60f)))
+                _replica.SetPaused(!_replica.Paused);
+
+            // Every seek below addresses a snapshot by index - there is nothing to address in an empty buffer.
+            EditorGUI.BeginDisabledGroup(!_replica.Paused || lastSnapshotIndex < 0);
+
+            if (GUILayout.Button("< Previous"))
+                _replica.MoveToPreviousSnapshot(true);
+
+            if (GUILayout.Button("Next >"))
+                _replica.MoveToNextSnapshot(true);
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUI.BeginChangeCheck();
+            var targetSnapshot = EditorGUILayout.IntSlider($"Snapshot {_replica.CurrentSnapshotIndex + 1} of {_replica.BufferCount}", _replica.CurrentSnapshotIndex, leftValue: 0, Mathf.Max(lastSnapshotIndex, 0));
+            if (EditorGUI.EndChangeCheck() && targetSnapshot != _replica.CurrentSnapshotIndex && lastSnapshotIndex >= 0)
+                _replica.MoveToSnapshotSafe(targetSnapshot, true);
+
+            EditorGUI.EndDisabledGroup();
+        }
+
+        private void StartPlayback(NetWorldRuntime world)
         {
             StopPlayback();
 
-            _replica = mainWorld.Replicate();
-            _currentWorldReplicaDrawer = new ReplicaWorldDrawer(_replica);
+            _replica = world.Replicate();
+            _replicaDrawer = new NetWorldDrawer(_replica);
 
             EditorApplication.update += OnReplicaUpdate;
         }
@@ -455,7 +343,7 @@ namespace Keel.RelayNet.Editor
                 _replica.Dispose();
 
             _replica = null;
-            _currentWorldReplicaDrawer = null;
+            _replicaDrawer = null;
         }
 
         private void OnReplicaUpdate()
@@ -475,6 +363,18 @@ namespace Keel.RelayNet.Editor
             }
 
             _replica.Update(Time.deltaTime);
+        }
+
+        #endregion
+
+        private static bool DrawWorldMissing(NetWorldRuntime world)
+        {
+            if (world != null)
+                return false;
+
+            EditorGUILayout.Space(20f);
+            EditorGUILayout.LabelField("The session has no world.", EditorStyles.centeredGreyMiniLabel);
+            return true;
         }
     }
 }
