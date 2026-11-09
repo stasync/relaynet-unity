@@ -32,6 +32,17 @@ namespace Keel.RelayNet
         /// </summary>
         public NetTransferStatistics Statistics => _clientSession?.Statistics ?? default;
 
+        /// <summary>
+        /// The messages the session exchanged, before and after compression, or an empty count for an already disposed
+        /// session.
+        /// </summary>
+        public NetPayloadStatistics PayloadStatistics => _clientSession?.PayloadStatistics ?? default;
+
+        /// <summary>
+        /// The compressor the session was created with, or null when it sends payloads as they are.
+        /// </summary>
+        public INetCompressor Compressor { get; }
+
         private RelaySession _clientSession;
 
         /// <param name="compressor">
@@ -54,6 +65,7 @@ namespace Keel.RelayNet
 
         private NetSession(IRelayTransport transport, IPEndPoint endPoint, string connectionData, INetCompressor compressor)
         {
+            Compressor = compressor;
             MainWorld = new NetWorldRuntime(masterClientUidProvider: () => SessionOwner);
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
