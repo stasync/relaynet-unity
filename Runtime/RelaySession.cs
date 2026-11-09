@@ -29,6 +29,9 @@ namespace Keel.RelayNet
         public bool IsConnected => _transport.IsConnected;
         public NetTransferStatistics Statistics => _transport.Statistics;
 
+        public NetPayloadStatistics PayloadStatistics =>
+            new(_messagesSent, _messagesReceived, _payloadBytesSent, _payloadBytesReceived, _compressedBytesSent, _compressedBytesReceived);
+
         private readonly NetReader _dataReader = new();
         private readonly NetWriter _dataWriter = new();
 
@@ -37,6 +40,13 @@ namespace Keel.RelayNet
         private bool _disposed;
         private float _lastUpdateTime;
         private float _currentTime;
+
+        private int _messagesSent;
+        private int _messagesReceived;
+        private int _payloadBytesSent;
+        private int _payloadBytesReceived;
+        private int _compressedBytesSent;
+        private int _compressedBytesReceived;
 
         public RelaySession(IRelayTransport transport, IPEndPoint endPoint, string connectionData = null, INetCompressor compressor = null)
         {
@@ -107,10 +117,15 @@ namespace Keel.RelayNet
             _dataWriter.WritePackedUInt32(0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that the message will be sent to everyone except sender.
 
             // Only the payload is compressed: the relay reads everything before it to route the packet.
+            var payload = new ArraySegment<byte>(data ?? Array.Empty<byte>());
             if (_compressor == null)
                 _dataWriter.WriteBytesAndSize(data);
             else
-                _dataWriter.WriteBytesAndSize(_compressor.Compress(new ArraySegment<byte>(data ?? Array.Empty<byte>())));
+                _dataWriter.WriteBytesAndSize(payload = _compressor.Compress(payload));
+
+            _messagesSent++;
+            _payloadBytesSent += data?.Length ?? 0;
+            _compressedBytesSent += payload.Count;
 
             _transport.Send(_dataWriter.AsArraySegment(), (UdpProtocol.DeliveryMethod)deliveryMethod);
         }
@@ -151,14 +166,13 @@ namespace Keel.RelayNet
                         var senderConnectionId = _dataReader.ReadClientUid();
                         var userDataOpCode = _dataReader.ReadPackedUInt32();
 
-                        byte[] userDataPayload;
-                        if (_compressor == null)
-                            userDataPayload = _dataReader.ReadBytesAndSize();
-                        else
-                        {
-                            var payload = _compressor.Decompress(_dataReader.ReadBytesAndSizeNonAlloc());
-                            userDataPayload = payload.Count == 0 ? Array.Empty<byte>() : payload.ToArray();
-                        }
+                        var receivedPayload = _dataReader.ReadBytesAndSizeNonAlloc();
+                        var payload = _compressor == null ? receivedPayload : _compressor.Decompress(receivedPayload);
+                        var userDataPayload = payload.Count == 0 ? Array.Empty<byte>() : payload.ToArray();
+
+                        _messagesReceived++;
+                        _payloadBytesReceived += payload.Count;
+                        _compressedBytesReceived += receivedPayload.Count;
 
                         DataReceived(senderConnectionId, userDataOpCode, userDataPayload, (DeliveryMethod)deliveryMethod);
                         break;

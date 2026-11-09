@@ -44,7 +44,7 @@ namespace Keel.RelayNet.StateManagement
             return hash;
         }
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || RELAYNET_DEBUG
         public override IEnumerable<KeyValuePair<string, string>> GetValuesInfo_Editor()
         {
             foreach (var pair in base.GetValuesInfo_Editor())

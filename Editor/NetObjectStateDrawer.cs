@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Keel.Networking;
+using Keel.RelayNet.Editor;
 using Keel.RelayNet.GameObjects;
 using Keel.RelayNet.StateManagement;
 using UnityEditor;
@@ -15,6 +16,9 @@ namespace Keel.RelayNet.Debug.Editor
         private readonly NetObjectState _state;
         private readonly NetWorld _world;
 
+        private readonly string _prefabName;
+        private readonly string _prefabLabel;
+
         private bool _draw;
 
         internal bool IsValid() => _state != null && _state.IsValid();
@@ -24,21 +28,37 @@ namespace Keel.RelayNet.Debug.Editor
         {
             _state = objectState;
             _world = world;
+
+            // The prefab of an object never changes.
+            _prefabName = NetPrefabDatabase.TryGetPrefab(_state.PrefabUid, out var prefab) ? prefab.name : null;
+            _prefabLabel = _prefabName == null ? $"{_state.PrefabUid}" : $"{_prefabName} ({_state.PrefabUid})";
         }
+
+        /// <summary>
+        /// What a search in the Objects tab matches against: the uid, the prefab and the owner.
+        /// </summary>
+        internal string GetSearchText() =>
+            $"{_state.Uid} {_prefabLabel} {_state.Owner?.Name}";
 
         internal void Draw()
         {
-            EditorGUILayout.BeginHorizontal();
-            var prefabLabel = $"{_state.PrefabUid}";
-            if (NetPrefabDatabase.TryGetPrefab(_state.PrefabUid, out var prefab))
-                prefabLabel = $"{prefab.name} ({_state.PrefabUid})";
+            var owner = _state.Owner;
+            var rect = EditorGUILayout.GetControlRect();
+            NetDebugEditorGUI.Swatch(rect, NetDebugColors.ForPlayer(owner));
 
-            _draw = EditorGUILayout.Foldout(_draw, content: $"Uid: {_state.Uid} Prefab: {prefabLabel}");
+            // A remote object is only as fresh as its owner's last update.
+            var age = _state.IsOwnedByLocalPlayer ? "" : $" · {_world.Time - _state.WorldTime:0.0} s ago";
+            var title = $"{_state.Uid}  {_prefabName ?? _prefabLabel}  ·  {(owner == null ? "nobody" : owner.Name)}{age}";
 
-            // Draw a colored box.
-            var boxRect = GUILayoutUtility.GetRect(width: 20, EditorGUIUtility.singleLineHeight, GUILayout.Width(20));
-            EditorGUI.DrawRect(boxRect, NetWorldViewDebug.GetColorForPlayer(_state.Owner));
-            EditorGUILayout.EndHorizontal();
+            var view = _world.View == null ? null : _world.GetObjectView(_state.Uid);
+            var buttonWidth = view == null ? 0f : 52f;
+            _draw = EditorGUI.Foldout(new Rect(rect.x + 16f, rect.y, rect.width - 16f - buttonWidth, rect.height), _draw, title, toggleOnLabelClick: true);
+
+            if (view != null && GUI.Button(new Rect(rect.xMax - buttonWidth + 4f, rect.y + 1f, buttonWidth - 4f, rect.height - 2f), "Select", EditorStyles.miniButton))
+            {
+                Selection.activeGameObject = view.gameObject;
+                EditorGUIUtility.PingObject(view.gameObject);
+            }
 
             if (!_draw)
                 return;
@@ -63,11 +83,10 @@ namespace Keel.RelayNet.Debug.Editor
 
                 EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.LabelField($"Uid: {_state.Uid} Shared: {_state.IsShared} Prefab: {prefabLabel}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Uid: {_state.Uid} Shared: {_state.IsShared} Prefab: {_prefabLabel}", EditorStyles.boldLabel);
                 EditorGUILayout.LabelField($"Change Type: {_state.StateChangeType}", EditorStyles.boldLabel);
 
                 // An object outlives the player that owned it, and a scene object starts with no owner at all.
-                var owner = _state.Owner;
                 EditorGUILayout.LabelField(owner == null
                     ? $"Owner: [{_state.OwnerUid}] NONE"
                     : $"Owner: [{owner.Uid}] {owner.Name} (Local: {_state.IsOwnedByLocalPlayer}, Master: {_state.IsOwnedByMasterClient})", EditorStyles.boldLabel);
@@ -131,7 +150,6 @@ namespace Keel.RelayNet.Debug.Editor
 
                 if (_world.View != null)
                 {
-                    var view = _world.GetObjectView(_state.Uid);
                     EditorGUI.BeginDisabledGroup(true);
                     EditorGUILayout.ObjectField(label: "View", view, typeof(GameObject), allowSceneObjects: true);
                     EditorGUI.EndDisabledGroup();
