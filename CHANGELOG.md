@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Payload compression. Pass an `INetCompressor` to `new NetSession(...)` or `NetSession.CreateOffline(...)` to compress what the session sends. `NetZeroPackCompressor` leaves out zero bytes, which shrinks a typical state update by 20–35%. Every client in a room must use the same compressor. Without one, the wire format is unchanged.
+
 ## 0.3.0 - 2026-10-31
 
 ### Removed

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Keel.Networking;
 using Keel.Networking.Udp;
 using Keel.Networking.Udp.LowLevel;
+using Keel.RelayNet.Compression;
 using UnityEngine;
 
 namespace Keel.RelayNet
@@ -32,13 +33,15 @@ namespace Keel.RelayNet
         private readonly NetWriter _dataWriter = new();
 
         private readonly IRelayTransport _transport;
+        private readonly INetCompressor _compressor;
         private bool _disposed;
         private float _lastUpdateTime;
         private float _currentTime;
 
-        public RelaySession(IRelayTransport transport, IPEndPoint endPoint, string connectionData = null)
+        public RelaySession(IRelayTransport transport, IPEndPoint endPoint, string connectionData = null, INetCompressor compressor = null)
         {
             _transport = transport;
+            _compressor = compressor;
 
             if (_transport.IsConnected)
             {
@@ -102,7 +105,12 @@ namespace Keel.RelayNet
             _dataWriter.WriteByte((byte)RelayClientMessageType.OnPacket);
             _dataWriter.WritePackedUInt32(userDataOpCode);
             _dataWriter.WritePackedUInt32(0); // Receivers count is 0 for now - userDataReceiversCount == 0 means that the message will be sent to everyone except sender.
-            _dataWriter.WriteBytesAndSize(data);
+
+            // Only the payload is compressed: the relay reads everything before it to route the packet.
+            if (_compressor == null)
+                _dataWriter.WriteBytesAndSize(data);
+            else
+                _dataWriter.WriteBytesAndSize(_compressor.Compress(new ArraySegment<byte>(data ?? Array.Empty<byte>())));
 
             _transport.Send(_dataWriter.AsArraySegment(), (UdpProtocol.DeliveryMethod)deliveryMethod);
         }
@@ -142,7 +150,15 @@ namespace Keel.RelayNet
                     {
                         var senderConnectionId = _dataReader.ReadClientUid();
                         var userDataOpCode = _dataReader.ReadPackedUInt32();
-                        var userDataPayload = _dataReader.ReadBytesAndSize();
+
+                        byte[] userDataPayload;
+                        if (_compressor == null)
+                            userDataPayload = _dataReader.ReadBytesAndSize();
+                        else
+                        {
+                            var payload = _compressor.Decompress(_dataReader.ReadBytesAndSizeNonAlloc());
+                            userDataPayload = payload.Count == 0 ? Array.Empty<byte>() : payload.ToArray();
+                        }
 
                         DataReceived(senderConnectionId, userDataOpCode, userDataPayload, (DeliveryMethod)deliveryMethod);
                         break;

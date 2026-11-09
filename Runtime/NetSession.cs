@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using Keel.RelayNet.Compression;
 using Keel.RelayNet.StateManagement;
 
 namespace Keel.RelayNet
@@ -33,25 +34,31 @@ namespace Keel.RelayNet
 
         private RelaySession _clientSession;
 
-        public NetSession(IPAddress address, ushort port, string connectionData = null)
-            : this(new RelayUdpTransport(), new IPEndPoint(address, port), connectionData)
+        /// <param name="compressor">
+        /// Compresses what the session sends and restores what it receives, or null to send it as is. Every client in
+        /// the room must use the same compressor.
+        /// </param>
+        public NetSession(IPAddress address, ushort port, string connectionData = null, INetCompressor compressor = null)
+            : this(new RelayUdpTransport(), new IPEndPoint(address, port), connectionData, compressor)
         {
         }
 
         /// <summary>
         /// Creates an offline session - the relay server is emulated in-process, so the local client is the only
         /// (and therefore the master) client of the room. Everything above this point behaves exactly as online.
+        /// Nothing leaves the process, but <see cref="Statistics"/> still counts the compressed payloads, which shows
+        /// what a <paramref name="compressor"/> saves.
         /// </summary>
-        public static NetSession CreateOffline() =>
-            new(new RelayLoopbackTransport(), new IPEndPoint(IPAddress.Loopback, port: 0), connectionData: null);
+        public static NetSession CreateOffline(INetCompressor compressor = null) =>
+            new(new RelayLoopbackTransport(), new IPEndPoint(IPAddress.Loopback, port: 0), connectionData: null, compressor);
 
-        private NetSession(IRelayTransport transport, IPEndPoint endPoint, string connectionData)
+        private NetSession(IRelayTransport transport, IPEndPoint endPoint, string connectionData, INetCompressor compressor)
         {
             MainWorld = new NetWorldRuntime(masterClientUidProvider: () => SessionOwner);
             MainWorld.DataSendRequested += OnWorldDataSendRequest;
             MainWorld.Disposed += OnWorldDisposed;
 
-            _clientSession = new RelaySession(transport, endPoint, connectionData);
+            _clientSession = new RelaySession(transport, endPoint, connectionData, compressor);
             _clientSession.LocalUserDisconnected += OnLocalUserDisconnected;
             _clientSession.DataReceived += OnDataReceived;
             _clientSession.LocalUserConnected += OnLocalUserConnected;

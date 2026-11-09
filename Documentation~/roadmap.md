@@ -58,7 +58,7 @@ Generated code is easy to read and debug, which is why source generators are pre
 ## 4. Bandwidth
 
 - **Unchanged objects are sent anyway.** Ten times per second, each owner sends the full state of every object it owns, whether it changed or not. Send only objects and values that changed, as deltas against the last state the receivers acknowledged.
-- **No quantization or compression.** Positions are three full floats and rotations are full quaternions. Add quantized types and optional compression.
+- **No quantization.** Positions are three full floats and rotations are full quaternions. Add quantized types. `NetZeroPackCompressor` only leaves out zero bytes, which saves 20–35%. Most of what's left repeats from one tick to the next, and only sending deltas can remove that.
 - **No interest management.** `RelaySession.SendData` always sends to everyone (receiver count `0`). Relay can already route a packet to a list of receivers, so per-client relevance can be built on that.
 - **Fixed rates.** The world tick (`NetWorldRuntime.MIN_UPDATE_INTERVAL_S`, 10 Hz) and the transport tick (`RelaySession.Update`, 20 Hz) are hard-coded. Make them configurable.
 
@@ -68,7 +68,7 @@ Generated code is easy to read and debug, which is why source generators are pre
 - **Networking follows `Time.timeScale`.** The session only advances by the `deltaTime` passed to `NetSession.Update`. The README and the sample pass `Time.deltaTime`, so pausing the game with `Time.timeScale = 0` stops ticks and heartbeats, and a long pause can drop the connection. Track real time inside the session.
 - **Remote objects time out.** A remote object is removed after 6 seconds without data (`AUTO_REMOVE_REMOTE_OBJECT_TIME_S`), which also happens during long hitches or while a client is in the background.
 - **Connection errors aren't exposed.** When the connection fails, is rejected or loses reliability, `RelaySession` logs an error and disposes the session. `NetSession` only raises `Disposed`, with no reason and no way to reconnect.
-- **No protocol version check.** Clients with incompatible wire formats, for example one built with `NETWORK_DEBUG` and one without, can join the same room and misread each other's data. Send a protocol version when joining.
+- **No protocol version check.** Clients with incompatible wire formats, for example one built with `NETWORK_DEBUG` and one without, or one with a compressor and one without, can join the same room and misread each other's data. Send a protocol version when joining.
 - **A spurious error on teardown.** `NetWorld.Dispose` logs "View already destroyed" whenever the world has no view. That happens if the session never got as far as creating one, or if its scene was unloaded first.
 - **Errors for normal situations.** `NetObjectState.ChangeObjectRemotely` and `NetObjectIdentity` log errors for cases their own messages call normal. `NetObjectIdentity` has a TODO to handle data that arrives during an ownership change.
 - **Clock estimate.** The world time estimate doesn't account for the relay round trip (TODO in `NetWorldRuntime`).

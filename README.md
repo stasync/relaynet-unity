@@ -91,7 +91,7 @@ To network your own state, write a `NetObjectStateData` class and a `NetObjectBe
 
 | Type | What it's for |
 |---|---|
-| `NetSession` | One connection to a Relay room. `new NetSession(address, port, token)` or `NetSession.CreateOffline()`, then `Update(deltaTime)` every frame and `Dispose()` at the end. `MainWorld` is its world. Also `IsConnected`, `Statistics` and the `Disposed` event. |
+| `NetSession` | One connection to a Relay room. `new NetSession(address, port, token)` or `NetSession.CreateOffline()`, optionally with a compressor (see [Compression](#compression)), then `Update(deltaTime)` every frame and `Dispose()` at the end. `MainWorld` is its world. Also `IsConnected`, `Statistics` and the `Disposed` event. |
 | `NetWorldRuntime` | The live world, `session.MainWorld`. `OnSceneLoaded()`, `CreateObject(prefab, shared, position, rotation)`, `CreateObjectAsync(...)`, `ObjectStates`, `GetObject(uid)`, `Players`, `Properties` and `View`. Events: `PlayerAdded`, `PlayerRemoved`, `PlayerBecomesReady`, `ObjectCreated`, `ObjectRemoved`, `Updated`, `Disposed`. |
 | `NetWorldPlayersCollection` | `world.Players`: `LocalPlayer`, `MasterPlayer`, `All`, `Get(uid)`, `Contains(uid)`. |
 | `NetWorldPlayer` | A client in the room: `Uid`, `Name`, `IsLocal()`, `IsMaster()`, `IsReady`, `Platform`, `RttMs` and `Properties`. |
@@ -124,6 +124,20 @@ Call `Update` every frame. It sends and receives packets and steps the world. Ca
 ### Offline mode
 
 `NetSession.CreateOffline()` creates a session that emulates the relay in-process. The local client is the only client in the room, so it's also the master client. Everything above the transport works the same as online, so the same game code runs in both modes.
+
+### Compression
+
+Pass a compressor to the session to shrink the payloads it sends:
+
+```csharp
+var session = new NetSession(address, port, token, compressor: new NetZeroPackCompressor());
+```
+
+`NetZeroPackCompressor` (in `Keel.RelayNet.Compression`) leaves out zero bytes. Every 8 bytes become a tag byte that marks the bytes that aren't zero, followed by those bytes. State updates hold many zeros, such as the high bytes of small numbers, still velocities and false flags, so they typically shrink by 20–35%. Each payload is packed on its own, so a lost packet affects nothing else.
+
+Every client in the room must use the same compressor: a client without one misreads the others' packets. To write your own, implement `INetCompressor`, which has `Compress` and `Decompress`. Only the payload is compressed, because the relay reads the rest of each packet to route it.
+
+An offline session sends nothing over the network, but `Statistics` still counts the compressed payloads, so `NetSession.CreateOffline(new NetZeroPackCompressor())` shows what a compressor saves.
 
 ## Worlds
 
