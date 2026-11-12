@@ -363,6 +363,15 @@ namespace Keel.RelayNet.StateManagement
         {
             NewObjectInitialized = null;
 
+            // Unity runs OnDestroy only at the end of the frame, while the world is disposed right after this call.
+            // Detach now, so instantiations landing in between bail out instead of querying the disposed world.
+            _world = null;
+
+            foreach (var asyncLoadOp in _pendingObjectViews.Values)
+                asyncLoadOp.Cancel();
+
+            _pendingObjectViews.Clear();
+
             _currentObjectViews.Clear();
 
             foreach (var pendingView in _temporaryUnregisteredViews.Values)
