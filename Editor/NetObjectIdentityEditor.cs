@@ -8,6 +8,7 @@ namespace Keel.RelayNet.Editor
     internal sealed class NetObjectIdentityEditor : UnityEditor.Editor
     {
         private NetObjectStateDrawer _drawer;
+        private bool _stateExpanded;
 
         public override void OnInspectorGUI()
         {
@@ -29,7 +30,9 @@ namespace Keel.RelayNet.Editor
                 return;
 
             EditorGUILayout.Space();
-            _drawer.Draw();
+            _stateExpanded = EditorGUILayout.Foldout(_stateExpanded, "Network state", toggleOnLabelClick: true);
+            if (_stateExpanded)
+                _drawer.DrawDetails();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Keel.RelayNet.Debug;
+using Keel.RelayNet.GameObjects;
 using Keel.RelayNet.StateManagement;
 using UnityEditor;
 using UnityEngine;
@@ -29,6 +30,11 @@ namespace Keel.RelayNet.Editor
 
         private const float GRAPH_HEIGHT = 64f;
 
+        /// <summary>
+        /// The snapshots list's height while a playback shows below it.
+        /// </summary>
+        private const float SNAPSHOTS_HEIGHT = 120f;
+
         [SerializeField] private Tab _tab;
         [SerializeField] private int _sessionIndex;
 
@@ -41,6 +47,7 @@ namespace Keel.RelayNet.Editor
         private NetWorldDrawer _replicaDrawer;
         private NetWorldReplica _replica;
         private bool _historyBufferExpanded;
+        private Vector2 _snapshotsScroll;
 
         [MenuItem("Tools/RelayNet/Debug Window")]
         private static void Open() =>
@@ -60,8 +67,38 @@ namespace Keel.RelayNet.Editor
             Repaint();
         }
 
-        private void OnDisable() =>
+        private void OnEnable() =>
+            Selection.selectionChanged += OnSelectionChanged;
+
+        private void OnDisable()
+        {
+            Selection.selectionChanged -= OnSelectionChanged;
             StopPlayback();
+        }
+
+        /// <summary>
+        /// Selecting an object's GameObject, in the Hierarchy or the Scene view, shows the object in the Objects tab, or
+        /// in the playback when it's one of the replica's.
+        /// </summary>
+        private void OnSelectionChanged()
+        {
+            var gameObject = Selection.activeGameObject;
+            if (gameObject == null)
+                return;
+
+            var identity = gameObject.GetComponentInParent<NetObjectIdentity>(includeInactive: true);
+            if (identity == null || !identity.Initialized)
+                return;
+
+            if (_worldDrawer != null && _worldDrawer.World == identity.World)
+                _worldDrawer.SelectObject(identity.InstanceId);
+            else if (_replicaDrawer != null && _replicaDrawer.World == identity.World)
+                _replicaDrawer.SelectObject(identity.InstanceId);
+            else
+                return;
+
+            Repaint();
+        }
 
         private void OnGUI()
         {
@@ -94,20 +131,26 @@ namespace Keel.RelayNet.Editor
             EditorGUILayout.Space(4f);
             _tab = (Tab)GUILayout.Toolbar((int)_tab, s_tabNames, GUILayout.Height(24f));
 
-            _scroll = EditorGUILayout.BeginScrollView(_scroll);
             switch (_tab)
             {
                 case Tab.Overview:
+                    _scroll = EditorGUILayout.BeginScrollView(_scroll);
                     DrawOverview(session, world);
+                    EditorGUILayout.Space(8f);
+                    EditorGUILayout.EndScrollView();
                     break;
 
                 case Tab.Players:
                     if (DrawWorldMissing(world))
                         break;
 
+                    _scroll = EditorGUILayout.BeginScrollView(_scroll);
                     _worldDrawer.DrawPlayers();
+                    EditorGUILayout.Space(8f);
+                    EditorGUILayout.EndScrollView();
                     break;
 
+                // The objects fill the window, with their list and their details each scrolling on its own.
                 case Tab.Objects:
                     if (DrawWorldMissing(world))
                         break;
@@ -122,9 +165,6 @@ namespace Keel.RelayNet.Editor
                     DrawHistory(world);
                     break;
             }
-
-            EditorGUILayout.Space(8f);
-            EditorGUILayout.EndScrollView();
         }
 
         private NetSession GetSelectedSession()
@@ -269,10 +309,13 @@ namespace Keel.RelayNet.Editor
             _historyBufferExpanded = EditorGUILayout.Foldout(_historyBufferExpanded, "Snapshots", toggleOnLabelClick: true);
             if (_historyBufferExpanded)
             {
+                // The snapshots scroll on their own, and leave room for the playback below them.
+                _snapshotsScroll = EditorGUILayout.BeginScrollView(_snapshotsScroll, _replica == null ? GUILayout.ExpandHeight(true) : GUILayout.Height(SNAPSHOTS_HEIGHT));
                 EditorGUI.indentLevel++;
                 foreach (var snapshot in history)
                     EditorGUILayout.LabelField($"{snapshot.Time:0.00} s", $"+{snapshot.DeltaTime:0.00} s · {NetDebugFormat.Bytes(snapshot.GetSize())} · {snapshot.Objects.Count} objects · {snapshot.Players.PlayersCollection.Count} players");
                 EditorGUI.indentLevel--;
+                EditorGUILayout.EndScrollView();
             }
 
             if (_replica == null)

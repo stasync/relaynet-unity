@@ -6,6 +6,10 @@
 
 - **Copy JSON** in the debug window's Objects tab, for the whole world or one object. See [Debugging](Documentation~/debugging.md).
 
+### Changed
+
+- The debug window's Objects tab lists the objects on the left, sorted by uid, and shows the selected one on the right, so its details no longer jump as objects come and go. Double-click an object, or press **Select** in its details, to select its GameObject. Selecting an object's GameObject in the Hierarchy or the Scene view shows it in the window. **Expand all** and **Collapse all** are gone.
+
 ### Fixed
 
 - `CreateObjectAsync` no longer throws `InvalidOperationException: View for object with uid 'INVALID' was not created` when the world is destroyed before the view lands, such as on leaving Play Mode, or when the object is removed first. The callback isn't called then.

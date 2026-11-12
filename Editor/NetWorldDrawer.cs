@@ -13,7 +13,7 @@ namespace Keel.RelayNet.Editor
 {
     /// <summary>
     /// The players and the objects of one world, for the debug window's Players and Objects tabs. Keeps what's
-    /// expanded and what's searched for as long as the world lives.
+    /// expanded, selected and searched for as long as the world lives.
     /// </summary>
     internal sealed class NetWorldDrawer
     {
@@ -23,6 +23,15 @@ namespace Keel.RelayNet.Editor
             Yours,
             Remote
         }
+
+        private const string LIST_WIDTH_PREF = "Keel.RelayNet.DebugWindow.ObjectListWidth";
+        private const float MIN_LIST_WIDTH = 160f;
+        private const float MIN_DETAILS_WIDTH = 240f;
+        private const float DIVIDER_WIDTH = 5f;
+
+        private static readonly Color s_selectedRow = new(0.24f, 0.48f, 0.9f, 0.35f);
+        private static readonly Color s_divider = new(0.5f, 0.5f, 0.5f, 0.3f);
+        private static readonly Comparison<NetObjectStateDrawer> s_byUid = (a, b) => a.Uid.CompareTo(b.Uid);
 
         public NetWorld World { get; }
         public bool IsValid => World is { IsValid: true };
@@ -42,8 +51,17 @@ namespace Keel.RelayNet.Editor
         private bool _unregisteredSceneObjectsExpanded;
         private bool _pendingViewsExpanded;
 
-        public NetWorldDrawer(NetWorld world) =>
+        private NetObjectUid _selectedUid;
+        private string _selectedTitle;
+        private float _listWidth;
+        private Vector2 _listScroll;
+        private Vector2 _detailsScroll;
+
+        public NetWorldDrawer(NetWorld world)
+        {
             World = world;
+            _listWidth = EditorPrefs.GetFloat(LIST_WIDTH_PREF, 360f);
+        }
 
         #region Players
 
@@ -139,6 +157,23 @@ namespace Keel.RelayNet.Editor
 
         #region Objects
 
+        /// <summary>
+        /// Shows the object in the details, whether or not the list shows it.
+        /// </summary>
+        public void SelectObject(NetObjectUid uid)
+        {
+            if (uid == _selectedUid)
+                return;
+
+            _selectedUid = uid;
+            _selectedTitle = null;
+            _detailsScroll = Vector2.zero;
+        }
+
+        /// <summary>
+        /// The objects on the left, the selected one on the right. The details scroll on their own, so objects coming
+        /// and going in the list don't move them.
+        /// </summary>
         public void DrawObjects()
         {
             CollectMatchingObjects();
@@ -146,38 +181,130 @@ namespace Keel.RelayNet.Editor
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             _search = GUILayout.TextField(_search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(100f));
             _filter = (ObjectFilter)EditorGUILayout.EnumPopup(_filter, EditorStyles.toolbarPopup, GUILayout.Width(70f));
+            GUILayout.Label(_matchingDrawers.Count == World.ObjectStates.Count
+                ? $"{World.ObjectStates.Count} objects"
+                : $"{_matchingDrawers.Count} of {World.ObjectStates.Count} objects", EditorStyles.miniLabel);
             GUILayout.FlexibleSpace();
 
             if (GUILayout.Button(new GUIContent("Copy JSON", "Copy the whole world as JSON: its properties, its players and all of its objects."), EditorStyles.toolbarButton))
                 NetDebugEditorGUI.Copy(NetDebugJson.World(World), "the world as JSON");
 
-            if (GUILayout.Button("Expand all", EditorStyles.toolbarButton))
-            {
-                foreach (var drawer in _matchingDrawers)
-                    drawer.SetDrawingEnabled(true);
-            }
-
-            if (GUILayout.Button("Collapse all", EditorStyles.toolbarButton))
-            {
-                foreach (var drawer in _matchingDrawers)
-                    drawer.SetDrawingEnabled(false);
-            }
-
             EditorGUILayout.EndHorizontal();
 
-            EditorGUILayout.LabelField(_matchingDrawers.Count == World.ObjectStates.Count
-                ? $"{World.ObjectStates.Count} objects"
-                : $"{_matchingDrawers.Count} of {World.ObjectStates.Count} objects", EditorStyles.miniLabel);
+            EditorGUILayout.BeginHorizontal(GUILayout.ExpandHeight(true));
+            {
+                _listWidth = ClampListWidth(_listWidth);
+                _listScroll = EditorGUILayout.BeginScrollView(_listScroll, GUILayout.Width(_listWidth));
+                DrawObjectList();
+                if (World is NetWorldRuntime runtimeWorld)
+                    DrawPendingObjects(runtimeWorld);
+                EditorGUILayout.EndScrollView();
 
+                DrawDivider();
+
+                _detailsScroll = EditorGUILayout.BeginScrollView(_detailsScroll);
+                DrawSelectedObject();
+                EditorGUILayout.Space(8f);
+                EditorGUILayout.EndScrollView();
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        /// <summary>
+        /// A click shows the object in the details, a double-click also selects its GameObject.
+        /// </summary>
+        private void DrawObjectList()
+        {
+            var current = Event.current;
             foreach (var drawer in _matchingDrawers)
             {
-                // Removing an object, with the button in its drawer or anything reacting to that, can take others with it.
-                if (drawer.IsValid())
-                    drawer.Draw();
+                var rect = EditorGUILayout.GetControlRect();
+                if (current.type == EventType.MouseDown && current.button == 0 && rect.Contains(current.mousePosition))
+                {
+                    SelectObject(drawer.Uid);
+                    if (current.clickCount == 2)
+                        drawer.SelectView();
+
+                    current.Use();
+                }
+
+                if (current.type != EventType.Repaint)
+                    continue;
+
+                if (drawer.Uid == _selectedUid)
+                    EditorGUI.DrawRect(rect, s_selectedRow);
+
+                drawer.DrawRow(rect);
+            }
+        }
+
+        private void DrawSelectedObject()
+        {
+            if (!_selectedUid.IsValid)
+            {
+                EditorGUILayout.Space(20f);
+                EditorGUILayout.LabelField("Select an object to see it here.", EditorStyles.centeredGreyMiniLabel);
+                return;
             }
 
-            if (World is NetWorldRuntime runtimeWorld)
-                DrawPendingObjects(runtimeWorld);
+            // The details stay on the removed object rather than move on to another one.
+            var state = World.GetObject(_selectedUid);
+            if (state == null)
+            {
+                EditorGUILayout.Space(20f);
+                EditorGUILayout.LabelField($"{_selectedTitle ?? _selectedUid.ToString()} was removed from the world.", EditorStyles.centeredGreyMiniLabel);
+                return;
+            }
+
+            var drawer = GetDrawer(state);
+            _selectedTitle = drawer.Title;
+            drawer.DrawDetails();
+        }
+
+        /// <summary>
+        /// The line between the list and the details: drag it to resize the list.
+        /// </summary>
+        private void DrawDivider()
+        {
+            var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.Width(DIVIDER_WIDTH), GUILayout.ExpandHeight(true));
+            EditorGUI.DrawRect(new Rect(rect.center.x, rect.y, 1f, rect.height), s_divider);
+            EditorGUIUtility.AddCursorRect(rect, MouseCursor.ResizeHorizontal);
+
+            var id = GUIUtility.GetControlID(FocusType.Passive);
+            var current = Event.current;
+            switch (current.GetTypeForControl(id))
+            {
+                case EventType.MouseDown when current.button == 0 && rect.Contains(current.mousePosition):
+                    GUIUtility.hotControl = id;
+                    current.Use();
+                    break;
+
+                // The list starts at the window's left edge, so the mouse is where its right edge goes.
+                case EventType.MouseDrag when GUIUtility.hotControl == id:
+                    _listWidth = ClampListWidth(current.mousePosition.x - DIVIDER_WIDTH * 0.5f);
+                    current.Use();
+                    break;
+
+                case EventType.MouseUp when GUIUtility.hotControl == id:
+                    GUIUtility.hotControl = 0;
+                    EditorPrefs.SetFloat(LIST_WIDTH_PREF, _listWidth);
+                    current.Use();
+                    break;
+            }
+        }
+
+        private static float ClampListWidth(float width) =>
+            Mathf.Clamp(width, MIN_LIST_WIDTH, Mathf.Max(MIN_LIST_WIDTH, EditorGUIUtility.currentViewWidth - DIVIDER_WIDTH - MIN_DETAILS_WIDTH));
+
+        private NetObjectStateDrawer GetDrawer(NetObjectState state)
+        {
+            if (!_objectDrawers.TryGetValue(state.Uid, out var drawer))
+            {
+                drawer = new NetObjectStateDrawer(state, World);
+                _objectDrawers.Add(state.Uid, drawer);
+            }
+
+            return drawer;
         }
 
         private void CollectMatchingObjects()
@@ -198,15 +325,13 @@ namespace Keel.RelayNet.Editor
                 if ((_filter == ObjectFilter.Yours && !state.IsOwnedByLocalPlayer) || (_filter == ObjectFilter.Remote && state.IsOwnedByLocalPlayer))
                     continue;
 
-                if (!_objectDrawers.TryGetValue(state.Uid, out var drawer))
-                {
-                    drawer = new NetObjectStateDrawer(state, World);
-                    _objectDrawers.Add(state.Uid, drawer);
-                }
-
+                var drawer = GetDrawer(state);
                 if (string.IsNullOrEmpty(_search) || drawer.GetSearchText().IndexOf(_search, StringComparison.OrdinalIgnoreCase) >= 0)
                     _matchingDrawers.Add(drawer);
             }
+
+            // The world keeps its objects in no particular order: a new one can take the place of a removed one.
+            _matchingDrawers.Sort(s_byUid);
         }
 
         private void DrawPendingObjects(NetWorldRuntime world)

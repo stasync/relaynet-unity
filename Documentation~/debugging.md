@@ -20,8 +20,10 @@ The window has four tabs:
   - Compression: the bytes before and after the compressor, what it saves, and how much of what's sent is packet headers rather than payload. See [Compression](compression.md).
   - The world: its time, how many objects are yours and how many are remote, the updates waiting to be applied, and its hash.
 - **Players**: every player in their color, with whether they're ready, their platform, how many objects they own and their round trip. Expand a player for their tag objects and properties. The world's properties are at the bottom.
-- **Objects**: every object, in its owner's color. Search by id, prefab or owner, and filter to yours or remote ones. A remote object shows how long ago its owner last updated it. Expand an object for its data, its size and its RPCs. **Select** selects its GameObject in the Hierarchy. **Copy JSON** in the tab's toolbar copies the whole world as JSON: its properties, its players and all of its objects. An expanded object has its own **Copy JSON**, for that object alone. The JSON is for reading and diffing: a data field's value is the text the window shows.
-- **History**: the world's last 10 seconds of history. **Play back** replays them in a separate world that you can pause, step through and scrub.
+- **Objects**: every object, sorted by id, in its owner's color. Search by id, prefab or owner, and filter to yours or remote ones. A remote object shows how long ago its owner last updated it. Click an object to see its data, its size and its RPCs on the right. They stay in place while objects come and go in the list, and if the object is removed, they say so. Drag the line between the two to resize them.
+  - Double-click an object, or press **Select** in its details, to select its GameObject in the Hierarchy. The other way round, selecting an object's GameObject in the Hierarchy or the Scene view shows the object here.
+  - **Copy JSON** in the tab's toolbar copies the whole world as JSON: its properties, its players and all of its objects. An object's details have their own **Copy JSON**, for that object alone. The JSON is for reading and diffing: a data field's value is the text the window shows.
+- **History**: the world's last 10 seconds of history. **Play back** replays them in a separate world that you can pause, step through and scrub. Its objects show the way the Objects tab shows them.
 
 ## The in-game overlay
 
