@@ -202,9 +202,9 @@ A replay copies the history when you create it. To replay a moment later on, suc
 When something goes wrong in play mode, such as an object jumping or a value going out of sync, the last 10 seconds are still in the world's history. The **Debug Window** replays them:
 
 1. Open **Tools > RelayNet > Debug Window** before you reproduce the bug.
-2. Within 10 seconds of the bug, press **Playback** under **Main World History Info**. The replay copies the history at that moment, so the live game can keep running.
-3. Under **Replica info**, press **Pause**, then step with **<< Previous** and **Next >>**, or drag the **Snapshot** slider.
+2. Within 10 seconds of the bug, press **Play back** in the **History** tab. The replay copies the history at that moment, so the live game can keep running.
+3. Under **Playback**, press **Pause**, then step with **< Previous** and **Next >**, or drag the **Snapshot** slider.
 4. Inspect the replayed objects in the Hierarchy and the Scene view, and their states in the window.
-5. Press **Stop Playback** when you're done.
+5. Press **Stop** when you're done.
 
 The replayed objects stand on top of the live ones. In the Hierarchy, they're in the replica's own scene. Their GameObjects are created asynchronously, so keep the game running, not paused in the editor, while you step through the replay.
