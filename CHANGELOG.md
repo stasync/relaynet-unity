@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Copy JSON** in the debug window's Objects tab, for the whole world or one object. See [Debugging](Documentation~/debugging.md).
+
+### Fixed
+
+- `CreateObjectAsync` no longer throws `InvalidOperationException: View for object with uid 'INVALID' was not created` when the world is destroyed before the view lands, such as on leaving Play Mode, or when the object is removed first. The callback isn't called then.
+
 ## 0.4.0 - 2026-11-09
 
 ### Added

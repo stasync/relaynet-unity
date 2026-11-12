@@ -72,6 +72,9 @@ namespace Keel.RelayNet.Debug.Editor
                 EditorGUILayout.BeginHorizontal();
 
                 GUILayout.Space(pixels: EditorGUI.indentLevel * 15); // indent for buttons.
+                if (GUILayout.Button("Copy JSON"))
+                    NetDebugEditorGUI.Copy(NetDebugJson.Object(_state), $"object {_state.Uid} as JSON");
+
                 if (GUILayout.Button("Remove From World"))
                     removeObjectFromWorld = true;
 

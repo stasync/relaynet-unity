@@ -28,6 +28,16 @@ namespace Keel.RelayNet.Editor
             EditorGUILayout.Space(2f);
         }
 
+        /// <summary>
+        /// Puts the text on the clipboard, and says so in the window whose button was clicked.
+        /// </summary>
+        public static void Copy(string text, string what)
+        {
+            EditorGUIUtility.systemCopyBuffer = text;
+            if (EditorWindow.focusedWindow != null)
+                EditorWindow.focusedWindow.ShowNotification(new GUIContent($"Copied {what}"), fadeoutWait: 1d);
+        }
+
         public static void Row(string label, string value) =>
             EditorGUILayout.LabelField(label, value);
 

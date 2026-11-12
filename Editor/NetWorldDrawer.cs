@@ -148,6 +148,9 @@ namespace Keel.RelayNet.Editor
             _filter = (ObjectFilter)EditorGUILayout.EnumPopup(_filter, EditorStyles.toolbarPopup, GUILayout.Width(70f));
             GUILayout.FlexibleSpace();
 
+            if (GUILayout.Button(new GUIContent("Copy JSON", "Copy the whole world as JSON: its properties, its players and all of its objects."), EditorStyles.toolbarButton))
+                NetDebugEditorGUI.Copy(NetDebugJson.World(World), "the world as JSON");
+
             if (GUILayout.Button("Expand all", EditorStyles.toolbarButton))
             {
                 foreach (var drawer in _matchingDrawers)

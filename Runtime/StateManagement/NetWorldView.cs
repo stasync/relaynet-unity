@@ -243,6 +243,11 @@ namespace Keel.RelayNet.StateManagement
 
             _pendingObjectViews[state.Uid].completed += _ =>
             {
+                // The world was torn down (play mode exit cancels the operation in OnDestroy) or the object was removed
+                // before its view landed: there is no view to hand back.
+                if (_world == null || !state.IsValid())
+                    return;
+
                 var netObjectView = GetObjectView(state.Uid);
                 if (netObjectView == null)
                     throw new InvalidOperationException($"View for object with uid '{state.Uid}' was not created.");
