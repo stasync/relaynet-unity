@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2 - 2026-11-12
+
+### Fixed
+
+- The debug window's History playback runs at game speed. It advanced the replica by `Time.deltaTime` on every editor tick, and the editor can tick up to 20 times in one game frame, most of all in the first seconds of a playback. So it played the history 2 to 6 times too fast, the more so the shorter the history.
+- Disposing a world while its objects' GameObjects were still loading, such as stopping a playback right after it starts, could throw `InvalidOperationException` when one of them finished loading later in the same frame. It's now dropped.
+
 ## 0.4.1 - 2026-11-12
 
 ### Added
