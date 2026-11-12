@@ -46,6 +46,7 @@ namespace Keel.RelayNet.Editor
         private NetWorldDrawer _worldDrawer;
         private NetWorldDrawer _replicaDrawer;
         private NetWorldReplica _replica;
+        private float _replicaLastGameTime;
         private bool _historyBufferExpanded;
         private Vector2 _snapshotsScroll;
 
@@ -367,6 +368,7 @@ namespace Keel.RelayNet.Editor
 
             _replica = world.Replicate();
             _replicaDrawer = new NetWorldDrawer(_replica);
+            _replicaLastGameTime = Time.time;
 
             EditorApplication.update += OnReplicaUpdate;
         }
@@ -405,7 +407,11 @@ namespace Keel.RelayNet.Editor
                 return;
             }
 
-            _replica.Update(Time.deltaTime);
+            // The editor loop can tick several times in one game frame, and Time.deltaTime is that frame's: advance by the
+            // game time since the last tick instead, or the playback runs as many times too fast.
+            var gameTime = Time.time;
+            _replica.Update(gameTime - _replicaLastGameTime);
+            _replicaLastGameTime = gameTime;
         }
 
         #endregion

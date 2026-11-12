@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The debug window's History playback runs at game speed. It advanced the replica by `Time.deltaTime` on every editor tick, and the editor can tick up to 20 times in one game frame, most of all in the first seconds of a playback. So it played the history 2 to 6 times too fast, the more so the shorter the history.
+
 ## 0.4.1 - 2026-11-12
 
 ### Added
